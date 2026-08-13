@@ -8,6 +8,11 @@
  */
 
 import { ApiResponse, SHEET_NAMES, SheetNameKey } from "../types";
+import {
+  normalizeLancamento,
+  normalizeConsultaMedica,
+  normalizeCompromissoAgenda,
+} from "../utils/formatters";
 
 const LOCAL_STORAGE_KEY_PREFIX = "financas_gaeta_cache_";
 const APPS_SCRIPT_URL_KEY = "financas_gaeta_apps_script_url";
@@ -53,13 +58,33 @@ export function generateNewId(prefix: string = "GAETA"): string {
 }
 
 /**
+ * Helper to normalize any record according to its sheet
+ */
+export function normalizeRecordBySheet(sheetName: string, item: any): any {
+  if (!item || typeof item !== "object") return item;
+  if (sheetName === SHEET_NAMES.LANCAMENTOS) {
+    return normalizeLancamento(item);
+  }
+  if (sheetName === SHEET_NAMES.CONSULTAS_MEDICAS) {
+    return normalizeConsultaMedica(item);
+  }
+  if (sheetName === SHEET_NAMES.AGENDA) {
+    return normalizeCompromissoAgenda(item);
+  }
+  return item;
+}
+
+/**
  * Read cached sheet records safely
  */
 export function getCachedSheetData<T>(sheetName: string): T[] {
   try {
     const raw = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}${sheetName}`);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed: any[] = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => normalizeRecordBySheet(sheetName, item) as T);
+      }
     }
   } catch (err) {
     console.warn(`[Cache Read Warn] Could not parse cache for ${sheetName}:`, err);
@@ -116,11 +141,14 @@ export async function fetchSheetData<T = any>(
 
     const records = result.data || [];
 
-    // Ensure all records have an Id
-    const recordsWithIds = records.map((item, idx) => ({
-      ...item,
-      Id: generateDeterministicId(sheetName, idx, item),
-    }));
+    // Ensure all records have an Id and are normalized
+    const recordsWithIds = records.map((item, idx) => {
+      const withId = {
+        ...item,
+        Id: generateDeterministicId(sheetName, idx, item),
+      };
+      return normalizeRecordBySheet(sheetName, withId);
+    });
 
     // Update local cache only on success
     setCachedSheetData(sheetName, recordsWithIds);

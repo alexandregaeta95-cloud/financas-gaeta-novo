@@ -60,8 +60,7 @@ export const OutrosView: React.FC<Props> = ({
       Id: generateNewId("AGENDA"),
       Data: new Date().toISOString().split("T")[0],
       Titulo: newAgendaText.trim(),
-      Prioridade: "Média",
-      Concluido: false,
+      Concluído: false,
     };
     await onSaveCompromisso(item);
     setNewAgendaText("");

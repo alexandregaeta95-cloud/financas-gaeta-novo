@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Lancamento, Abastecimento, Veiculo, SyncState } from "../types";
 import { ModuleView } from "./Navigation";
+import { parseCurrency, formatCurrency, formatDateBR } from "../utils/formatters";
 
 interface Props {
   lancamentos: Lancamento[];
@@ -26,6 +27,61 @@ interface Props {
   onOpenSetup: () => void;
 }
 
+// Helpers for resilient property resolution
+function getItemDescricao(l: any): string {
+  const val =
+    l.Descricao ??
+    l["Descrição"] ??
+    l.descricao ??
+    l["descrição"] ??
+    l.Descricao_Do_Veiculo ??
+    l["Descrição_Do_Veículo"] ??
+    l.Item ??
+    l.Titulo ??
+    "";
+  const str = String(val).trim();
+  if (str && str !== "Descricao" && str !== "Descrição") return str;
+  if (isFuelItem(l)) return "Abastecimento";
+  return l.Categoria || l.Tipo || "Lançamento";
+}
+
+function getItemCategoria(l: any): string {
+  return String(l.Categoria ?? l.categoria ?? (isFuelItem(l) ? "ABASTECIMENTO" : "Geral")).trim();
+}
+
+function getItemConta(l: any): string {
+  const conta = l.Conta ?? l.conta ?? l.Banco_Id ?? l["Banco_Id"] ?? l.Banco ?? "";
+  return String(conta).trim();
+}
+
+function getItemData(l: any): string {
+  return formatDateBR(l.Data ?? l.data ?? "");
+}
+
+function isReceitaItem(l: any): boolean {
+  const tipo = (l.Tipo || l.tipo || "").toString().toUpperCase();
+  const cat = (l.Categoria || l.categoria || "").toString().toUpperCase();
+  return tipo === "RECEITA" || cat === "RECEITA" || cat === "SALÁRIO" || cat === "SALARIO";
+}
+
+function isFuelItem(l: any): boolean {
+  const tipo = (l.Tipo || l.tipo || "").toString().toUpperCase();
+  const cat = (l.Categoria || l.categoria || "").toString().toUpperCase();
+  return (
+    tipo === "ABASTECIMENTO" ||
+    cat === "ABASTECIMENTO" ||
+    cat.includes("COMBUSTIVEL") ||
+    cat.includes("COMBUSTÍVEL") ||
+    Boolean(l.Nome_Posto || l.Posto || l["Nome_Posto"]) ||
+    parseCurrency(l.Litros) > 0
+  );
+}
+
+function isExcludedItem(l: any): boolean {
+  const status = (l.Status || l.status || "").toString().toUpperCase();
+  return status === "EXCLUÍDO" || status === "EXCLUIDO" || status === "DELETED";
+}
+
 export const Dashboard: React.FC<Props> = ({
   lancamentos,
   abastecimentos,
@@ -36,24 +92,29 @@ export const Dashboard: React.FC<Props> = ({
   onOpenNewAbastecimentoModal,
   onOpenSetup,
 }) => {
-  // Calculate Totals
-  const totalReceitas = lancamentos
-    .filter((l) => l.Tipo === "Receita" && l.Status !== "Excluído")
-    .reduce((acc, curr) => acc + (Number(curr.Valor) || 0), 0);
+  // Calculate Totals using robust currency parsing
+  const activeLancamentos = lancamentos.filter((l) => !isExcludedItem(l));
 
-  const totalDespesas = lancamentos
-    .filter((l) => (l.Tipo === "Despesa" || l.Tipo === "Abastecimento") && l.Status !== "Excluído")
-    .reduce((acc, curr) => acc + (Number(curr.Valor) || 0), 0);
+  const totalReceitas = activeLancamentos
+    .filter((l) => isReceitaItem(l))
+    .reduce((acc, curr) => acc + parseCurrency(curr.Valor ?? (curr as any)["Valor"] ?? 0), 0);
+
+  const totalDespesas = activeLancamentos
+    .filter((l) => !isReceitaItem(l))
+    .reduce((acc, curr) => acc + parseCurrency(curr.Valor ?? (curr as any)["Valor"] ?? 0), 0);
 
   const saldoLiquido = totalReceitas - totalDespesas;
 
-  const totalAbastecimento = lancamentos
-    .filter((l) => l.Categoria === "ABASTECIMENTO" || l.Tipo === "Abastecimento")
-    .reduce((acc, curr) => acc + (Number(curr.Valor) || 0), 0);
+  const totalAbastecimento = activeLancamentos
+    .filter((l) => isFuelItem(l))
+    .reduce((acc, curr) => acc + parseCurrency(curr.Valor ?? (curr as any)["Valor"] ?? 0), 0);
 
-  const recentTransactions = [...lancamentos]
-    .filter((l) => l.Status !== "Excluído")
-    .sort((a, b) => new Date(b.Data).getTime() - new Date(a.Data).getTime())
+  const recentTransactions = [...activeLancamentos]
+    .sort((a, b) => {
+      const dateA = new Date(getItemData(a) || 0).getTime();
+      const dateB = new Date(getItemData(b) || 0).getTime();
+      return dateB - dateA;
+    })
     .slice(0, 6);
 
   const primaryVehicle = veiculos[0];
@@ -258,7 +319,14 @@ export const Dashboard: React.FC<Props> = ({
         ) : (
           <div className="divide-y divide-slate-800/80">
             {recentTransactions.map((tx) => {
-              const isReceita = tx.Tipo === "Receita";
+              const isReceita = isReceitaItem(tx);
+              const isFuel = isFuelItem(tx);
+              const desc = getItemDescricao(tx);
+              const cat = getItemCategoria(tx);
+              const conta = getItemConta(tx);
+              const data = getItemData(tx);
+              const valorNum = parseCurrency(tx.Valor ?? (tx as any)["Valor"] ?? 0);
+
               return (
                 <div key={tx.Id} className="py-3 flex items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-3 min-w-0">
@@ -266,12 +334,12 @@ export const Dashboard: React.FC<Props> = ({
                       className={`p-2 rounded-xl shrink-0 ${
                         isReceita
                           ? "bg-teal-500/10 text-teal-400"
-                          : tx.Categoria === "ABASTECIMENTO"
+                          : isFuel
                           ? "bg-amber-500/10 text-amber-400"
                           : "bg-rose-500/10 text-rose-400"
                       }`}
                     >
-                      {tx.Categoria === "ABASTECIMENTO" ? (
+                      {isFuel ? (
                         <Fuel className="w-4 h-4" />
                       ) : isReceita ? (
                         <TrendingUp className="w-4 h-4" />
@@ -280,9 +348,9 @@ export const Dashboard: React.FC<Props> = ({
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-200 truncate">{tx.Descricao}</p>
+                      <p className="font-medium text-slate-200 truncate">{desc}</p>
                       <p className="text-[11px] text-slate-500 truncate">
-                        {tx.Categoria} {tx.Conta ? `• ${tx.Conta}` : ""} • {tx.Data}
+                        {cat} {conta ? `• ${conta}` : ""} {data ? `• ${data}` : ""}
                       </p>
                     </div>
                   </div>
@@ -293,9 +361,9 @@ export const Dashboard: React.FC<Props> = ({
                       }`}
                     >
                       {isReceita ? "+" : "-"} R${" "}
-                      {Number(tx.Valor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      {formatCurrency(valorNum)}
                     </span>
-                    <p className="text-[10px] text-slate-500">{tx.Status}</p>
+                    <p className="text-[10px] text-slate-500">{tx.Status || "Pago"}</p>
                   </div>
                 </div>
               );

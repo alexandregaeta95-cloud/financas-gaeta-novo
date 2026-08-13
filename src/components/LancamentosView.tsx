@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Lancamento, Veiculo, ContaBancaria } from "../types";
 import { generateNewId } from "../services/api";
+import { parseCurrency, formatCurrency } from "../utils/formatters";
 
 interface Props {
   lancamentos: Lancamento[];
@@ -271,9 +272,7 @@ export const LancamentosView: React.FC<Props> = ({
                         }`}
                       >
                         {isReceita ? "+" : "-"} R${" "}
-                        {Number(item.Valor || 0).toLocaleString("pt-BR", {
-                          minimumFractionDigits: 2,
-                        })}
+                        {formatCurrency(item.Valor)}
                       </span>
                       <p className="text-[10px] text-slate-500">{item.Status}</p>
                     </div>

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { CalendarDays, List, Plus, Edit2, Trash2, X, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { CompromissoAgenda } from "../types";
 import { generateNewId } from "../services/api";
+import { formatarHora } from "../utils/formatters";
 
 interface Props {
   agenda: CompromissoAgenda[];
@@ -165,7 +166,7 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
                         )}
                       </div>
                       <p className="text-slate-400">
-                        {item.Data} {item.Hora && `às ${item.Hora}`} • Categoria: {item.Categoria || "Geral"}
+                        {item.Data} {formatarHora(item.Hora) && `às ${formatarHora(item.Hora)}`} • Categoria: {item.Categoria || "Geral"}
                       </p>
                       {item.Descrição && <p className="text-slate-500 italic">{item.Descrição}</p>}
                     </div>

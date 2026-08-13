@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { ConsultaMedica, ReceitaMedica, Infracao, Veiculo } from "../types";
 import { generateNewId } from "../services/api";
+import { formatarHora, formatDateBR } from "../utils/formatters";
 
 interface Props {
   consultas: ConsultaMedica[];
@@ -290,11 +291,14 @@ export const SaudeInfracoesView: React.FC<Props> = ({
               Lembrete: Você tem {alertConsultas.length} Consulta(s) Médica(s) nos próximos 2 dias!
             </h4>
             <ul className="list-disc list-inside text-amber-200/80 space-y-0.5">
-              {alertConsultas.map((c) => (
-                <li key={c.Id}>
-                  <strong>{c.Especialidade}</strong> ({c.Médico || "Médico"}) — {c.Data} às {c.Horas || "horário a confirmar"} ({c.Local || "Local"})
-                </li>
-              ))}
+              {alertConsultas.map((c) => {
+                const horaFormatada = formatarHora(c.Horas);
+                return (
+                  <li key={c.Id}>
+                    <strong>{c.Especialidade}</strong> ({c.Médico || "Médico"}) — {c.Data} {horaFormatada ? `às ${horaFormatada}` : "horário a confirmar"} ({c.Local || "Local"})
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>
@@ -377,7 +381,9 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                 <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
                   <div>
                     <span className="text-slate-500 text-[10px] block">Data & Horário</span>
-                    <span className="font-semibold text-slate-200">{c.Data} {c.Horas && `às ${c.Horas}`}</span>
+                    <span className="font-semibold text-slate-200">
+                      {c.Data} {formatarHora(c.Horas) && `às ${formatarHora(c.Horas)}`}
+                    </span>
                   </div>
                   <div>
                     <span className="text-slate-500 text-[10px] block">Lembrete Ativo</span>

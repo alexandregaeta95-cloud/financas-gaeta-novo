@@ -10,6 +10,7 @@ import {
   PieChart as PieChartIcon
 } from "lucide-react";
 import { Lancamento } from "../types";
+import { parseCurrency, formatCurrency } from "../utils/formatters";
 
 interface Props {
   lancamentos: Lancamento[];
@@ -20,31 +21,34 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
   const todayStr = new Date().toISOString().split("T")[0];
 
   // Exclude deleted entries
-  const activeEntries = lancamentos.filter((l) => l.Status !== "Excluído");
+  const activeEntries = lancamentos.filter((l) => {
+    const s = String(l.Status || "").toUpperCase();
+    return s !== "EXCLUÍDO" && s !== "EXCLUIDO" && s !== "DELETED";
+  });
 
   // Group 1: Pagas
   const pagas = activeEntries.filter(
-    (l) => l.Status === "Pago" || l.Status === "PAGO" || (l as any).Valor_Pago > 0
+    (l) =>
+      String(l.Status || "").toUpperCase() === "PAGO" ||
+      parseCurrency((l as any).Valor_Pago) > 0
   );
 
   // Group 2: Vencidas (Past date & Status = Pendente)
-  const vencidas = activeEntries.filter(
-    (l) =>
-      (l.Status === "Pendente" || l.Status === "PENDENTE") &&
-      l.Data < todayStr
-  );
+  const vencidas = activeEntries.filter((l) => {
+    const s = String(l.Status || "").toUpperCase();
+    return s === "PENDENTE" && (l.Data || "") < todayStr;
+  });
 
   // Group 3: A Vencer (Future or today date & Status = Pendente)
-  const aVencer = activeEntries.filter(
-    (l) =>
-      (l.Status === "Pendente" || l.Status === "PENDENTE") &&
-      l.Data >= todayStr
-  );
+  const aVencer = activeEntries.filter((l) => {
+    const s = String(l.Status || "").toUpperCase();
+    return s === "PENDENTE" && (l.Data || "") >= todayStr;
+  });
 
   // Sums
-  const totalPagas = pagas.reduce((acc, curr) => acc + Number(curr.Valor || 0), 0);
-  const totalVencidas = vencidas.reduce((acc, curr) => acc + Number(curr.Valor || 0), 0);
-  const totalAVencer = aVencer.reduce((acc, curr) => acc + Number(curr.Valor || 0), 0);
+  const totalPagas = pagas.reduce((acc, curr) => acc + parseCurrency(curr.Valor), 0);
+  const totalVencidas = vencidas.reduce((acc, curr) => acc + parseCurrency(curr.Valor), 0);
+  const totalAVencer = aVencer.reduce((acc, curr) => acc + parseCurrency(curr.Valor), 0);
   const grandTotal = totalPagas + totalVencidas + totalAVencer || 1;
 
   // Percentages for chart bar
@@ -80,7 +84,7 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
             <PieChartIcon className="w-4 h-4 text-emerald-400" />
             Proporção de Contas
           </span>
-          <span className="text-slate-400 font-mono">Total R$ {(grandTotal === 1 ? 0 : grandTotal).toFixed(2)}</span>
+          <span className="text-slate-400 font-mono">Total R$ {formatCurrency(grandTotal === 1 ? 0 : grandTotal)}</span>
         </div>
 
         <div className="w-full h-4 bg-slate-950 rounded-full overflow-hidden flex border border-slate-800">
@@ -126,7 +130,7 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
             <AlertCircle className="w-5 h-5" />
           </div>
           <span className="text-2xl font-black text-rose-400 block font-mono">
-            R$ {totalVencidas.toFixed(2)}
+            R$ {formatCurrency(totalVencidas)}
           </span>
           <span className="text-[10px] text-rose-300/80 block font-semibold">
             {vencidas.length} conta(s) precisando de liquidação imediata
@@ -140,7 +144,7 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
             <Clock className="w-5 h-5" />
           </div>
           <span className="text-2xl font-black text-amber-400 block font-mono">
-            R$ {totalAVencer.toFixed(2)}
+            R$ {formatCurrency(totalAVencer)}
           </span>
           <span className="text-[10px] text-amber-300/80 block font-semibold">
             {aVencer.length} compromisso(s) a vencer no prazo
@@ -154,7 +158,7 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <span className="text-2xl font-black text-emerald-400 block font-mono">
-            R$ {totalPagas.toFixed(2)}
+            R$ {formatCurrency(totalPagas)}
           </span>
           <span className="text-[10px] text-emerald-300/80 block font-semibold">
             {pagas.length} lançamento(s) quitados com sucesso
@@ -184,7 +188,7 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
 
                   <div className="flex items-center gap-3">
                     <span className="font-extrabold text-rose-400 text-sm font-mono">
-                      R$ {Number(l.Valor).toFixed(2)}
+                      R$ {formatCurrency(l.Valor)}
                     </span>
                     <button
                       onClick={() => handleMarkAsPaid(l)}
@@ -223,7 +227,7 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
 
                   <div className="flex items-center gap-3">
                     <span className="font-extrabold text-amber-400 text-sm font-mono">
-                      R$ {Number(l.Valor).toFixed(2)}
+                      R$ {formatCurrency(l.Valor)}
                     </span>
                     <button
                       onClick={() => handleMarkAsPaid(l)}
@@ -255,7 +259,7 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
                   </p>
                 </div>
                 <span className="font-bold text-emerald-400 font-mono">
-                  R$ {Number(l.Valor).toFixed(2)}
+                  R$ {formatCurrency(l.Valor)}
                 </span>
               </div>
             ))}
