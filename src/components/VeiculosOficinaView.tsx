@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Veiculo, ServicoOficina, ManutencaoAgendada } from "../types";
 import { generateNewId } from "../services/api";
+import { parseCurrency, formatCurrency } from "../utils/formatters";
 
 interface Props {
   veiculos: Veiculo[];
@@ -122,10 +123,10 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Chassi: veiculoForm.Chassi || "",
       Marca: veiculoForm.Marca || "VW",
       Modelo: veiculoForm.Modelo || "Polo",
-      Ano: Number(veiculoForm.Ano) || new Date().getFullYear(),
-      Ano_Fabricação: Number(veiculoForm.Ano_Fabricação) || Number(veiculoForm.Ano) || new Date().getFullYear(),
+      Ano: parseCurrency(veiculoForm.Ano) || new Date().getFullYear(),
+      Ano_Fabricação: parseCurrency(veiculoForm.Ano_Fabricação) || parseCurrency(veiculoForm.Ano) || new Date().getFullYear(),
       Combustível: veiculoForm.Combustível || "Flex",
-      Km_Atual: Number(veiculoForm.Km_Atual) || 0,
+      Km_Atual: parseCurrency(veiculoForm.Km_Atual),
       Ativo: veiculoForm.Ativo !== false,
     };
     await onSaveVeiculo(item);
@@ -161,9 +162,9 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Id: editingServico?.Id || generateNewId("OFI"),
       Data: servicoForm.Data || new Date().toISOString().split("T")[0],
       Descrição: servicoForm.Descrição || "Serviço de Oficina",
-      KM: Number(servicoForm.KM) || 0,
-      Valor_A_PG: Number(servicoForm.Valor_A_PG) || 0,
-      Valor_Pago: Number(servicoForm.Valor_Pago) || 0,
+      KM: parseCurrency(servicoForm.KM),
+      Valor_A_PG: parseCurrency(servicoForm.Valor_A_PG),
+      Valor_Pago: parseCurrency(servicoForm.Valor_Pago),
       Oficina_Nome: servicoForm.Oficina_Nome || "",
       Comprovante_Url: servicoForm.Comprovante_Url || "",
       Observações: servicoForm.Observações || "",
@@ -186,7 +187,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         Descrição: "Troca de Óleo e Filtros",
         Tipo_Agendamento: "Ambos",
         Data_Alvo: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split("T")[0],
-        KM_Alvo: (defaultVeic?.Km_Atual || 25000) + 10000,
+        KM_Alvo: (parseCurrency(defaultVeic?.Km_Atual) || 25000) + 10000,
         Recorrente: "SIM",
         Frequência_Meses: 12,
         Frequência_KM: 10000,
@@ -207,10 +208,10 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Descrição: manutencaoForm.Descrição || "Manutenção Agendada",
       Tipo_Agendamento: manutencaoForm.Tipo_Agendamento || "Ambos",
       Data_Alvo: manutencaoForm.Data_Alvo || "",
-      KM_Alvo: Number(manutencaoForm.KM_Alvo) || 0,
+      KM_Alvo: parseCurrency(manutencaoForm.KM_Alvo),
       Recorrente: manutencaoForm.Recorrente || "SIM",
-      Frequência_Meses: Number(manutencaoForm.Frequência_Meses) || 12,
-      Frequência_KM: Number(manutencaoForm.Frequência_KM) || 10000,
+      Frequência_Meses: parseCurrency(manutencaoForm.Frequência_Meses) || 12,
+      Frequência_KM: parseCurrency(manutencaoForm.Frequência_KM) || 10000,
       Status: manutencaoForm.Status || "PENDENTE",
       Prioridade: manutencaoForm.Prioridade || "Média",
       Oficina_Nome: manutencaoForm.Oficina_Nome || "",
@@ -436,7 +437,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                   <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-0 border-slate-800 pt-2 sm:pt-0">
                     <div className="text-left sm:text-right">
                       <span className="font-bold text-rose-400 text-sm">
-                        R$ {Number(s.Valor_Pago || s.Valor_A_PG || 0).toFixed(2)}
+                        R$ {formatCurrency(parseCurrency(s.Valor_Pago) || parseCurrency(s.Valor_A_PG))}
                       </span>
                     </div>
                     <button

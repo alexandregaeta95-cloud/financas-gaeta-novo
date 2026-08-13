@@ -28,6 +28,22 @@ interface Props {
 }
 
 // Helpers for resilient property resolution
+function parseDateForSort(val: any): number {
+  if (!val) return 0;
+  const str = String(val).trim();
+  if (str.includes("/")) {
+    const parts = str.split("/");
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      return new Date(year, month, day).getTime() || 0;
+    }
+  }
+  const timestamp = new Date(str).getTime();
+  return isNaN(timestamp) ? 0 : timestamp;
+}
+
 function getItemDescricao(l: any): string {
   const val =
     l.Descricao ??
@@ -111,8 +127,8 @@ export const Dashboard: React.FC<Props> = ({
 
   const recentTransactions = [...activeLancamentos]
     .sort((a, b) => {
-      const dateA = new Date(getItemData(a) || 0).getTime();
-      const dateB = new Date(getItemData(b) || 0).getTime();
+      const dateA = parseDateForSort(a.Data ?? (a as any).data);
+      const dateB = parseDateForSort(b.Data ?? (b as any).data);
       return dateB - dateA;
     })
     .slice(0, 6);
@@ -157,7 +173,7 @@ export const Dashboard: React.FC<Props> = ({
             </div>
           </div>
           <div className="text-2xl font-bold text-white tracking-tight">
-            R$ {saldoLiquido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            R$ {formatCurrency(saldoLiquido)}
           </div>
           <p className="text-[11px] text-slate-500">Receitas acumuladas - Despesas</p>
         </div>
@@ -171,7 +187,7 @@ export const Dashboard: React.FC<Props> = ({
             </div>
           </div>
           <div className="text-2xl font-bold text-teal-400 tracking-tight">
-            + R$ {totalReceitas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            + R$ {formatCurrency(totalReceitas)}
           </div>
           <div className="flex items-center gap-1 text-[11px] text-teal-500/80">
             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -188,7 +204,7 @@ export const Dashboard: React.FC<Props> = ({
             </div>
           </div>
           <div className="text-2xl font-bold text-rose-400 tracking-tight">
-            - R$ {totalDespesas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            - R$ {formatCurrency(totalDespesas)}
           </div>
           <div className="flex items-center gap-1 text-[11px] text-rose-500/80">
             <ArrowDownRight className="w-3.5 h-3.5" />
@@ -205,7 +221,7 @@ export const Dashboard: React.FC<Props> = ({
             </div>
           </div>
           <div className="text-2xl font-bold text-amber-400 tracking-tight">
-            R$ {totalAbastecimento.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            R$ {formatCurrency(totalAbastecimento)}
           </div>
           <p className="text-[11px] text-slate-500">
             {abastecimentos.length} abastecimentos registrados

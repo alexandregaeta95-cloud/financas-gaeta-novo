@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { ConsultaMedica, ReceitaMedica, Infracao, Veiculo } from "../types";
 import { generateNewId } from "../services/api";
-import { formatarHora, formatDateBR } from "../utils/formatters";
+import { formatarHora, formatDateBR, parseCurrency, formatCurrency } from "../utils/formatters";
 
 interface Props {
   consultas: ConsultaMedica[];
@@ -211,8 +211,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
       Placa: infracaoForm.Placa || "",
       Data: infracaoForm.Data || new Date().toISOString().split("T")[0],
       Descrição: infracaoForm.Descrição || "",
-      Valor: Number(infracaoForm.Valor) || 0,
-      Pontos: Number(infracaoForm.Pontos) || 0,
+      Valor: parseCurrency(infracaoForm.Valor),
+      Pontos: parseCurrency(infracaoForm.Pontos),
       Status: infracaoForm.Status || "EM_ANALISE",
       Localização: infracaoForm.Localização || "",
       Observação: infracaoForm.Observação || "",
@@ -519,7 +519,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                 <div className="grid grid-cols-3 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
                   <div>
                     <span className="text-slate-500 text-[10px] block">Valor da Multa</span>
-                    <span className="font-bold text-rose-400">R$ {Number(inf.Valor || 0).toFixed(2)}</span>
+                    <span className="font-bold text-rose-400">R$ {formatCurrency(inf.Valor)}</span>
                   </div>
                   <div>
                     <span className="text-slate-500 text-[10px] block">Pontuação</span>

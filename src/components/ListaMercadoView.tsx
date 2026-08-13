@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ShoppingBag, Plus, Check, Trash2, Edit2, X, DollarSign } from "lucide-react";
 import { ItemMercado } from "../types";
 import { generateNewId } from "../services/api";
+import { parseCurrency, formatCurrency } from "../utils/formatters";
 
 interface Props {
   itens: ItemMercado[];
@@ -24,20 +25,24 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
     Observação: "",
   });
 
-  // Calculate totals
+  // Calculate totals safely
+  const getItemTotal = (item: ItemMercado): number => {
+    const directTotal = parseCurrency(item.Valor_Total);
+    if (directTotal > 0) return directTotal;
+    const estimated = parseCurrency(item.Valor_Estimado);
+    if (estimated > 0) return estimated;
+    const qty = parseCurrency(item.Quantidade) || 1;
+    const unitPrice = parseCurrency(item.Valor_Unitário);
+    return qty * unitPrice;
+  };
+
   const unpurchasedTotal = itens
     .filter((i) => !(i.Comprado === true || i.Comprado === "SIM"))
-    .reduce((acc, curr) => {
-      const val = curr.Valor_Total || curr.Valor_Estimado || (Number(curr.Quantidade || 1) * Number(curr.Valor_Unitário || 0));
-      return acc + Number(val || 0);
-    }, 0);
+    .reduce((acc, curr) => acc + getItemTotal(curr), 0);
 
   const purchasedTotal = itens
     .filter((i) => i.Comprado === true || i.Comprado === "SIM")
-    .reduce((acc, curr) => {
-      const val = curr.Valor_Total || curr.Valor_Estimado || (Number(curr.Quantidade || 1) * Number(curr.Valor_Unitário || 0));
-      return acc + Number(val || 0);
-    }, 0);
+    .reduce((acc, curr) => acc + getItemTotal(curr), 0);
 
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,9 +82,13 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const qty = Number(form.Quantidade) || 1;
-    const unitPrice = Number(form.Valor_Unitário) || 0;
-    const totalVal = form.Valor_Total || qty * unitPrice;
+    const qty = parseCurrency(form.Quantidade) || 1;
+    const unitPrice = parseCurrency(form.Valor_Unitário);
+    let totalVal = parseCurrency(form.Valor_Total);
+    if (totalVal === 0 && unitPrice > 0) {
+      totalVal = qty * unitPrice;
+    }
+    const estimatedVal = parseCurrency(form.Valor_Estimado) || totalVal;
 
     const item: ItemMercado = {
       Id: editingItem?.Id || generateNewId("MERC"),
@@ -89,7 +98,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
       Unidade: form.Unidade || "un",
       Valor_Unitário: unitPrice,
       Valor_Total: totalVal,
-      Valor_Estimado: form.Valor_Estimado || totalVal,
+      Valor_Estimado: estimatedVal,
       Comprado: form.Comprado === true || form.Comprado === "SIM",
       Observação: form.Observação || "",
     };
@@ -136,7 +145,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
             Total Estimado (Pendente)
           </span>
           <span className="text-xl font-extrabold text-amber-400">
-            R$ {unpurchasedTotal.toFixed(2)}
+            R$ {formatCurrency(unpurchasedTotal)}
           </span>
         </div>
 
@@ -145,7 +154,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
             Já Comprado no Mês
           </span>
           <span className="text-xl font-extrabold text-emerald-400">
-            R$ {purchasedTotal.toFixed(2)}
+            R$ {formatCurrency(purchasedTotal)}
           </span>
         </div>
       </div>
@@ -177,7 +186,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
         ) : (
           itens.map((item) => {
             const isBought = item.Comprado === true || item.Comprado === "SIM";
-            const itemPrice = item.Valor_Total || item.Valor_Estimado || (Number(item.Quantidade || 1) * Number(item.Valor_Unitário || 0));
+            const itemPrice = getItemTotal(item);
 
             return (
               <div
@@ -215,7 +224,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
                 <div className="flex items-center gap-3">
                   {itemPrice > 0 && (
                     <span className={`font-mono font-bold ${isBought ? "text-slate-500" : "text-emerald-400"}`}>
-                      R$ {Number(itemPrice).toFixed(2)}
+                      R$ {formatCurrency(itemPrice)}
                     </span>
                   )}
 

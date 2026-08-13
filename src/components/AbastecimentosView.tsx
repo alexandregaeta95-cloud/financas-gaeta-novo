@@ -1,6 +1,7 @@
 import React from "react";
-import { Fuel, Lock, ArrowUpRight, Calculator, Gauge, Info } from "lucide-react";
+import { Fuel, Lock, Info } from "lucide-react";
 import { Abastecimento } from "../types";
+import { parseCurrency, formatCurrency } from "../utils/formatters";
 
 interface Props {
   abastecimentos: Abastecimento[];
@@ -8,13 +9,13 @@ interface Props {
 }
 
 export const AbastecimentosView: React.FC<Props> = ({ abastecimentos, onOpenNewFueling }) => {
-  // Calculate Fuel Stats
+  // Calculate Fuel Stats safely using parseCurrency
   const totalGasto = abastecimentos.reduce(
-    (acc, curr) => acc + (Number(curr.Valor_Total) || 0),
+    (acc, curr) => acc + parseCurrency(curr.Valor_Total),
     0
   );
   const totalLitros = abastecimentos.reduce(
-    (acc, curr) => acc + (Number(curr.Litros) || 0),
+    (acc, curr) => acc + parseCurrency(curr.Litros),
     0
   );
   const precoMedioLitro = totalLitros > 0 ? totalGasto / totalLitros : 0;
@@ -63,7 +64,7 @@ export const AbastecimentosView: React.FC<Props> = ({ abastecimentos, onOpenNewF
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-1">
           <span className="text-slate-400 text-xs">Total Investido em Combustível</span>
           <p className="text-2xl font-bold text-amber-400">
-            R$ {totalGasto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            R$ {formatCurrency(totalGasto)}
           </p>
           <p className="text-[11px] text-slate-500">{abastecimentos.length} registros no histórico</p>
         </div>
@@ -71,7 +72,7 @@ export const AbastecimentosView: React.FC<Props> = ({ abastecimentos, onOpenNewF
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-1">
           <span className="text-slate-400 text-xs">Volume Total Abastecido</span>
           <p className="text-2xl font-bold text-slate-200">
-            {totalLitros.toFixed(1)} <span className="text-sm font-normal text-slate-400">Litros</span>
+            {formatCurrency(totalLitros)} <span className="text-sm font-normal text-slate-400">Litros</span>
           </p>
           <p className="text-[11px] text-slate-500">Gasolina / Etanol / Diesel</p>
         </div>
@@ -79,7 +80,7 @@ export const AbastecimentosView: React.FC<Props> = ({ abastecimentos, onOpenNewF
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-1">
           <span className="text-slate-400 text-xs">Preço Médio por Litro</span>
           <p className="text-2xl font-bold text-teal-400">
-            R$ {precoMedioLitro.toFixed(2)}
+            R$ {formatCurrency(precoMedioLitro)}
           </p>
           <p className="text-[11px] text-slate-500">Média geral das bombas</p>
         </div>
@@ -99,46 +100,55 @@ export const AbastecimentosView: React.FC<Props> = ({ abastecimentos, onOpenNewF
           </div>
         ) : (
           <div className="divide-y divide-slate-800/80">
-            {abastecimentos.map((item) => (
-              <div
-                key={item.Id}
-                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors text-xs"
-              >
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl shrink-0 mt-0.5">
-                    <Fuel className="w-5 h-5" />
-                  </div>
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-sm">
-                        {item.Veiculo || "Veículo"}
-                      </span>
-                      {item.Posto && (
-                        <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 border border-slate-700">
-                          {item.Posto}
+            {abastecimentos.map((item) => {
+              const valor = parseCurrency(item.Valor_Total);
+              const litros = parseCurrency(item.Litros);
+              const preco = parseCurrency(item.Preco_Litro) || (litros > 0 ? valor / litros : 0);
+              const km = parseCurrency(item.Km_Atual);
+
+              return (
+                <div
+                  key={item.Id}
+                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors text-xs"
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl shrink-0 mt-0.5">
+                      <Fuel className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white text-sm">
+                          {item.Veiculo || "Veículo"}
                         </span>
+                        {item.Posto && (
+                          <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 border border-slate-700">
+                            {item.Posto}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-slate-400 text-[11px]">
+                        Data: <span className="text-slate-200">{item.Data}</span>
+                        {km > 0 && (
+                          <> • Hodômetro: <span className="text-amber-300 font-mono">{km} KM</span></>
+                        )}
+                      </p>
+                      {item.Observacoes && (
+                        <p className="text-slate-500 text-[11px] italic">"{item.Observacoes}"</p>
                       )}
                     </div>
-                    <p className="text-slate-400 text-[11px]">
-                      Data: <span className="text-slate-200">{item.Data}</span> • Hodômetro:{" "}
-                      <span className="text-amber-300 font-mono">{item.Km_Atual} KM</span>
+                  </div>
+
+                  <div className="text-left sm:text-right shrink-0 border-t sm:border-0 border-slate-800 pt-2 sm:pt-0">
+                    <span className="text-sm font-bold text-amber-400">
+                      R$ {formatCurrency(valor)}
+                    </span>
+                    <p className="text-[11px] text-slate-400">
+                      {formatCurrency(litros)}L @ R$ {formatCurrency(preco)}/L
                     </p>
-                    {item.Observacoes && (
-                      <p className="text-slate-500 text-[11px] italic">"{item.Observacoes}"</p>
-                    )}
                   </div>
                 </div>
-
-                <div className="text-left sm:text-right shrink-0 border-t sm:border-0 border-slate-800 pt-2 sm:pt-0">
-                  <span className="text-sm font-bold text-amber-400">
-                    R$ {Number(item.Valor_Total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </span>
-                  <p className="text-[11px] text-slate-400">
-                    {item.Litros}L @ R$ {Number(item.Preco_Litro || 0).toFixed(2)}/L
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

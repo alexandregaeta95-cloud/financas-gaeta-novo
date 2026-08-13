@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ContaBancaria, CartaoCredito, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
+import { parseCurrency, formatCurrency } from "../utils/formatters";
 
 interface Props {
   contas: ContaBancaria[];
@@ -64,10 +65,13 @@ export const ContasCartoesView: React.FC<Props> = ({
   const calculateCardSpent = (cartaoName: string) => {
     const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
     return lancamentos
-      .filter((l) => l.Status !== "Excluído")
+      .filter((l) => {
+        const s = String(l.Status || "").toUpperCase();
+        return s !== "EXCLUÍDO" && s !== "EXCLUIDO" && s !== "DELETED";
+      })
       .filter((l) => (l.Cartão_Id || l.Cartao) === cartaoName)
       .filter((l) => (l.Data || "").startsWith(currentMonth))
-      .reduce((acc, curr) => acc + Number(curr.Valor || 0), 0);
+      .reduce((acc, curr) => acc + parseCurrency(curr.Valor), 0);
   };
 
   // Save Conta
@@ -94,16 +98,20 @@ export const ContasCartoesView: React.FC<Props> = ({
 
   const handleSaveContaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const saldoIni = parseCurrency(contaForm.Saldo_Inicial);
+    const saldoAtu = contaForm.Saldo_Atual !== undefined && contaForm.Saldo_Atual !== ""
+      ? parseCurrency(contaForm.Saldo_Atual)
+      : saldoIni;
     const item: ContaBancaria = {
       Id: editingConta?.Id || generateNewId("CONTA"),
       Nome: contaForm.Nome || "Nova Conta",
-      Saldo_Inicial: Number(contaForm.Saldo_Inicial) || 0,
-      Saldo_Atual: Number(contaForm.Saldo_Atual) || Number(contaForm.Saldo_Inicial) || 0,
+      Saldo_Inicial: saldoIni,
+      Saldo_Atual: saldoAtu,
       Cor: contaForm.Cor || "#059669",
       Tipo: contaForm.Tipo || "BANCO",
       Agência: contaForm.Agência || "",
       Conta: contaForm.Conta || "",
-      Limite: Number(contaForm.Limite) || 0,
+      Limite: parseCurrency(contaForm.Limite),
       Ativa: contaForm.Ativa !== false,
     };
     await onSaveConta(item);
@@ -137,9 +145,9 @@ export const ContasCartoesView: React.FC<Props> = ({
     const item: CartaoCredito = {
       Id: editingCartao?.Id || generateNewId("CARD"),
       Nome: cartaoForm.Nome || "Novo Cartão",
-      Limite: Number(cartaoForm.Limite) || 0,
-      Fechamento: Number(cartaoForm.Fechamento) || 10,
-      Vencimento: Number(cartaoForm.Vencimento) || 20,
+      Limite: parseCurrency(cartaoForm.Limite),
+      Fechamento: parseCurrency(cartaoForm.Fechamento) || 10,
+      Vencimento: parseCurrency(cartaoForm.Vencimento) || 20,
       Cor: cartaoForm.Cor || "#0f172a",
       Banco_ID: cartaoForm.Banco_ID || "",
       Gasto: spent,
@@ -238,11 +246,11 @@ export const ContasCartoesView: React.FC<Props> = ({
                 <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
                   <div>
                     <span className="text-slate-500 text-[10px] block">Saldo Inicial</span>
-                    <span className="font-semibold text-slate-200">R$ {Number(c.Saldo_Inicial || 0).toFixed(2)}</span>
+                    <span className="font-semibold text-slate-200">R$ {formatCurrency(c.Saldo_Inicial)}</span>
                   </div>
                   <div>
                     <span className="text-slate-500 text-[10px] block">Limite Disponível</span>
-                    <span className="font-bold text-emerald-400">R$ {Number(c.Limite || 0).toFixed(2)}</span>
+                    <span className="font-bold text-emerald-400">R$ {formatCurrency(c.Limite)}</span>
                   </div>
                   {c.Agência && (
                     <div>
@@ -282,7 +290,7 @@ export const ContasCartoesView: React.FC<Props> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {cartoes.map((card) => {
               const currentSpent = calculateCardSpent(card.Nome);
-              const limit = card.Limite || 1000;
+              const limit = parseCurrency(card.Limite) || 1000;
               const usedPct = Math.min(100, Math.round((currentSpent / limit) * 100));
 
               return (
@@ -317,7 +325,7 @@ export const ContasCartoesView: React.FC<Props> = ({
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs">
                       <span className="text-slate-400">Fatura Atual (Gasto Mês):</span>
-                      <strong className="text-amber-400">R$ {currentSpent.toFixed(2)}</strong>
+                      <strong className="text-amber-400">R$ {formatCurrency(currentSpent)}</strong>
                     </div>
                     <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                       <div
@@ -328,7 +336,7 @@ export const ContasCartoesView: React.FC<Props> = ({
                       />
                     </div>
                     <div className="flex justify-between text-[10px] text-slate-500">
-                      <span>Limite Total: R$ {limit.toFixed(2)}</span>
+                      <span>Limite Total: R$ {formatCurrency(limit)}</span>
                       <span>{usedPct}% do limite</span>
                     </div>
                   </div>

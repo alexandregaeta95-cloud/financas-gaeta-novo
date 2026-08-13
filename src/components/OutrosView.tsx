@@ -17,6 +17,7 @@ import {
   PerfilUsuario
 } from "../types";
 import { generateNewId } from "../services/api";
+import { formatCurrency, parseCurrency } from "../utils/formatters";
 
 interface Props {
   metas: MetaCategoria[];
@@ -187,7 +188,7 @@ export const OutrosView: React.FC<Props> = ({
               metas.map((m) => (
                 <div key={m.Id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex justify-between">
                   <span className="font-bold text-white">{m.Categoria}</span>
-                  <span className="text-amber-400 font-bold">R$ {m.Valor_Meta} / mês</span>
+                  <span className="text-amber-400 font-bold">R$ {formatCurrency(m.Valor_Meta)} / mês</span>
                 </div>
               ))
             )}

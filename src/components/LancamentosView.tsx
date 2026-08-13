@@ -92,11 +92,13 @@ export const LancamentosView: React.FC<Props> = ({
     setSaving(true);
     try {
       const isFuel = formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento";
+      const litros = parseCurrency(formData.Litros);
+      const precoLitro = parseCurrency(formData.Preco_Litro);
+      let finalValor = parseCurrency(formData.Valor);
 
       // Calculate total value for fuel if liters and price per liter provided
-      let finalValor = Number(formData.Valor) || 0;
-      if (isFuel && formData.Litros && formData.Preco_Litro && finalValor === 0) {
-        finalValor = Number(formData.Litros) * Number(formData.Preco_Litro);
+      if (isFuel && litros > 0 && precoLitro > 0 && finalValor === 0) {
+        finalValor = litros * precoLitro;
       }
 
       const itemToSave: Lancamento = {
@@ -113,9 +115,9 @@ export const LancamentosView: React.FC<Props> = ({
         Status: formData.Status || "Pago",
         Observacoes: formData.Observacoes || "",
         Veiculo: isFuel ? formData.Veiculo : undefined,
-        Km_Atual: isFuel ? Number(formData.Km_Atual || 0) : undefined,
-        Litros: isFuel ? Number(formData.Litros || 0) : undefined,
-        Preco_Litro: isFuel ? Number(formData.Preco_Litro || 0) : undefined,
+        Km_Atual: isFuel ? parseCurrency(formData.Km_Atual) : undefined,
+        Litros: isFuel ? litros : undefined,
+        Preco_Litro: isFuel ? precoLitro : undefined,
         Posto: isFuel ? formData.Posto : undefined,
       };
 
@@ -255,9 +257,10 @@ export const LancamentosView: React.FC<Props> = ({
                       <p className="text-slate-400 text-[11px]">
                         Data: <span className="text-slate-300">{item.Data}</span> • Conta:{" "}
                         <span className="text-slate-300">{item.Conta || "Principal"}</span>
-                        {isFuel && item.Litros && (
+                        {isFuel && parseCurrency(item.Litros) > 0 && (
                           <span className="text-amber-400 ml-2">
-                            • {item.Litros}L @ R$ {item.Preco_Litro}/L ({item.Km_Atual} KM)
+                            • {formatCurrency(item.Litros)}L @ R$ {formatCurrency(item.Preco_Litro)}/L
+                            {parseCurrency(item.Km_Atual) > 0 && ` (${item.Km_Atual} KM)`}
                           </span>
                         )}
                       </p>

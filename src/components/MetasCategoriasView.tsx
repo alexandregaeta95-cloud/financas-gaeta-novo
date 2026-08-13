@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Target, Tag, Plus, Edit2, Trash2, X, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { MetaCategoria, CategoriaCustomizada, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
+import { parseCurrency, formatCurrency } from "../utils/formatters";
 
 interface Props {
   metas: MetaCategoria[];
@@ -44,11 +45,17 @@ export const MetasCategoriasView: React.FC<Props> = ({
   const getCurrentMonthSpentForCategory = (catName: string) => {
     const currentMonth = new Date().toISOString().substring(0, 7);
     return lancamentos
-      .filter((l) => l.Tipo === "Despesa" || l.Tipo === "Abastecimento")
-      .filter((l) => l.Status !== "Excluído")
+      .filter((l) => {
+        const t = String(l.Tipo || "").toLowerCase();
+        return t === "despesa" || t === "abastecimento";
+      })
+      .filter((l) => {
+        const s = String(l.Status || "").toUpperCase();
+        return s !== "EXCLUÍDO" && s !== "EXCLUIDO" && s !== "DELETED";
+      })
       .filter((l) => (l.Categoria || "").toUpperCase() === catName.toUpperCase())
       .filter((l) => (l.Data || "").startsWith(currentMonth))
-      .reduce((acc, curr) => acc + Number(curr.Valor || 0), 0);
+      .reduce((acc, curr) => acc + parseCurrency(curr.Valor), 0);
   };
 
   const handleSaveMetaSubmit = async (e: React.FormEvent) => {
@@ -56,9 +63,9 @@ export const MetasCategoriasView: React.FC<Props> = ({
     const item: MetaCategoria = {
       Id: editingMeta?.Id || generateNewId("META"),
       Categoria: (metaForm.Categoria || "OUTROS").toUpperCase(),
-      Valor_Meta: Number(metaForm.Valor_Meta) || 0,
+      Valor_Meta: parseCurrency(metaForm.Valor_Meta),
       Mes_Ano: metaForm.Mes_Ano || new Date().toISOString().substring(0, 7),
-      Alerta_Porcentagem: Number(metaForm.Alerta_Porcentagem) || 80,
+      Alerta_Porcentagem: parseCurrency(metaForm.Alerta_Porcentagem) || 80,
     };
     await onSaveMeta(item);
     setIsMetaModalOpen(false);
@@ -145,10 +152,10 @@ export const MetasCategoriasView: React.FC<Props> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {metas.map((m) => {
               const spent = getCurrentMonthSpentForCategory(m.Categoria);
-              const target = m.Valor_Meta || 1;
+              const target = parseCurrency(m.Valor_Meta) || 1;
               const pct = Math.min(100, Math.round((spent / target) * 100));
               const isOver = spent > target;
-              const isNear = pct >= (m.Alerta_Porcentagem || 80);
+              const isNear = pct >= (parseCurrency(m.Alerta_Porcentagem) || 80);
 
               return (
                 <div
@@ -180,7 +187,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
                     <div className="flex justify-between text-xs">
                       <span className="text-slate-400">Gasto do Mês:</span>
                       <strong className={isOver ? "text-rose-400" : isNear ? "text-amber-400" : "text-emerald-400"}>
-                        R$ {spent.toFixed(2)} / R$ {target.toFixed(2)}
+                        R$ {formatCurrency(spent)} / R$ {formatCurrency(target)}
                       </strong>
                     </div>
 
