@@ -1,6 +1,6 @@
 /**
  * Finanças Gaeta — Main Application Container
- * Adheres strictly to the Foundation Document specifications.
+ * Adheres strictly to the Foundation Document & Prompt 3 specifications.
  */
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -13,7 +13,12 @@ import { AbastecimentosView } from "./components/AbastecimentosView";
 import { VeiculosOficinaView } from "./components/VeiculosOficinaView";
 import { ContasCartoesView } from "./components/ContasCartoesView";
 import { SaudeInfracoesView } from "./components/SaudeInfracoesView";
-import { OutrosView } from "./components/OutrosView";
+import { MetasCategoriasView } from "./components/MetasCategoriasView";
+import { AgendaCompromissosView } from "./components/AgendaCompromissosView";
+import { ZonasDeRiscoView } from "./components/ZonasDeRiscoView";
+import { ListaMercadoView } from "./components/ListaMercadoView";
+import { IndicacoesPostosView } from "./components/IndicacoesPostosView";
+import { PainelContasView } from "./components/PainelContasView";
 
 import {
   Lancamento,
@@ -47,7 +52,7 @@ import {
 export default function App() {
   const [activeView, setActiveView] = useState<ModuleView>("dashboard");
 
-  // App Data States (Initialized from LocalStorage Cache to ensure zero lag / no empty screen on load)
+  // App Data States (Initialized from LocalStorage Cache to ensure zero lag)
   const [lancamentos, setLancamentos] = useState<Lancamento[]>(() =>
     getCachedSheetData<Lancamento>(SHEET_NAMES.LANCAMENTOS)
   );
@@ -57,7 +62,6 @@ export default function App() {
   const [veiculos, setVeiculos] = useState<Veiculo[]>(() => {
     const cached = getCachedSheetData<Veiculo>(SHEET_NAMES.VEICULOS);
     if (cached.length > 0) return cached;
-    // Default initial vehicle if empty
     return [
       {
         Id: "VEIC_1",
@@ -66,7 +70,7 @@ export default function App() {
         Ano: 2023,
         Placa: "GAE-2026",
         Km_Atual: 24500,
-        Combustivel: "Flex",
+        Combustível: "Flex",
         Ativo: true,
       },
     ];
@@ -78,17 +82,27 @@ export default function App() {
       {
         Id: "CONTA_1",
         Nome: "Conta Corrente Principal",
-        Banco: "Itaú",
-        Tipo: "Corrente",
-        Saldo_Inicial: 0,
-        Saldo_Atual: 0,
+        Tipo: "BANCO",
+        Saldo_Inicial: 1500,
+        Saldo_Atual: 1500,
         Ativa: true,
       },
     ];
   });
-  const [cartoes, setCartoes] = useState<CartaoCredito[]>(() =>
-    getCachedSheetData<CartaoCredito>(SHEET_NAMES.CARTOES_CREDITO)
-  );
+  const [cartoes, setCartoes] = useState<CartaoCredito[]>(() => {
+    const cached = getCachedSheetData<CartaoCredito>(SHEET_NAMES.CARTOES_CREDITO);
+    if (cached.length > 0) return cached;
+    return [
+      {
+        Id: "CARD_1",
+        Nome: "Mastercard Black",
+        Limite: 15000,
+        Fechamento: 10,
+        Vencimento: 20,
+        Ativo: true,
+      },
+    ];
+  });
   const [servicos, setServicos] = useState<ServicoOficina[]>(() =>
     getCachedSheetData<ServicoOficina>(SHEET_NAMES.OFICINA)
   );
@@ -116,6 +130,9 @@ export default function App() {
   const [metas, setMetas] = useState<MetaCategoria[]>(() =>
     getCachedSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
   );
+  const [categoriasCustom, setCategoriasCustom] = useState<CategoriaCustomizada[]>(() =>
+    getCachedSheetData<CategoriaCustomizada>(SHEET_NAMES.CATEGORIAS_CUSTOMIZADAS)
+  );
   const [perfil, setPerfil] = useState<PerfilUsuario | null>(null);
 
   // Sync State
@@ -138,7 +155,6 @@ export default function App() {
     setSyncState((prev) => ({ ...prev, isSyncing: true, errorMessage: null }));
 
     try {
-      // Test connection first
       const connTest = await testAppsScriptConnection();
       if (!connTest.success) {
         setSyncState((prev) => ({
@@ -169,7 +185,6 @@ export default function App() {
         fetchSheetData<ManutencaoAgendada>(SHEET_NAMES.MANUTENCOES_AGENDADAS).catch(() => null),
       ]);
 
-      // Update states only if fetched data is non-null (RULE 2: GET error never wipes local state)
       if (fetchedLancamentos) setLancamentos(fetchedLancamentos);
       if (fetchedAbastecimentos) setAbastecimentos(fetchedAbastecimentos);
       if (fetchedVeiculos && fetchedVeiculos.length > 0) setVeiculos(fetchedVeiculos);
@@ -200,6 +215,9 @@ export default function App() {
       fetchSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
         .then((data) => data && setMetas(data))
         .catch(() => {});
+      fetchSheetData<CategoriaCustomizada>(SHEET_NAMES.CATEGORIAS_CUSTOMIZADAS)
+        .then((data) => data && setCategoriasCustom(data))
+        .catch(() => {});
 
       setSyncState({
         isConnected: true,
@@ -219,14 +237,12 @@ export default function App() {
     }
   }, []);
 
-  // Sync on Boot
   useEffect(() => {
     handleSyncAll();
   }, [handleSyncAll]);
 
-  // Handler: Save Lancamento (Upsert + Mirroring for Fueling)
+  // Handler: Save Lancamento
   const handleSaveLancamento = async (item: Lancamento) => {
-    // Optimistic UI update
     setLancamentos((prev) => {
       const idx = prev.findIndex((l) => l.Id === item.Id);
       if (idx !== -1) {
@@ -239,14 +255,13 @@ export default function App() {
 
     try {
       await saveSheetRecords(SHEET_NAMES.LANCAMENTOS, [item], "UPSERT");
-      // Trigger full sync to refresh mirrored Abastecimentos
       handleSyncAll();
     } catch (err: any) {
       alert(`Erro ao salvar na planilha: ${err.message || err}`);
     }
   };
 
-  // Handler: Delete Lancamento (Soft delete)
+  // Handler: Delete Lancamento
   const handleDeleteLancamento = async (id: string) => {
     if (!window.confirm("Deseja realmente marcar este lançamento como excluído?")) return;
 
@@ -260,8 +275,12 @@ export default function App() {
     }
   };
 
-  // Handler: Generic save helper
-  const handleSaveGeneric = async (sheetName: string, item: any, setStateFn: React.Dispatch<React.SetStateAction<any[]>>) => {
+  // Generic Save
+  const handleSaveGeneric = async (
+    sheetName: string,
+    item: any,
+    setStateFn: React.Dispatch<React.SetStateAction<any[]>>
+  ) => {
     setStateFn((prev) => {
       const idx = prev.findIndex((i) => i.Id === item.Id);
       if (idx !== -1) {
@@ -281,14 +300,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col">
-      {/* Top Sync Banner */}
+      {/* Top Sync Status Bar */}
       <SyncStatusBanner
         syncState={syncState}
         onSyncNow={handleSyncAll}
         onOpenSetup={() => setIsSetupModalOpen(true)}
       />
 
-      {/* Main Navigation Header */}
+      {/* Main Navigation */}
       <Navigation activeView={activeView} onSelectView={setActiveView} />
 
       {/* Main Content Area */}
@@ -329,6 +348,13 @@ export default function App() {
           />
         )}
 
+        {activeView === "painel_contas" && (
+          <PainelContasView
+            lancamentos={lancamentos}
+            onSaveLancamento={handleSaveLancamento}
+          />
+        )}
+
         {activeView === "abastecimentos" && (
           <AbastecimentosView
             abastecimentos={abastecimentos}
@@ -338,6 +364,10 @@ export default function App() {
               setActiveView("lancamentos");
             }}
           />
+        )}
+
+        {activeView === "indicacoes_postos" && (
+          <IndicacoesPostosView lancamentos={lancamentos} />
         )}
 
         {activeView === "veiculos" && (
@@ -355,8 +385,19 @@ export default function App() {
           <ContasCartoesView
             contas={contas}
             cartoes={cartoes}
+            lancamentos={lancamentos}
             onSaveConta={(c) => handleSaveGeneric(SHEET_NAMES.CONTAS_BANCARIAS, c, setContas)}
             onSaveCartao={(card) => handleSaveGeneric(SHEET_NAMES.CARTOES_CREDITO, card, setCartoes)}
+          />
+        )}
+
+        {activeView === "metas" && (
+          <MetasCategoriasView
+            metas={metas}
+            categoriasCustom={categoriasCustom}
+            lancamentos={lancamentos}
+            onSaveMeta={(meta) => handleSaveGeneric(SHEET_NAMES.METAS_CATEGORIA, meta, setMetas)}
+            onSaveCategoria={(cat) => handleSaveGeneric(SHEET_NAMES.CATEGORIAS_CUSTOMIZADAS, cat, setCategoriasCustom)}
           />
         )}
 
@@ -365,24 +406,36 @@ export default function App() {
             consultas={consultas}
             receitas={receitas}
             infracoes={infracoes}
-            zonasRisco={zonasRisco}
+            veiculos={veiculos}
+            onSaveConsulta={(c) => handleSaveGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, c, setConsultas)}
+            onSaveReceita={(r) => handleSaveGeneric(SHEET_NAMES.RECEITAS_MEDICAS, r, setReceitas)}
+            onSaveInfracao={(inf) => handleSaveGeneric(SHEET_NAMES.INFRACOES, inf, setInfracoes)}
           />
         )}
 
-        {activeView === "outros" && (
-          <OutrosView
-            metas={metas}
-            categoriasCustom={[]}
-            itensMercado={itensMercado}
+        {activeView === "agenda" && (
+          <AgendaCompromissosView
             agenda={agenda}
-            perfil={perfil}
-            onSaveItemMercado={(item) => handleSaveGeneric(SHEET_NAMES.LISTA_MERCADO, item, setItensMercado)}
             onSaveCompromisso={(item) => handleSaveGeneric(SHEET_NAMES.AGENDA, item, setAgenda)}
+          />
+        )}
+
+        {activeView === "zonas_risco" && (
+          <ZonasDeRiscoView
+            zonas={zonasRisco}
+            onSaveZona={(z) => handleSaveGeneric(SHEET_NAMES.ZONAS_RISCO, z, setZonasRisco)}
+          />
+        )}
+
+        {activeView === "lista_mercado" && (
+          <ListaMercadoView
+            itens={itensMercado}
+            onSaveItem={(item) => handleSaveGeneric(SHEET_NAMES.LISTA_MERCADO, item, setItensMercado)}
           />
         )}
       </main>
 
-      {/* Setup / Configuration Modal */}
+      {/* Setup Modal */}
       <AppsScriptSetupModal
         isOpen={isSetupModalOpen}
         onClose={() => setIsSetupModalOpen(false)}

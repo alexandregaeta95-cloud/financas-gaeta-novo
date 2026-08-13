@@ -7,17 +7,27 @@ import {
   CreditCard,
   HeartPulse,
   MoreHorizontal,
-  Wallet
+  Wallet,
+  Clock,
+  Target,
+  CalendarDays,
+  ShieldAlert,
+  ShoppingBag
 } from "lucide-react";
 
 export type ModuleView =
   | "dashboard"
   | "lancamentos"
+  | "painel_contas"
   | "abastecimentos"
+  | "indicacoes_postos"
   | "veiculos"
   | "contas"
+  | "metas"
   | "saude"
-  | "outros";
+  | "agenda"
+  | "zonas_risco"
+  | "lista_mercado";
 
 interface Props {
   activeView: ModuleView;
@@ -28,17 +38,22 @@ export const Navigation: React.FC<Props> = ({ activeView, onSelectView }) => {
   const navItems: { id: ModuleView; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: "dashboard", label: "Início", icon: LayoutDashboard },
     { id: "lancamentos", label: "Finanças", icon: Receipt },
+    { id: "painel_contas", label: "Painel Contas", icon: Clock },
     { id: "abastecimentos", label: "Abastecer", icon: Fuel },
+    { id: "indicacoes_postos", label: "Postos", icon: Fuel },
     { id: "veiculos", label: "Veículos", icon: Car },
-    { id: "contas", label: "Contas", icon: CreditCard },
-    { id: "saude", label: "Saúde", icon: HeartPulse },
-    { id: "outros", label: "Outros", icon: MoreHorizontal },
+    { id: "contas", label: "Bancos & Cartões", icon: CreditCard },
+    { id: "metas", label: "Metas", icon: Target },
+    { id: "saude", label: "Saúde & Multas", icon: HeartPulse },
+    { id: "agenda", label: "Agenda", icon: CalendarDays },
+    { id: "zonas_risco", label: "Zonas Risco", icon: ShieldAlert },
+    { id: "lista_mercado", label: "Mercado", icon: ShoppingBag },
   ];
 
   return (
     <>
       {/* Desktop Header Navbar */}
-      <header className="hidden md:flex items-center justify-between px-6 py-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
+      <header className="hidden lg:flex items-center justify-between px-6 py-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md font-bold text-lg">
             FG
@@ -47,11 +62,11 @@ export const Navigation: React.FC<Props> = ({ activeView, onSelectView }) => {
             <h1 className="font-bold text-base text-white tracking-tight leading-none">
               Finanças Gaeta
             </h1>
-            <p className="text-[11px] text-slate-400">Gestão Pessoal & Veículo</p>
+            <p className="text-[11px] text-slate-400">Sistema Integrado de Gestão</p>
           </div>
         </div>
 
-        <nav className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+        <nav className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80 overflow-x-auto max-w-4xl">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeView === item.id;
@@ -59,13 +74,13 @@ export const Navigation: React.FC<Props> = ({ activeView, onSelectView }) => {
               <button
                 key={item.id}
                 onClick={() => onSelectView(item.id)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
-                    ? "bg-emerald-600 text-white shadow-sm"
+                    ? "bg-emerald-600 text-white shadow-xs"
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5" />
                 <span>{item.label}</span>
               </button>
             );
@@ -73,8 +88,8 @@ export const Navigation: React.FC<Props> = ({ activeView, onSelectView }) => {
         </nav>
       </header>
 
-      {/* Mobile Header Banner */}
-      <div className="flex md:hidden items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
+      {/* Mobile Top Header Banner */}
+      <div className="flex lg:hidden items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">
             FG
@@ -83,8 +98,8 @@ export const Navigation: React.FC<Props> = ({ activeView, onSelectView }) => {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation Bar (PWA friendly) */}
-      <nav className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-1 justify-around items-center">
+      {/* Mobile Bottom Scrollable Navigation Bar */}
+      <nav className="flex lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-1 overflow-x-auto gap-2 items-center">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeView === item.id;
@@ -92,14 +107,14 @@ export const Navigation: React.FC<Props> = ({ activeView, onSelectView }) => {
             <button
               key={item.id}
               onClick={() => onSelectView(item.id)}
-              className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
+              className={`flex flex-col items-center justify-center py-1.5 px-2.5 rounded-xl whitespace-nowrap transition-all ${
                 isActive
-                  ? "text-emerald-400 font-semibold"
+                  ? "text-emerald-400 font-semibold bg-emerald-500/10"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <Icon className={`w-5 h-5 mb-0.5 ${isActive ? "text-emerald-400 scale-110" : ""}`} />
-              <span className="text-[10px] tracking-tight">{item.label}</span>
+              <Icon className="w-4 h-4 mb-0.5" />
+              <span className="text-[10px]">{item.label}</span>
             </button>
           );
         })}

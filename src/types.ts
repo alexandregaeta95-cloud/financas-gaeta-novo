@@ -43,63 +43,80 @@ export interface Abastecimento {
 export interface ContaBancaria {
   Id: string;
   Nome: string;
-  Banco: string;
-  Tipo: "Corrente" | "Poupança" | "Investimento" | "Carteira" | "Outro";
   Saldo_Inicial: number;
-  Saldo_Atual: number;
-  Cor_Hex?: string;
+  Saldo_Atual?: number;
+  Cor?: string;
+  Ícone?: string;
+  Tipo: string; // BANCO / PESSOAL / Corrente / Poupança
+  Agência?: string;
+  Conta?: string;
+  Limite?: number;
   Ativa: boolean;
 }
 
 // 6. Consultas Médicas
 export interface ConsultaMedica {
   Id: string;
-  Data: string;
-  Hora?: string;
   Especialidade: string;
-  Medico?: string;
+  Médico?: string;
+  Data: string;
+  Horas?: string;
   Local?: string;
-  Valor?: number;
+  Lembrete_Ativo?: "SIM" | "NÃO";
   Status: "Agendada" | "Realizada" | "Cancelada";
+  Observação?: string;
+  // Aliases
+  Medico?: string;
   Observacoes?: string;
 }
 
 // 7. Receitas Médicas
 export interface ReceitaMedica {
   Id: string;
-  Data: string;
   Medicamento: string;
-  Dosagem: string;
-  Instrucoes: string;
-  Medico?: string;
-  Validade?: string;
-  Ativa: boolean;
+  Dosagem?: string;
+  Frequência?: string;
+  Médico?: string;
+  Data_Emissão?: string;
+  Data_Validade?: string;
+  Data_Vencimento?: string;
+  Instruções?: string;
+  Especialidade?: string;
+  Observação?: string;
+  Arquivo_Anexo?: string;
+  Ativa?: boolean;
 }
 
 // 8. Infrações (Multas)
 export interface Infracao {
   Id: string;
+  Protocolo?: string;
+  Título?: string;
+  Veículo: string;
+  Placa?: string;
   Data: string;
-  Hora?: string;
-  Veiculo: string;
-  Local?: string;
-  Descricao: string;
-  Pontos: number;
+  Descrição: string;
   Valor: number;
-  Status_Pagamento: "Pendente" | "Pago" | "Em Recurso";
-  Data_Vencimento?: string;
+  Pontos?: number;
+  Status: "EM_ANALISE" | "APROVADO" | "NEGADO" | "Pago" | "Pendente";
+  Localização?: string;
+  Observação?: string;
 }
 
 // 9. Veículos
 export interface Veiculo {
   Id: string;
-  Modelo: string;
-  Marca: string;
-  Ano: number;
+  Descrição?: string;
+  Motorista?: string;
   Placa: string;
-  Cor?: string;
+  Renavam?: string;
+  Chassi?: string;
+  Marca: string;
+  Modelo: string;
+  Ano: number;
+  Ano_Fabricação?: number;
+  Combustível: string;
   Km_Atual: number;
-  Combustivel: "Flex" | "Gasolina" | "Etanol" | "Diesel" | "Elétrico" | "Híbrido";
   Ativo: boolean;
 }
 
@@ -108,15 +125,15 @@ export interface MetaCategoria {
   Id: string;
   Categoria: string;
   Valor_Meta: number;
-  Mes_Ano: string; // YYYY-MM
-  Alerta_Porcentagem: number; // e.g. 80 for 80%
+  Mes_Ano?: string; // YYYY-MM
+  Alerta_Porcentagem?: number; // e.g. 80 for 80%
 }
 
 // 11. Categorias Customizadas
 export interface CategoriaCustomizada {
   Id: string;
   Nome: string;
-  Tipo: "Despesa" | "Receita";
+  Tipo: "Despesa" | "Receita" | "DESPESA" | "RECEITA";
   Icone?: string;
   Cor_Hex?: string;
 }
@@ -144,27 +161,32 @@ export interface PerfilUsuario {
 export interface ServicoOficina {
   Id: string;
   Data: string;
-  Veiculo: string;
-  Km_No_Servico: number;
-  Descricao_Servico: string;
-  Oficina_Mecanica?: string;
-  Valor_Pecas: number;
-  Valor_Mao_Obra: number;
-  Valor_Total: number;
-  Garantia_Ate?: string;
-  Observacoes?: string;
+  Descrição: string;
+  KM: number;
+  Valor_A_PG?: number;
+  Valor_Pago: number;
+  Oficina_Nome?: string;
+  Comprovante_Url?: string;
+  Observações?: string;
+  VeiculoID?: string;
+  Veiculo?: string;
 }
 
 // 15. Manutenções Agendadas
 export interface ManutencaoAgendada {
   Id: string;
-  Veiculo: string;
-  Item_Manutencao: string; // Óleo, Pneus, Pastilhas, Correia, etc.
-  Km_Alvo?: number;
+  Veículo: string;
+  Descrição: string;
+  Tipo_Agendamento?: "Data" | "KM" | "Ambos";
   Data_Alvo?: string;
-  Status: "Pendente" | "Concluída" | "Atrasada";
-  Custo_Estimado?: number;
-  Observacoes?: string;
+  KM_Alvo?: number;
+  Recorrente?: "SIM" | "NÃO";
+  Frequência_Meses?: number;
+  Frequência_KM?: number;
+  Status: "PENDENTE" | "CONCLUÍDO" | "Pendente" | "Concluída";
+  Prioridade?: "Baixa" | "Média" | "Alta";
+  Oficina_Nome?: string;
+  Observações?: string;
 }
 
 // 16. Lista de Mercado
@@ -174,41 +196,56 @@ export interface ItemMercado {
   Categoria?: string;
   Quantidade: number;
   Unidade?: string;
-  Comprado: boolean;
-  Preco_Estimado?: number;
+  Valor_Unitário?: number;
+  Valor_Total?: number;
+  Valor_Estimado?: number;
+  Data_Pedido?: string;
+  Data_Compra?: string;
+  Comprado: boolean | "SIM" | "NÃO";
+  Observação?: string;
 }
 
 // 17. Zonas de Risco
 export interface ZonaDeRisco {
   Id: string;
-  Nome_Local: string;
-  Bairro_Cidade?: string;
-  Nivel_Risco: "Baixo" | "Médio" | "Alto" | "Extremo";
-  Tipo_Ocorrencia: "Furto" | "Roubo" | "Assalto" | "Alagamento" | "Outro";
-  Observacoes?: string;
+  Descrição: string;
+  Nível_De_Risco: "BAIXO" | "MÉDIO" | "ALTO" | "EXTREMO";
+  Latitude: number;
+  Longitude: number;
+  "Raio_(M)": number;
+  Ativo: "SIM" | "NÃO" | boolean;
+  Mensagem_De_Alerta?: string;
+  Data_Registro?: string;
+  Observação?: string;
 }
 
 // 18. Cartões de Crédito
 export interface CartaoCredito {
   Id: string;
   Nome: string;
-  Bandeira: string;
-  Limite_Total: number;
-  Dia_Fechamento: number;
-  Dia_Vencimento: number;
-  Cor_Hex?: string;
+  Limite: number;
+  Fechamento: number; // Dia do mês
+  Vencimento: number; // Dia do mês
+  Cor?: string;
+  Banco_ID?: string;
+  Gasto?: number; // Calculated dynamically
   Ativo: boolean;
+  Bandeira?: string;
 }
 
 // 19. Agenda e Compromissos
 export interface CompromissoAgenda {
   Id: string;
+  Titulo: string;
   Data: string;
   Hora?: string;
-  Titulo: string;
-  Descricao?: string;
-  Prioridade: "Baixa" | "Média" | "Alta";
-  Concluido: boolean;
+  Descrição?: string;
+  Cor_De_Identificação?: string;
+  "Efeito_Alerta_(Piscando)"?: "SIM" | "NÃO";
+  Lembrete_Ativo?: "SIM" | "NÃO";
+  Dias_De_Antecedência?: number;
+  Concluído: boolean | "SIM" | "NÃO";
+  Categoria?: string;
 }
 
 // Tab Names Mapping Constant

@@ -1,137 +1,799 @@
-import React from "react";
-import { HeartPulse, AlertOctagon, Pill, Plus } from "lucide-react";
-import { ConsultaMedica, ReceitaMedica, Infracao, ZonaDeRisco } from "../types";
+import React, { useState } from "react";
+import {
+  Stethoscope,
+  FileText,
+  AlertOctagon,
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  AlertCircle,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  Bell
+} from "lucide-react";
+import { ConsultaMedica, ReceitaMedica, Infracao, Veiculo } from "../types";
+import { generateNewId } from "../services/api";
 
 interface Props {
   consultas: ConsultaMedica[];
   receitas: ReceitaMedica[];
   infracoes: Infracao[];
-  zonasRisco: ZonaDeRisco[];
+  veiculos?: Veiculo[];
+  onSaveConsulta: (consulta: ConsultaMedica) => Promise<void>;
+  onSaveReceita: (receita: ReceitaMedica) => Promise<void>;
+  onSaveInfracao: (infracao: Infracao) => Promise<void>;
 }
 
 export const SaudeInfracoesView: React.FC<Props> = ({
   consultas,
   receitas,
   infracoes,
-  zonasRisco,
+  veiculos = [],
+  onSaveConsulta,
+  onSaveReceita,
+  onSaveInfracao,
 }) => {
+  const [activeTab, setActiveTab] = useState<"consultas" | "receitas" | "infracoes">("consultas");
+
+  // Consulta Modal State
+  const [isConsultaModalOpen, setIsConsultaModalOpen] = useState(false);
+  const [editingConsulta, setEditingConsulta] = useState<ConsultaMedica | null>(null);
+  const [consultaForm, setConsultaForm] = useState<Partial<ConsultaMedica>>({
+    Especialidade: "Cardiologia",
+    Médico: "Dr. Roberto Silva",
+    Data: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString().split("T")[0],
+    Horas: "14:30",
+    Local: "Hospital Albert Einstein - Bloco A",
+    Lembrete_Ativo: "SIM",
+    Status: "Agendada",
+    Observação: "",
+  });
+
+  // Receita Modal State
+  const [isReceitaModalOpen, setIsReceitaModalOpen] = useState(false);
+  const [editingReceita, setEditingReceita] = useState<ReceitaMedica | null>(null);
+  const [receitaForm, setReceitaForm] = useState<Partial<ReceitaMedica>>({
+    Medicamento: "Amoxicilina 500mg",
+    Dosagem: "1 comprimido",
+    Frequência: "De 8 em 8 horas",
+    Médico: "Dra. Ana Paula",
+    Data_Emissão: new Date().toISOString().split("T")[0],
+    Data_Vencimento: new Date(Date.now() + 10 * 24 * 3600 * 1000).toISOString().split("T")[0],
+    Instruções: "Tomar após as refeições",
+    Especialidade: "Clínica Geral",
+    Observação: "",
+  });
+
+  // Infracao Modal State
+  const [isInfracaoModalOpen, setIsInfracaoModalOpen] = useState(false);
+  const [editingInfracao, setEditingInfracao] = useState<Infracao | null>(null);
+  const [infracaoForm, setInfracaoForm] = useState<Partial<Infracao>>({
+    Protocolo: "MULT-2026-098",
+    Título: "Excesso de Velocidade até 20%",
+    Veículo: veiculos[0]?.Modelo || "Polo TSI",
+    Placa: veiculos[0]?.Placa || "GAE-2026",
+    Data: new Date().toISOString().split("T")[0],
+    Descrição: "Transitar em velocidade superior à máxima permitida em até 20%",
+    Valor: 130.16,
+    Pontos: 4,
+    Status: "EM_ANALISE",
+    Localização: "Av. Paulista, 1000 - SP",
+    Observação: "Aguardando prazo para recurso",
+  });
+
+  // Alerts logic for medical appointments (2 days before)
+  const now = new Date();
+  const alertConsultas = consultas.filter((c) => {
+    if (c.Status !== "Agendada" || c.Lembrete_Ativo === "NÃO") return false;
+    const consultaDate = new Date(c.Data);
+    const diffDays = (consultaDate.getTime() - now.getTime()) / (1000 * 3600 * 24);
+    return diffDays >= 0 && diffDays <= 2;
+  });
+
+  // Alerts logic for medical recipes (near expiration - 7 days or past)
+  const alertReceitas = receitas.filter((r) => {
+    if (!r.Data_Vencimento && !r.Data_Validade) return false;
+    const expireDate = new Date(r.Data_Vencimento || r.Data_Validade || "");
+    const diffDays = (expireDate.getTime() - now.getTime()) / (1000 * 3600 * 24);
+    return diffDays <= 7;
+  });
+
+  // Open Handlers
+  const handleOpenConsulta = (c?: ConsultaMedica) => {
+    if (c) {
+      setEditingConsulta(c);
+      setConsultaForm({ ...c });
+    } else {
+      setEditingConsulta(null);
+      setConsultaForm({
+        Especialidade: "Cardiologia",
+        Médico: "Dr. Roberto Silva",
+        Data: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString().split("T")[0],
+        Horas: "14:30",
+        Local: "Hospital Albert Einstein - Bloco A",
+        Lembrete_Ativo: "SIM",
+        Status: "Agendada",
+        Observação: "",
+      });
+    }
+    setIsConsultaModalOpen(true);
+  };
+
+  const handleSaveConsultaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const item: ConsultaMedica = {
+      Id: editingConsulta?.Id || generateNewId("MED"),
+      Especialidade: consultaForm.Especialidade || "Geral",
+      Médico: consultaForm.Médico || "",
+      Data: consultaForm.Data || new Date().toISOString().split("T")[0],
+      Horas: consultaForm.Horas || "",
+      Local: consultaForm.Local || "",
+      Lembrete_Ativo: consultaForm.Lembrete_Ativo || "SIM",
+      Status: consultaForm.Status || "Agendada",
+      Observação: consultaForm.Observação || "",
+    };
+    await onSaveConsulta(item);
+    setIsConsultaModalOpen(false);
+  };
+
+  const handleOpenReceita = (r?: ReceitaMedica) => {
+    if (r) {
+      setEditingReceita(r);
+      setReceitaForm({ ...r });
+    } else {
+      setEditingReceita(null);
+      setReceitaForm({
+        Medicamento: "Amoxicilina 500mg",
+        Dosagem: "1 comprimido",
+        Frequência: "De 8 em 8 horas",
+        Médico: "Dra. Ana Paula",
+        Data_Emissão: new Date().toISOString().split("T")[0],
+        Data_Vencimento: new Date(Date.now() + 10 * 24 * 3600 * 1000).toISOString().split("T")[0],
+        Instruções: "Tomar após as refeições",
+        Especialidade: "Clínica Geral",
+        Observação: "",
+      });
+    }
+    setIsReceitaModalOpen(true);
+  };
+
+  const handleSaveReceitaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const item: ReceitaMedica = {
+      Id: editingReceita?.Id || generateNewId("REC"),
+      Medicamento: receitaForm.Medicamento || "Medicamento",
+      Dosagem: receitaForm.Dosagem || "",
+      Frequência: receitaForm.Frequência || "",
+      Médico: receitaForm.Médico || "",
+      Data_Emissão: receitaForm.Data_Emissão || "",
+      Data_Vencimento: receitaForm.Data_Vencimento || "",
+      Instruções: receitaForm.Instruções || "",
+      Especialidade: receitaForm.Especialidade || "",
+      Observação: receitaForm.Observação || "",
+    };
+    await onSaveReceita(item);
+    setIsReceitaModalOpen(false);
+  };
+
+  const handleOpenInfracao = (inf?: Infracao) => {
+    if (inf) {
+      setEditingInfracao(inf);
+      setInfracaoForm({ ...inf });
+    } else {
+      setEditingInfracao(null);
+      setInfracaoForm({
+        Protocolo: "MULT-2026-098",
+        Título: "Excesso de Velocidade até 20%",
+        Veículo: veiculos[0]?.Modelo || "Polo TSI",
+        Placa: veiculos[0]?.Placa || "GAE-2026",
+        Data: new Date().toISOString().split("T")[0],
+        Descrição: "Transitar em velocidade superior à máxima permitida em até 20%",
+        Valor: 130.16,
+        Pontos: 4,
+        Status: "EM_ANALISE",
+        Localização: "Av. Paulista, 1000 - SP",
+        Observação: "Aguardando prazo para recurso",
+      });
+    }
+    setIsInfracaoModalOpen(true);
+  };
+
+  const handleSaveInfracaoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const item: Infracao = {
+      Id: editingInfracao?.Id || generateNewId("MULTA"),
+      Protocolo: infracaoForm.Protocolo || "",
+      Título: infracaoForm.Título || "Infração de Trânsito",
+      Veículo: infracaoForm.Veículo || "Veículo",
+      Placa: infracaoForm.Placa || "",
+      Data: infracaoForm.Data || new Date().toISOString().split("T")[0],
+      Descrição: infracaoForm.Descrição || "",
+      Valor: Number(infracaoForm.Valor) || 0,
+      Pontos: Number(infracaoForm.Pontos) || 0,
+      Status: infracaoForm.Status || "EM_ANALISE",
+      Localização: infracaoForm.Localização || "",
+      Observação: infracaoForm.Observação || "",
+    };
+    await onSaveInfracao(item);
+    setIsInfracaoModalOpen(false);
+  };
+
   return (
     <div className="space-y-6 pb-20 md:pb-8">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-white tracking-tight">Saúde, Trânsito & Segurança</h2>
-        <p className="text-xs text-slate-400">
-          Abas <code className="text-emerald-400 font-mono">6_Consultas_Médicas</code>,{" "}
-          <code className="text-emerald-400 font-mono">7_Receitas_Médicas</code>,{" "}
-          <code className="text-emerald-400 font-mono">8_Infracoes</code>,{" "}
-          <code className="text-emerald-400 font-mono">17_Zonas_De_Risco</code>
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Consultas Médicas */}
-        <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <HeartPulse className="w-4 h-4 text-emerald-400" />
-              Consultas Médicas ({consultas.length})
-            </h3>
-          </div>
-          {consultas.length === 0 ? (
-            <p className="text-slate-500 text-xs py-4 text-center">Nenhuma consulta cadastrada.</p>
-          ) : (
-            <div className="space-y-2 text-xs">
-              {consultas.map((c) => (
-                <div key={c.Id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex justify-between">
-                  <div>
-                    <span className="font-bold text-white">{c.Especialidade}</span>
-                    <p className="text-slate-400 text-[11px]">
-                      Médico: {c.Medico || "N/I"} • Data: {c.Data}
-                    </p>
-                  </div>
-                  <span className="text-emerald-400 font-bold">{c.Status}</span>
-                </div>
-              ))}
-            </div>
-          )}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+            <Stethoscope className="w-5 h-5 text-emerald-400" />
+            Saúde & Infrações de Trânsito
+          </h2>
+          <p className="text-xs text-slate-400">
+            Abas <code className="text-emerald-400 font-mono">6_Consultas_Médicas</code>,{" "}
+            <code className="text-emerald-400 font-mono">7_Receitas_Médicas</code>,{" "}
+            <code className="text-emerald-400 font-mono">8_Infracoes</code>
+          </p>
         </div>
 
-        {/* Receitas Médicas */}
-        <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <Pill className="w-4 h-4 text-teal-400" />
-              Receitas & Prescrições ({receitas.length})
-            </h3>
-          </div>
-          {receitas.length === 0 ? (
-            <p className="text-slate-500 text-xs py-4 text-center">Nenhuma receita prescrita.</p>
-          ) : (
-            <div className="space-y-2 text-xs">
-              {receitas.map((r) => (
-                <div key={r.Id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex justify-between">
-                  <div>
-                    <span className="font-bold text-white">{r.Medicamento}</span>
-                    <p className="text-slate-400 text-[11px]">Dosagem: {r.Dosagem} • Prescrito: {r.Data}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Multas / Infrações */}
-        <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <AlertOctagon className="w-4 h-4 text-rose-400" />
-              Infrações de Trânsito / Multas ({infracoes.length})
-            </h3>
-          </div>
-          {infracoes.length === 0 ? (
-            <p className="text-slate-500 text-xs py-4 text-center">Nenhuma infração registrada.</p>
-          ) : (
-            <div className="space-y-2 text-xs">
-              {infracoes.map((inf) => (
-                <div key={inf.Id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex justify-between">
-                  <div>
-                    <span className="font-bold text-white">{inf.Descricao}</span>
-                    <p className="text-slate-400 text-[11px]">
-                      {inf.Veiculo} • {inf.Pontos} Pontos • Data: {inf.Data}
-                    </p>
-                  </div>
-                  <span className="text-rose-400 font-bold">R$ {inf.Valor}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Zonas de Risco */}
-        <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <AlertOctagon className="w-4 h-4 text-amber-400" />
-              Zonas de Risco Roubo/Alagamento ({zonasRisco.length})
-            </h3>
-          </div>
-          {zonasRisco.length === 0 ? (
-            <p className="text-slate-500 text-xs py-4 text-center">Nenhuma área de risco cadastrada.</p>
-          ) : (
-            <div className="space-y-2 text-xs">
-              {zonasRisco.map((z) => (
-                <div key={z.Id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex justify-between">
-                  <div>
-                    <span className="font-bold text-white">{z.Nome_Local}</span>
-                    <p className="text-slate-400 text-[11px]">Tipo: {z.Tipo_Ocorrencia} • {z.Bairro_Cidade}</p>
-                  </div>
-                  <span className="text-amber-400 font-bold">{z.Nivel_Risco}</span>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+          <button
+            onClick={() => setActiveTab("consultas")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
+              activeTab === "consultas"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            Consultas Médicas ({consultas.length})
+            {alertConsultas.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 bg-amber-500 text-slate-950 font-bold rounded-full text-[10px]">
+                {alertConsultas.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("receitas")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
+              activeTab === "receitas"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            Receitas Médicas ({receitas.length})
+            {alertReceitas.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white font-bold rounded-full text-[10px]">
+                {alertReceitas.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("infracoes")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === "infracoes"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            Infrações ({infracoes.length})
+          </button>
         </div>
       </div>
+
+      {/* Medical Reminder Alert Banners */}
+      {alertConsultas.length > 0 && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-3">
+          <Bell className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <h4 className="font-bold text-amber-300">
+              Lembrete: Você tem {alertConsultas.length} Consulta(s) Médica(s) nos próximos 2 dias!
+            </h4>
+            <ul className="list-disc list-inside text-amber-200/80 space-y-0.5">
+              {alertConsultas.map((c) => (
+                <li key={c.Id}>
+                  <strong>{c.Especialidade}</strong> ({c.Médico || "Médico"}) — {c.Data} às {c.Horas || "horário a confirmar"} ({c.Local || "Local"})
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {alertReceitas.length > 0 && (
+        <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <h4 className="font-bold text-rose-300">
+              Atenção: {alertReceitas.length} Receita(s) Médica(s) Próxima(s) do Vencimento!
+            </h4>
+            <ul className="list-disc list-inside text-rose-200/80 space-y-0.5">
+              {alertReceitas.map((r) => (
+                <li key={r.Id}>
+                  <strong>{r.Medicamento}</strong> — Vence em: {r.Data_Vencimento || r.Data_Validade}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* 1. CONSULTAS MÉDICAS */}
+      {activeTab === "consultas" && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-slate-400">
+              Agenda de consultas e lembretes médicos (Aba 6_Consultas_Médicas)
+            </span>
+            <button
+              onClick={() => handleOpenConsulta()}
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Agendar Consulta</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {consultas.map((c) => (
+              <div
+                key={c.Id}
+                className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+                      <Stethoscope className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-base leading-tight">
+                        {c.Especialidade}
+                      </h3>
+                      <p className="text-xs text-slate-400">{c.Médico || "Médico não informado"}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        c.Status === "Realizada"
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          : c.Status === "Cancelada"
+                          ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                          : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                      }`}
+                    >
+                      {c.Status}
+                    </span>
+                    <button
+                      onClick={() => handleOpenConsulta(c)}
+                      className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div>
+                    <span className="text-slate-500 text-[10px] block">Data & Horário</span>
+                    <span className="font-semibold text-slate-200">{c.Data} {c.Horas && `às ${c.Horas}`}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-[10px] block">Lembrete Ativo</span>
+                    <span className="font-bold text-emerald-400">{c.Lembrete_Ativo || "SIM"}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-slate-500 text-[10px] block">Local</span>
+                    <span className="text-slate-300">{c.Local || "Não especificado"}</span>
+                  </div>
+                </div>
+
+                {c.Observação && (
+                  <p className="text-xs text-slate-400 italic">"{c.Observação}"</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 2. RECEITAS MÉDICAS */}
+      {activeTab === "receitas" && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-slate-400">
+              Controle de medicamentos, posologias e validades (Aba 7_Receitas_Médicas)
+            </span>
+            <button
+              onClick={() => handleOpenReceita()}
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Cadastrar Receita</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {receitas.map((r) => (
+              <div
+                key={r.Id}
+                className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-base leading-tight">
+                        {r.Medicamento}
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        {r.Dosagem} • {r.Frequência}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleOpenReceita(r)}
+                    className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div>
+                    <span className="text-slate-500 text-[10px] block">Médico Prescritor</span>
+                    <span className="font-semibold text-slate-200">{r.Médico || "—"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-[10px] block">Validade / Vencimento</span>
+                    <span className="font-bold text-rose-400">{r.Data_Vencimento || r.Data_Validade || "—"}</span>
+                  </div>
+                  {r.Instruções && (
+                    <div className="col-span-2">
+                      <span className="text-slate-500 text-[10px] block">Instruções de Uso</span>
+                      <span className="text-slate-300">{r.Instruções}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 3. INFRAÇÕES */}
+      {activeTab === "infracoes" && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-slate-400">
+              Histórico de multas e recursos de trânsito (Aba 8_Infracoes)
+            </span>
+            <button
+              onClick={() => handleOpenInfracao()}
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Registrar Infração</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {infracoes.map((inf) => (
+              <div
+                key={inf.Id}
+                className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400">
+                      <AlertOctagon className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-base leading-tight">
+                        {inf.Título || inf.Descrição}
+                      </h3>
+                      <p className="text-xs text-slate-400 font-mono">
+                        Protocolo: {inf.Protocolo || "—"} • Veículo: {inf.Veículo} ({inf.Placa})
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleOpenInfracao(inf)}
+                    className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div>
+                    <span className="text-slate-500 text-[10px] block">Valor da Multa</span>
+                    <span className="font-bold text-rose-400">R$ {Number(inf.Valor || 0).toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-[10px] block">Pontuação</span>
+                    <span className="font-semibold text-amber-400">{inf.Pontos || 0} pts</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-[10px] block">Status</span>
+                    <span className="font-bold text-emerald-400">{inf.Status}</span>
+                  </div>
+                </div>
+
+                {inf.Localização && (
+                  <p className="text-xs text-slate-400">📍 Location: {inf.Localização}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Consulta */}
+      {isConsultaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs text-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-base text-white">Agendar Consulta Médica</h3>
+              <button onClick={() => setIsConsultaModalOpen(false)}>
+                <X className="w-5 h-5 text-slate-400 hover:text-white" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveConsultaSubmit} className="space-y-3">
+              <div>
+                <label className="text-slate-400 block mb-1">Especialidade</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Cardiologia"
+                  value={consultaForm.Especialidade}
+                  onChange={(e) => setConsultaForm({ ...consultaForm, Especialidade: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Médico</label>
+                  <input
+                    type="text"
+                    value={consultaForm.Médico}
+                    onChange={(e) => setConsultaForm({ ...consultaForm, Médico: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Status</label>
+                  <select
+                    value={consultaForm.Status}
+                    onChange={(e) => setConsultaForm({ ...consultaForm, Status: e.target.value as any })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  >
+                    <option value="Agendada">Agendada</option>
+                    <option value="Realizada">Realizada</option>
+                    <option value="Cancelada">Cancelada</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Data</label>
+                  <input
+                    type="date"
+                    required
+                    value={consultaForm.Data}
+                    onChange={(e) => setConsultaForm({ ...consultaForm, Data: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Horas</label>
+                  <input
+                    type="time"
+                    value={consultaForm.Horas}
+                    onChange={(e) => setConsultaForm({ ...consultaForm, Horas: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Local</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Hospital Albert Einstein - Morumbi"
+                  value={consultaForm.Local}
+                  onChange={(e) => setConsultaForm({ ...consultaForm, Local: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsConsultaModalOpen(false)}
+                  className="px-4 py-2 text-slate-400 hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
+                >
+                  Salvar Consulta
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Receita */}
+      {isReceitaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs text-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-base text-white">Cadastrar Receita Médica</h3>
+              <button onClick={() => setIsReceitaModalOpen(false)}>
+                <X className="w-5 h-5 text-slate-400 hover:text-white" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveReceitaSubmit} className="space-y-3">
+              <div>
+                <label className="text-slate-400 block mb-1">Medicamento</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Amoxicilina 500mg"
+                  value={receitaForm.Medicamento}
+                  onChange={(e) => setReceitaForm({ ...receitaForm, Medicamento: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Dosagem</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: 1 comprimido"
+                    value={receitaForm.Dosagem}
+                    onChange={(e) => setReceitaForm({ ...receitaForm, Dosagem: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Frequência</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: De 8 em 8 horas"
+                    value={receitaForm.Frequência}
+                    onChange={(e) => setReceitaForm({ ...receitaForm, Frequência: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Data Vencimento</label>
+                  <input
+                    type="date"
+                    value={receitaForm.Data_Vencimento}
+                    onChange={(e) => setReceitaForm({ ...receitaForm, Data_Vencimento: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Médico Prescritor</label>
+                  <input
+                    type="text"
+                    value={receitaForm.Médico}
+                    onChange={(e) => setReceitaForm({ ...receitaForm, Médico: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsReceitaModalOpen(false)}
+                  className="px-4 py-2 text-slate-400 hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
+                >
+                  Salvar Receita
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Infração */}
+      {isInfracaoModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs text-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-base text-white">Registrar Infração de Trânsito</h3>
+              <button onClick={() => setIsInfracaoModalOpen(false)}>
+                <X className="w-5 h-5 text-slate-400 hover:text-white" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveInfracaoSubmit} className="space-y-3">
+              <div>
+                <label className="text-slate-400 block mb-1">Título / Infração</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Avanço de sinal vermelho"
+                  value={infracaoForm.Título}
+                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Título: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Veículo</label>
+                  <select
+                    value={infracaoForm.Veículo}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Veículo: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  >
+                    {veiculos.map((v) => (
+                      <option key={v.Id} value={v.Modelo}>
+                        {v.Modelo} ({v.Placa})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Valor (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={infracaoForm.Valor}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Valor: Number(e.target.value) })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsInfracaoModalOpen(false)}
+                  className="px-4 py-2 text-slate-400 hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
+                >
+                  Salvar Infração
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
