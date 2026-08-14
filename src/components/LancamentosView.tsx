@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus,
   Search,
@@ -72,6 +72,9 @@ export const LancamentosView: React.FC<Props> = ({
     return { numeric: num, formatted: raw };
   };
 
+  const defaultVeic = veiculos[0];
+  const defaultMotorista = defaultVeic?.Motorista ? defaultVeic.Motorista.trim() : "";
+
   // Form State
   const [formData, setFormData] = useState<Partial<Lancamento>>({
     Data: new Date().toISOString().split("T")[0],
@@ -84,20 +87,38 @@ export const LancamentosView: React.FC<Props> = ({
     Forma_Pagamento: "PIX",
     Status: "Pago",
     Observacoes: "",
-    Veiculo: veiculos[0]?.Modelo || "",
-    Km_Atual: veiculos[0]?.Km_Atual || 0,
+    Veiculo: defaultVeic?.Modelo || "",
+    Km_Atual: defaultVeic?.Km_Atual || 0,
     Litros: 0,
     Preco_Litro: 0,
     Posto: "",
-    Motorista: "",
+    Motorista: defaultMotorista,
     Completou_O_Tanque: "SIM",
     Localizacao_Do_Posto: "",
     Comprovante_Url: "",
   });
 
+  // Lista de motoristas únicos cadastrados na aba 9_Veículos e em lançamentos anteriores
+  const motoristasDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    veiculos.forEach((v) => {
+      if (v.Motorista && v.Motorista.trim()) {
+        set.add(v.Motorista.trim());
+      }
+    });
+    lancamentos.forEach((l) => {
+      if (l.Motorista && l.Motorista.trim()) {
+        set.add(l.Motorista.trim());
+      }
+    });
+    return Array.from(set);
+  }, [veiculos, lancamentos]);
+
   // Sync state when modal opens
   useEffect(() => {
     if (isModalOpen && !editingItem) {
+      const defV = veiculos[0];
+      const defM = defV?.Motorista ? defV.Motorista.trim() : "";
       setFormData({
         Data: new Date().toISOString().split("T")[0],
         Tipo: initialFuelingMode ? "Abastecimento" : "Despesa",
@@ -109,12 +130,12 @@ export const LancamentosView: React.FC<Props> = ({
         Forma_Pagamento: "PIX",
         Status: "Pago",
         Observacoes: "",
-        Veiculo: veiculos[0]?.Modelo || "",
-        Km_Atual: veiculos[0]?.Km_Atual || 0,
+        Veiculo: defV?.Modelo || "",
+        Km_Atual: defV?.Km_Atual || 0,
         Litros: 0,
         Preco_Litro: 0,
         Posto: "",
-        Motorista: "",
+        Motorista: defM,
         Completou_O_Tanque: "SIM",
         Localizacao_Do_Posto: "",
         Comprovante_Url: "",
@@ -124,10 +145,12 @@ export const LancamentosView: React.FC<Props> = ({
       setLitrosDisplay("");
       setPrecoLitroDisplay("");
     }
-  }, [isModalOpen, initialFuelingMode]);
+  }, [isModalOpen, initialFuelingMode, veiculos]);
 
   const handleOpenNew = (isFuel: boolean = false) => {
     setEditingItem(null);
+    const defV = veiculos[0];
+    const defM = defV?.Motorista ? defV.Motorista.trim() : "";
     setFormData({
       Data: new Date().toISOString().split("T")[0],
       Tipo: isFuel ? "Abastecimento" : "Despesa",
@@ -139,12 +162,12 @@ export const LancamentosView: React.FC<Props> = ({
       Forma_Pagamento: "PIX",
       Status: "Pago",
       Observacoes: "",
-      Veiculo: veiculos[0]?.Modelo || "",
-      Km_Atual: veiculos[0]?.Km_Atual || 0,
+      Veiculo: defV?.Modelo || "",
+      Km_Atual: defV?.Km_Atual || 0,
       Litros: 0,
       Preco_Litro: 0,
       Posto: "",
-      Motorista: "",
+      Motorista: defM,
       Completou_O_Tanque: "SIM",
       Localizacao_Do_Posto: "",
       Comprovante_Url: "",
@@ -638,6 +661,65 @@ export const LancamentosView: React.FC<Props> = ({
                     <Fuel className="w-4 h-4" /> Detalhes do Abastecimento (Espelho 4_Abastecimentos)
                   </span>
 
+                  {/* Veículo e Motorista (Sugerido/Auto-preenchido da aba 9_Veículos) */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1">Veículo</label>
+                      <select
+                        value={formData.Veiculo || ""}
+                        onChange={(e) => {
+                          const selectedVeicName = e.target.value;
+                          const selectedVeic = veiculos.find(
+                            (v) =>
+                              v.Modelo === selectedVeicName ||
+                              v.Descricao === selectedVeicName ||
+                              v.Placa === selectedVeicName
+                          );
+                          setFormData((prev) => ({
+                            ...prev,
+                            Veiculo: selectedVeicName,
+                            // Preenche automaticamente o motorista associado da aba 9_Veiculos
+                            Motorista: selectedVeic?.Motorista ? selectedVeic.Motorista.trim() : prev.Motorista,
+                            Km_Atual:
+                              selectedVeic?.Km_Atual && selectedVeic.Km_Atual > 0
+                                ? selectedVeic.Km_Atual
+                                : prev.Km_Atual,
+                          }));
+                        }}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                      >
+                        <option value="">Selecione o veículo...</option>
+                        {veiculos.map((v) => (
+                          <option key={v.Id || v.Placa} value={v.Modelo}>
+                            {v.Modelo} {v.Placa ? `(${v.Placa})` : ""} {v.Motorista ? `• ${v.Motorista}` : ""}
+                          </option>
+                        ))}
+                        {formData.Veiculo && !veiculos.some((v) => v.Modelo === formData.Veiculo) && (
+                          <option value={formData.Veiculo}>{formData.Veiculo}</option>
+                        )}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1">
+                        Motorista
+                      </label>
+                      <input
+                        type="text"
+                        list="motoristas-cadastrados"
+                        placeholder="Ex: Carlos / Alexandre"
+                        value={formData.Motorista || ""}
+                        onChange={(e) => setFormData({ ...formData, Motorista: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                      />
+                      <datalist id="motoristas-cadastrados">
+                        {motoristasDisponiveis.map((m) => (
+                          <option key={m} value={m} />
+                        ))}
+                      </datalist>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-slate-400 text-[11px] mb-1">Litros</label>
@@ -707,7 +789,7 @@ export const LancamentosView: React.FC<Props> = ({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">KM Atual</label>
+                      <label className="block text-slate-400 text-[11px] mb-1">KM Atual (Hodômetro)</label>
                       <input
                         type="number"
                         placeholder="Ex: 85200"
@@ -715,29 +797,6 @@ export const LancamentosView: React.FC<Props> = ({
                         onChange={(e) =>
                           setFormData({ ...formData, Km_Atual: parseFloat(e.target.value) || 0 })
                         }
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">Motorista</label>
-                      <input
-                        type="text"
-                        placeholder="Ex: Carlos / Alexandre"
-                        value={formData.Motorista || ""}
-                        onChange={(e) => setFormData({ ...formData, Motorista: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">Posto de Combustível</label>
-                      <input
-                        type="text"
-                        placeholder="Ex: Posto Ipiranga"
-                        value={formData.Posto || ""}
-                        onChange={(e) => setFormData({ ...formData, Posto: e.target.value })}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
                       />
                     </div>
@@ -756,6 +815,16 @@ export const LancamentosView: React.FC<Props> = ({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
+                      <label className="block text-slate-400 text-[11px] mb-1">Posto de Combustível</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Posto Ipiranga"
+                        value={formData.Posto || ""}
+                        onChange={(e) => setFormData({ ...formData, Posto: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-slate-400 text-[11px] mb-1">Localização do Posto</label>
                       <input
                         type="text"
@@ -765,16 +834,17 @@ export const LancamentosView: React.FC<Props> = ({
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white text-xs"
                       />
                     </div>
-                    <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">Comprovante (URL / Foto)</label>
-                      <input
-                        type="text"
-                        placeholder="Ex: https://..."
-                        value={formData.Comprovante_Url || ""}
-                        onChange={(e) => setFormData({ ...formData, Comprovante_Url: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white text-xs"
-                      />
-                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">Comprovante (URL / Foto)</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: https://..."
+                      value={formData.Comprovante_Url || ""}
+                      onChange={(e) => setFormData({ ...formData, Comprovante_Url: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white text-xs"
+                    />
                   </div>
 
                   {/* Cálculo Automático Estimado */}
