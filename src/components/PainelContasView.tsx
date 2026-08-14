@@ -177,8 +177,8 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
             </h3>
 
             <div className="bg-slate-900 border border-rose-500/30 rounded-2xl divide-y divide-slate-800">
-              {vencidas.map((l) => (
-                <div key={l.Id} className="p-4 flex items-center justify-between gap-3 text-xs">
+              {vencidas.map((l, idx) => (
+                <div key={`${l.Id || 'vencida'}-${idx}`} className="p-4 flex items-center justify-between gap-3 text-xs">
                   <div>
                     <h4 className="font-bold text-white text-sm">{l.Descricao}</h4>
                     <p className="text-rose-400 font-mono">
@@ -216,8 +216,8 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
                 Nenhuma conta a vencer cadastrada.
               </div>
             ) : (
-              aVencer.map((l) => (
-                <div key={l.Id} className="p-4 flex items-center justify-between gap-3 text-xs">
+              aVencer.map((l, idx) => (
+                <div key={`${l.Id || 'avencer'}-${idx}`} className="p-4 flex items-center justify-between gap-3 text-xs">
                   <div>
                     <h4 className="font-bold text-white text-sm">{l.Descricao}</h4>
                     <p className="text-slate-400 font-mono">
@@ -250,8 +250,8 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
           </h3>
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl divide-y divide-slate-800">
-            {pagas.slice(0, 5).map((l) => (
-              <div key={l.Id} className="p-4 flex items-center justify-between gap-3 text-xs opacity-75">
+            {pagas.slice(0, 5).map((l, idx) => (
+              <div key={`${l.Id || 'paga'}-${idx}`} className="p-4 flex items-center justify-between gap-3 text-xs opacity-75">
                 <div>
                   <h4 className="font-semibold text-slate-200">{l.Descricao}</h4>
                   <p className="text-slate-500 font-mono">

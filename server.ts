@@ -104,13 +104,46 @@ async function startServer() {
         fetchOptions.body = JSON.stringify(bodyPayload);
       }
 
-      const googleResponse = await fetch(targetUrl, fetchOptions);
+      let googleResponse: Response | null = null;
+      let lastError: any = null;
+
+      // Retry up to 2 times for transient network or 5xx errors from Google
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          googleResponse = await fetch(targetUrl, fetchOptions);
+          if (googleResponse.ok) {
+            break;
+          }
+          // If 5xx error, wait 400ms and retry once
+          if (googleResponse.status >= 500 && attempt === 0) {
+            await new Promise((resolve) => setTimeout(resolve, 400));
+            continue;
+          }
+          break;
+        } catch (err: any) {
+          lastError = err;
+          if (attempt === 0) {
+            await new Promise((resolve) => setTimeout(resolve, 400));
+            continue;
+          }
+        }
+      }
+
+      if (!googleResponse) {
+        throw lastError || new Error("Falha na comunicação com o Google Apps Script.");
+      }
 
       if (!googleResponse.ok) {
-        const errorText = await googleResponse.text();
+        const errorRaw = await googleResponse.text().catch(() => "");
+        // Clean HTML or long responses from Google error pages
+        const isHtml = errorRaw.includes("<html") || errorRaw.includes("<!DOCTYPE");
+        const cleanMessage = isHtml
+          ? `Google Apps Script indisponível temporariamente (${googleResponse.status}). Verifique a permissão do script ou tente novamente.`
+          : errorRaw.slice(0, 300);
+
         res.status(googleResponse.status).json({
           status: "error",
-          message: `Erro na resposta do Google Apps Script (${googleResponse.status}): ${errorText}`,
+          message: cleanMessage,
         });
         return;
       }

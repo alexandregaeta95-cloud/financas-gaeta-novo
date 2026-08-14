@@ -184,13 +184,13 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
             Sua lista de mercado está vazia.
           </div>
         ) : (
-          itens.map((item) => {
+          itens.map((item, idx) => {
             const isBought = item.Comprado === true || item.Comprado === "SIM";
             const itemPrice = getItemTotal(item);
 
             return (
               <div
-                key={item.Id}
+                key={`${item.Id || 'item'}-${idx}`}
                 className={`p-3.5 flex items-center justify-between gap-3 text-xs transition-colors ${
                   isBought ? "bg-slate-950/50 opacity-60" : "hover:bg-slate-800/40"
                 }`}

@@ -218,13 +218,13 @@ export const LancamentosView: React.FC<Props> = ({
           </div>
         ) : (
           <div className="divide-y divide-slate-800/80">
-            {filteredList.map((item) => {
+            {filteredList.map((item, idx) => {
               const isReceita = item.Tipo === "Receita";
               const isFuel = item.Tipo === "Abastecimento" || item.Categoria === "ABASTECIMENTO";
 
               return (
                 <div
-                  key={item.Id}
+                  key={`${item.Id || 'lanc'}-${idx}`}
                   className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors text-xs"
                 >
                   <div className="flex items-start gap-3 min-w-0">

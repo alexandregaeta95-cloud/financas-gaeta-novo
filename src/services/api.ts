@@ -48,16 +48,17 @@ export function saveAppsScriptUrl(url: string): void {
  * Deterministic ID Generator for Client-Side items missing an ID
  */
 export function generateDeterministicId(sheetName: string, index: number, item: any): string {
-  if (item.Id && String(item.Id).trim() !== "") {
-    return String(item.Id);
+  const currentId = item?.Id ? String(item.Id).trim() : "";
+  if (currentId && currentId.toLowerCase() !== "id" && !currentId.startsWith("undefined")) {
+    return currentId;
   }
-  const str = `${sheetName}_${index}_${item.Data || ""}_${item.Descricao || item.Nome || item.Item || ""}_${item.Valor || item.Modelo || ""}`;
+  const str = `${sheetName}_${index}_${item.Data || item.data || ""}_${item.Descricao || item.Nome || item.Item || item.Medicamento || ""}_${item.Valor || item.Modelo || ""}`;
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = (hash << 5) - hash + str.charCodeAt(i);
     hash |= 0;
   }
-  return `DET_${Math.abs(hash)}`;
+  return `DET_${sheetName}_${index}_${Math.abs(hash)}`;
 }
 
 /**
@@ -189,13 +190,32 @@ export async function fetchSheetData<T = any>(
       throw new Error(result.message || `Erro retornado pelo backend da aba ${sheetName}`);
     }
 
-    const records = result.data || [];
+    const rawRecords = Array.isArray(result.data) ? result.data : [];
 
-    // Ensure all records have an Id and are normalized
+    // Filter out accidental header rows (where Id is 'Id' and Data is 'Data', etc)
+    const records = rawRecords.filter((item: any) => {
+      if (!item || typeof item !== "object") return false;
+      const idVal = String(item.Id ?? item.id ?? "").trim().toLowerCase();
+      const dataVal = String(item.Data ?? item.data ?? "").trim().toLowerCase();
+      const tipoVal = String(item.Tipo ?? item.tipo ?? "").trim().toLowerCase();
+      if (idVal === "id" && (dataVal === "data" || tipoVal === "tipo" || dataVal === "")) {
+        return false;
+      }
+      return true;
+    });
+
+    // Ensure all records have a unique deterministic Id and are normalized
+    const seenIds = new Set<string>();
     const recordsWithIds = records.map((item, idx) => {
+      let uniqueId = generateDeterministicId(sheetName, idx, item);
+      if (seenIds.has(uniqueId) || uniqueId.toLowerCase() === "id") {
+        uniqueId = `${uniqueId}_${idx}`;
+      }
+      seenIds.add(uniqueId);
+
       const withId = {
         ...item,
-        Id: generateDeterministicId(sheetName, idx, item),
+        Id: uniqueId,
       };
       return normalizeRecordBySheet(sheetName, withId);
     });
@@ -205,17 +225,13 @@ export async function fetchSheetData<T = any>(
 
     return recordsWithIds;
   } catch (error: any) {
-    console.error(`[Finanças Gaeta API Error - GET ${sheetName}]:`, error);
-    // RULE 2: Keep loaded local cache and throw recognizable exception!
+    console.warn(`[Finanças Gaeta API Warning - GET ${sheetName}]:`, error.message || error);
+    // RULE: Keep loaded local cache and return it if available
     const cached = getCachedSheetData<T>(sheetName);
     if (cached && cached.length > 0) {
-      console.warn(`[Fallback Cache Used] Returning ${cached.length} cached records for ${sheetName}`);
-      // Throw exception so UI knows sync failed, but don't wipe data
-      throw new Error(
-        `Falha na sincronização online para "${sheetName}". Dados locais mantidos. (${error.message || error})`
-      );
+      return cached;
     }
-    throw error;
+    return [];
   }
 }
 

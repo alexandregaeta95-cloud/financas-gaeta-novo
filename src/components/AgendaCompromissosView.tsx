@@ -129,13 +129,13 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
               Nenhum compromisso agendado.
             </div>
           ) : (
-            agenda.map((item) => {
+            agenda.map((item, idx) => {
               const isDone = item.Concluído === true || item.Concluído === "SIM";
               const isBlinking = item["Efeito_Alerta_(Piscando)"] === "SIM";
 
               return (
                 <div
-                  key={item.Id}
+                  key={`${item.Id || 'agenda'}-${idx}`}
                   className={`p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 text-xs transition-colors ${
                     isDone ? "opacity-60" : ""
                   }`}
@@ -211,9 +211,9 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
                 >
                   <span className="font-mono text-[10px] text-slate-400 font-bold">{day}</span>
                   <div className="space-y-1 overflow-hidden">
-                    {dayItems.map((it) => (
+                    {dayItems.map((it, idx) => (
                       <div
-                        key={it.Id}
+                        key={`${it.Id || 'cal'}-${idx}`}
                         className="px-1 py-0.5 rounded text-[9px] font-semibold text-white truncate"
                         style={{ backgroundColor: it.Cor_De_Identificação || "#059669" }}
                         title={it.Titulo}

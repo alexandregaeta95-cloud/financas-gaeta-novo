@@ -215,9 +215,9 @@ export const ContasCartoesView: React.FC<Props> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {contas.map((c) => (
+            {contas.map((c, idx) => (
               <div
-                key={c.Id}
+                key={`${c.Id || 'conta'}-${idx}`}
                 className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
               >
                 <div className="flex items-start justify-between">
@@ -288,14 +288,14 @@ export const ContasCartoesView: React.FC<Props> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cartoes.map((card) => {
+            {cartoes.map((card, idx) => {
               const currentSpent = calculateCardSpent(card.Nome);
               const limit = parseCurrency(card.Limite) || 1000;
               const usedPct = Math.min(100, Math.round((currentSpent / limit) * 100));
 
               return (
                 <div
-                  key={card.Id}
+                  key={`${card.Id || 'card'}-${idx}`}
                   className="p-5 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl space-y-4 relative hover:border-slate-700 transition-colors"
                 >
                   <div className="flex items-start justify-between">

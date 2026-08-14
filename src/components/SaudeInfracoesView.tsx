@@ -291,10 +291,10 @@ export const SaudeInfracoesView: React.FC<Props> = ({
               Lembrete: Você tem {alertConsultas.length} Consulta(s) Médica(s) nos próximos 2 dias!
             </h4>
             <ul className="list-disc list-inside text-amber-200/80 space-y-0.5">
-              {alertConsultas.map((c) => {
+              {alertConsultas.map((c, idx) => {
                 const horaFormatada = formatarHora(c.Horas);
                 return (
-                  <li key={c.Id}>
+                  <li key={`${c.Id || 'cons-alert'}-${idx}`}>
                     <strong>{c.Especialidade}</strong> ({c.Médico || "Médico"}) — {c.Data} {horaFormatada ? `às ${horaFormatada}` : "horário a confirmar"} ({c.Local || "Local"})
                   </li>
                 );
@@ -312,8 +312,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
               Atenção: {alertReceitas.length} Receita(s) Médica(s) Próxima(s) do Vencimento!
             </h4>
             <ul className="list-disc list-inside text-rose-200/80 space-y-0.5">
-              {alertReceitas.map((r) => (
-                <li key={r.Id}>
+              {alertReceitas.map((r, idx) => (
+                <li key={`${r.Id || 'rec-alert'}-${idx}`}>
                   <strong>{r.Medicamento}</strong> — Vence em: {r.Data_Vencimento || r.Data_Validade}
                 </li>
               ))}
@@ -339,9 +339,9 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {consultas.map((c) => (
+            {consultas.map((c, idx) => (
               <div
-                key={c.Id}
+                key={`${c.Id || 'cons'}-${idx}`}
                 className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
               >
                 <div className="flex items-start justify-between">
@@ -421,9 +421,9 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {receitas.map((r) => (
+            {receitas.map((r, idx) => (
               <div
-                key={r.Id}
+                key={`${r.Id || 'rec'}-${idx}`}
                 className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
               >
                 <div className="flex items-start justify-between">
@@ -488,9 +488,9 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {infracoes.map((inf) => (
+            {infracoes.map((inf, idx) => (
               <div
-                key={inf.Id}
+                key={`${inf.Id || 'inf'}-${idx}`}
                 className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
               >
                 <div className="flex items-start justify-between">

@@ -334,7 +334,7 @@ export const Dashboard: React.FC<Props> = ({
           </div>
         ) : (
           <div className="divide-y divide-slate-800/80">
-            {recentTransactions.map((tx) => {
+            {recentTransactions.map((tx, idx) => {
               const isReceita = isReceitaItem(tx);
               const isFuel = isFuelItem(tx);
               const desc = getItemDescricao(tx);
@@ -344,7 +344,7 @@ export const Dashboard: React.FC<Props> = ({
               const valorNum = parseCurrency(tx.Valor ?? (tx as any)["Valor"] ?? 0);
 
               return (
-                <div key={tx.Id} className="py-3 flex items-center justify-between gap-3 text-xs">
+                <div key={`${tx.Id || 'tx'}-${idx}`} className="py-3 flex items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-3 min-w-0">
                     <div
                       className={`p-2 rounded-xl shrink-0 ${

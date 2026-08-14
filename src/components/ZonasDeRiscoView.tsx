@@ -194,12 +194,12 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
 
       {/* Zonas List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {zonas.map((z) => {
+        {zonas.map((z, idx) => {
           const isActive = z.Ativo === true || z.Ativo === "SIM";
 
           return (
             <div
-              key={z.Id}
+              key={`${z.Id || 'zona'}-${idx}`}
               className={`p-5 rounded-2xl border space-y-3 relative transition-colors ${
                 isActive
                   ? "bg-slate-900 border-rose-500/30 hover:border-rose-500/60"

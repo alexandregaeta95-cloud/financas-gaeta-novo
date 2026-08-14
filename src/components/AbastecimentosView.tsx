@@ -100,7 +100,7 @@ export const AbastecimentosView: React.FC<Props> = ({ abastecimentos, onOpenNewF
           </div>
         ) : (
           <div className="divide-y divide-slate-800/80">
-            {abastecimentos.map((item) => {
+            {abastecimentos.map((item, idx) => {
               const valor = parseCurrency(item.Valor_Total);
               const litros = parseCurrency(item.Litros);
               const preco = parseCurrency(item.Preco_Litro) || (litros > 0 ? valor / litros : 0);
@@ -108,7 +108,7 @@ export const AbastecimentosView: React.FC<Props> = ({ abastecimentos, onOpenNewF
 
               return (
                 <div
-                  key={item.Id}
+                  key={`${item.Id || 'abast'}-${idx}`}
                   className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors text-xs"
                 >
                   <div className="flex items-start gap-3 min-w-0">

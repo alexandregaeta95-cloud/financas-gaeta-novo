@@ -143,10 +143,31 @@ function doGet(e) {
 }
 
 /**
+ * Localiza aba de forma flexível (suporta variações de acentuação e maiúsculas/minúsculas)
+ */
+function findSheetFlexible(ss, sheetName) {
+  var direct = ss.getSheetByName(sheetName);
+  if (direct) return direct;
+  
+  var clean = function(s) {
+    return String(s || "").toLowerCase().replace(/[áàãâä]/g, "a").replace(/[éèêë]/g, "e").replace(/[íìîï]/g, "i").replace(/[óòõôö]/g, "o").replace(/[úùûü]/g, "u").replace(/[ç]/g, "c").replace(/[^a-z0-9]/g, "");
+  };
+  
+  var targetClean = clean(sheetName);
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    if (clean(sheets[i].getName()) === targetClean) {
+      return sheets[i];
+    }
+  }
+  return null;
+}
+
+/**
  * Lê registros de uma aba mantendo garantia de ID determinístico
  */
 function readSheetRecords(ss, sheetName) {
-  var sheet = ss.getSheetByName(sheetName);
+  var sheet = findSheetFlexible(ss, sheetName);
   if (!sheet) return [];
 
   var data = sheet.getDataRange().getValues();
@@ -250,7 +271,7 @@ function doPost(e) {
  * Lógica de UPSERT (Sem clearContents, sem deleteRow)
  */
 function writeSheetRecords(ss, sheetName, items, action) {
-  var sheet = ss.getSheetByName(sheetName);
+  var sheet = findSheetFlexible(ss, sheetName);
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
     var defaultHeaders = HEADERS_BY_SHEET[sheetName] || Object.keys(items[0]);

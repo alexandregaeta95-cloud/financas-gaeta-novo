@@ -150,7 +150,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {metas.map((m) => {
+            {metas.map((m, idx) => {
               const spent = getCurrentMonthSpentForCategory(m.Categoria);
               const target = parseCurrency(m.Valor_Meta) || 1;
               const pct = Math.min(100, Math.round((spent / target) * 100));
@@ -159,7 +159,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
 
               return (
                 <div
-                  key={m.Id}
+                  key={`${m.Id || 'meta'}-${idx}`}
                   className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
                 >
                   <div className="flex items-center justify-between">
@@ -242,9 +242,9 @@ export const MetasCategoriasView: React.FC<Props> = ({
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {categoriasCustom.map((cat) => (
+            {categoriasCustom.map((cat, idx) => (
               <div
-                key={cat.Id}
+                key={`${cat.Id || 'cat'}-${idx}`}
                 className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between gap-2"
               >
                 <div className="flex items-center gap-3">

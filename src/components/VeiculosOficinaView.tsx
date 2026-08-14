@@ -309,8 +309,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               Atenção: {alertManutencoes.length} Manutenção(ões) Próxima(s) do Vencimento ou KM Alvo!
             </h4>
             <ul className="list-disc list-inside text-amber-200/80 space-y-0.5">
-              {alertManutencoes.map((m) => (
-                <li key={m.Id}>
+              {alertManutencoes.map((m, idx) => (
+                <li key={`${m.Id || 'manut-alert'}-${idx}`}>
                   <strong>{m.Veículo}</strong>: {m.Descrição} —{" "}
                   {m.Data_Alvo && `Data Alvo: ${m.Data_Alvo}`}
                   {m.KM_Alvo && ` | KM Alvo: ${m.KM_Alvo}`}
@@ -338,9 +338,9 @@ export const VeiculosOficinaView: React.FC<Props> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {veiculos.map((v) => (
+            {veiculos.map((v, idx) => (
               <div
-                key={v.Id}
+                key={`${v.Id || 'veic'}-${idx}`}
                 className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
               >
                 <div className="flex items-start justify-between">
@@ -416,8 +416,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 Nenhum serviço de oficina registrado ainda.
               </div>
             ) : (
-              servicos.map((s) => (
-                <div key={s.Id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              servicos.map((s, idx) => (
+                <div key={`${s.Id || 'serv'}-${idx}`} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                   <div className="flex items-start gap-3">
                     <div className="p-2.5 rounded-xl bg-slate-800 text-emerald-400 shrink-0 mt-0.5">
                       <Wrench className="w-4 h-4" />
@@ -471,11 +471,11 @@ export const VeiculosOficinaView: React.FC<Props> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {manutencoes.map((m) => {
+            {manutencoes.map((m, idx) => {
               const isDone = m.Status === "CONCLUÍDO" || m.Status === "Concluída";
               return (
                 <div
-                  key={m.Id}
+                  key={`${m.Id || 'manut'}-${idx}`}
                   className={`p-4 rounded-2xl border space-y-3 ${
                     isDone
                       ? "bg-slate-900/50 border-slate-800/60 opacity-75"

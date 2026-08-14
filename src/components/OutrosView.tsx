@@ -157,9 +157,9 @@ export const OutrosView: React.FC<Props> = ({
             {agenda.length === 0 ? (
               <p className="text-slate-500 text-center py-3">Nenhum compromisso agendado.</p>
             ) : (
-              agenda.map((ag) => (
+              agenda.map((ag, idx) => (
                 <div
-                  key={ag.Id}
+                  key={`${ag.Id || 'ag'}-${idx}`}
                   className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between"
                 >
                   <div>
@@ -185,8 +185,8 @@ export const OutrosView: React.FC<Props> = ({
             {metas.length === 0 ? (
               <p className="text-slate-500 py-3 text-center">Nenhuma meta configurada na planilha.</p>
             ) : (
-              metas.map((m) => (
-                <div key={m.Id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex justify-between">
+              metas.map((m, idx) => (
+                <div key={`${m.Id || 'meta'}-${idx}`} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex justify-between">
                   <span className="font-bold text-white">{m.Categoria}</span>
                   <span className="text-amber-400 font-bold">R$ {formatCurrency(m.Valor_Meta)} / mês</span>
                 </div>
