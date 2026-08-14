@@ -47,6 +47,8 @@ export const LancamentosView: React.FC<Props> = ({
   // Display strings for real-time currency typing mask
   const [valorDisplay, setValorDisplay] = useState<string>("");
   const [valorPagoDisplay, setValorPagoDisplay] = useState<string>("");
+  const [litrosDisplay, setLitrosDisplay] = useState<string>("");
+  const [precoLitroDisplay, setPrecoLitroDisplay] = useState<string>("");
 
   // Helper to format currency mask in real-time as user types numbers (e.g. 10000 -> 100,00)
   const formatCurrencyInput = (raw: string): { numeric: number; formatted: string } => {
@@ -60,6 +62,14 @@ export const LancamentosView: React.FC<Props> = ({
       maximumFractionDigits: 2,
     });
     return { numeric: num, formatted };
+  };
+
+  // Helper to format 3-decimal price input in real-time (e.g. 5890 -> 5,890 or 589 -> 5,89)
+  const formatPricePerLiterInput = (raw: string): { numeric: number; formatted: string } => {
+    // Allows normal decimal entry with comma or dot
+    const cleanStr = raw.replace(/[^\d.,]/g, "").replace(",", ".");
+    const num = parseFloat(cleanStr) || 0;
+    return { numeric: num, formatted: raw };
   };
 
   // Form State
@@ -103,6 +113,8 @@ export const LancamentosView: React.FC<Props> = ({
       });
       setValorDisplay("");
       setValorPagoDisplay("");
+      setLitrosDisplay("");
+      setPrecoLitroDisplay("");
     }
   }, [isModalOpen, initialFuelingMode]);
 
@@ -127,6 +139,8 @@ export const LancamentosView: React.FC<Props> = ({
     });
     setValorDisplay("");
     setValorPagoDisplay("");
+    setLitrosDisplay("");
+    setPrecoLitroDisplay("");
     onOpenModal();
   };
 
@@ -140,6 +154,10 @@ export const LancamentosView: React.FC<Props> = ({
         ? parseCurrency(item.Valor_Pago)
         : valorNum;
     setValorPagoDisplay(valorPagoNum > 0 ? formatCurrency(valorPagoNum) : "");
+    const litNum = parseCurrency(item.Litros);
+    setLitrosDisplay(litNum > 0 ? String(litNum) : "");
+    const prcNum = parseCurrency(item.Preco_Litro);
+    setPrecoLitroDisplay(prcNum > 0 ? String(prcNum) : "");
     onOpenModal();
   };
 
@@ -148,13 +166,18 @@ export const LancamentosView: React.FC<Props> = ({
     setSaving(true);
     try {
       const isFuel = formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento";
-      const litros = parseCurrency(formData.Litros);
-      const precoLitro = parseCurrency(formData.Preco_Litro);
+      let precoLitro = parseCurrency(formData.Preco_Litro);
       let finalValor = parseCurrency(formData.Valor);
+      let litros = parseCurrency(formData.Litros);
 
-      // Calculate total value for fuel if liters and price per liter provided
-      if (isFuel && litros > 0 && precoLitro > 0 && finalValor === 0) {
-        finalValor = litros * precoLitro;
+      // Regra de cálculo automático de abastecimento:
+      // Se Valor e Preco_Litro foram informados, calcula Litros = Valor / Preço_Litro
+      if (isFuel) {
+        if (finalValor > 0 && precoLitro > 0 && (litros === 0 || !litros)) {
+          litros = Number((finalValor / precoLitro).toFixed(2));
+        } else if (litros > 0 && precoLitro > 0 && finalValor === 0) {
+          finalValor = Number((litros * precoLitro).toFixed(2));
+        }
       }
 
       const finalValorPago =
@@ -456,7 +479,23 @@ export const LancamentosView: React.FC<Props> = ({
                       onChange={(e) => {
                         const { numeric, formatted } = formatCurrencyInput(e.target.value);
                         setValorDisplay(formatted);
-                        setFormData((prev) => ({ ...prev, Valor: numeric }));
+                        
+                        // Atualização automática de Litros se Preço/Litro já estiver preenchido
+                        const isFuel = formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento";
+                        const prc = Number(formData.Preco_Litro || 0);
+                        let calculatedLitros = formData.Litros;
+                        
+                        if (isFuel && prc > 0 && numeric > 0) {
+                          const lit = Number((numeric / prc).toFixed(2));
+                          calculatedLitros = lit;
+                          setLitrosDisplay(String(lit));
+                        }
+                        
+                        setFormData((prev) => ({
+                          ...prev,
+                          Valor: numeric,
+                          Litros: calculatedLitros,
+                        }));
                       }}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 pl-10 text-white font-bold"
                       required={formData.Categoria !== "ABASTECIMENTO"}
@@ -510,22 +549,32 @@ export const LancamentosView: React.FC<Props> = ({
                     <div>
                       <label className="block text-slate-400 text-[11px] mb-1">Litros</label>
                       <input
-                        type="number"
-                        step="0.001"
-                        placeholder="Ex: 42.5"
-                        value={formData.Litros || ""}
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Ex: 16.97"
+                        value={litrosDisplay}
                         onChange={(e) => {
-                          const lit = parseFloat(e.target.value) || 0;
+                          const rawVal = e.target.value;
+                          setLitrosDisplay(rawVal);
+                          const cleanVal = rawVal.replace(/[^\d.,]/g, "").replace(",", ".");
+                          const lit = parseFloat(cleanVal) || 0;
                           const prc = Number(formData.Preco_Litro || 0);
-                          const total = prc > 0 ? lit * prc : 0;
-                          if (total > 0) {
+                          
+                          // Se digitar Litros e já houver Preço/Litro, recalcula Valor Total se desejado
+                          if (lit > 0 && prc > 0 && (!formData.Valor || formData.Valor === 0)) {
+                            const total = Number((lit * prc).toFixed(2));
                             setValorDisplay(formatCurrency(total));
+                            setFormData((prev) => ({
+                              ...prev,
+                              Litros: lit,
+                              Valor: total,
+                            }));
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              Litros: lit,
+                            }));
                           }
-                          setFormData((prev) => ({
-                            ...prev,
-                            Litros: lit,
-                            Valor: total > 0 ? total : prev.Valor,
-                          }));
                         }}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
                       />
@@ -533,21 +582,29 @@ export const LancamentosView: React.FC<Props> = ({
                     <div>
                       <label className="block text-slate-400 text-[11px] mb-1">Preço/Litro (R$)</label>
                       <input
-                        type="number"
-                        step="0.001"
-                        placeholder="Ex: 5.89"
-                        value={formData.Preco_Litro || ""}
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Ex: 5,89"
+                        value={precoLitroDisplay}
                         onChange={(e) => {
-                          const prc = parseFloat(e.target.value) || 0;
-                          const lit = Number(formData.Litros || 0);
-                          const total = lit > 0 ? lit * prc : 0;
-                          if (total > 0) {
-                            setValorDisplay(formatCurrency(total));
+                          const rawVal = e.target.value;
+                          setPrecoLitroDisplay(rawVal);
+                          const cleanVal = rawVal.replace(/[^\d.,]/g, "").replace(",", ".");
+                          const prc = parseFloat(cleanVal) || 0;
+                          const currentValor = Number(formData.Valor || 0);
+                          
+                          // Cálculo em tempo real: Litros = Valor ÷ Preço_Litro
+                          let calculatedLitros = formData.Litros;
+                          if (currentValor > 0 && prc > 0) {
+                            const lit = Number((currentValor / prc).toFixed(2));
+                            calculatedLitros = lit;
+                            setLitrosDisplay(String(lit));
                           }
+                          
                           setFormData((prev) => ({
                             ...prev,
                             Preco_Litro: prc,
-                            Valor: total > 0 ? total : prev.Valor,
+                            Litros: calculatedLitros,
                           }));
                         }}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
