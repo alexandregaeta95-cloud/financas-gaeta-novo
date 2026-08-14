@@ -1,5 +1,5 @@
 import React from "react";
-import { Fuel, Lock, Info } from "lucide-react";
+import { Fuel, Lock, Info, MapPin, ExternalLink } from "lucide-react";
 import { Abastecimento } from "../types";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
 
@@ -9,6 +9,23 @@ interface Props {
 }
 
 export const AbastecimentosView: React.FC<Props> = ({ abastecimentos, onOpenNewFueling }) => {
+  // Helper to open Google Maps with saved coordinates or location name
+  const openMaps = (item: Abastecimento) => {
+    const loc = (item.Localizacao_Do_Posto || "").trim();
+    const postoName = (item.Posto || item.Nome_Posto || "").trim();
+    
+    // Check if loc has "lat,lng" format (e.g. -23.55052,-46.633308)
+    const coordMatch = loc.match(/^(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)$/);
+    if (coordMatch) {
+      const lat = coordMatch[1];
+      const lng = coordMatch[3];
+      window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, "_blank", "noopener,noreferrer");
+    } else if (loc) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}`, "_blank", "noopener,noreferrer");
+    } else if (postoName) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(postoName)}`, "_blank", "noopener,noreferrer");
+    }
+  };
   // Calculate Fuel Stats safely using parseCurrency
   const totalGasto = abastecimentos.reduce(
     (acc, curr) => acc + parseCurrency(curr.Valor_Total),
@@ -116,14 +133,30 @@ export const AbastecimentosView: React.FC<Props> = ({ abastecimentos, onOpenNewF
                       <Fuel className="w-5 h-5" />
                     </div>
                     <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-white text-sm">
                           {item.Veiculo || "Veículo"}
                         </span>
                         {item.Posto && (
-                          <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 border border-slate-700">
+                          <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 border border-slate-700 flex items-center gap-1">
                             {item.Posto}
                           </span>
+                        )}
+                        {(item.Localizacao_Do_Posto || item.Posto) && (
+                          <button
+                            type="button"
+                            onClick={() => openMaps(item)}
+                            title={
+                              item.Localizacao_Do_Posto
+                                ? `Abrir Google Maps (${item.Localizacao_Do_Posto})`
+                                : `Buscar no Google Maps: ${item.Posto}`
+                            }
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-medium transition-colors"
+                          >
+                            <MapPin className="w-3 h-3" />
+                            <span>Ver no Mapa</span>
+                            <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                          </button>
                         )}
                       </div>
                       <p className="text-slate-400 text-[11px]">

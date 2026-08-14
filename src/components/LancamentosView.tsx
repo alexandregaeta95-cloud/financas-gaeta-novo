@@ -10,7 +10,11 @@ import {
   Fuel,
   Check,
   X,
-  AlertCircle
+  AlertCircle,
+  MapPin,
+  ExternalLink,
+  Navigation,
+  Loader2
 } from "lucide-react";
 import { Lancamento, Veiculo, ContaBancaria } from "../types";
 import { generateNewId } from "../services/api";
@@ -43,6 +47,60 @@ export const LancamentosView: React.FC<Props> = ({
   const [filterType, setFilterType] = useState<string>("ALL");
   const [editingItem, setEditingItem] = useState<Lancamento | null>(null);
   const [saving, setSaving] = useState(false);
+  const [capturingGps, setCapturingGps] = useState(false);
+
+  // Função auxiliar para capturar geolocalização do navegador
+  const getCoordinates = (): Promise<{ lat: number; lng: number } | null> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          resolve({
+            lat: Number(pos.coords.latitude.toFixed(6)),
+            lng: Number(pos.coords.longitude.toFixed(6)),
+          });
+        },
+        (err) => {
+          console.warn("Geolocalização não autorizada ou indisponível:", err.message);
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
+      );
+    });
+  };
+
+  const handleCaptureGpsNow = async () => {
+    setCapturingGps(true);
+    try {
+      const coords = await getCoordinates();
+      if (coords) {
+        setFormData((prev) => ({
+          ...prev,
+          Localizacao_Do_Posto: `${coords.lat},${coords.lng}`,
+        }));
+      }
+    } finally {
+      setCapturingGps(false);
+    }
+  };
+
+  const openMapsForLancamento = (item: Lancamento) => {
+    const loc = (item.Localizacao_Do_Posto || "").trim();
+    const postoName = (item.Posto || item.Nome_Posto || "").trim();
+    const coordMatch = loc.match(/^(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)$/);
+    if (coordMatch) {
+      const lat = coordMatch[1];
+      const lng = coordMatch[3];
+      window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, "_blank", "noopener,noreferrer");
+    } else if (loc) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}`, "_blank", "noopener,noreferrer");
+    } else if (postoName) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(postoName)}`, "_blank", "noopener,noreferrer");
+    }
+  };
 
   // Display strings for real-time currency typing mask
   const [valorDisplay, setValorDisplay] = useState<string>("");
@@ -270,7 +328,20 @@ export const LancamentosView: React.FC<Props> = ({
         ? matchedVeic.Descricao || `${matchedVeic.Marca || ""} ${matchedVeic.Modelo} (${matchedVeic.Placa || ""})`.trim()
         : formData.Veiculo || "";
       const nomePosto = formData.Posto ? String(formData.Posto).trim() : "";
-      const localizacaoPosto = formData.Localizacao_Do_Posto ? String(formData.Localizacao_Do_Posto).trim() : "";
+      let localizacaoPosto = formData.Localizacao_Do_Posto ? String(formData.Localizacao_Do_Posto).trim() : "";
+
+      // Captura automática de GPS se for abastecimento e a localização ainda estiver vazia
+      if (isFuel && !localizacaoPosto) {
+        try {
+          const coords = await getCoordinates();
+          if (coords) {
+            localizacaoPosto = `${coords.lat},${coords.lng}`;
+          }
+        } catch (e) {
+          console.warn("GPS capture skipped:", e);
+        }
+      }
+
       const completouTanque = formData.Completou_O_Tanque || "SIM";
       const comprovanteUrl = formData.Comprovante_Url ? String(formData.Comprovante_Url).trim() : "";
       const kmPercorridoCalculado = previewKmPercorrido > 0 ? previewKmPercorrido : (formData.Km_Percorrido || 0);
@@ -430,13 +501,32 @@ export const LancamentosView: React.FC<Props> = ({
                       )}
                     </div>
                     <div className="min-w-0 space-y-0.5">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-white text-sm truncate">
                           {item.Descricao}
                         </span>
                         <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400 border border-slate-700">
                           {item.Categoria}
                         </span>
+                        {isFuel && (item.Localizacao_Do_Posto || item.Posto) && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openMapsForLancamento(item);
+                            }}
+                            title={
+                              item.Localizacao_Do_Posto
+                                ? `Abrir Google Maps (${item.Localizacao_Do_Posto})`
+                                : `Buscar no Google Maps: ${item.Posto}`
+                            }
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-medium transition-colors"
+                          >
+                            <MapPin className="w-3 h-3" />
+                            <span>Mapa</span>
+                            <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                          </button>
+                        )}
                       </div>
                       <p className="text-slate-400 text-[11px]">
                         Data: <span className="text-slate-300">{item.Data}</span> • Conta:{" "}
@@ -825,14 +915,38 @@ export const LancamentosView: React.FC<Props> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">Localização do Posto</label>
-                      <input
-                        type="text"
-                        placeholder="Ex: Av. Brasil, 1500 / Centro"
-                        value={formData.Localizacao_Do_Posto || ""}
-                        onChange={(e) => setFormData({ ...formData, Localizacao_Do_Posto: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white text-xs"
-                      />
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-slate-400 text-[11px]">Localização / Coordenadas GPS</label>
+                        <button
+                          type="button"
+                          onClick={handleCaptureGpsNow}
+                          disabled={capturingGps}
+                          className="text-[10px] text-amber-400 hover:text-amber-300 inline-flex items-center gap-1 font-medium transition-colors"
+                          title="Capturar coordenadas GPS do seu dispositivo agora"
+                        >
+                          {capturingGps ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <span>Obtendo GPS...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Navigation className="w-3 h-3" />
+                              <span>Capturar GPS Atual</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Ex: -23.55052,-46.633308 ou Av. Brasil, 1500"
+                          value={formData.Localizacao_Do_Posto || ""}
+                          onChange={(e) => setFormData({ ...formData, Localizacao_Do_Posto: e.target.value })}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 pl-7 text-white text-xs"
+                        />
+                        <MapPin className="w-3.5 h-3.5 text-slate-500 absolute left-2 top-2" />
+                      </div>
                     </div>
                   </div>
 
