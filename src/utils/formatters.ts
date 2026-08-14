@@ -218,17 +218,31 @@ export function normalizeLancamento(raw: any): Lancamento {
 
   const status = (raw.Status ?? raw.status ?? "Pago") as any;
 
-  const posto =
-    raw.Posto ??
-    raw.posto ??
-    raw.Nome_Posto ??
-    raw["Nome_Posto"] ??
-    raw.nome_posto ??
-    raw.nomePosto ??
-    raw["Nome Posto"] ??
-    raw.Localização_Do_Posto ??
-    raw["Localização_Do_Posto"] ??
-    "";
+  const rawPostoCandidates = [
+    raw.Nome_Posto,
+    raw["Nome_Posto"],
+    raw["Nome Posto"],
+    raw.nome_posto,
+    raw.nomePosto,
+    raw.Posto,
+    raw["Posto"],
+    raw.posto,
+  ];
+  let posto = "";
+  for (const cand of rawPostoCandidates) {
+    if (cand !== null && cand !== undefined) {
+      const trimmed = String(cand).trim();
+      const upper = trimmed.toUpperCase();
+      if (
+        trimmed &&
+        !["SIM", "NÃO", "NAO", "TRUE", "FALSE", "YES", "NO"].includes(upper) &&
+        !upper.startsWith("COMPLETOU")
+      ) {
+        posto = trimmed;
+        break;
+      }
+    }
+  }
 
   const litros = parseCurrency(raw.Litros ?? raw.litros ?? 0);
 
@@ -336,8 +350,30 @@ export function normalizeAbastecimento(raw: any): Abastecimento {
   const mediaKmL = parseCurrency(
     raw.Media_KmL ?? raw["Média_(Km/L)"] ?? raw["Media_(Km/L)"] ?? raw.media_km_l ?? 0
   );
-  const posto =
-    raw.Posto ?? raw.posto ?? raw.Nome_Posto ?? raw["Nome_Posto"] ?? raw.nome_posto ?? "";
+  const rawPostoAbastCandidates = [
+    raw.Nome_Posto,
+    raw["Nome_Posto"],
+    raw["Nome Posto"],
+    raw.nome_posto,
+    raw.Posto,
+    raw["Posto"],
+    raw.posto,
+  ];
+  let posto = "";
+  for (const cand of rawPostoAbastCandidates) {
+    if (cand !== null && cand !== undefined) {
+      const trimmed = String(cand).trim();
+      const upper = trimmed.toUpperCase();
+      if (
+        trimmed &&
+        !["SIM", "NÃO", "NAO", "TRUE", "FALSE", "YES", "NO"].includes(upper) &&
+        !upper.startsWith("COMPLETOU")
+      ) {
+        posto = trimmed;
+        break;
+      }
+    }
+  }
   const veiculo =
     raw.Veiculo ?? raw.veiculo ?? raw["Veículo"] ?? raw.Descricao_Do_Veiculo ?? "Veículo";
   const motorista =

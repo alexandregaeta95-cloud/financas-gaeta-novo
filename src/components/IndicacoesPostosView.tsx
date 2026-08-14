@@ -7,23 +7,104 @@ interface Props {
   lancamentos: Lancamento[];
 }
 
-function getPostoName(entry: any): string {
-  const name =
-    entry.Nome_Posto ??
-    entry["Nome_Posto"] ??
-    entry.nomePosto ??
-    entry.nome_posto ??
-    entry["Nome Posto"] ??
-    entry.Posto ??
-    entry.posto ??
-    entry.Localização_Do_Posto ??
-    entry["Localização_Do_Posto"] ??
-    entry.Localizacao_Do_Posto ??
-    "";
-  const trimmed = String(name).trim();
-  if (trimmed && trimmed !== "Nome_Posto" && trimmed !== "Posto") {
-    return trimmed;
+function isValidPostoName(val: any): boolean {
+  if (!val) return false;
+  const trimmed = String(val).trim();
+  if (trimmed.length < 2) return false;
+
+  const upper = trimmed.toUpperCase();
+  const invalidTokens = [
+    "NÃO",
+    "NAO",
+    "SIM",
+    "SI",
+    "TRUE",
+    "FALSE",
+    "YES",
+    "NO",
+    "NOME_POSTO",
+    "NOME POSTO",
+    "POSTO",
+    "POSTOS",
+    "COMPLETOU_O_TANQUE",
+    "COMPLETOU O TANQUE",
+    "LOCALIZACAO_DO_POSTO",
+    "LOCALIZAÇÃO_DO_POSTO",
+    "COMPROVANTE_URL",
+    "UNDEFINED",
+    "NULL",
+    "NAN",
+    "-",
+    "--",
+    "S",
+    "N",
+  ];
+  if (invalidTokens.includes(upper)) return false;
+
+  // Rejeita coordenadas GPS puras no nome do posto (ex: "-23.55052,-46.633308")
+  if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(trimmed)) {
+    return false;
   }
+
+  return true;
+}
+
+function getPostoName(entry: any): string {
+  if (!entry) return "Posto Convencional";
+
+  // 1. Tentar campos diretos do Nome do Posto / Posto
+  const directCandidates = [
+    entry.Nome_Posto,
+    entry["Nome_Posto"],
+    entry["Nome Posto"],
+    entry.nomePosto,
+    entry.nome_posto,
+    entry.Posto,
+    entry["Posto"],
+    entry.posto,
+  ];
+
+  for (const cand of directCandidates) {
+    if (cand !== null && cand !== undefined && isValidPostoName(cand)) {
+      return String(cand).trim();
+    }
+  }
+
+  // 2. Tentar extrair da Descrição se contiver nome do posto (ex: "Abastecimento - Posto Ipiranga")
+  const desc = String(entry.Descricao || entry["Descrição"] || entry.descricao || "").trim();
+  if (desc && isValidPostoName(desc)) {
+    const descLower = desc.toLowerCase();
+    if (descLower.startsWith("abastecimento - ") || descLower.startsWith("abastecimento – ")) {
+      const parts = desc.split(/[-–]/);
+      if (parts.length > 1) {
+        const extracted = parts[1].trim();
+        if (
+          isValidPostoName(extracted) &&
+          !extracted.toLowerCase().startsWith("veículo") &&
+          !extracted.toLowerCase().startsWith("veiculo") &&
+          !extracted.toLowerCase().startsWith("carro")
+        ) {
+          return extracted;
+        }
+      }
+    } else if (descLower.includes("posto") && !descLower.startsWith("abastecimento")) {
+      return desc;
+    }
+  }
+
+  // 3. Tentar Localização se for textual (não GPS)
+  const locCandidates = [
+    entry.Localizacao_Do_Posto,
+    entry["Localização_Do_Posto"],
+    entry["Localizacao_Do_Posto"],
+    entry.localizacao_do_posto,
+  ];
+  for (const loc of locCandidates) {
+    if (loc && typeof loc === "string" && isValidPostoName(loc)) {
+      return loc.trim();
+    }
+  }
+
   return "Posto Convencional";
 }
 
