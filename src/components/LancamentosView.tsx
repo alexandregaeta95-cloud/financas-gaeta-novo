@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -44,6 +44,24 @@ export const LancamentosView: React.FC<Props> = ({
   const [editingItem, setEditingItem] = useState<Lancamento | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Display strings for real-time currency typing mask
+  const [valorDisplay, setValorDisplay] = useState<string>("");
+  const [valorPagoDisplay, setValorPagoDisplay] = useState<string>("");
+
+  // Helper to format currency mask in real-time as user types numbers (e.g. 10000 -> 100,00)
+  const formatCurrencyInput = (raw: string): { numeric: number; formatted: string } => {
+    const digits = raw.replace(/\D/g, "");
+    if (!digits || digits === "0" || digits === "00") {
+      return { numeric: 0, formatted: "" };
+    }
+    const num = Number(digits) / 100;
+    const formatted = num.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return { numeric: num, formatted };
+  };
+
   // Form State
   const [formData, setFormData] = useState<Partial<Lancamento>>({
     Data: new Date().toISOString().split("T")[0],
@@ -62,6 +80,31 @@ export const LancamentosView: React.FC<Props> = ({
     Preco_Litro: 0,
     Posto: "",
   });
+
+  // Sync state when modal opens
+  useEffect(() => {
+    if (isModalOpen && !editingItem) {
+      setFormData({
+        Data: new Date().toISOString().split("T")[0],
+        Tipo: initialFuelingMode ? "Abastecimento" : "Despesa",
+        Categoria: initialFuelingMode ? "ABASTECIMENTO" : "Alimentação",
+        Descricao: "",
+        Valor: 0,
+        Valor_Pago: 0,
+        Conta: contas[0]?.Nome || "Conta Principal",
+        Forma_Pagamento: "PIX",
+        Status: "Pago",
+        Observacoes: "",
+        Veiculo: veiculos[0]?.Modelo || "",
+        Km_Atual: veiculos[0]?.Km_Atual || 0,
+        Litros: 0,
+        Preco_Litro: 0,
+        Posto: "",
+      });
+      setValorDisplay("");
+      setValorPagoDisplay("");
+    }
+  }, [isModalOpen, initialFuelingMode]);
 
   const handleOpenNew = (isFuel: boolean = false) => {
     setEditingItem(null);
@@ -82,12 +125,21 @@ export const LancamentosView: React.FC<Props> = ({
       Preco_Litro: 0,
       Posto: "",
     });
+    setValorDisplay("");
+    setValorPagoDisplay("");
     onOpenModal();
   };
 
   const handleOpenEdit = (item: Lancamento) => {
     setEditingItem(item);
     setFormData({ ...item });
+    const valorNum = parseCurrency(item.Valor);
+    setValorDisplay(valorNum > 0 ? formatCurrency(valorNum) : "");
+    const valorPagoNum =
+      item.Valor_Pago !== undefined && item.Valor_Pago !== null
+        ? parseCurrency(item.Valor_Pago)
+        : valorNum;
+    setValorPagoDisplay(valorPagoNum > 0 ? formatCurrency(valorPagoNum) : "");
     onOpenModal();
   };
 
@@ -392,39 +444,47 @@ export const LancamentosView: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-slate-400 mb-1">Valor Total (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.Valor || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, Valor: parseFloat(e.target.value) || 0 })
-                    }
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-bold"
-                    required={formData.Categoria !== "ABASTECIMENTO"}
-                  />
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-slate-400 font-semibold text-sm select-none">
+                      R$
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0,00"
+                      value={valorDisplay}
+                      onChange={(e) => {
+                        const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                        setValorDisplay(formatted);
+                        setFormData((prev) => ({ ...prev, Valor: numeric }));
+                      }}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 pl-10 text-white font-bold"
+                      required={formData.Categoria !== "ABASTECIMENTO"}
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-400 mb-1">Valor Pago (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="Ex: 200.00"
-                    value={
-                      formData.Valor_Pago !== undefined && formData.Valor_Pago !== null
-                        ? formData.Valor_Pago || ""
-                        : ""
-                    }
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        Valor_Pago: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
-                  />
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-slate-400 font-semibold text-sm select-none">
+                      R$
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0,00"
+                      value={valorPagoDisplay}
+                      onChange={(e) => {
+                        const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                        setValorPagoDisplay(formatted);
+                        setFormData((prev) => ({ ...prev, Valor_Pago: numeric }));
+                      }}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 pl-10 text-white font-bold"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -457,10 +517,14 @@ export const LancamentosView: React.FC<Props> = ({
                         onChange={(e) => {
                           const lit = parseFloat(e.target.value) || 0;
                           const prc = Number(formData.Preco_Litro || 0);
+                          const total = prc > 0 ? lit * prc : 0;
+                          if (total > 0) {
+                            setValorDisplay(formatCurrency(total));
+                          }
                           setFormData((prev) => ({
                             ...prev,
                             Litros: lit,
-                            Valor: prc > 0 ? lit * prc : prev.Valor,
+                            Valor: total > 0 ? total : prev.Valor,
                           }));
                         }}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
@@ -476,10 +540,14 @@ export const LancamentosView: React.FC<Props> = ({
                         onChange={(e) => {
                           const prc = parseFloat(e.target.value) || 0;
                           const lit = Number(formData.Litros || 0);
+                          const total = lit > 0 ? lit * prc : 0;
+                          if (total > 0) {
+                            setValorDisplay(formatCurrency(total));
+                          }
                           setFormData((prev) => ({
                             ...prev,
                             Preco_Litro: prc,
-                            Valor: lit > 0 ? lit * prc : prev.Valor,
+                            Valor: total > 0 ? total : prev.Valor,
                           }));
                         }}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
