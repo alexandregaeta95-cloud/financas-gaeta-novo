@@ -80,7 +80,7 @@ export const LancamentosView: React.FC<Props> = ({
     Descricao: "",
     Valor: 0,
     Valor_Pago: 0,
-    Conta: contas[0]?.Nome || "Conta Principal",
+    Conta: "",
     Forma_Pagamento: "PIX",
     Status: "Pago",
     Observacoes: "",
@@ -101,7 +101,7 @@ export const LancamentosView: React.FC<Props> = ({
         Descricao: "",
         Valor: 0,
         Valor_Pago: 0,
-        Conta: contas[0]?.Nome || "Conta Principal",
+        Conta: "",
         Forma_Pagamento: "PIX",
         Status: "Pago",
         Observacoes: "",
@@ -127,7 +127,7 @@ export const LancamentosView: React.FC<Props> = ({
       Descricao: "",
       Valor: 0,
       Valor_Pago: 0,
-      Conta: contas[0]?.Nome || "Conta Principal",
+      Conta: "",
       Forma_Pagamento: "PIX",
       Status: "Pago",
       Observacoes: "",
@@ -196,7 +196,7 @@ export const LancamentosView: React.FC<Props> = ({
         Descricao: formData.Descricao || "",
         Valor: finalValor,
         Valor_Pago: finalValorPago,
-        Conta: formData.Conta || "Conta Principal",
+        Conta: formData.Conta || (contas[0]?.Nome || ""),
         Cartao: formData.Cartao || "",
         Forma_Pagamento: formData.Forma_Pagamento || "PIX",
         Status: formData.Status || "Pago",
@@ -536,6 +536,25 @@ export const LancamentosView: React.FC<Props> = ({
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1">Conta (Banco / Cartão de Débito)</label>
+                <select
+                  value={formData.Conta || ""}
+                  onChange={(e) => setFormData({ ...formData, Conta: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                >
+                  <option value="">Selecione uma conta...</option>
+                  {contas.map((c) => (
+                    <option key={c.Id || c.Nome} value={c.Nome}>
+                      {c.Nome} {c.Tipo ? `(${c.Tipo})` : ""}
+                    </option>
+                  ))}
+                  {formData.Conta && !contas.some((c) => c.Nome === formData.Conta) && (
+                    <option value={formData.Conta}>{formData.Conta}</option>
+                  )}
+                </select>
               </div>
 
               {/* Extra Fueling Fields if Categoria === ABASTECIMENTO */}
