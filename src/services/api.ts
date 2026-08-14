@@ -9,6 +9,7 @@
 
 import { ApiResponse, SHEET_NAMES, SheetNameKey } from "../types";
 import {
+  parseCurrency,
   normalizeLancamento,
   normalizeAbastecimento,
   normalizeContaBancaria,
@@ -260,11 +261,29 @@ export async function saveSheetRecords<T = any>(
       enriched["Descrição"] = val;
     }
 
-    // Valor Pago / Valor_Pago mapping
+    // Valor Total / Valor mapping with Brazilian currency format support
+    if (item.Valor !== undefined || item["Valor"] !== undefined || item["Valor_Total"] !== undefined || item["Valor Total"] !== undefined) {
+      const rawValor = item.Valor ?? item["Valor"] ?? item["Valor_Total"] ?? item["Valor Total"];
+      const numValor = typeof rawValor === "number" ? rawValor : parseCurrency(rawValor);
+      const formattedValor = numValor.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      enriched["Valor"] = formattedValor;
+      enriched["Valor_Total"] = formattedValor;
+      enriched["Valor Total"] = formattedValor;
+    }
+
+    // Valor Pago / Valor_Pago mapping with Brazilian currency format support
     if (item.Valor_Pago !== undefined || item["Valor Pago"] !== undefined || item["Valor_Pago"] !== undefined) {
-      const val = item.Valor_Pago ?? item["Valor Pago"] ?? item["Valor_Pago"];
-      enriched["Valor_Pago"] = val;
-      enriched["Valor Pago"] = val;
+      const rawValorPago = item.Valor_Pago ?? item["Valor Pago"] ?? item["Valor_Pago"];
+      const numValorPago = typeof rawValorPago === "number" ? rawValorPago : parseCurrency(rawValorPago);
+      const formattedValorPago = numValorPago.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      enriched["Valor_Pago"] = formattedValorPago;
+      enriched["Valor Pago"] = formattedValorPago;
     }
 
     // Observações / Observacoes / OBS mapping
