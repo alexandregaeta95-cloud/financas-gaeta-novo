@@ -51,9 +51,11 @@ export const LancamentosView: React.FC<Props> = ({
     Categoria: initialFuelingMode ? "ABASTECIMENTO" : "Alimentação",
     Descricao: "",
     Valor: 0,
+    Valor_Pago: 0,
     Conta: contas[0]?.Nome || "Conta Principal",
     Forma_Pagamento: "PIX",
     Status: "Pago",
+    Observacoes: "",
     Veiculo: veiculos[0]?.Modelo || "",
     Km_Atual: veiculos[0]?.Km_Atual || 0,
     Litros: 0,
@@ -67,11 +69,13 @@ export const LancamentosView: React.FC<Props> = ({
       Data: new Date().toISOString().split("T")[0],
       Tipo: isFuel ? "Abastecimento" : "Despesa",
       Categoria: isFuel ? "ABASTECIMENTO" : "Alimentação",
-      Descricao: isFuel ? "Abastecimento" : "",
+      Descricao: "",
       Valor: 0,
+      Valor_Pago: 0,
       Conta: contas[0]?.Nome || "Conta Principal",
       Forma_Pagamento: "PIX",
       Status: "Pago",
+      Observacoes: "",
       Veiculo: veiculos[0]?.Modelo || "",
       Km_Atual: veiculos[0]?.Km_Atual || 0,
       Litros: 0,
@@ -101,14 +105,22 @@ export const LancamentosView: React.FC<Props> = ({
         finalValor = litros * precoLitro;
       }
 
+      const finalValorPago =
+        formData.Valor_Pago !== undefined &&
+        formData.Valor_Pago !== null &&
+        String(formData.Valor_Pago).trim() !== ""
+          ? parseCurrency(formData.Valor_Pago)
+          : finalValor;
+
       const itemToSave: Lancamento = {
         Id: editingItem?.Id || generateNewId("LANC"),
         Data: formData.Data || new Date().toISOString().split("T")[0],
         Tipo: isFuel ? "Abastecimento" : (formData.Tipo || "Despesa"),
         Categoria: isFuel ? "ABASTECIMENTO" : (formData.Categoria || "Outros"),
         Subcategoria: formData.Subcategoria || "",
-        Descricao: formData.Descricao || (isFuel ? "Abastecimento" : "Lançamento"),
+        Descricao: formData.Descricao || "",
         Valor: finalValor,
+        Valor_Pago: finalValorPago,
         Conta: formData.Conta || "Conta Principal",
         Cartao: formData.Cartao || "",
         Forma_Pagamento: formData.Forma_Pagamento || "PIX",
@@ -393,6 +405,40 @@ export const LancamentosView: React.FC<Props> = ({
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Valor Pago (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 200.00"
+                    value={
+                      formData.Valor_Pago !== undefined && formData.Valor_Pago !== null
+                        ? formData.Valor_Pago || ""
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        Valor_Pago: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 mb-1">Forma de Pagamento</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: PIX, Cartão, Dinheiro"
+                    value={formData.Forma_Pagamento || ""}
+                    onChange={(e) => setFormData({ ...formData, Forma_Pagamento: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                  />
+                </div>
+              </div>
+
               {/* Extra Fueling Fields if Categoria === ABASTECIMENTO */}
               {(formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento") && (
                 <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-3">
@@ -467,6 +513,17 @@ export const LancamentosView: React.FC<Props> = ({
                   </div>
                 </div>
               )}
+
+              <div>
+                <label className="block text-slate-400 mb-1">Observações</label>
+                <textarea
+                  rows={2}
+                  placeholder="Observações adicionais..."
+                  value={formData.Observacoes || ""}
+                  onChange={(e) => setFormData({ ...formData, Observacoes: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white placeholder-slate-600 resize-none"
+                />
+              </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
                 <button

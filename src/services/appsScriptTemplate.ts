@@ -331,9 +331,17 @@ function writeSheetRecords(ss, sheetName, items, action) {
     }
 
     var rowArray = headers.map(function(header) {
-      var val = item[header];
-      if (val === undefined || val === null) return "";
-      return val;
+      if (item[header] !== undefined && item[header] !== null) return item[header];
+      var clean = function(s) {
+        return String(s || "").toLowerCase().replace(/[áàãâä]/g, "a").replace(/[éèêë]/g, "e").replace(/[íìîï]/g, "i").replace(/[óòõôö]/g, "o").replace(/[úùûü]/g, "u").replace(/[ç]/g, "c").replace(/[^a-z0-9]/g, "");
+      };
+      var target = clean(header);
+      for (var key in item) {
+        if (clean(key) === target && item[key] !== undefined && item[key] !== null) {
+          return item[key];
+        }
+      }
+      return "";
     });
 
     if (targetRow) {

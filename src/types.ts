@@ -12,6 +12,7 @@ export interface Lancamento {
   Subcategoria?: string;
   Descricao: string;
   Valor: number;
+  Valor_Pago?: number;
   Conta?: string;
   Cartao?: string;
   Forma_Pagamento?: string;

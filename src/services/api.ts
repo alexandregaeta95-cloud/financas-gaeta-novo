@@ -246,11 +246,49 @@ export async function saveSheetRecords<T = any>(
 ): Promise<ApiResponse> {
   const targetUrl = customTargetUrl || getSavedAppsScriptUrl();
 
-  // Ensure all items have a valid ID
-  const itemsToSave = items.map((item: any) => ({
-    ...item,
-    Id: item.Id || generateNewId(),
-  }));
+  // Ensure all items have a valid ID and aliases for accented/spaced spreadsheet headers
+  const itemsToSave = items.map((item: any) => {
+    const enriched: any = {
+      ...item,
+      Id: item.Id || generateNewId(),
+    };
+
+    // Descrição / Descricao mapping
+    if (item.Descricao !== undefined || item["Descrição"] !== undefined) {
+      const val = item.Descricao ?? item["Descrição"];
+      enriched["Descricao"] = val;
+      enriched["Descrição"] = val;
+    }
+
+    // Valor Pago / Valor_Pago mapping
+    if (item.Valor_Pago !== undefined || item["Valor Pago"] !== undefined || item["Valor_Pago"] !== undefined) {
+      const val = item.Valor_Pago ?? item["Valor Pago"] ?? item["Valor_Pago"];
+      enriched["Valor_Pago"] = val;
+      enriched["Valor Pago"] = val;
+    }
+
+    // Observações / Observacoes / OBS mapping
+    if (
+      item.Observacoes !== undefined ||
+      item["Observações"] !== undefined ||
+      item.OBS !== undefined ||
+      item["Observacao"] !== undefined ||
+      item["Observação"] !== undefined
+    ) {
+      const val =
+        item.Observacoes ??
+        item["Observações"] ??
+        item.OBS ??
+        item["Observacao"] ??
+        item["Observação"];
+      enriched["Observacoes"] = val;
+      enriched["Observações"] = val;
+      enriched["OBS"] = val;
+      enriched["Observação"] = val;
+    }
+
+    return enriched;
+  });
 
   try {
     const response = await fetch("/api/proxy", {
