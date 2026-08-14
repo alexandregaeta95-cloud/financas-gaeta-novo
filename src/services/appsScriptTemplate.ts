@@ -298,6 +298,22 @@ function writeSheetRecords(ss, sheetName, items, action) {
     }
   }
 
+  // Garantir que a coluna "Motorista" exista na planilha se enviada nos itens
+  // Se não existir, cria adicionando ao FINAL das colunas existentes (sem deslocar colunas)
+  items.forEach(function(item) {
+    if (item.Motorista) {
+      var hasMotorista = headers.some(function(h) {
+        var cleanH = String(h || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        return cleanH === "motorista";
+      });
+      if (!hasMotorista) {
+        var newCol = headers.length + 1;
+        sheet.getRange(1, newCol).setValue("Motorista");
+        headers.push("Motorista");
+      }
+    }
+  });
+
   var updated = 0;
 
   items.forEach(function(item) {

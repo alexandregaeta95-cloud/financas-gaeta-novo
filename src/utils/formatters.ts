@@ -280,6 +280,7 @@ export function normalizeLancamento(raw: any): Lancamento {
     Preco_Litro: precoLitro,
     Posto: String(posto).trim(),
     Nome_Posto: String(posto).trim(),
+    Motorista: String(raw.Motorista ?? raw.motorista ?? raw.Condutor ?? raw.condutor ?? "").trim(),
     Media_KmL: mediaKmL,
   };
 }
@@ -312,12 +313,15 @@ export function normalizeAbastecimento(raw: any): Abastecimento {
     raw.Posto ?? raw.posto ?? raw.Nome_Posto ?? raw["Nome_Posto"] ?? raw.nome_posto ?? "";
   const veiculo =
     raw.Veiculo ?? raw.veiculo ?? raw["Veículo"] ?? raw.Descricao_Do_Veiculo ?? "Veículo";
+  const motorista =
+    raw.Motorista ?? raw.motorista ?? raw.Condutor ?? raw.condutor ?? "";
 
   return {
     ...raw,
     Id: String(raw.Id || ""),
     Data: formatDateBR(raw.Data ?? raw.data ?? ""),
     Veiculo: String(veiculo).trim(),
+    Motorista: String(motorista).trim(),
     Km_Atual: kmAtual,
     Km_Percorrido: kmPercorrido,
     Litros: litros,

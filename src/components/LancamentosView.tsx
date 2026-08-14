@@ -89,6 +89,7 @@ export const LancamentosView: React.FC<Props> = ({
     Litros: 0,
     Preco_Litro: 0,
     Posto: "",
+    Motorista: "",
   });
 
   // Sync state when modal opens
@@ -110,6 +111,7 @@ export const LancamentosView: React.FC<Props> = ({
         Litros: 0,
         Preco_Litro: 0,
         Posto: "",
+        Motorista: "",
       });
       setValorDisplay("");
       setValorPagoDisplay("");
@@ -136,6 +138,7 @@ export const LancamentosView: React.FC<Props> = ({
       Litros: 0,
       Preco_Litro: 0,
       Posto: "",
+      Motorista: "",
     });
     setValorDisplay("");
     setValorPagoDisplay("");
@@ -206,6 +209,7 @@ export const LancamentosView: React.FC<Props> = ({
         Litros: isFuel ? litros : undefined,
         Preco_Litro: isFuel ? precoLitro : undefined,
         Posto: isFuel ? formData.Posto : undefined,
+        Motorista: formData.Motorista ? String(formData.Motorista).trim() : undefined,
       };
 
       await onSaveLancamento(itemToSave);
@@ -645,15 +649,26 @@ export const LancamentosView: React.FC<Props> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">Posto de Combustível</label>
+                      <label className="block text-slate-400 text-[11px] mb-1">Motorista</label>
                       <input
                         type="text"
-                        placeholder="Ex: Posto Ipiranga Centro"
-                        value={formData.Posto || ""}
-                        onChange={(e) => setFormData({ ...formData, Posto: e.target.value })}
+                        placeholder="Ex: Carlos / Alexandre"
+                        value={formData.Motorista || ""}
+                        onChange={(e) => setFormData({ ...formData, Motorista: e.target.value })}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">Posto de Combustível</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Posto Ipiranga Centro"
+                      value={formData.Posto || ""}
+                      onChange={(e) => setFormData({ ...formData, Posto: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                    />
                   </div>
                 </div>
               )}
