@@ -101,14 +101,92 @@ function getDeterministicRowId(sheetName, rowIndex, rowData) {
 }
 
 /**
- * Inicializar a planilha criando as abas faltantes e preenchendo cabeçalhos.
+ * Remove colunas duplicadas de uma aba com segurança:
+ * Preserva os dados mesclando valores para a primeira coluna antes de excluir a coluna duplicada.
+ */
+function cleanDuplicateColumnsInSheet(sheet) {
+  if (!sheet) return;
+  var lastCol = sheet.getLastColumn();
+  var lastRow = sheet.getLastRow();
+  if (lastCol <= 1) return;
+
+  var headerRow = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var seen = {}; // cleanHeader -> 1-based columnIndex
+  var duplicates = []; // array of { dupColIndex, primaryColIndex, headerName }
+
+  for (var c = 0; c < headerRow.length; c++) {
+    var rawHeader = String(headerRow[c] || "").trim();
+    if (!rawHeader) continue;
+
+    var cleanHeader = rawHeader.toLowerCase()
+      .replace(/[áàãâä]/g, "a")
+      .replace(/[éèêë]/g, "e")
+      .replace(/[íìîï]/g, "i")
+      .replace(/[óòõôö]/g, "o")
+      .replace(/[úùûü]/g, "u")
+      .replace(/[ç]/g, "c")
+      .replace(/[^a-z0-9]/g, "");
+
+    var col1Based = c + 1;
+
+    if (seen[cleanHeader] !== undefined) {
+      duplicates.push({
+        dupColIndex: col1Based,
+        primaryColIndex: seen[cleanHeader],
+        headerName: rawHeader
+      });
+    } else {
+      seen[cleanHeader] = col1Based;
+    }
+  }
+
+  if (duplicates.length === 0) return;
+
+  // Processar exclusão das colunas duplicadas da direita para a esquerda (maior índice primeiro)
+  // para evitar deslocamento de índices durante a remoção
+  duplicates.sort(function(a, b) { return b.dupColIndex - a.dupColIndex; });
+
+  duplicates.forEach(function(dup) {
+    if (lastRow > 1) {
+      var dupRange = sheet.getRange(2, dup.dupColIndex, lastRow - 1, 1);
+      var dupValues = dupRange.getValues();
+      var primRange = sheet.getRange(2, dup.primaryColIndex, lastRow - 1, 1);
+      var primValues = primRange.getValues();
+      var changed = false;
+
+      for (var r = 0; r < dupValues.length; r++) {
+        var dVal = dupValues[r][0];
+        var pVal = primValues[r][0];
+        // Se a coluna primária estiver vazia e a duplicada tiver dado real, resgata o dado
+        if ((pVal === "" || pVal === null || pVal === undefined) &&
+            (dVal !== "" && dVal !== null && dVal !== undefined)) {
+          primValues[r][0] = dVal;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        primRange.setValues(primValues);
+      }
+    }
+
+    // Exclui com segurança a coluna duplicada (ex: Coluna Z)
+    sheet.deleteColumn(dup.dupColIndex);
+  });
+}
+
+/**
+ * Inicializar a planilha criando as abas faltantes, preenchendo cabeçalhos e removendo colunas duplicadas.
  */
 function setupSpreadsheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   SHEET_NAMES.forEach(function(sheetName) {
-    var sheet = ss.getSheetByName(sheetName);
+    var sheet = findSheetFlexible(ss, sheetName);
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
+    }
+    if (sheet) {
+      cleanDuplicateColumnsInSheet(sheet);
     }
     var headers = HEADERS_BY_SHEET[sheetName];
     if (sheet.getLastRow() === 0 && headers) {
@@ -298,20 +376,46 @@ function writeSheetRecords(ss, sheetName, items, action) {
     }
   }
 
-  // Garantir que a coluna "Motorista" exista na planilha se enviada nos itens
-  // Se não existir, cria adicionando ao FINAL das colunas existentes (sem deslocar colunas)
+  // Garantir que as colunas de abastecimento existam na planilha se enviadas nos itens
+  // Se não existirem, cria adicionando AO FINAL das colunas existentes (sem deslocar colunas)
+  var cleanStr = function(s) {
+    return String(s || "").toLowerCase()
+      .replace(/[áàãâä]/g, "a")
+      .replace(/[éèêë]/g, "e")
+      .replace(/[íìîï]/g, "i")
+      .replace(/[óòõôö]/g, "o")
+      .replace(/[úùûü]/g, "u")
+      .replace(/[ç]/g, "c")
+      .replace(/[^a-z0-9]/g, "");
+  };
+
+  var potentialCols = [
+    { key: "Completou_O_Tanque", label: "Completou_O_Tanque" },
+    { key: "KM_Percorrido", label: "KM_Percorrido" },
+    { key: "Media_KmL", label: "Média_(Km/L)" },
+    { key: "Descricao_Do_Veiculo", label: "Descrição_Do_Veículo" },
+    { key: "Motorista", label: "Motorista" },
+    { key: "Nome_Posto", label: "Nome_Posto" },
+    { key: "Localizacao_Do_Posto", label: "Localização_Do_Posto" },
+    { key: "Comprovante_Url", label: "Comprovante_Url" }
+  ];
+
   items.forEach(function(item) {
-    if (item.Motorista) {
-      var hasMotorista = headers.some(function(h) {
-        var cleanH = String(h || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-        return cleanH === "motorista";
-      });
-      if (!hasMotorista) {
-        var newCol = headers.length + 1;
-        sheet.getRange(1, newCol).setValue("Motorista");
-        headers.push("Motorista");
+    potentialCols.forEach(function(pCol) {
+      if (item[pCol.key] !== undefined && item[pCol.key] !== null && String(item[pCol.key]).trim() !== "") {
+        var cleanTarget = cleanStr(pCol.label);
+        var cleanKey = cleanStr(pCol.key);
+        var exists = headers.some(function(h) {
+          var cH = cleanStr(h);
+          return cH === cleanTarget || cH === cleanKey;
+        });
+        if (!exists) {
+          var newCol = headers.length + 1;
+          sheet.getRange(1, newCol).setValue(pCol.label);
+          headers.push(pCol.label);
+        }
       }
-    }
+    });
   });
 
   var updated = 0;
@@ -348,12 +452,9 @@ function writeSheetRecords(ss, sheetName, items, action) {
 
     var rowArray = headers.map(function(header) {
       if (item[header] !== undefined && item[header] !== null) return item[header];
-      var clean = function(s) {
-        return String(s || "").toLowerCase().replace(/[áàãâä]/g, "a").replace(/[éèêë]/g, "e").replace(/[íìîï]/g, "i").replace(/[óòõôö]/g, "o").replace(/[úùûü]/g, "u").replace(/[ç]/g, "c").replace(/[^a-z0-9]/g, "");
-      };
-      var target = clean(header);
+      var target = cleanStr(header);
       for (var key in item) {
-        if (clean(key) === target && item[key] !== undefined && item[key] !== null) {
+        if (cleanStr(key) === target && item[key] !== undefined && item[key] !== null) {
           return item[key];
         }
       }
@@ -375,26 +476,68 @@ function writeSheetRecords(ss, sheetName, items, action) {
 
 /**
  * Espelhamento automático de 1_Lancamentos -> 4_Abastecimentos
+ * Mantém todos os campos e cálculos sincronizados com perfeição
  */
 function syncFuelMirror(ss, fuelItems) {
+  var sheet4 = findSheetFlexible(ss, "4_Abastecimentos");
+  var existingData = sheet4 ? sheet4.getDataRange().getValues() : [];
+  var existingHeaders = existingData.length > 0 ? existingData[0] : [];
+  
+  var kmAtualIdx = -1;
+  var veiculoIdx = -1;
+  if (existingHeaders.length > 0) {
+    for (var c = 0; c < existingHeaders.length; c++) {
+      var hClean = cleanStr(existingHeaders[c] || "");
+      if (hClean === "kmatual" || hClean === "km") kmAtualIdx = c;
+      if (hClean === "veiculo" || hClean === "descricaodoveiculo") veiculoIdx = c;
+    }
+  }
+
   var mirrorItems = fuelItems.map(function(item) {
     var litros = parseFloat(item.Litros || 0);
-    var valorTotal = parseFloat(item.Valor || 0);
+    var valorTotal = parseFloat(item.Valor || item.Valor_Total || 0);
     var precoLitro = parseFloat(item.Preco_Litro || (litros > 0 ? valorTotal / litros : 0));
-    var kmAtual = parseFloat(item.Km_Atual || 0);
+    var kmAtual = parseFloat(item.Km_Atual || item.KM || 0);
+    var kmPercorrido = parseFloat(item.Km_Percorrido || item["KM_Percorrido"] || 0);
+    var mediaKmL = parseFloat(item.Media_KmL || item["Média_(Km/L)"] || item["Media_(Km/L)"] || 0);
+    var veicName = item.Veiculo || item.Descricao_Do_Veiculo || item["Descrição_Do_Veículo"] || "Veículo 1";
+
+    // Cálculo retroativo do KM Percorrido e Média se não fornecido
+    if (kmPercorrido <= 0 && kmAtual > 0 && existingData.length > 1 && kmAtualIdx !== -1) {
+      var maxPrevKm = 0;
+      for (var r = 1; r < existingData.length; r++) {
+        var rowVeic = veiculoIdx !== -1 ? String(existingData[r][veiculoIdx] || "") : "";
+        var rowKm = parseFloat(existingData[r][kmAtualIdx] || 0);
+        if (rowKm > 0 && rowKm < kmAtual && (!rowVeic || rowVeic === veicName || veiculoIdx === -1)) {
+          if (rowKm > maxPrevKm) maxPrevKm = rowKm;
+        }
+      }
+      if (maxPrevKm > 0) {
+        kmPercorrido = kmAtual - maxPrevKm;
+        if (litros > 0) {
+          mediaKmL = Math.round((kmPercorrido / litros) * 100) / 100;
+        }
+      }
+    }
 
     return {
       Id: "ABAST_" + item.Id,
       Data: item.Data,
-      Veiculo: item.Veiculo || "Veículo 1",
+      Veiculo: veicName,
+      Descricao_Do_Veiculo: item.Descricao_Do_Veiculo || item["Descrição_Do_Veículo"] || veicName,
+      Motorista: item.Motorista || "",
       Km_Atual: kmAtual,
-      Km_Percorrido: 0,
+      Km_Percorrido: kmPercorrido,
       Litros: litros,
       Preco_Litro: precoLitro,
       Valor_Total: valorTotal,
-      Posto: item.Posto || "",
-      Media_KmL: 0,
-      Observacoes: item.Observacoes || item.Descricao
+      Posto: item.Posto || item.Nome_Posto || "",
+      Nome_Posto: item.Nome_Posto || item.Posto || "",
+      Localizacao_Do_Posto: item.Localizacao_Do_Posto || item["Localização_Do_Posto"] || "",
+      Completou_O_Tanque: item.Completou_O_Tanque || "SIM",
+      Comprovante_Url: item.Comprovante_Url || "",
+      Media_KmL: mediaKmL,
+      Observacoes: item.Observacoes || item.Descricao || ""
     };
   });
 

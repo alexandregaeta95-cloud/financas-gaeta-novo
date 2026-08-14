@@ -24,6 +24,13 @@ export interface Lancamento {
   Preco_Litro?: number;
   Posto?: string;
   Motorista?: string;
+  Completou_O_Tanque?: boolean | string;
+  Km_Percorrido?: number;
+  Media_KmL?: number;
+  Descricao_Do_Veiculo?: string;
+  Nome_Posto?: string;
+  Localizacao_Do_Posto?: string;
+  Comprovante_Url?: string;
 }
 
 // 4. Abastecimentos (Mirror read-only view)
@@ -31,6 +38,7 @@ export interface Abastecimento {
   Id: string;
   Data: string;
   Veiculo: string;
+  Descricao_Do_Veiculo?: string;
   Motorista?: string;
   Km_Atual: number;
   Km_Percorrido?: number;
@@ -38,6 +46,10 @@ export interface Abastecimento {
   Preco_Litro: number;
   Valor_Total: number;
   Posto?: string;
+  Nome_Posto?: string;
+  Localizacao_Do_Posto?: string;
+  Completou_O_Tanque?: boolean | string;
+  Comprovante_Url?: string;
   Media_KmL?: number;
   Observacoes?: string;
 }

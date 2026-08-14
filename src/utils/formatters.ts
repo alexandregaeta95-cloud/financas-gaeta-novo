@@ -273,13 +273,40 @@ export function normalizeLancamento(raw: any): Lancamento {
     Forma_Pagamento: raw.Forma_Pagamento ?? raw["Forma_Pagamento"] ?? "PIX",
     Status: status,
     Observacoes: raw.Observacoes ?? raw.OBS ?? raw.Observação ?? raw.observacoes ?? "",
-    Veiculo: raw.Veiculo ?? raw.veiculo ?? raw.Descrição_Do_Veículo ?? "",
+    Veiculo: raw.Veiculo ?? raw.veiculo ?? raw.Descrição_Do_Veículo ?? raw.Descricao_Do_Veiculo ?? "",
+    Descricao_Do_Veiculo:
+      raw.Descricao_Do_Veiculo ??
+      raw["Descrição_Do_Veículo"] ??
+      raw["Descricao_Do_Veiculo"] ??
+      raw["Descrição_Do_Veiculo"] ??
+      raw.Veiculo ??
+      raw.veiculo ??
+      "",
     Km_Atual: kmAtual,
     Km_Percorrido: kmPercorrido,
     Litros: litros,
     Preco_Litro: precoLitro,
     Posto: String(posto).trim(),
     Nome_Posto: String(posto).trim(),
+    Localizacao_Do_Posto: String(
+      raw.Localizacao_Do_Posto ??
+        raw["Localização_Do_Posto"] ??
+        raw["Localizacao_Do_Posto"] ??
+        raw.localizacao_do_posto ??
+        ""
+    ).trim(),
+    Completou_O_Tanque:
+      raw.Completou_O_Tanque ??
+      raw["Completou_O_Tanque"] ??
+      raw.completou_o_tanque ??
+      "",
+    Comprovante_Url: String(
+      raw.Comprovante_Url ??
+        raw["Comprovante_Url"] ??
+        raw.comprovante_url ??
+        raw.Comprovante ??
+        ""
+    ).trim(),
     Motorista: String(raw.Motorista ?? raw.motorista ?? raw.Condutor ?? raw.condutor ?? "").trim(),
     Media_KmL: mediaKmL,
   };
@@ -321,6 +348,13 @@ export function normalizeAbastecimento(raw: any): Abastecimento {
     Id: String(raw.Id || ""),
     Data: formatDateBR(raw.Data ?? raw.data ?? ""),
     Veiculo: String(veiculo).trim(),
+    Descricao_Do_Veiculo: String(
+      raw.Descricao_Do_Veiculo ??
+        raw["Descrição_Do_Veículo"] ??
+        raw["Descricao_Do_Veiculo"] ??
+        raw["Descrição_Do_Veiculo"] ??
+        veiculo
+    ).trim(),
     Motorista: String(motorista).trim(),
     Km_Atual: kmAtual,
     Km_Percorrido: kmPercorrido,
@@ -328,6 +362,26 @@ export function normalizeAbastecimento(raw: any): Abastecimento {
     Preco_Litro: precoLitro,
     Valor_Total: valorTotal,
     Posto: String(posto).trim(),
+    Nome_Posto: String(posto).trim(),
+    Localizacao_Do_Posto: String(
+      raw.Localizacao_Do_Posto ??
+        raw["Localização_Do_Posto"] ??
+        raw["Localizacao_Do_Posto"] ??
+        raw.localizacao_do_posto ??
+        ""
+    ).trim(),
+    Completou_O_Tanque:
+      raw.Completou_O_Tanque ??
+      raw["Completou_O_Tanque"] ??
+      raw.completou_o_tanque ??
+      "",
+    Comprovante_Url: String(
+      raw.Comprovante_Url ??
+        raw["Comprovante_Url"] ??
+        raw.comprovante_url ??
+        raw.Comprovante ??
+        ""
+    ).trim(),
     Media_KmL: mediaKmL,
     Observacoes: raw.Observacoes ?? raw.Observações ?? raw.observacoes ?? "",
   };

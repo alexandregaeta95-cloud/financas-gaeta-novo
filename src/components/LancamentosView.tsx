@@ -90,6 +90,9 @@ export const LancamentosView: React.FC<Props> = ({
     Preco_Litro: 0,
     Posto: "",
     Motorista: "",
+    Completou_O_Tanque: "SIM",
+    Localizacao_Do_Posto: "",
+    Comprovante_Url: "",
   });
 
   // Sync state when modal opens
@@ -112,6 +115,9 @@ export const LancamentosView: React.FC<Props> = ({
         Preco_Litro: 0,
         Posto: "",
         Motorista: "",
+        Completou_O_Tanque: "SIM",
+        Localizacao_Do_Posto: "",
+        Comprovante_Url: "",
       });
       setValorDisplay("");
       setValorPagoDisplay("");
@@ -139,6 +145,9 @@ export const LancamentosView: React.FC<Props> = ({
       Preco_Litro: 0,
       Posto: "",
       Motorista: "",
+      Completou_O_Tanque: "SIM",
+      Localizacao_Do_Posto: "",
+      Comprovante_Url: "",
     });
     setValorDisplay("");
     setValorPagoDisplay("");
@@ -149,7 +158,12 @@ export const LancamentosView: React.FC<Props> = ({
 
   const handleOpenEdit = (item: Lancamento) => {
     setEditingItem(item);
-    setFormData({ ...item });
+    setFormData({
+      ...item,
+      Completou_O_Tanque: item.Completou_O_Tanque || "SIM",
+      Localizacao_Do_Posto: item.Localizacao_Do_Posto || "",
+      Comprovante_Url: item.Comprovante_Url || "",
+    });
     const valorNum = parseCurrency(item.Valor);
     setValorDisplay(valorNum > 0 ? formatCurrency(valorNum) : "");
     const valorPagoNum =
@@ -164,6 +178,44 @@ export const LancamentosView: React.FC<Props> = ({
     onOpenModal();
   };
 
+  // Cálculo de KM Percorrido e Média (Km/L) em tempo real
+  const currentVeiculoName = formData.Veiculo || veiculos[0]?.Modelo || "";
+  const matchedVeic = veiculos.find(
+    (v) =>
+      v.Modelo === currentVeiculoName ||
+      v.Descricao === currentVeiculoName ||
+      v.Placa === currentVeiculoName
+  );
+  const currentKm = parseCurrency(formData.Km_Atual);
+  const currentLitros = parseCurrency(formData.Litros);
+
+  let prevKmFound = 0;
+  if (currentKm > 0) {
+    const priorFuelRecords = lancamentos
+      .filter(
+        (l) =>
+          (l.Tipo === "Abastecimento" || l.Categoria === "ABASTECIMENTO") &&
+          l.Id !== (editingItem?.Id || "") &&
+          (l.Veiculo === currentVeiculoName || !currentVeiculoName || l.Descricao_Do_Veiculo === currentVeiculoName) &&
+          parseCurrency(l.Km_Atual) > 0 &&
+          parseCurrency(l.Km_Atual) < currentKm
+      )
+      .sort((a, b) => parseCurrency(b.Km_Atual) - parseCurrency(a.Km_Atual));
+
+    if (priorFuelRecords.length > 0) {
+      prevKmFound = parseCurrency(priorFuelRecords[0].Km_Atual);
+    } else if (matchedVeic?.Km_Atual && matchedVeic.Km_Atual < currentKm) {
+      prevKmFound = matchedVeic.Km_Atual;
+    }
+  }
+
+  const previewKmPercorrido =
+    prevKmFound > 0 && currentKm > prevKmFound ? currentKm - prevKmFound : 0;
+  const previewMediaKmL =
+    previewKmPercorrido > 0 && currentLitros > 0
+      ? Number((previewKmPercorrido / currentLitros).toFixed(2))
+      : 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -172,6 +224,7 @@ export const LancamentosView: React.FC<Props> = ({
       let precoLitro = parseCurrency(formData.Preco_Litro);
       let finalValor = parseCurrency(formData.Valor);
       let litros = parseCurrency(formData.Litros);
+      const kmAtual = isFuel ? parseCurrency(formData.Km_Atual) : undefined;
 
       // Regra de cálculo automático de abastecimento:
       // Se Valor e Preco_Litro foram informados, calcula Litros = Valor / Preço_Litro
@@ -190,13 +243,23 @@ export const LancamentosView: React.FC<Props> = ({
           ? parseCurrency(formData.Valor_Pago)
           : finalValor;
 
+      const descVeiculo = matchedVeic
+        ? matchedVeic.Descricao || `${matchedVeic.Marca || ""} ${matchedVeic.Modelo} (${matchedVeic.Placa || ""})`.trim()
+        : formData.Veiculo || "";
+      const nomePosto = formData.Posto ? String(formData.Posto).trim() : "";
+      const localizacaoPosto = formData.Localizacao_Do_Posto ? String(formData.Localizacao_Do_Posto).trim() : "";
+      const completouTanque = formData.Completou_O_Tanque || "SIM";
+      const comprovanteUrl = formData.Comprovante_Url ? String(formData.Comprovante_Url).trim() : "";
+      const kmPercorridoCalculado = previewKmPercorrido > 0 ? previewKmPercorrido : (formData.Km_Percorrido || 0);
+      const mediaKmLCalculada = previewMediaKmL > 0 ? previewMediaKmL : (formData.Media_KmL || 0);
+
       const itemToSave: Lancamento = {
         Id: editingItem?.Id || generateNewId("LANC"),
         Data: formData.Data || new Date().toISOString().split("T")[0],
         Tipo: isFuel ? "Abastecimento" : (formData.Tipo || "Despesa"),
         Categoria: isFuel ? "ABASTECIMENTO" : (formData.Categoria || "Outros"),
         Subcategoria: formData.Subcategoria || "",
-        Descricao: formData.Descricao || "",
+        Descricao: formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : ""),
         Valor: finalValor,
         Valor_Pago: finalValorPago,
         Conta: formData.Conta || (contas[0]?.Nome || ""),
@@ -204,12 +267,19 @@ export const LancamentosView: React.FC<Props> = ({
         Forma_Pagamento: formData.Forma_Pagamento || "PIX",
         Status: formData.Status || "Pago",
         Observacoes: formData.Observacoes || "",
-        Veiculo: isFuel ? formData.Veiculo : undefined,
-        Km_Atual: isFuel ? parseCurrency(formData.Km_Atual) : undefined,
+        Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
+        Km_Atual: kmAtual,
         Litros: isFuel ? litros : undefined,
         Preco_Litro: isFuel ? precoLitro : undefined,
-        Posto: isFuel ? formData.Posto : undefined,
+        Posto: isFuel ? nomePosto : undefined,
         Motorista: formData.Motorista ? String(formData.Motorista).trim() : undefined,
+        Completou_O_Tanque: isFuel ? completouTanque : undefined,
+        Km_Percorrido: isFuel ? kmPercorridoCalculado : undefined,
+        Media_KmL: isFuel ? mediaKmLCalculada : undefined,
+        Descricao_Do_Veiculo: isFuel ? descVeiculo : undefined,
+        Nome_Posto: isFuel ? nomePosto : undefined,
+        Localizacao_Do_Posto: isFuel ? localizacaoPosto : undefined,
+        Comprovante_Url: isFuel ? comprovanteUrl : undefined,
       };
 
       await onSaveLancamento(itemToSave);
@@ -660,16 +730,60 @@ export const LancamentosView: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-slate-400 text-[11px] mb-1">Posto de Combustível</label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Posto Ipiranga Centro"
-                      value={formData.Posto || ""}
-                      onChange={(e) => setFormData({ ...formData, Posto: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
-                    />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1">Posto de Combustível</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Posto Ipiranga"
+                        value={formData.Posto || ""}
+                        onChange={(e) => setFormData({ ...formData, Posto: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1">Completou o Tanque?</label>
+                      <select
+                        value={formData.Completou_O_Tanque || "SIM"}
+                        onChange={(e) => setFormData({ ...formData, Completou_O_Tanque: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                      >
+                        <option value="SIM">SIM (Tanque Cheio)</option>
+                        <option value="NÃO">NÃO (Parcial)</option>
+                      </select>
+                    </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1">Localização do Posto</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Av. Brasil, 1500 / Centro"
+                        value={formData.Localizacao_Do_Posto || ""}
+                        onChange={(e) => setFormData({ ...formData, Localizacao_Do_Posto: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1">Comprovante (URL / Foto)</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: https://..."
+                        value={formData.Comprovante_Url || ""}
+                        onChange={(e) => setFormData({ ...formData, Comprovante_Url: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Cálculo Automático Estimado */}
+                  {(previewKmPercorrido > 0 || previewMediaKmL > 0) && (
+                    <div className="bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 flex items-center justify-between text-xs text-amber-300">
+                      <span>KM Percorrido: <strong>+{previewKmPercorrido.toLocaleString("pt-BR")} km</strong></span>
+                      <span>Média Estimada: <strong>{previewMediaKmL.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} km/L</strong></span>
+                    </div>
+                  )}
                 </div>
               )}
 
