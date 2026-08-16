@@ -712,11 +712,24 @@ export function normalizeItemMercado(raw: any): ItemMercado {
       raw["Valor_Unitário"] ??
       raw.Valor_Unitario ??
       raw.valor_unitario ??
+      raw.Preco_Unitario ??
+      raw["Preço_Unitário"] ??
+      raw["Preço_Unitario"] ??
       0
   );
   let total = parseCurrency(raw.Valor_Total ?? raw["Valor_Total"] ?? raw.valor_total ?? 0);
   let estimado = parseCurrency(
-    raw.Valor_Estimado ?? raw["Valor_Estimado"] ?? raw.valor_estimado ?? 0
+    raw.Preco_Estimado ??
+      raw["Preco_Estimado"] ??
+      raw["Preço_Estimado"] ??
+      raw["Preco Estimado"] ??
+      raw["Preço Estimado"] ??
+      raw.preco_estimado ??
+      raw.Valor_Estimado ??
+      raw["Valor_Estimado"] ??
+      raw["Valor Estimado"] ??
+      raw.valor_estimado ??
+      0
   );
   if (total === 0 && unitPrice > 0) {
     total = qtd * unitPrice;
@@ -742,6 +755,7 @@ export function normalizeItemMercado(raw: any): ItemMercado {
     Valor_Unitário: unitPrice,
     Valor_Total: total,
     Valor_Estimado: estimado,
+    Preco_Estimado: estimado,
     Data_Pedido: formatDateBR(raw.Data_Pedido ?? raw.data_pedido ?? ""),
     Data_Compra: formatDateBR(raw.Data_Compra ?? raw.data_compra ?? ""),
     Comprado: comprado,

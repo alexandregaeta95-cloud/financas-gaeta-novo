@@ -13,6 +13,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ItemMercado | null>(null);
   const [quickInput, setQuickInput] = useState("");
+  const [valorEstDisplay, setValorEstDisplay] = useState("");
 
   const [form, setForm] = useState<Partial<ItemMercado>>({
     Item: "Leite Integral",
@@ -21,15 +22,30 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
     Unidade: "L",
     Valor_Unitário: 5.5,
     Valor_Estimado: 11.0,
+    Preco_Estimado: 11.0,
     Comprado: false,
     Observação: "",
   });
+
+  // Helper to format currency mask in real-time as user types numbers (e.g. 10000 -> 100,00)
+  const formatCurrencyInput = (raw: string): { numeric: number; formatted: string } => {
+    const digits = raw.replace(/\D/g, "");
+    if (!digits || digits === "0" || digits === "00") {
+      return { numeric: 0, formatted: "" };
+    }
+    const num = Number(digits) / 100;
+    const formatted = num.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return { numeric: num, formatted };
+  };
 
   // Calculate totals safely
   const getItemTotal = (item: ItemMercado): number => {
     const directTotal = parseCurrency(item.Valor_Total);
     if (directTotal > 0) return directTotal;
-    const estimated = parseCurrency(item.Valor_Estimado);
+    const estimated = parseCurrency(item.Preco_Estimado ?? item.Valor_Estimado);
     if (estimated > 0) return estimated;
     const qty = parseCurrency(item.Quantidade) || 1;
     const unitPrice = parseCurrency(item.Valor_Unitário);
@@ -53,6 +69,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
       Categoria: "MERCADO",
       Quantidade: 1,
       Unidade: "un",
+      Preco_Estimado: 0,
       Valor_Estimado: 0,
       Comprado: false,
     };
@@ -63,7 +80,13 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
   const handleOpenModal = (item?: ItemMercado) => {
     if (item) {
       setEditingItem(item);
-      setForm({ ...item });
+      const estNum = parseCurrency(item.Preco_Estimado ?? item.Valor_Estimado ?? 0);
+      setForm({
+        ...item,
+        Preco_Estimado: estNum,
+        Valor_Estimado: estNum,
+      });
+      setValorEstDisplay(estNum > 0 ? formatCurrency(estNum) : "");
     } else {
       setEditingItem(null);
       setForm({
@@ -73,9 +96,11 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
         Unidade: "un",
         Valor_Unitário: 0,
         Valor_Estimado: 0,
+        Preco_Estimado: 0,
         Comprado: false,
         Observação: "",
       });
+      setValorEstDisplay("");
     }
     setIsModalOpen(true);
   };
@@ -88,7 +113,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
     if (totalVal === 0 && unitPrice > 0) {
       totalVal = qty * unitPrice;
     }
-    const estimatedVal = parseCurrency(form.Valor_Estimado) || totalVal;
+    const estimatedVal = parseCurrency(form.Preco_Estimado ?? form.Valor_Estimado) || totalVal;
 
     const item: ItemMercado = {
       Id: editingItem?.Id || generateNewId("MERC"),
@@ -99,6 +124,9 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
       Valor_Unitário: unitPrice,
       Valor_Total: totalVal,
       Valor_Estimado: estimatedVal,
+      Preco_Estimado: estimatedVal,
+      Data_Pedido: form.Data_Pedido || new Date().toISOString().split("T")[0],
+      Data_Compra: form.Data_Compra || "",
       Comprado: form.Comprado === true || form.Comprado === "SIM",
       Observação: form.Observação || "",
     };
@@ -108,8 +136,11 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
 
   const handleToggleBought = async (item: ItemMercado) => {
     const isBought = item.Comprado === true || item.Comprado === "SIM";
+    const estVal = parseCurrency(item.Preco_Estimado ?? item.Valor_Estimado ?? 0);
     await onSaveItem({
       ...item,
+      Preco_Estimado: estVal,
+      Valor_Estimado: estVal,
       Comprado: !isBought,
       Data_Compra: !isBought ? new Date().toISOString().split("T")[0] : "",
     });
@@ -288,13 +319,27 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Valor Est. (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form.Valor_Estimado}
-                    onChange={(e) => setForm({ ...form, Valor_Estimado: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold"
-                  />
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2.5 text-slate-400 font-semibold text-xs select-none">
+                      R$
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0,00"
+                      value={valorEstDisplay}
+                      onChange={(e) => {
+                        const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                        setValorEstDisplay(formatted);
+                        setForm((prev) => ({
+                          ...prev,
+                          Valor_Estimado: numeric,
+                          Preco_Estimado: numeric,
+                        }));
+                      }}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-8 text-white font-bold text-xs"
+                    />
+                  </div>
                 </div>
               </div>
 

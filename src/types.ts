@@ -214,6 +214,7 @@ export interface ItemMercado {
   Valor_Unitário?: number;
   Valor_Total?: number;
   Valor_Estimado?: number;
+  Preco_Estimado?: number;
   Data_Pedido?: string;
   Data_Compra?: string;
   Comprado: boolean | "SIM" | "NÃO";

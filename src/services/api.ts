@@ -286,6 +286,66 @@ export async function saveSheetRecords<T = any>(
       enriched["Valor Pago"] = formattedValorPago;
     }
 
+    // Preço Estimado / Preco_Estimado / Valor_Estimado mapping with Brazilian currency format support (16_Lista_De_Mercado)
+    if (
+      item.Preco_Estimado !== undefined ||
+      item["Preco_Estimado"] !== undefined ||
+      item["Preço_Estimado"] !== undefined ||
+      item["Preco Estimado"] !== undefined ||
+      item["Preço Estimado"] !== undefined ||
+      item.Valor_Estimado !== undefined ||
+      item["Valor_Estimado"] !== undefined ||
+      item["Valor Estimado"] !== undefined
+    ) {
+      const rawEstimado =
+        item.Preco_Estimado ??
+        item["Preco_Estimado"] ??
+        item["Preço_Estimado"] ??
+        item["Preco Estimado"] ??
+        item["Preço Estimado"] ??
+        item.Valor_Estimado ??
+        item["Valor_Estimado"] ??
+        item["Valor Estimado"];
+      const numEstimado = typeof rawEstimado === "number" ? rawEstimado : parseCurrency(rawEstimado);
+      const formattedEstimado = numEstimado.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      enriched["Preco_Estimado"] = formattedEstimado;
+      enriched["Preço_Estimado"] = formattedEstimado;
+      enriched["Preco Estimado"] = formattedEstimado;
+      enriched["Preço Estimado"] = formattedEstimado;
+      enriched["Valor_Estimado"] = formattedEstimado;
+      enriched["Valor Estimado"] = formattedEstimado;
+    }
+
+    // Valor_Unitário / Preco_Unitario mapping with Brazilian currency format support
+    if (
+      item.Valor_Unitário !== undefined ||
+      item["Valor_Unitário"] !== undefined ||
+      item.Valor_Unitario !== undefined ||
+      item["Valor_Unitario"] !== undefined ||
+      item.Preco_Unitario !== undefined ||
+      item["Preço_Unitário"] !== undefined
+    ) {
+      const rawUnit =
+        item.Valor_Unitário ??
+        item["Valor_Unitário"] ??
+        item.Valor_Unitario ??
+        item["Valor_Unitario"] ??
+        item.Preco_Unitario ??
+        item["Preço_Unitário"];
+      const numUnit = typeof rawUnit === "number" ? rawUnit : parseCurrency(rawUnit);
+      const formattedUnit = numUnit.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      enriched["Valor_Unitário"] = formattedUnit;
+      enriched["Valor_Unitario"] = formattedUnit;
+      enriched["Preco_Unitario"] = formattedUnit;
+      enriched["Preço_Unitário"] = formattedUnit;
+    }
+
     // Observações / Observacoes / OBS mapping
     if (
       item.Observacoes !== undefined ||
