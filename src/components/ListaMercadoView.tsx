@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ShoppingBag, Plus, Check, Trash2, Edit2, X, DollarSign } from "lucide-react";
+import { ShoppingBag, Plus, Check, Trash2, Edit2, X, DollarSign, ShoppingCart } from "lucide-react";
 import { ItemMercado } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
@@ -14,6 +14,12 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
   const [editingItem, setEditingItem] = useState<ItemMercado | null>(null);
   const [quickInput, setQuickInput] = useState("");
   const [valorEstDisplay, setValorEstDisplay] = useState("");
+
+  // Campos para a Finalização de Compra
+  const [checkoutValorPago, setCheckoutValorPago] = useState<number>(0);
+  const [checkoutValorPagoDisplay, setCheckoutValorPagoDisplay] = useState<string>("");
+  const [checkoutStatus, setCheckoutStatus] = useState<"Pago" | "Pendente">("Pago");
+  const [checkoutObservacoes, setCheckoutObservacoes] = useState<string>("");
 
   const [form, setForm] = useState<Partial<ItemMercado>>({
     Item: "Leite Integral",
@@ -273,6 +279,78 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
             );
           })
         )}
+      </div>
+
+      {/* Seção Finalizar Compra */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 text-emerald-400" />
+            <h3 className="font-bold text-sm text-white">Finalizar Compra</h3>
+          </div>
+          <span className="text-[11px] text-slate-400">
+            Campos para consolidação do lançamento
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          {/* Campo Valor Pago */}
+          <div>
+            <label className="text-slate-400 block mb-1 font-medium">Valor Pago</label>
+            <div className="relative flex items-center">
+              <span className="absolute left-3 text-slate-400 font-semibold text-xs select-none">
+                R$
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="0,00"
+                value={checkoutValorPagoDisplay}
+                onChange={(e) => {
+                  const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                  setCheckoutValorPagoDisplay(formatted);
+                  setCheckoutValorPago(numeric);
+                }}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-9 text-white font-bold text-xs focus:outline-hidden focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
+          {/* Campo Status */}
+          <div>
+            <label className="text-slate-400 block mb-1 font-medium">Status</label>
+            <select
+              value={checkoutStatus}
+              onChange={(e) => setCheckoutStatus(e.target.value as "Pago" | "Pendente")}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-semibold focus:outline-hidden focus:border-emerald-500"
+            >
+              <option value="Pago">Pago</option>
+              <option value="Pendente">Pendente</option>
+            </select>
+          </div>
+
+          {/* Campo Observações */}
+          <div>
+            <label className="text-slate-400 block mb-1 font-medium">Observações</label>
+            <input
+              type="text"
+              placeholder="Ex: Compras do mês"
+              value={checkoutObservacoes}
+              onChange={(e) => setCheckoutObservacoes(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-hidden focus:border-emerald-500"
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <button
+            type="button"
+            className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-950/40"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span>Finalizar Compra</span>
+          </button>
+        </div>
       </div>
 
       {/* Modal */}
