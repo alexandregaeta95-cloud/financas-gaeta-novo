@@ -19,7 +19,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
     Item: "Leite Integral",
     Categoria: "MERCADO",
     Quantidade: 2,
-    Unidade: "L",
+    Unidade: "UN",
     Valor_Unitário: 5.5,
     Valor_Estimado: 11.0,
     Preco_Estimado: 11.0,
@@ -68,7 +68,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
       Item: quickInput.trim(),
       Categoria: "MERCADO",
       Quantidade: 1,
-      Unidade: "un",
+      Unidade: "UN",
       Preco_Estimado: 0,
       Valor_Estimado: 0,
       Comprado: false,
@@ -81,8 +81,11 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
     if (item) {
       setEditingItem(item);
       const estNum = parseCurrency(item.Preco_Estimado ?? item.Valor_Estimado ?? 0);
+      const rawUnit = (item.Unidade || "").toUpperCase().trim();
+      const normalizedUnit = rawUnit === "KG" ? "KG" : "UN";
       setForm({
         ...item,
+        Unidade: normalizedUnit,
         Preco_Estimado: estNum,
         Valor_Estimado: estNum,
       });
@@ -93,7 +96,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
         Item: "",
         Categoria: "MERCADO",
         Quantidade: 1,
-        Unidade: "un",
+        Unidade: "UN",
         Valor_Unitário: 0,
         Valor_Estimado: 0,
         Preco_Estimado: 0,
@@ -120,7 +123,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
       Item: form.Item || "Item",
       Categoria: form.Categoria || "MERCADO",
       Quantidade: qty,
-      Unidade: form.Unidade || "un",
+      Unidade: form.Unidade === "KG" ? "KG" : "UN",
       Valor_Unitário: unitPrice,
       Valor_Total: totalVal,
       Valor_Estimado: estimatedVal,
@@ -247,7 +250,7 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
                       {item.Item}
                     </span>
                     <span className="text-slate-400 text-[10px]">
-                      Qtd: {item.Quantidade} {item.Unidade || "un"} • Categoria: {item.Categoria || "MERCADO"}
+                      Qtd: {item.Quantidade} {item.Unidade ? String(item.Unidade).toUpperCase() : "UN"} • Categoria: {item.Categoria || "MERCADO"}
                     </span>
                   </div>
                 </div>
@@ -310,12 +313,14 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Unidade</label>
-                  <input
-                    type="text"
-                    value={form.Unidade}
+                  <select
+                    value={form.Unidade === "KG" ? "KG" : "UN"}
                     onChange={(e) => setForm({ ...form, Unidade: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                  />
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-semibold focus:outline-hidden focus:border-emerald-500"
+                  >
+                    <option value="UN">UN</option>
+                    <option value="KG">KG</option>
+                  </select>
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Valor Est. (R$)</label>
