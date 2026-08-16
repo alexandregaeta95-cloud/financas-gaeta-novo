@@ -250,8 +250,8 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
                   required
                   placeholder="Ex: Reunião de Alinhamento"
                   value={form.Titulo}
-                  onChange={(e) => setForm({ ...form, Titulo: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setForm({ ...form, Titulo: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>
 
@@ -306,8 +306,8 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
                 <textarea
                   rows={2}
                   value={form.Descrição}
-                  onChange={(e) => setForm({ ...form, Descrição: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white resize-none"
+                  onChange={(e) => setForm({ ...form, Descrição: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white resize-none uppercase"
                 />
               </div>
 

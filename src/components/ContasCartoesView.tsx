@@ -375,8 +375,8 @@ export const ContasCartoesView: React.FC<Props> = ({
                   required
                   placeholder="Ex: Itaú Corrente Principal"
                   value={contaForm.Nome}
-                  onChange={(e) => setContaForm({ ...contaForm, Nome: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setContaForm({ ...contaForm, Nome: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>
 
@@ -412,8 +412,8 @@ export const ContasCartoesView: React.FC<Props> = ({
                   <input
                     type="text"
                     value={contaForm.Agência}
-                    onChange={(e) => setContaForm({ ...contaForm, Agência: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"
+                    onChange={(e) => setContaForm({ ...contaForm, Agência: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono uppercase"
                   />
                 </div>
                 <div>
@@ -421,8 +421,8 @@ export const ContasCartoesView: React.FC<Props> = ({
                   <input
                     type="text"
                     value={contaForm.Conta}
-                    onChange={(e) => setContaForm({ ...contaForm, Conta: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"
+                    onChange={(e) => setContaForm({ ...contaForm, Conta: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono uppercase"
                   />
                 </div>
               </div>
@@ -468,8 +468,8 @@ export const ContasCartoesView: React.FC<Props> = ({
                   required
                   placeholder="Ex: Mastercard Black Itaú"
                   value={cartaoForm.Nome}
-                  onChange={(e) => setCartaoForm({ ...cartaoForm, Nome: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setCartaoForm({ ...cartaoForm, Nome: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>
 

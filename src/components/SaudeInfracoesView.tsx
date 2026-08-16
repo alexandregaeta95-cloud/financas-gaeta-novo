@@ -559,8 +559,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                   required
                   placeholder="Ex: Cardiologia"
                   value={consultaForm.Especialidade}
-                  onChange={(e) => setConsultaForm({ ...consultaForm, Especialidade: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setConsultaForm({ ...consultaForm, Especialidade: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>
 
@@ -570,8 +570,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                   <input
                     type="text"
                     value={consultaForm.Médico}
-                    onChange={(e) => setConsultaForm({ ...consultaForm, Médico: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                    onChange={(e) => setConsultaForm({ ...consultaForm, Médico: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                   />
                 </div>
                 <div>
@@ -616,8 +616,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                   type="text"
                   placeholder="Ex: Hospital Albert Einstein - Morumbi"
                   value={consultaForm.Local}
-                  onChange={(e) => setConsultaForm({ ...consultaForm, Local: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setConsultaForm({ ...consultaForm, Local: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>
 
@@ -660,8 +660,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                   required
                   placeholder="Ex: Amoxicilina 500mg"
                   value={receitaForm.Medicamento}
-                  onChange={(e) => setReceitaForm({ ...receitaForm, Medicamento: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setReceitaForm({ ...receitaForm, Medicamento: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>
 
@@ -672,8 +672,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                     type="text"
                     placeholder="Ex: 1 comprimido"
                     value={receitaForm.Dosagem}
-                    onChange={(e) => setReceitaForm({ ...receitaForm, Dosagem: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                    onChange={(e) => setReceitaForm({ ...receitaForm, Dosagem: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                   />
                 </div>
                 <div>
@@ -682,8 +682,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                     type="text"
                     placeholder="Ex: De 8 em 8 horas"
                     value={receitaForm.Frequência}
-                    onChange={(e) => setReceitaForm({ ...receitaForm, Frequência: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                    onChange={(e) => setReceitaForm({ ...receitaForm, Frequência: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                   />
                 </div>
               </div>
@@ -703,8 +703,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                   <input
                     type="text"
                     value={receitaForm.Médico}
-                    onChange={(e) => setReceitaForm({ ...receitaForm, Médico: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                    onChange={(e) => setReceitaForm({ ...receitaForm, Médico: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                   />
                 </div>
               </div>
@@ -748,8 +748,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                   required
                   placeholder="Ex: Avanço de sinal vermelho"
                   value={infracaoForm.Título}
-                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Título: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Título: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>
 

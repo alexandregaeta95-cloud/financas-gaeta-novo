@@ -93,8 +93,8 @@ export const OutrosView: React.FC<Props> = ({
               type="text"
               placeholder="Adicionar item à lista..."
               value={newItemMercadoText}
-              onChange={(e) => setNewItemMercadoText(e.target.value)}
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
+              onChange={(e) => setNewItemMercadoText(e.target.value.toUpperCase())}
+              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white uppercase"
             />
             <button
               type="submit"
@@ -142,8 +142,8 @@ export const OutrosView: React.FC<Props> = ({
               type="text"
               placeholder="Novo compromisso..."
               value={newAgendaText}
-              onChange={(e) => setNewAgendaText(e.target.value)}
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
+              onChange={(e) => setNewAgendaText(e.target.value.toUpperCase())}
+              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white uppercase"
             />
             <button
               type="submit"

@@ -634,8 +634,8 @@ export const LancamentosView: React.FC<Props> = ({
                   type="text"
                   placeholder="Ex: Mercado, Salário, Abastecimento Shell..."
                   value={formData.Descricao}
-                  onChange={(e) => setFormData({ ...formData, Descricao: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white placeholder-slate-600"
+                  onChange={(e) => setFormData({ ...formData, Descricao: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white placeholder-slate-600 uppercase"
                   required
                 />
               </div>
@@ -646,8 +646,8 @@ export const LancamentosView: React.FC<Props> = ({
                   <input
                     type="text"
                     value={formData.Categoria}
-                    onChange={(e) => setFormData({ ...formData, Categoria: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    onChange={(e) => setFormData({ ...formData, Categoria: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
                     required
                   />
                 </div>
@@ -719,8 +719,8 @@ export const LancamentosView: React.FC<Props> = ({
                     type="text"
                     placeholder="Ex: PIX, Cartão, Dinheiro"
                     value={formData.Forma_Pagamento || ""}
-                    onChange={(e) => setFormData({ ...formData, Forma_Pagamento: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    onChange={(e) => setFormData({ ...formData, Forma_Pagamento: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
                   />
                 </div>
               </div>
@@ -799,8 +799,8 @@ export const LancamentosView: React.FC<Props> = ({
                         list="motoristas-cadastrados"
                         placeholder="Ex: Carlos / Alexandre"
                         value={formData.Motorista || ""}
-                        onChange={(e) => setFormData({ ...formData, Motorista: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                        onChange={(e) => setFormData({ ...formData, Motorista: e.target.value.toUpperCase() })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white uppercase"
                       />
                       <datalist id="motoristas-cadastrados">
                         {motoristasDisponiveis.map((m) => (
@@ -910,8 +910,8 @@ export const LancamentosView: React.FC<Props> = ({
                         type="text"
                         placeholder="Ex: Posto Ipiranga"
                         value={formData.Posto || ""}
-                        onChange={(e) => setFormData({ ...formData, Posto: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                        onChange={(e) => setFormData({ ...formData, Posto: e.target.value.toUpperCase() })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white uppercase"
                       />
                     </div>
                     <div>
@@ -942,8 +942,8 @@ export const LancamentosView: React.FC<Props> = ({
                           type="text"
                           placeholder="Ex: -23.55052,-46.633308 ou Av. Brasil, 1500"
                           value={formData.Localizacao_Do_Posto || ""}
-                          onChange={(e) => setFormData({ ...formData, Localizacao_Do_Posto: e.target.value })}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 pl-7 text-white text-xs"
+                          onChange={(e) => setFormData({ ...formData, Localizacao_Do_Posto: e.target.value.toUpperCase() })}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 pl-7 text-white text-xs uppercase"
                         />
                         <MapPin className="w-3.5 h-3.5 text-slate-500 absolute left-2 top-2" />
                       </div>
@@ -977,8 +977,8 @@ export const LancamentosView: React.FC<Props> = ({
                   rows={2}
                   placeholder="Observações adicionais..."
                   value={formData.Observacoes || ""}
-                  onChange={(e) => setFormData({ ...formData, Observacoes: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white placeholder-slate-600 resize-none"
+                  onChange={(e) => setFormData({ ...formData, Observacoes: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white placeholder-slate-600 resize-none uppercase"
                 />
               </div>
 

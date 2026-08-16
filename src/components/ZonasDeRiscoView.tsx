@@ -283,8 +283,8 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
                   required
                   placeholder="Ex: Trecho com alto índice de assaltos / alagamento"
                   value={form.Descrição}
-                  onChange={(e) => setForm({ ...form, Descrição: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setForm({ ...form, Descrição: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>
 
@@ -342,8 +342,8 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
                 <input
                   type="text"
                   value={form.Mensagem_De_Alerta}
-                  onChange={(e) => setForm({ ...form, Mensagem_De_Alerta: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setForm({ ...form, Mensagem_De_Alerta: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>
 

@@ -564,8 +564,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     type="text"
                     required
                     value={veiculoForm.Marca}
-                    onChange={(e) => setVeiculoForm({ ...veiculoForm, Marca: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    onChange={(e) => setVeiculoForm({ ...veiculoForm, Marca: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
                   />
                 </div>
                 <div>
@@ -574,8 +574,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     type="text"
                     required
                     value={veiculoForm.Modelo}
-                    onChange={(e) => setVeiculoForm({ ...veiculoForm, Modelo: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    onChange={(e) => setVeiculoForm({ ...veiculoForm, Modelo: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
                   />
                 </div>
               </div>
@@ -587,8 +587,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     type="text"
                     required
                     value={veiculoForm.Placa}
-                    onChange={(e) => setVeiculoForm({ ...veiculoForm, Placa: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono"
+                    onChange={(e) => setVeiculoForm({ ...veiculoForm, Placa: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono uppercase"
                   />
                 </div>
                 <div>
@@ -617,8 +617,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                   <input
                     type="text"
                     value={veiculoForm.Motorista}
-                    onChange={(e) => setVeiculoForm({ ...veiculoForm, Motorista: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    onChange={(e) => setVeiculoForm({ ...veiculoForm, Motorista: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
                   />
                 </div>
                 <div>
@@ -703,8 +703,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                   required
                   placeholder="Ex: Troca de pastilhas de freio e alinhamento"
                   value={servicoForm.Descrição}
-                  onChange={(e) => setServicoForm({ ...servicoForm, Descrição: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                  onChange={(e) => setServicoForm({ ...servicoForm, Descrição: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
                 />
               </div>
 
@@ -734,8 +734,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     type="text"
                     placeholder="Oficina Bosch"
                     value={servicoForm.Oficina_Nome}
-                    onChange={(e) => setServicoForm({ ...servicoForm, Oficina_Nome: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    onChange={(e) => setServicoForm({ ...servicoForm, Oficina_Nome: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
                   />
                 </div>
               </div>
@@ -795,8 +795,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     required
                     placeholder="Ex: Troca de Correia Dentada"
                     value={manutencaoForm.Descrição}
-                    onChange={(e) => setManutencaoForm({ ...manutencaoForm, Descrição: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    onChange={(e) => setManutencaoForm({ ...manutencaoForm, Descrição: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
                   />
                 </div>
               </div>

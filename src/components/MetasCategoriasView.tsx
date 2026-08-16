@@ -282,7 +282,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
                   required
                   placeholder="Ex: MERCADO, SAÚDE, ABASTECIMENTO"
                   value={metaForm.Categoria}
-                  onChange={(e) => setMetaForm({ ...metaForm, Categoria: e.target.value })}
+                  onChange={(e) => setMetaForm({ ...metaForm, Categoria: e.target.value.toUpperCase() })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>
@@ -350,7 +350,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
                   required
                   placeholder="Ex: ACADEMIA, VET, CURSOS"
                   value={catForm.Nome}
-                  onChange={(e) => setCatForm({ ...catForm, Nome: e.target.value })}
+                  onChange={(e) => setCatForm({ ...catForm, Nome: e.target.value.toUpperCase() })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>

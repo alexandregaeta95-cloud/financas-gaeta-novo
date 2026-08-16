@@ -313,8 +313,8 @@ export const ListaMercadoView: React.FC<Props> = ({
           type="text"
           placeholder="Adicionar item rápido (ex: Arroz, Feijão, Sabão em pó)..."
           value={quickInput}
-          onChange={(e) => setQuickInput(e.target.value)}
-          className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white"
+          onChange={(e) => setQuickInput(e.target.value.toUpperCase())}
+          className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white uppercase"
         />
         <button
           type="submit"
@@ -488,8 +488,8 @@ export const ListaMercadoView: React.FC<Props> = ({
               type="text"
               placeholder="Ex: Compras do mês"
               value={checkoutObservacoes}
-              onChange={(e) => setCheckoutObservacoes(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-hidden focus:border-emerald-500"
+              onChange={(e) => setCheckoutObservacoes(e.target.value.toUpperCase())}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs uppercase focus:outline-hidden focus:border-emerald-500"
             />
           </div>
         </div>
@@ -537,8 +537,8 @@ export const ListaMercadoView: React.FC<Props> = ({
                   required
                   placeholder="Ex: Leite, Café, Pão"
                   value={form.Item}
-                  onChange={(e) => setForm({ ...form, Item: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setForm({ ...form, Item: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>
 
