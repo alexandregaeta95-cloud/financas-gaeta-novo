@@ -1,25 +1,57 @@
-import React, { useState } from "react";
-import { ShoppingBag, Plus, Check, Trash2, Edit2, X, DollarSign, ShoppingCart } from "lucide-react";
-import { ItemMercado } from "../types";
+import React, { useState, useEffect } from "react";
+import {
+  ShoppingBag,
+  Plus,
+  Check,
+  Trash2,
+  Edit2,
+  X,
+  DollarSign,
+  ShoppingCart,
+  Loader2,
+  CheckCircle2,
+} from "lucide-react";
+import { ItemMercado, ContaBancaria, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
 
 interface Props {
   itens: ItemMercado[];
+  contas?: ContaBancaria[];
   onSaveItem: (item: ItemMercado) => Promise<void>;
+  onSaveLancamento?: (lancamento: Lancamento) => Promise<void>;
+  onClearLista?: () => Promise<void>;
 }
 
-export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
+export const ListaMercadoView: React.FC<Props> = ({
+  itens,
+  contas = [],
+  onSaveItem,
+  onSaveLancamento,
+  onClearLista,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ItemMercado | null>(null);
   const [quickInput, setQuickInput] = useState("");
   const [valorEstDisplay, setValorEstDisplay] = useState("");
 
   // Campos para a Finalização de Compra
+  const [checkoutValorTotal, setCheckoutValorTotal] = useState<number>(0);
+  const [checkoutValorTotalDisplay, setCheckoutValorTotalDisplay] = useState<string>("");
   const [checkoutValorPago, setCheckoutValorPago] = useState<number>(0);
   const [checkoutValorPagoDisplay, setCheckoutValorPagoDisplay] = useState<string>("");
+  const [checkoutConta, setCheckoutConta] = useState<string>("");
   const [checkoutStatus, setCheckoutStatus] = useState<"Pago" | "Pendente">("Pago");
   const [checkoutObservacoes, setCheckoutObservacoes] = useState<string>("");
+  const [isFinalizando, setIsFinalizando] = useState<boolean>(false);
+  const [finalizadoSuccess, setFinalizadoSuccess] = useState<boolean>(false);
+
+  // Auto-set default account if available and not selected
+  useEffect(() => {
+    if (!checkoutConta && contas.length > 0) {
+      setCheckoutConta(contas[0].Nome);
+    }
+  }, [contas, checkoutConta]);
 
   const [form, setForm] = useState<Partial<ItemMercado>>({
     Item: "Leite Integral",
@@ -65,6 +97,8 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
   const purchasedTotal = itens
     .filter((i) => i.Comprado === true || i.Comprado === "SIM")
     .reduce((acc, curr) => acc + getItemTotal(curr), 0);
+
+  const totalListaEstimado = unpurchasedTotal + purchasedTotal;
 
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,6 +187,80 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
       Comprado: !isBought,
       Data_Compra: !isBought ? new Date().toISOString().split("T")[0] : "",
     });
+  };
+
+  // Handler: Finalizar Compra -> Grava em 1_Lancamentos
+  const handleFinalizarCompra = async () => {
+    if (!onSaveLancamento) {
+      alert("Função de salvar lançamento não configurada.");
+      return;
+    }
+
+    // 1. Descrição: Concatenar nomes de todos os itens da lista
+    const itemNames = itens
+      .map((i) => (i.Item || "").trim())
+      .filter((name) => name.length > 0);
+    const descricaoConcatenada =
+      itemNames.length > 0 ? itemNames.join(", ") : "SUPERMERCADO";
+
+    // 2. Valor: total digitado pelo usuário no formulário, ou total estimado da lista
+    const valorCalculado =
+      checkoutValorTotal > 0
+        ? checkoutValorTotal
+        : totalListaEstimado > 0
+        ? totalListaEstimado
+        : 0;
+
+    // 3. Valor Pago: valor digitado no campo "Valor Pago" (ou o total se Pago e não informado)
+    const valorPagoCalculado =
+      checkoutValorPago > 0
+        ? checkoutValorPago
+        : checkoutStatus === "Pago"
+        ? valorCalculado
+        : 0;
+
+    setIsFinalizando(true);
+    try {
+      const novoLancamento: Lancamento = {
+        Id: generateNewId("LANC"),
+        Data: new Date().toISOString().split("T")[0],
+        Tipo: "Despesa",
+        Categoria: "SUPERMERCADO",
+        Descricao: descricaoConcatenada,
+        Valor: valorCalculado,
+        Valor_Pago: valorPagoCalculado,
+        Conta: checkoutConta || undefined,
+        Status: checkoutStatus,
+        Observacoes: checkoutObservacoes.trim() || undefined,
+      };
+
+      await onSaveLancamento(novoLancamento);
+
+      setFinalizadoSuccess(true);
+      setTimeout(() => setFinalizadoSuccess(false), 5000);
+
+      // Limpar formulário de checkout
+      setCheckoutValorTotal(0);
+      setCheckoutValorTotalDisplay("");
+      setCheckoutValorPago(0);
+      setCheckoutValorPagoDisplay("");
+      setCheckoutObservacoes("");
+
+      // Perguntar se deseja limpar a lista de compras
+      if (itens.length > 0 && onClearLista) {
+        const querLimpar = window.confirm(
+          "Compra finalizada com sucesso e registrada na aba 1_Lancamentos!\n\nDeseja limpar a lista de compras atual?"
+        );
+        if (querLimpar) {
+          await onClearLista();
+        }
+      }
+    } catch (err: any) {
+      console.error("Erro ao finalizar compra:", err);
+      alert(`Erro ao finalizar compra: ${err.message || err}`);
+    } finally {
+      setIsFinalizando(false);
+    }
   };
 
   return (
@@ -283,17 +391,44 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
 
       {/* Seção Finalizar Compra */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-emerald-400" />
             <h3 className="font-bold text-sm text-white">Finalizar Compra</h3>
           </div>
-          <span className="text-[11px] text-slate-400">
-            Campos para consolidação do lançamento
-          </span>
+          <div className="flex items-center gap-2 text-[11px] text-slate-400">
+            <span>Total da lista: <strong className="text-emerald-400 font-mono">R$ {formatCurrency(totalListaEstimado)}</strong></span>
+            {finalizadoSuccess && (
+              <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Lançamento gravado!
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+          {/* Campo Valor Total */}
+          <div>
+            <label className="text-slate-400 block mb-1 font-medium">Valor Total</label>
+            <div className="relative flex items-center">
+              <span className="absolute left-3 text-slate-400 font-semibold text-xs select-none">
+                R$
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder={formatCurrency(totalListaEstimado > 0 ? totalListaEstimado : 0)}
+                value={checkoutValorTotalDisplay}
+                onChange={(e) => {
+                  const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                  setCheckoutValorTotalDisplay(formatted);
+                  setCheckoutValorTotal(numeric);
+                }}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-9 text-white font-bold text-xs focus:outline-hidden focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
           {/* Campo Valor Pago */}
           <div>
             <label className="text-slate-400 block mb-1 font-medium">Valor Pago</label>
@@ -314,6 +449,23 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-9 text-white font-bold text-xs focus:outline-hidden focus:border-emerald-500"
               />
             </div>
+          </div>
+
+          {/* Campo Conta */}
+          <div>
+            <label className="text-slate-400 block mb-1 font-medium">Conta</label>
+            <select
+              value={checkoutConta}
+              onChange={(e) => setCheckoutConta(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-semibold focus:outline-hidden focus:border-emerald-500"
+            >
+              <option value="">Selecione uma conta...</option>
+              {contas.map((c) => (
+                <option key={c.Id || c.Nome} value={c.Nome}>
+                  {c.Nome} {c.Tipo ? `(${c.Tipo})` : ""}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Campo Status */}
@@ -345,10 +497,21 @@ export const ListaMercadoView: React.FC<Props> = ({ itens, onSaveItem }) => {
         <div className="flex justify-end pt-1">
           <button
             type="button"
-            className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-950/40"
+            onClick={handleFinalizarCompra}
+            disabled={isFinalizando}
+            className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-950/40"
           >
-            <ShoppingCart className="w-4 h-4" />
-            <span>Finalizar Compra</span>
+            {isFinalizando ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Gravando em Lançamentos...</span>
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-4 h-4" />
+                <span>Finalizar Compra</span>
+              </>
+            )}
           </button>
         </div>
       </div>

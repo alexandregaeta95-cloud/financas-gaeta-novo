@@ -430,7 +430,20 @@ export default function App() {
         {activeView === "lista_mercado" && (
           <ListaMercadoView
             itens={itensMercado}
+            contas={contas}
             onSaveItem={(item) => handleSaveGeneric(SHEET_NAMES.LISTA_MERCADO, item, setItensMercado)}
+            onSaveLancamento={handleSaveLancamento}
+            onClearLista={async () => {
+              const itemsToDelete = itensMercado.map((i) => ({ Id: i.Id }));
+              setItensMercado([]);
+              if (itemsToDelete.length > 0) {
+                try {
+                  await saveSheetRecords(SHEET_NAMES.LISTA_MERCADO, itemsToDelete, "SOFT_DELETE");
+                } catch (e) {
+                  console.error("Erro ao limpar lista de mercado na planilha:", e);
+                }
+              }
+            }}
           />
         )}
       </main>
