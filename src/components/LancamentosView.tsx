@@ -32,6 +32,32 @@ interface Props {
   initialFuelingMode?: boolean;
 }
 
+function isReceitaItem(l: any): boolean {
+  const tipo = (l.Tipo || l.tipo || "").toString().toUpperCase();
+  const cat = (l.Categoria || l.categoria || "").toString().toUpperCase();
+  return tipo === "RECEITA" || tipo === "RECEITAS" || cat === "RECEITA" || cat === "SALÁRIO" || cat === "SALARIO";
+}
+
+function isFuelItem(l: any): boolean {
+  const tipo = (l.Tipo || l.tipo || "").toString().toUpperCase();
+  const cat = (l.Categoria || l.categoria || "").toString().toUpperCase();
+  return (
+    tipo === "ABASTECIMENTO" ||
+    tipo === "ABASTECIMENTOS" ||
+    cat === "ABASTECIMENTO" ||
+    cat === "ABASTECIMENTOS" ||
+    cat.includes("COMBUSTIVEL") ||
+    cat.includes("COMBUSTÍVEL") ||
+    Boolean(l.Nome_Posto || l.Posto || l["Nome_Posto"]) ||
+    parseCurrency(l.Litros) > 0
+  );
+}
+
+function isExcludedItem(l: any): boolean {
+  const status = (l.Status || l.status || "").toString().toUpperCase();
+  return status === "EXCLUÍDO" || status === "EXCLUIDO" || status === "DELETED";
+}
+
 export const LancamentosView: React.FC<Props> = ({
   lancamentos,
   veiculos,
@@ -275,7 +301,7 @@ export const LancamentosView: React.FC<Props> = ({
     const priorFuelRecords = lancamentos
       .filter(
         (l) =>
-          (l.Tipo === "Abastecimento" || l.Categoria === "ABASTECIMENTO") &&
+          isFuelItem(l) &&
           l.Id !== (editingItem?.Id || "") &&
           (l.Veiculo === currentVeiculoName || !currentVeiculoName || l.Descricao_Do_Veiculo === currentVeiculoName) &&
           parseCurrency(l.Km_Atual) > 0 &&
@@ -387,18 +413,24 @@ export const LancamentosView: React.FC<Props> = ({
 
   // Filtered List
   const filteredList = lancamentos
-    .filter((item) => item.Status !== "Excluído")
+    .filter((item) => !isExcludedItem(item))
     .filter((item) => {
-      if (filterType === "Despesa") return item.Tipo === "Despesa";
-      if (filterType === "Receita") return item.Tipo === "Receita";
-      if (filterType === "Abastecimento")
-        return item.Tipo === "Abastecimento" || item.Categoria === "ABASTECIMENTO";
+      if (filterType === "Despesa") {
+        const tipo = (item.Tipo || "").toString().toUpperCase();
+        return tipo === "DESPESA" || tipo === "DESPESAS" || !isReceitaItem(item);
+      }
+      if (filterType === "Receita") {
+        return isReceitaItem(item);
+      }
+      if (filterType === "Abastecimento") {
+        return isFuelItem(item);
+      }
       return true;
     })
     .filter(
       (item) =>
-        item.Descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.Categoria.toLowerCase().includes(searchTerm.toLowerCase())
+        (item.Descricao || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.Categoria || "").toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => new Date(b.Data).getTime() - new Date(a.Data).getTime());
 
@@ -474,8 +506,8 @@ export const LancamentosView: React.FC<Props> = ({
         ) : (
           <div className="divide-y divide-slate-800/80">
             {filteredList.map((item, idx) => {
-              const isReceita = item.Tipo === "Receita";
-              const isFuel = item.Tipo === "Abastecimento" || item.Categoria === "ABASTECIMENTO";
+              const isReceita = isReceitaItem(item);
+              const isFuel = isFuelItem(item);
 
               return (
                 <div
