@@ -106,6 +106,22 @@ export function formatCurrencyWithSymbol(val: any): string {
 }
 
 /**
+ * Format currency mask in real-time as user types numbers (e.g. 10000 -> 100,00, 125050 -> 1.250,50)
+ */
+export function formatCurrencyInput(raw: string): { numeric: number; formatted: string } {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits || digits === "0" || digits === "00") {
+    return { numeric: 0, formatted: "" };
+  }
+  const num = Number(digits) / 100;
+  const formatted = num.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return { numeric: num, formatted };
+}
+
+/**
  * Format Time string safely.
  * Solves Google Sheets 1899-12-30 epoch issue for time-only fields:
  * - If ISO string like "1899-12-30T14:30:00.000Z" -> "14:30"

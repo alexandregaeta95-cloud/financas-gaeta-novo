@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { ContaBancaria, CartaoCredito, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
-import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { parseCurrency, formatCurrency, formatCurrencyInput } from "../utils/formatters";
 
 interface Props {
   contas: ContaBancaria[];
@@ -35,6 +35,7 @@ export const ContasCartoesView: React.FC<Props> = ({
   // Conta Modal State
   const [isContaModalOpen, setIsContaModalOpen] = useState(false);
   const [editingConta, setEditingConta] = useState<ContaBancaria | null>(null);
+  const [saldoInicialDisplay, setSaldoInicialDisplay] = useState<string>("");
   const [contaForm, setContaForm] = useState<Partial<ContaBancaria>>({
     Nome: "Conta Corrente Itaú",
     Tipo: "BANCO",
@@ -79,6 +80,8 @@ export const ContasCartoesView: React.FC<Props> = ({
     if (c) {
       setEditingConta(c);
       setContaForm({ ...c });
+      const valNum = parseCurrency(c.Saldo_Inicial);
+      setSaldoInicialDisplay(valNum !== 0 ? formatCurrency(valNum) : "");
     } else {
       setEditingConta(null);
       setContaForm({
@@ -92,6 +95,7 @@ export const ContasCartoesView: React.FC<Props> = ({
         Cor: "#059669",
         Ativa: true,
       });
+      setSaldoInicialDisplay(formatCurrency(1000));
     }
     setIsContaModalOpen(true);
   };
@@ -402,13 +406,26 @@ export const ContasCartoesView: React.FC<Props> = ({
 
                 <div>
                   <label className="text-slate-400 block mb-1">Saldo Inicial (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={contaForm.Saldo_Inicial}
-                    onChange={(e) => setContaForm({ ...contaForm, Saldo_Inicial: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold"
-                  />
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-slate-400 font-semibold text-sm select-none">
+                      R$
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0,00"
+                      value={saldoInicialDisplay}
+                      onChange={(e) => {
+                        const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                        setSaldoInicialDisplay(formatted);
+                        setContaForm((prev) => ({
+                          ...prev,
+                          Saldo_Inicial: numeric,
+                        }));
+                      }}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-10 text-white font-bold"
+                    />
+                  </div>
                 </div>
               </div>
 
