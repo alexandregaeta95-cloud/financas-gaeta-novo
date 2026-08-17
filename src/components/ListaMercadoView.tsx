@@ -72,7 +72,7 @@ export const ListaMercadoView: React.FC<Props> = ({
     new Set([
       ...defaultCategorias,
       ...itens
-        .map((i) => (i.Categoria || "").trim().toUpperCase())
+        .map((i) => String(i.Categoria || "").trim().toUpperCase())
         .filter((c) => c.length > 0),
     ])
   );

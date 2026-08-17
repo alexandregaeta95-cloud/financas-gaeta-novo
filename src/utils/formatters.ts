@@ -816,6 +816,6 @@ export function normalizeCompromissoAgenda(raw: any): CompromissoAgenda {
     Lembrete_Ativo: raw.Lembrete_Ativo ?? "SIM",
     Dias_De_Antecedência: Number(raw.Dias_De_Antecedência || 1),
     Concluído: concluido,
-    Categoria: raw.Categoria ?? "Geral",
+    Categoria: raw.Categoria != null ? String(raw.Categoria).trim() : "Geral",
   };
 }

@@ -30,7 +30,7 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
     new Set([
       ...defaultCategorias,
       ...agenda
-        .map((a) => (a.Categoria || "").trim().toUpperCase())
+        .map((a) => String(a.Categoria || "").trim().toUpperCase())
         .filter((c) => c.length > 0),
     ])
   );
@@ -51,7 +51,10 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
   const handleOpenModal = (item?: CompromissoAgenda) => {
     if (item) {
       setEditingItem(item);
-      setForm({ ...item, Categoria: item.Categoria || "GERAL" });
+      setForm({
+        ...item,
+        Categoria: item.Categoria != null ? String(item.Categoria) : "GERAL",
+      });
     } else {
       setEditingItem(null);
       setForm({
@@ -83,7 +86,7 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
       Lembrete_Ativo: form.Lembrete_Ativo || "SIM",
       Dias_De_Antecedência: Number(form.Dias_De_Antecedência) || 1,
       Concluído: form.Concluído === true || form.Concluído === "SIM",
-      Categoria: form.Categoria || "Geral",
+      Categoria: form.Categoria != null ? String(form.Categoria).trim() : "GERAL",
     };
     await onSaveCompromisso(item);
     setIsModalOpen(false);
