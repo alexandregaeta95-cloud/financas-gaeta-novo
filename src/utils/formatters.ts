@@ -323,6 +323,18 @@ export function normalizeLancamento(raw: any): Lancamento {
     ).trim(),
     Motorista: String(raw.Motorista ?? raw.motorista ?? raw.Condutor ?? raw.condutor ?? "").trim(),
     Media_KmL: mediaKmL,
+    Tipo_Combustivel: String(
+      raw.Tipo_Combustivel ??
+        raw["Tipo_Combustivel"] ??
+        raw["Tipo_Combustível"] ??
+        raw["Tipo Combustivel"] ??
+        raw["Tipo Combustível"] ??
+        raw["Tipo_De_Combustivel"] ??
+        raw["Tipo_de_Combustível"] ??
+        raw.tipo_combustivel ??
+        raw.tipoCombustivel ??
+        ""
+    ).trim(),
   };
 }
 
@@ -420,6 +432,18 @@ export function normalizeAbastecimento(raw: any): Abastecimento {
     ).trim(),
     Media_KmL: mediaKmL,
     Observacoes: raw.Observacoes ?? raw.Observações ?? raw.observacoes ?? "",
+    Tipo_Combustivel: String(
+      raw.Tipo_Combustivel ??
+        raw["Tipo_Combustivel"] ??
+        raw["Tipo_Combustível"] ??
+        raw["Tipo Combustivel"] ??
+        raw["Tipo Combustível"] ??
+        raw["Tipo_De_Combustivel"] ??
+        raw["Tipo_de_Combustível"] ??
+        raw.tipo_combustivel ??
+        raw.tipoCombustivel ??
+        ""
+    ).trim(),
   };
 }
 

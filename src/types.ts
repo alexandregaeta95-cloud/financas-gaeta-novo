@@ -31,6 +31,7 @@ export interface Lancamento {
   Nome_Posto?: string;
   Localizacao_Do_Posto?: string;
   Comprovante_Url?: string;
+  Tipo_Combustivel?: string; // Álcool, Álcool Aditivado, Gasolina Comum, Gasolina Aditivada
 }
 
 // 4. Abastecimentos (Mirror read-only view)
@@ -52,6 +53,7 @@ export interface Abastecimento {
   Comprovante_Url?: string;
   Media_KmL?: number;
   Observacoes?: string;
+  Tipo_Combustivel?: string;
 }
 
 // 5. Contas Bancárias

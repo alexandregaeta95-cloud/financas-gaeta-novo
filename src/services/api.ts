@@ -366,6 +366,32 @@ export async function saveSheetRecords<T = any>(
       enriched["Observação"] = val;
     }
 
+    // Tipo_Combustivel mapping (1_Lancamentos)
+    if (
+      item.Tipo_Combustivel !== undefined ||
+      item["Tipo_Combustivel"] !== undefined ||
+      item["Tipo_Combustível"] !== undefined ||
+      item["Tipo Combustivel"] !== undefined ||
+      item["Tipo Combustível"] !== undefined ||
+      item["Tipo_De_Combustivel"] !== undefined ||
+      item["Tipo_de_Combustível"] !== undefined
+    ) {
+      const val =
+        item.Tipo_Combustivel ??
+        item["Tipo_Combustivel"] ??
+        item["Tipo_Combustível"] ??
+        item["Tipo Combustivel"] ??
+        item["Tipo Combustível"] ??
+        item["Tipo_De_Combustivel"] ??
+        item["Tipo_de_Combustível"];
+      enriched["Tipo_Combustivel"] = val;
+      enriched["Tipo_Combustível"] = val;
+      enriched["Tipo Combustivel"] = val;
+      enriched["Tipo Combustível"] = val;
+      enriched["Tipo_De_Combustivel"] = val;
+      enriched["Tipo_de_Combustível"] = val;
+    }
+
     return enriched;
   });
 

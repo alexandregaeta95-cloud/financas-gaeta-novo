@@ -65,9 +65,10 @@ var HEADERS_BY_SHEET = {
     "Nome_Posto",
     "Localização_Do_Posto",
     "Comprovante_Url",
-    "OBS"
+    "OBS",
+    "Tipo_Combustivel"
   ],
-  "4_Abastecimentos": ["Id", "Data", "Veiculo", "Km_Atual", "Km_Percorrido", "Litros", "Preco_Litro", "Valor_Total", "Posto", "Media_KmL", "Observacoes"],
+  "4_Abastecimentos": ["Id", "Data", "Veiculo", "Km_Atual", "Km_Percorrido", "Litros", "Preco_Litro", "Valor_Total", "Posto", "Media_KmL", "Observacoes", "Tipo_Combustivel"],
   "5_Contas_Bancarias": ["Id", "Nome", "Saldo_Inicial", "Saldo_Atual", "Cor", "Ícone", "Tipo", "Agência", "Conta", "Limite", "Ativa"],
   "6_Consultas_Médicas": ["Id", "Especialidade", "Médico", "Data", "Horas", "Local", "Lembrete_Ativo", "Status", "Observação"],
   "7_Receitas_Médicas": ["Id", "Medicamento", "Dosagem", "Frequência", "Médico", "Data_Emissão", "Data_Validade", "Data_Vencimento", "Instruções", "Especialidade", "Observação", "Arquivo_Anexo", "Ativa"],
@@ -397,7 +398,8 @@ function writeSheetRecords(ss, sheetName, items, action) {
     { key: "Motorista", label: "Motorista" },
     { key: "Nome_Posto", label: "Nome_Posto" },
     { key: "Localizacao_Do_Posto", label: "Localização_Do_Posto" },
-    { key: "Comprovante_Url", label: "Comprovante_Url" }
+    { key: "Comprovante_Url", label: "Comprovante_Url" },
+    { key: "Tipo_Combustivel", label: "Tipo_Combustivel" }
   ];
 
   items.forEach(function(item) {
@@ -537,7 +539,8 @@ function syncFuelMirror(ss, fuelItems) {
       Completou_O_Tanque: item.Completou_O_Tanque || "SIM",
       Comprovante_Url: item.Comprovante_Url || "",
       Media_KmL: mediaKmL,
-      Observacoes: item.Observacoes || item.Descricao || ""
+      Observacoes: item.Observacoes || item.Descricao || "",
+      Tipo_Combustivel: item.Tipo_Combustivel || ""
     };
   });
 

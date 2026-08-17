@@ -286,6 +286,7 @@ export const LancamentosView: React.FC<Props> = ({
         Completou_O_Tanque: "SIM",
         Localizacao_Do_Posto: "",
         Comprovante_Url: "",
+        Tipo_Combustivel: initialFuelingMode ? "Gasolina Comum" : "",
       });
       setValorDisplay("");
       setValorPagoDisplay("");
@@ -318,6 +319,7 @@ export const LancamentosView: React.FC<Props> = ({
       Completou_O_Tanque: "SIM",
       Localizacao_Do_Posto: "",
       Comprovante_Url: "",
+      Tipo_Combustivel: isFuel ? "Gasolina Comum" : "",
     });
     setValorDisplay("");
     setValorPagoDisplay("");
@@ -333,6 +335,9 @@ export const LancamentosView: React.FC<Props> = ({
       Completou_O_Tanque: item.Completou_O_Tanque || "SIM",
       Localizacao_Do_Posto: item.Localizacao_Do_Posto || "",
       Comprovante_Url: item.Comprovante_Url || "",
+      Tipo_Combustivel:
+        item.Tipo_Combustivel ||
+        (item.Categoria === "ABASTECIMENTO" || item.Tipo === "Abastecimento" ? "Gasolina Comum" : ""),
     });
     const valorNum = parseCurrency(item.Valor);
     setValorDisplay(valorNum > 0 ? formatCurrency(valorNum) : "");
@@ -493,6 +498,7 @@ export const LancamentosView: React.FC<Props> = ({
         Nome_Posto: isFuel ? nomePosto : undefined,
         Localizacao_Do_Posto: isFuel ? localizacaoPosto : undefined,
         Comprovante_Url: isFuel ? comprovanteUrl : undefined,
+        Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "Gasolina Comum") : undefined,
       };
 
       await onSaveLancamento(itemToSave);
@@ -633,6 +639,11 @@ export const LancamentosView: React.FC<Props> = ({
                         <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400 border border-slate-700">
                           {item.Categoria}
                         </span>
+                        {isFuel && item.Tipo_Combustivel && (
+                          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-300 border border-amber-500/20">
+                            {item.Tipo_Combustivel}
+                          </span>
+                        )}
                         {isFuel && (item.Localizacao_Do_Posto || item.Posto) && (
                           <button
                             type="button"
@@ -940,6 +951,25 @@ export const LancamentosView: React.FC<Props> = ({
                         ))}
                       </datalist>
                     </div>
+                  </div>
+
+                  {/* Tipo de Combustível */}
+                  <div>
+                    <label className="block text-slate-400 text-[11px] mb-1">
+                      Tipo de Combustível
+                    </label>
+                    <select
+                      value={formData.Tipo_Combustivel || "Gasolina Comum"}
+                      onChange={(e) =>
+                        setFormData({ ...formData, Tipo_Combustivel: e.target.value })
+                      }
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                    >
+                      <option value="Álcool">Álcool</option>
+                      <option value="Álcool Aditivado">Álcool Aditivado</option>
+                      <option value="Gasolina Comum">Gasolina Comum</option>
+                      <option value="Gasolina Aditivada">Gasolina Aditivada</option>
+                    </select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">

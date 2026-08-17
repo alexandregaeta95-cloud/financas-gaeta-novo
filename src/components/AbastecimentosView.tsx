@@ -137,6 +137,11 @@ export const AbastecimentosView: React.FC<Props> = ({ abastecimentos, onOpenNewF
                         <span className="font-bold text-white text-sm">
                           {item.Veiculo || "Veículo"}
                         </span>
+                        {item.Tipo_Combustivel && (
+                          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-300 border border-amber-500/20 font-medium">
+                            {item.Tipo_Combustivel}
+                          </span>
+                        )}
                         {item.Posto && (
                           <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 border border-slate-700 flex items-center gap-1">
                             {item.Posto}
