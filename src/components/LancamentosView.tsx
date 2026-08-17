@@ -166,7 +166,7 @@ export const LancamentosView: React.FC<Props> = ({
   // Form State
   const [formData, setFormData] = useState<Partial<Lancamento>>({
     Data: new Date().toISOString().split("T")[0],
-    Tipo: initialFuelingMode ? "Abastecimento" : "Despesa",
+    Tipo: initialFuelingMode ? "ABASTECIMENTO" : "DESPESA",
     Categoria: initialFuelingMode ? "ABASTECIMENTO" : "Alimentação",
     Descricao: "",
     Valor: 0,
@@ -184,6 +184,7 @@ export const LancamentosView: React.FC<Props> = ({
     Completou_O_Tanque: "SIM",
     Localizacao_Do_Posto: "",
     Comprovante_Url: "",
+    Tipo_Combustivel: initialFuelingMode ? "GASOLINA COMUM" : "",
   });
 
   // Lista de motoristas únicos cadastrados na aba 9_Veículos e em lançamentos anteriores
@@ -204,10 +205,10 @@ export const LancamentosView: React.FC<Props> = ({
 
   // Lista dinâmica de categorias disponíveis para Despesas / Receitas / Abastecimentos
   const categoriasDisponiveis = useMemo(() => {
-    const isReceita = (formData.Tipo || "").toLowerCase() === "receita";
+    const isReceita = (formData.Tipo || "").toString().toUpperCase() === "RECEITA";
     const isAbastecimento =
-      (formData.Tipo || "").toLowerCase() === "abastecimento" ||
-      (formData.Categoria || "").toUpperCase() === "ABASTECIMENTO";
+      (formData.Tipo || "").toString().toUpperCase() === "ABASTECIMENTO" ||
+      (formData.Categoria || "").toString().toUpperCase() === "ABASTECIMENTO";
 
     const defaults = isAbastecimento
       ? ["ABASTECIMENTO"]
@@ -268,7 +269,7 @@ export const LancamentosView: React.FC<Props> = ({
       const defM = defV?.Motorista ? defV.Motorista.trim() : "";
       setFormData({
         Data: new Date().toISOString().split("T")[0],
-        Tipo: initialFuelingMode ? "Abastecimento" : "Despesa",
+        Tipo: initialFuelingMode ? "ABASTECIMENTO" : "DESPESA",
         Categoria: initialFuelingMode ? "ABASTECIMENTO" : "Alimentação",
         Descricao: "",
         Valor: 0,
@@ -286,7 +287,7 @@ export const LancamentosView: React.FC<Props> = ({
         Completou_O_Tanque: "SIM",
         Localizacao_Do_Posto: "",
         Comprovante_Url: "",
-        Tipo_Combustivel: initialFuelingMode ? "Gasolina Comum" : "",
+        Tipo_Combustivel: initialFuelingMode ? "GASOLINA COMUM" : "",
       });
       setValorDisplay("");
       setValorPagoDisplay("");
@@ -301,7 +302,7 @@ export const LancamentosView: React.FC<Props> = ({
     const defM = defV?.Motorista ? defV.Motorista.trim() : "";
     setFormData({
       Data: new Date().toISOString().split("T")[0],
-      Tipo: isFuel ? "Abastecimento" : "Despesa",
+      Tipo: isFuel ? "ABASTECIMENTO" : "DESPESA",
       Categoria: isFuel ? "ABASTECIMENTO" : "Alimentação",
       Descricao: "",
       Valor: 0,
@@ -319,7 +320,7 @@ export const LancamentosView: React.FC<Props> = ({
       Completou_O_Tanque: "SIM",
       Localizacao_Do_Posto: "",
       Comprovante_Url: "",
-      Tipo_Combustivel: isFuel ? "Gasolina Comum" : "",
+      Tipo_Combustivel: isFuel ? "GASOLINA COMUM" : "",
     });
     setValorDisplay("");
     setValorPagoDisplay("");
@@ -330,14 +331,23 @@ export const LancamentosView: React.FC<Props> = ({
 
   const handleOpenEdit = (item: Lancamento) => {
     setEditingItem(item);
+    const rawFuelType = item.Tipo_Combustivel ? String(item.Tipo_Combustivel).trim().toUpperCase() : "";
+    const rawTipo = item.Tipo
+      ? String(item.Tipo).trim().toUpperCase()
+      : isFuelItem(item)
+      ? "ABASTECIMENTO"
+      : isReceitaItem(item)
+      ? "RECEITA"
+      : "DESPESA";
     setFormData({
       ...item,
+      Tipo: rawTipo,
       Completou_O_Tanque: item.Completou_O_Tanque || "SIM",
       Localizacao_Do_Posto: item.Localizacao_Do_Posto || "",
       Comprovante_Url: item.Comprovante_Url || "",
       Tipo_Combustivel:
-        item.Tipo_Combustivel ||
-        (item.Categoria === "ABASTECIMENTO" || item.Tipo === "Abastecimento" ? "Gasolina Comum" : ""),
+        rawFuelType ||
+        (item.Categoria === "ABASTECIMENTO" || item.Tipo === "Abastecimento" ? "GASOLINA COMUM" : ""),
     });
     const valorNum = parseCurrency(item.Valor);
     setValorDisplay(valorNum > 0 ? formatCurrency(valorNum) : "");
@@ -457,11 +467,11 @@ export const LancamentosView: React.FC<Props> = ({
           (c) => String(c.Nome || "").trim().toUpperCase() === finalCategoria
         );
         if (!jaExiste) {
-          const isReceita = (formData.Tipo || "").toLowerCase() === "receita";
+          const isReceita = (formData.Tipo || "").toString().toUpperCase() === "RECEITA";
           const novaCat: CategoriaCustomizada = {
             Id: generateNewId("CAT"),
             Nome: finalCategoria,
-            Tipo: isReceita ? "Receita" : "Despesa",
+            Tipo: isReceita ? "RECEITA" : "DESPESA",
             Icone: isReceita ? "TrendingUp" : "Tag",
             Cor_Hex: isReceita ? "#10b981" : "#6366f1",
           };
@@ -474,7 +484,7 @@ export const LancamentosView: React.FC<Props> = ({
       const itemToSave: Lancamento = {
         Id: editingItem?.Id || generateNewId("LANC"),
         Data: formData.Data || new Date().toISOString().split("T")[0],
-        Tipo: isFuel ? "Abastecimento" : (formData.Tipo || "Despesa"),
+        Tipo: isFuel ? "ABASTECIMENTO" : (formData.Tipo ? String(formData.Tipo).toUpperCase() : "DESPESA"),
         Categoria: finalCategoria,
         Subcategoria: formData.Subcategoria || "",
         Descricao: formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : ""),
@@ -498,7 +508,7 @@ export const LancamentosView: React.FC<Props> = ({
         Nome_Posto: isFuel ? nomePosto : undefined,
         Localizacao_Do_Posto: isFuel ? localizacaoPosto : undefined,
         Comprovante_Url: isFuel ? comprovanteUrl : undefined,
-        Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "Gasolina Comum") : undefined,
+        Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "GASOLINA COMUM") : undefined,
       };
 
       await onSaveLancamento(itemToSave);
@@ -735,20 +745,20 @@ export const LancamentosView: React.FC<Props> = ({
                 <div>
                   <label className="block text-slate-400 mb-1">Tipo</label>
                   <select
-                    value={formData.Tipo}
+                    value={formData.Tipo ? String(formData.Tipo).toUpperCase() : "DESPESA"}
                     onChange={(e) => {
                       const t = e.target.value as any;
                       setFormData((prev) => ({
                         ...prev,
                         Tipo: t,
-                        Categoria: t === "Abastecimento" ? "ABASTECIMENTO" : prev.Categoria,
+                        Categoria: t === "ABASTECIMENTO" ? "ABASTECIMENTO" : prev.Categoria,
                       }));
                     }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
                   >
-                    <option value="Despesa">Despesa</option>
-                    <option value="Receita">Receita</option>
-                    <option value="Abastecimento">Abastecimento</option>
+                    <option value="DESPESA">DESPESA</option>
+                    <option value="RECEITA">RECEITA</option>
+                    <option value="ABASTECIMENTO">ABASTECIMENTO</option>
                   </select>
                 </div>
 
@@ -959,16 +969,16 @@ export const LancamentosView: React.FC<Props> = ({
                       Tipo de Combustível
                     </label>
                     <select
-                      value={formData.Tipo_Combustivel || "Gasolina Comum"}
+                      value={formData.Tipo_Combustivel || "GASOLINA COMUM"}
                       onChange={(e) =>
                         setFormData({ ...formData, Tipo_Combustivel: e.target.value })
                       }
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
                     >
-                      <option value="Álcool">Álcool</option>
-                      <option value="Álcool Aditivado">Álcool Aditivado</option>
-                      <option value="Gasolina Comum">Gasolina Comum</option>
-                      <option value="Gasolina Aditivada">Gasolina Aditivada</option>
+                      <option value="ÁLCOOL">ÁLCOOL</option>
+                      <option value="ÁLCOOL ADITIVADO">ÁLCOOL ADITIVADO</option>
+                      <option value="GASOLINA COMUM">GASOLINA COMUM</option>
+                      <option value="GASOLINA ADITIVADA">GASOLINA ADITIVADA</option>
                     </select>
                   </div>
 

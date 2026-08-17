@@ -245,12 +245,18 @@ export const ContasCartoesView: React.FC<Props> = ({
 
                 <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
                   <div>
+                    <span className="text-slate-500 text-[10px] block">Saldo Atual</span>
+                    <span className={`font-bold ${(c.Saldo_Atual ?? c.Saldo_Inicial) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                      R$ {formatCurrency(c.Saldo_Atual ?? c.Saldo_Inicial)}
+                    </span>
+                  </div>
+                  <div>
                     <span className="text-slate-500 text-[10px] block">Saldo Inicial</span>
-                    <span className="font-semibold text-slate-200">R$ {formatCurrency(c.Saldo_Inicial)}</span>
+                    <span className="font-semibold text-slate-300">R$ {formatCurrency(c.Saldo_Inicial)}</span>
                   </div>
                   <div>
                     <span className="text-slate-500 text-[10px] block">Limite Disponível</span>
-                    <span className="font-bold text-emerald-400">R$ {formatCurrency(c.Limite)}</span>
+                    <span className="font-semibold text-slate-300">R$ {formatCurrency(c.Limite)}</span>
                   </div>
                   {c.Agência && (
                     <div>

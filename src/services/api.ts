@@ -366,6 +366,49 @@ export async function saveSheetRecords<T = any>(
       enriched["Observação"] = val;
     }
 
+    // Saldo_Inicial and Saldo_Atual mapping with Brazilian currency format support (5_Contas_Bancarias)
+    if (
+      item.Saldo_Inicial !== undefined ||
+      item["Saldo_Inicial"] !== undefined ||
+      item["Saldo Inicial"] !== undefined ||
+      item.saldo_inicial !== undefined
+    ) {
+      const rawIni =
+        item.Saldo_Inicial ??
+        item["Saldo_Inicial"] ??
+        item["Saldo Inicial"] ??
+        item.saldo_inicial;
+      const numIni = typeof rawIni === "number" ? rawIni : parseCurrency(rawIni);
+      const formattedIni = numIni.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      enriched["Saldo_Inicial"] = formattedIni;
+      enriched["Saldo Inicial"] = formattedIni;
+      enriched["Saldo_inicial"] = formattedIni;
+    }
+
+    if (
+      item.Saldo_Atual !== undefined ||
+      item["Saldo_Atual"] !== undefined ||
+      item["Saldo Atual"] !== undefined ||
+      item.saldo_atual !== undefined
+    ) {
+      const rawAtu =
+        item.Saldo_Atual ??
+        item["Saldo_Atual"] ??
+        item["Saldo Atual"] ??
+        item.saldo_atual;
+      const numAtu = typeof rawAtu === "number" ? rawAtu : parseCurrency(rawAtu);
+      const formattedAtu = numAtu.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      enriched["Saldo_Atual"] = formattedAtu;
+      enriched["Saldo Atual"] = formattedAtu;
+      enriched["Saldo_atual"] = formattedAtu;
+    }
+
     // Tipo_Combustivel mapping (1_Lancamentos)
     if (
       item.Tipo_Combustivel !== undefined ||

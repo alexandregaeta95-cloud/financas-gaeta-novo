@@ -197,12 +197,23 @@ export function normalizeLancamento(raw: any): Lancamento {
     raw.Valor_Pago ?? raw["Valor_Pago"] ?? raw.valor_pago ?? raw.valorPago ?? 0
   );
 
-  const tipo = (
-    raw.Tipo ?? raw.tipo ?? (raw.Categoria === "ABASTECIMENTO" ? "Abastecimento" : "Despesa")
-  ) as any;
+  const rawTipo = raw.Tipo ?? raw.tipo;
+  let tipo = rawTipo;
+  if (!tipo) {
+    tipo =
+      String(raw.Categoria || "").toUpperCase() === "ABASTECIMENTO"
+        ? "ABASTECIMENTO"
+        : "DESPESA";
+  } else {
+    const tUpper = String(tipo).trim().toUpperCase();
+    if (tUpper === "DESPESA" || tUpper === "DESPESAS") tipo = "DESPESA";
+    else if (tUpper === "RECEITA" || tUpper === "RECEITAS") tipo = "RECEITA";
+    else if (tUpper === "ABASTECIMENTO" || tUpper === "ABASTECIMENTOS") tipo = "ABASTECIMENTO";
+    else tipo = tUpper;
+  }
 
   const categoria = (
-    raw.Categoria ?? raw.categoria ?? (tipo === "Abastecimento" ? "ABASTECIMENTO" : "Outros")
+    raw.Categoria ?? raw.categoria ?? (tipo === "ABASTECIMENTO" ? "ABASTECIMENTO" : "Outros")
   ) as string;
 
   const data = formatDateBR(raw.Data ?? raw.data ?? new Date().toISOString().split("T")[0]);
@@ -842,4 +853,54 @@ export function normalizeCompromissoAgenda(raw: any): CompromissoAgenda {
     Concluído: concluido,
     Categoria: raw.Categoria != null ? String(raw.Categoria).trim() : "Geral",
   };
+}
+
+/**
+ * Calculates current dynamic balance for a bank account based on its initial balance
+ * and all active (non-excluded) lancamentos linked to this account name.
+ */
+export function calculateAccountCurrentBalance(
+  conta: ContaBancaria,
+  lancamentos: Lancamento[]
+): number {
+  if (!conta) return 0;
+  const initial = parseCurrency(conta.Saldo_Inicial ?? 0);
+  const targetContaNome = String(conta.Nome || "").trim().toUpperCase();
+
+  if (!targetContaNome) return initial;
+
+  let delta = 0;
+  lancamentos.forEach((l) => {
+    // Skip excluded/deleted items
+    const status = String(l.Status || "").toUpperCase();
+    if (status === "EXCLUÍDO" || status === "EXCLUIDO" || status === "DELETED") {
+      return;
+    }
+
+    const itemConta = String(l.Conta || "").trim().toUpperCase();
+    if (itemConta !== targetContaNome) {
+      return;
+    }
+
+    const valor = parseCurrency(l.Valor ?? 0);
+    const tipo = String(l.Tipo || "").trim().toUpperCase();
+    const cat = String(l.Categoria || "").trim().toUpperCase();
+
+    const isReceita = tipo === "RECEITA" || tipo === "RECEITAS" || cat === "RECEITA";
+    const isDespesaOuAbastecimento =
+      tipo === "DESPESA" ||
+      tipo === "DESPESAS" ||
+      tipo === "ABASTECIMENTO" ||
+      tipo === "ABASTECIMENTOS" ||
+      cat === "ABASTECIMENTO" ||
+      !isReceita;
+
+    if (isReceita) {
+      delta += valor;
+    } else if (isDespesaOuAbastecimento) {
+      delta -= valor;
+    }
+  });
+
+  return initial + delta;
 }

@@ -7,7 +7,16 @@
 export interface Lancamento {
   Id: string;
   Data: string; // YYYY-MM-DD
-  Tipo: "Despesa" | "Receita" | "Abastecimento" | "Transferência";
+  Tipo:
+    | "DESPESA"
+    | "RECEITA"
+    | "ABASTECIMENTO"
+    | "TRANSFERÊNCIA"
+    | "Despesa"
+    | "Receita"
+    | "Abastecimento"
+    | "Transferência"
+    | string;
   Categoria: string;
   Subcategoria?: string;
   Descricao: string;

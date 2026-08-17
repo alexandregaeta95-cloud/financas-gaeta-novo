@@ -49,6 +49,8 @@ import {
   testAppsScriptConnection,
 } from "./services/api";
 
+import { calculateAccountCurrentBalance } from "./utils/formatters";
+
 export default function App() {
   const [activeView, setActiveView] = useState<ModuleView>("dashboard");
 
@@ -188,7 +190,14 @@ export default function App() {
       if (fetchedLancamentos) setLancamentos(fetchedLancamentos);
       if (fetchedAbastecimentos) setAbastecimentos(fetchedAbastecimentos);
       if (fetchedVeiculos && fetchedVeiculos.length > 0) setVeiculos(fetchedVeiculos);
-      if (fetchedContas && fetchedContas.length > 0) setContas(fetchedContas);
+      if (fetchedContas && fetchedContas.length > 0) {
+        const activeLancs = fetchedLancamentos || lancamentos;
+        const contasWithDynamicBalance = fetchedContas.map((c) => ({
+          ...c,
+          Saldo_Atual: calculateAccountCurrentBalance(c, activeLancs),
+        }));
+        setContas(contasWithDynamicBalance);
+      }
       if (fetchedCartoes) setCartoes(fetchedCartoes);
       if (fetchedServicos) setServicos(fetchedServicos);
       if (fetchedManutencoes) setManutencoes(fetchedManutencoes);
@@ -241,34 +250,71 @@ export default function App() {
     handleSyncAll();
   }, [handleSyncAll]);
 
-  // Handler: Save Lancamento
+  // Handler: Save Lancamento (with automatic bank account dynamic balance recalculation)
   const handleSaveLancamento = async (item: Lancamento) => {
+    let nextLancamentos: Lancamento[] = [];
     setLancamentos((prev) => {
       const idx = prev.findIndex((l) => l.Id === item.Id);
       if (idx !== -1) {
-        const next = [...prev];
-        next[idx] = item;
-        return next;
+        nextLancamentos = [...prev];
+        nextLancamentos[idx] = item;
+      } else {
+        nextLancamentos = [item, ...prev];
       }
-      return [item, ...prev];
+      return nextLancamentos;
+    });
+
+    // Recalculate and update affected accounts locally and on sheet
+    const updatedContasToSave: ContaBancaria[] = [];
+    setContas((prevContas) => {
+      return prevContas.map((c) => {
+        const novoSaldo = calculateAccountCurrentBalance(c, nextLancamentos);
+        const updatedConta = { ...c, Saldo_Atual: novoSaldo };
+        updatedContasToSave.push(updatedConta);
+        return updatedConta;
+      });
     });
 
     try {
       await saveSheetRecords(SHEET_NAMES.LANCAMENTOS, [item], "UPSERT");
+      if (updatedContasToSave.length > 0) {
+        saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT").catch((e) =>
+          console.warn("Auto-syncing account balances failed:", e)
+        );
+      }
       handleSyncAll();
     } catch (err: any) {
       alert(`Erro ao salvar na planilha: ${err.message || err}`);
     }
   };
 
-  // Handler: Delete Lancamento
+  // Handler: Delete Lancamento (with automatic bank account dynamic balance recalculation)
   const handleDeleteLancamento = async (id: string) => {
     if (!window.confirm("Deseja realmente marcar este lançamento como excluído?")) return;
 
-    setLancamentos((prev) => prev.filter((l) => l.Id !== id));
+    let nextLancamentos: Lancamento[] = [];
+    setLancamentos((prev) => {
+      nextLancamentos = prev.filter((l) => l.Id !== id);
+      return nextLancamentos;
+    });
+
+    const updatedContasToSave: ContaBancaria[] = [];
+    setContas((prevContas) => {
+      return prevContas.map((c) => {
+        const novoSaldo = calculateAccountCurrentBalance(c, nextLancamentos);
+        const updatedConta = { ...c, Saldo_Atual: novoSaldo };
+        updatedContasToSave.push(updatedConta);
+        return updatedConta;
+      });
+    });
 
     try {
       await saveSheetRecords(SHEET_NAMES.LANCAMENTOS, [{ Id: id }], "SOFT_DELETE");
+      if (updatedContasToSave.length > 0) {
+        saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT").catch((e) =>
+          console.warn("Auto-syncing account balances after delete failed:", e)
+        );
+      }
       handleSyncAll();
     } catch (err: any) {
       alert(`Erro ao excluir lançamento: ${err.message || err}`);
