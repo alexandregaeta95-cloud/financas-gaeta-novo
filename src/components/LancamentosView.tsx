@@ -16,7 +16,7 @@ import {
   Navigation,
   Loader2
 } from "lucide-react";
-import { Lancamento, Veiculo, ContaBancaria } from "../types";
+import { Lancamento, Veiculo, ContaBancaria, CategoriaCustomizada } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
 
@@ -24,7 +24,9 @@ interface Props {
   lancamentos: Lancamento[];
   veiculos: Veiculo[];
   contas: ContaBancaria[];
+  categoriasCustom?: CategoriaCustomizada[];
   onSaveLancamento: (lancamento: Lancamento) => Promise<void>;
+  onSaveCategoria?: (categoria: CategoriaCustomizada) => Promise<void>;
   onDeleteLancamento: (id: string) => Promise<void>;
   isModalOpen: boolean;
   onCloseModal: () => void;
@@ -62,7 +64,9 @@ export const LancamentosView: React.FC<Props> = ({
   lancamentos,
   veiculos,
   contas,
+  categoriasCustom = [],
   onSaveLancamento,
+  onSaveCategoria,
   onDeleteLancamento,
   isModalOpen,
   onCloseModal,
@@ -197,6 +201,65 @@ export const LancamentosView: React.FC<Props> = ({
     });
     return Array.from(set);
   }, [veiculos, lancamentos]);
+
+  // Lista dinâmica de categorias disponíveis para Despesas / Receitas / Abastecimentos
+  const categoriasDisponiveis = useMemo(() => {
+    const isReceita = (formData.Tipo || "").toLowerCase() === "receita";
+    const isAbastecimento =
+      (formData.Tipo || "").toLowerCase() === "abastecimento" ||
+      (formData.Categoria || "").toUpperCase() === "ABASTECIMENTO";
+
+    const defaults = isAbastecimento
+      ? ["ABASTECIMENTO"]
+      : isReceita
+      ? [
+          "SALÁRIO",
+          "INVESTIMENTOS",
+          "RENDIMENTOS",
+          "FREELANCE",
+          "REEMBOLSO",
+          "VENDAS",
+          "RECEITA",
+          "OUTROS",
+        ]
+      : [
+          "ALIMENTAÇÃO",
+          "SUPERMERCADO",
+          "TRANSPORTE",
+          "MORADIA",
+          "CONTAS",
+          "SAÚDE",
+          "LAZER",
+          "EDUCAÇÃO",
+          "VESTUÁRIO",
+          "SERVIÇOS",
+          "IMPOSTOS",
+          "VEÍCULO",
+          "PET",
+          "OUTROS",
+        ];
+
+    const fromCustom = (categoriasCustom || [])
+      .filter((c) => {
+        const t = String(c.Tipo || "").toUpperCase();
+        if (isReceita) return t === "RECEITA" || t === "RECEITAS";
+        if (isAbastecimento) return true;
+        return t !== "RECEITA" && t !== "RECEITAS";
+      })
+      .map((c) => String(c.Nome || "").trim().toUpperCase())
+      .filter((n) => n.length > 0);
+
+    const fromLancamentos = lancamentos
+      .filter((l) => {
+        if (isReceita) return isReceitaItem(l);
+        if (isAbastecimento) return isFuelItem(l);
+        return !isReceitaItem(l);
+      })
+      .map((l) => String(l.Categoria || "").trim().toUpperCase())
+      .filter((c) => c.length > 0);
+
+    return Array.from(new Set([...defaults, ...fromCustom, ...fromLancamentos]));
+  }, [formData.Tipo, formData.Categoria, categoriasCustom, lancamentos]);
 
   // Sync state when modal opens
   useEffect(() => {
@@ -373,11 +436,41 @@ export const LancamentosView: React.FC<Props> = ({
       const kmPercorridoCalculado = previewKmPercorrido > 0 ? previewKmPercorrido : (formData.Km_Percorrido || 0);
       const mediaKmLCalculada = previewMediaKmL > 0 ? previewMediaKmL : (formData.Media_KmL || 0);
 
+      const finalCategoria = isFuel
+        ? "ABASTECIMENTO"
+        : formData.Categoria
+        ? String(formData.Categoria).trim().toUpperCase()
+        : "OUTROS";
+
+      // Salva nova categoria customizada na aba 11_Categorias_Customizadas se ainda não existir
+      if (
+        onSaveCategoria &&
+        finalCategoria &&
+        finalCategoria !== "ABASTECIMENTO"
+      ) {
+        const jaExiste = (categoriasCustom || []).some(
+          (c) => String(c.Nome || "").trim().toUpperCase() === finalCategoria
+        );
+        if (!jaExiste) {
+          const isReceita = (formData.Tipo || "").toLowerCase() === "receita";
+          const novaCat: CategoriaCustomizada = {
+            Id: generateNewId("CAT"),
+            Nome: finalCategoria,
+            Tipo: isReceita ? "Receita" : "Despesa",
+            Icone: isReceita ? "TrendingUp" : "Tag",
+            Cor_Hex: isReceita ? "#10b981" : "#6366f1",
+          };
+          onSaveCategoria(novaCat).catch((err) =>
+            console.warn("Erro ao salvar nova categoria customizada:", err)
+          );
+        }
+      }
+
       const itemToSave: Lancamento = {
         Id: editingItem?.Id || generateNewId("LANC"),
         Data: formData.Data || new Date().toISOString().split("T")[0],
         Tipo: isFuel ? "Abastecimento" : (formData.Tipo || "Despesa"),
-        Categoria: isFuel ? "ABASTECIMENTO" : (formData.Categoria || "Outros"),
+        Categoria: finalCategoria,
         Subcategoria: formData.Subcategoria || "",
         Descricao: formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : ""),
         Valor: finalValor,
@@ -677,11 +770,18 @@ export const LancamentosView: React.FC<Props> = ({
                   <label className="block text-slate-400 mb-1">Categoria</label>
                   <input
                     type="text"
-                    value={formData.Categoria}
+                    list="categorias-lancamentos-list"
+                    placeholder="Selecione ou digite..."
+                    value={formData.Categoria || ""}
                     onChange={(e) => setFormData({ ...formData, Categoria: e.target.value.toUpperCase() })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
                     required
                   />
+                  <datalist id="categorias-lancamentos-list">
+                    {categoriasDisponiveis.map((cat) => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div>

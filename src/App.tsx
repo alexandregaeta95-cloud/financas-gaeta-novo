@@ -336,7 +336,11 @@ export default function App() {
             lancamentos={lancamentos}
             veiculos={veiculos}
             contas={contas}
+            categoriasCustom={categoriasCustom}
             onSaveLancamento={handleSaveLancamento}
+            onSaveCategoria={(cat) =>
+              handleSaveGeneric(SHEET_NAMES.CATEGORIAS_CUSTOMIZADAS, cat, setCategoriasCustom)
+            }
             onDeleteLancamento={handleDeleteLancamento}
             isModalOpen={isLancamentoModalOpen}
             onOpenModal={() => {
