@@ -872,6 +872,26 @@ export function normalizeCompromissoAgenda(raw: any): CompromissoAgenda {
 }
 
 /**
+ * Check if a Lancamento is marked as excluded / deleted / canceled
+ */
+export function isLancamentoExcluded(l: any): boolean {
+  if (!l || typeof l !== "object") return false;
+  const s = String(l.Status ?? l.status ?? "").trim().toUpperCase();
+  return (
+    s === "EXCLUÍDO" ||
+    s === "EXCLUIDO" ||
+    s === "EXCLUÍDA" ||
+    s === "EXCLUIDA" ||
+    s === "DELETED" ||
+    s === "CANCELADO" ||
+    s === "CANCELADA" ||
+    s === "INATIVO" ||
+    s.includes("EXCLU") ||
+    s.includes("DELET")
+  );
+}
+
+/**
  * Calculates current dynamic balance for a bank account based on its initial balance
  * and all active (non-excluded) lancamentos linked to this account name.
  */
@@ -886,10 +906,9 @@ export function calculateAccountCurrentBalance(
   if (!targetContaNome) return initial;
 
   let delta = 0;
-  lancamentos.forEach((l) => {
+  (lancamentos || []).forEach((l) => {
     // Skip excluded/deleted items
-    const status = String(l.Status || "").toUpperCase();
-    if (status === "EXCLUÍDO" || status === "EXCLUIDO" || status === "DELETED") {
+    if (isLancamentoExcluded(l)) {
       return;
     }
 

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Lancamento, Veiculo, ContaBancaria, CategoriaCustomizada } from "../types";
 import { generateNewId } from "../services/api";
-import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { parseCurrency, formatCurrency, isLancamentoExcluded } from "../utils/formatters";
 
 interface Props {
   lancamentos: Lancamento[];
@@ -56,8 +56,7 @@ function isFuelItem(l: any): boolean {
 }
 
 function isExcludedItem(l: any): boolean {
-  const status = (l.Status || l.status || "").toString().toUpperCase();
-  return status === "EXCLUÍDO" || status === "EXCLUIDO" || status === "DELETED";
+  return isLancamentoExcluded(l);
 }
 
 export const LancamentosView: React.FC<Props> = ({

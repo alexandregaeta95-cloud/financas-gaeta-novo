@@ -253,36 +253,27 @@ export default function App() {
   // Handler: Save Lancamento (with automatic bank account dynamic balance recalculation)
   const handleSaveLancamento = async (item: Lancamento) => {
     let nextLancamentos: Lancamento[] = [];
-    setLancamentos((prev) => {
-      const idx = prev.findIndex((l) => l.Id === item.Id);
-      if (idx !== -1) {
-        nextLancamentos = [...prev];
-        nextLancamentos[idx] = item;
-      } else {
-        nextLancamentos = [item, ...prev];
-      }
-      return nextLancamentos;
-    });
+    const idx = lancamentos.findIndex((l) => l.Id === item.Id);
+    if (idx !== -1) {
+      nextLancamentos = [...lancamentos];
+      nextLancamentos[idx] = item;
+    } else {
+      nextLancamentos = [item, ...lancamentos];
+    }
+    setLancamentos(nextLancamentos);
 
     // Recalculate and update affected accounts locally and on sheet
-    const updatedContasToSave: ContaBancaria[] = [];
-    setContas((prevContas) => {
-      return prevContas.map((c) => {
-        const novoSaldo = calculateAccountCurrentBalance(c, nextLancamentos);
-        const updatedConta = { ...c, Saldo_Atual: novoSaldo };
-        updatedContasToSave.push(updatedConta);
-        return updatedConta;
-      });
+    const updatedContasToSave: ContaBancaria[] = contas.map((c) => {
+      const novoSaldo = calculateAccountCurrentBalance(c, nextLancamentos);
+      return { ...c, Saldo_Atual: novoSaldo };
     });
+    setContas(updatedContasToSave);
 
     try {
       await saveSheetRecords(SHEET_NAMES.LANCAMENTOS, [item], "UPSERT");
       if (updatedContasToSave.length > 0) {
-        saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT").catch((e) =>
-          console.warn("Auto-syncing account balances failed:", e)
-        );
+        await saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT");
       }
-      handleSyncAll();
     } catch (err: any) {
       alert(`Erro ao salvar na planilha: ${err.message || err}`);
     }
@@ -292,30 +283,26 @@ export default function App() {
   const handleDeleteLancamento = async (id: string) => {
     if (!window.confirm("Deseja realmente marcar este lançamento como excluído?")) return;
 
-    let nextLancamentos: Lancamento[] = [];
-    setLancamentos((prev) => {
-      nextLancamentos = prev.filter((l) => l.Id !== id);
-      return nextLancamentos;
-    });
+    const itemToDelete = lancamentos.find((l) => l.Id === id);
+    const nextLancamentos = lancamentos.filter(
+      (l) => l.Id !== id && String(l.Id).trim() !== String(id).trim()
+    );
+    setLancamentos(nextLancamentos);
 
-    const updatedContasToSave: ContaBancaria[] = [];
-    setContas((prevContas) => {
-      return prevContas.map((c) => {
-        const novoSaldo = calculateAccountCurrentBalance(c, nextLancamentos);
-        const updatedConta = { ...c, Saldo_Atual: novoSaldo };
-        updatedContasToSave.push(updatedConta);
-        return updatedConta;
-      });
+    const updatedContasToSave: ContaBancaria[] = contas.map((c) => {
+      const novoSaldo = calculateAccountCurrentBalance(c, nextLancamentos);
+      return { ...c, Saldo_Atual: novoSaldo };
     });
+    setContas(updatedContasToSave);
 
     try {
-      await saveSheetRecords(SHEET_NAMES.LANCAMENTOS, [{ Id: id }], "SOFT_DELETE");
+      const payload = itemToDelete
+        ? [{ ...itemToDelete, Status: "EXCLUÍDO" }]
+        : [{ Id: id, Status: "EXCLUÍDO" }];
+      await saveSheetRecords(SHEET_NAMES.LANCAMENTOS, payload, "SOFT_DELETE");
       if (updatedContasToSave.length > 0) {
-        saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT").catch((e) =>
-          console.warn("Auto-syncing account balances after delete failed:", e)
-        );
+        await saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT");
       }
-      handleSyncAll();
     } catch (err: any) {
       alert(`Erro ao excluir lançamento: ${err.message || err}`);
     }
