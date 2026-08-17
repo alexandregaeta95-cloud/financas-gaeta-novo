@@ -53,6 +53,30 @@ export const ListaMercadoView: React.FC<Props> = ({
     }
   }, [contas, checkoutConta]);
 
+  const defaultCategorias = [
+    "MERCADO",
+    "HORTIFRUTI",
+    "AÇOUGUE",
+    "PADARIA",
+    "LATICÍNIOS",
+    "BEBIDAS",
+    "LIMPEZA",
+    "HIGIENE",
+    "MERCEARIA",
+    "CONGELADOS",
+    "PET",
+    "OUTROS",
+  ];
+
+  const categoriasSugeridas = Array.from(
+    new Set([
+      ...defaultCategorias,
+      ...itens
+        .map((i) => (i.Categoria || "").trim().toUpperCase())
+        .filter((c) => c.length > 0),
+    ])
+  );
+
   const [form, setForm] = useState<Partial<ItemMercado>>({
     Item: "Leite Integral",
     Categoria: "MERCADO",
@@ -540,6 +564,23 @@ export const ListaMercadoView: React.FC<Props> = ({
                   onChange={(e) => setForm({ ...form, Item: e.target.value.toUpperCase() })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Categoria</label>
+                <input
+                  type="text"
+                  list="categorias-mercado"
+                  placeholder="Ex: MERCADO, HORTIFRUTI, LIMPEZA, BEBIDAS..."
+                  value={form.Categoria || ""}
+                  onChange={(e) => setForm({ ...form, Categoria: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                />
+                <datalist id="categorias-mercado">
+                  {categoriasSugeridas.map((cat) => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
               </div>
 
               <div className="grid grid-cols-3 gap-3">

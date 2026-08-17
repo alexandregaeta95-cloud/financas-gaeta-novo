@@ -14,6 +14,27 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CompromissoAgenda | null>(null);
 
+  const defaultCategorias = [
+    "TRABALHO",
+    "PESSOAL",
+    "FINANÇAS",
+    "SAÚDE",
+    "ESTUDOS",
+    "FAMÍLIA",
+    "VEÍCULO",
+    "GERAL",
+    "OUTROS",
+  ];
+
+  const categoriasSugeridas = Array.from(
+    new Set([
+      ...defaultCategorias,
+      ...agenda
+        .map((a) => (a.Categoria || "").trim().toUpperCase())
+        .filter((c) => c.length > 0),
+    ])
+  );
+
   const [form, setForm] = useState<Partial<CompromissoAgenda>>({
     Titulo: "Reunião de Alinhamento",
     Data: new Date().toISOString().split("T")[0],
@@ -24,13 +45,13 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
     Lembrete_Ativo: "SIM",
     Dias_De_Antecedência: 1,
     Concluído: false,
-    Categoria: "Trabalho",
+    Categoria: "TRABALHO",
   });
 
   const handleOpenModal = (item?: CompromissoAgenda) => {
     if (item) {
       setEditingItem(item);
-      setForm({ ...item });
+      setForm({ ...item, Categoria: item.Categoria || "GERAL" });
     } else {
       setEditingItem(null);
       setForm({
@@ -43,7 +64,7 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
         Lembrete_Ativo: "SIM",
         Dias_De_Antecedência: 1,
         Concluído: false,
-        Categoria: "Geral",
+        Categoria: "GERAL",
       });
     }
     setIsModalOpen(true);
@@ -253,6 +274,23 @@ export const AgendaCompromissosView: React.FC<Props> = ({ agenda, onSaveCompromi
                   onChange={(e) => setForm({ ...form, Titulo: e.target.value.toUpperCase() })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Categoria</label>
+                <input
+                  type="text"
+                  list="categorias-agenda"
+                  placeholder="Ex: TRABALHO, PESSOAL, SAÚDE, FINANÇAS..."
+                  value={form.Categoria || ""}
+                  onChange={(e) => setForm({ ...form, Categoria: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                />
+                <datalist id="categorias-agenda">
+                  {categoriasSugeridas.map((cat) => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
