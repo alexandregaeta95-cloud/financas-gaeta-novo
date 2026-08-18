@@ -912,6 +912,12 @@ export function calculateAccountCurrentBalance(
       return;
     }
 
+    // Skip pending/scheduled future items from current realized balance
+    const status = String(l.Status || "").trim().toUpperCase();
+    if (status === "PENDENTE" || status === "AGENDADO") {
+      return;
+    }
+
     const itemConta = String(l.Conta || "").trim().toUpperCase();
     if (itemConta !== targetContaNome) {
       return;

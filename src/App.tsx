@@ -251,15 +251,19 @@ export default function App() {
   }, [handleSyncAll]);
 
   // Handler: Save Lancamento (with automatic bank account dynamic balance recalculation)
-  const handleSaveLancamento = async (item: Lancamento) => {
-    let nextLancamentos: Lancamento[] = [];
-    const idx = lancamentos.findIndex((l) => l.Id === item.Id);
-    if (idx !== -1) {
-      nextLancamentos = [...lancamentos];
-      nextLancamentos[idx] = item;
-    } else {
-      nextLancamentos = [item, ...lancamentos];
-    }
+  const handleSaveLancamento = async (itemOrItems: Lancamento | Lancamento[]) => {
+    const itemsArray = Array.isArray(itemOrItems) ? itemOrItems : [itemOrItems];
+    if (itemsArray.length === 0) return;
+
+    let nextLancamentos = [...lancamentos];
+    itemsArray.forEach((item) => {
+      const idx = nextLancamentos.findIndex((l) => l.Id === item.Id);
+      if (idx !== -1) {
+        nextLancamentos[idx] = item;
+      } else {
+        nextLancamentos.unshift(item);
+      }
+    });
     setLancamentos(nextLancamentos);
 
     // Recalculate and update affected accounts locally and on sheet
@@ -270,7 +274,7 @@ export default function App() {
     setContas(updatedContasToSave);
 
     try {
-      await saveSheetRecords(SHEET_NAMES.LANCAMENTOS, [item], "UPSERT");
+      await saveSheetRecords(SHEET_NAMES.LANCAMENTOS, itemsArray, "UPSERT");
       if (updatedContasToSave.length > 0) {
         await saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT");
       }

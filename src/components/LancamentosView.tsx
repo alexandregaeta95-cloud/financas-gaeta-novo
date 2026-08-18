@@ -26,7 +26,7 @@ interface Props {
   veiculos: Veiculo[];
   contas: ContaBancaria[];
   categoriasCustom?: CategoriaCustomizada[];
-  onSaveLancamento: (lancamento: Lancamento) => Promise<void>;
+  onSaveLancamento: (lancamento: Lancamento | Lancamento[]) => Promise<void>;
   onSaveCategoria?: (categoria: CategoriaCustomizada) => Promise<void>;
   onDeleteLancamento: (id: string) => Promise<void>;
   isModalOpen: boolean;
@@ -65,6 +65,24 @@ function parseDateSafely(val: any): Date | null {
 
   const d = new Date(s);
   return isNaN(d.getTime()) ? null : d;
+}
+
+function addMonthsToDate(dateStr: string, monthsToAdd: number): string {
+  const base = parseDateSafely(dateStr) || new Date();
+  const targetYear = base.getFullYear();
+  const targetMonth = base.getMonth() + monthsToAdd;
+  const originalDay = base.getDate();
+
+  // Create date at 1st of target month, then clamp day
+  const d = new Date(targetYear, targetMonth, 1);
+  const maxDaysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  const clampedDay = Math.min(originalDay, maxDaysInMonth);
+  d.setDate(clampedDay);
+
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function isReceitaItem(l: any): boolean {
@@ -111,6 +129,9 @@ export const LancamentosView: React.FC<Props> = ({
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [editingItem, setEditingItem] = useState<Lancamento | null>(null);
+  const [isContaFixa, setIsContaFixa] = useState(false);
+  const [isParcelado, setIsParcelado] = useState(false);
+  const [numParcelas, setNumParcelas] = useState<number>(2);
   const [saving, setSaving] = useState(false);
   const [capturingGps, setCapturingGps] = useState(false);
 
@@ -333,6 +354,9 @@ export const LancamentosView: React.FC<Props> = ({
 
   const handleOpenNew = (isFuel: boolean = false) => {
     setEditingItem(null);
+    setIsContaFixa(false);
+    setIsParcelado(false);
+    setNumParcelas(2);
     const defV = veiculos[0];
     const defM = defV?.Motorista ? defV.Motorista.trim() : "";
     setFormData({
@@ -366,6 +390,9 @@ export const LancamentosView: React.FC<Props> = ({
 
   const handleOpenEdit = (item: Lancamento) => {
     setEditingItem(item);
+    setIsContaFixa(false);
+    setIsParcelado(false);
+    setNumParcelas(2);
     const rawFuelType = item.Tipo_Combustivel ? String(item.Tipo_Combustivel).trim().toUpperCase() : "";
     const rawTipo = item.Tipo
       ? String(item.Tipo).trim().toUpperCase()
@@ -516,37 +543,125 @@ export const LancamentosView: React.FC<Props> = ({
         }
       }
 
-      const itemToSave: Lancamento = {
-        Id: editingItem?.Id || generateNewId("LANC"),
-        Data: formData.Data || new Date().toISOString().split("T")[0],
-        Tipo: isFuel ? "ABASTECIMENTO" : (formData.Tipo ? String(formData.Tipo).toUpperCase() : "DESPESA"),
-        Categoria: finalCategoria,
-        Subcategoria: formData.Subcategoria || "",
-        Descricao: formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : ""),
-        Valor: finalValor,
-        Valor_Pago: finalValorPago,
-        Conta: formData.Conta || (contas[0]?.Nome || ""),
-        Cartao: formData.Cartao || "",
-        Forma_Pagamento: formData.Forma_Pagamento || "PIX",
-        Status: formData.Status || "Pago",
-        Observacoes: formData.Observacoes || "",
-        Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
-        Km_Atual: kmAtual,
-        Litros: isFuel ? litros : undefined,
-        Preco_Litro: isFuel ? precoLitro : undefined,
-        Posto: isFuel ? nomePosto : undefined,
-        Motorista: formData.Motorista ? String(formData.Motorista).trim() : undefined,
-        Completou_O_Tanque: isFuel ? completouTanque : undefined,
-        Km_Percorrido: isFuel ? kmPercorridoCalculado : undefined,
-        Media_KmL: isFuel ? mediaKmLCalculada : undefined,
-        Descricao_Do_Veiculo: isFuel ? descVeiculo : undefined,
-        Nome_Posto: isFuel ? nomePosto : undefined,
-        Localizacao_Do_Posto: isFuel ? localizacaoPosto : undefined,
-        Comprovante_Url: isFuel ? comprovanteUrl : undefined,
-        Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "GASOLINA COMUM") : undefined,
-      };
+      if (editingItem || (!isContaFixa && !isParcelado)) {
+        const itemToSave: Lancamento = {
+          Id: editingItem?.Id || generateNewId("LANC"),
+          Data: formData.Data || new Date().toISOString().split("T")[0],
+          Tipo: isFuel ? "ABASTECIMENTO" : (formData.Tipo ? String(formData.Tipo).toUpperCase() : "DESPESA"),
+          Categoria: finalCategoria,
+          Subcategoria: formData.Subcategoria || "",
+          Descricao: formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : ""),
+          Valor: finalValor,
+          Valor_Pago: finalValorPago,
+          Conta: formData.Conta || (contas[0]?.Nome || ""),
+          Cartao: formData.Cartao || "",
+          Forma_Pagamento: formData.Forma_Pagamento || "PIX",
+          Status: formData.Status || "Pago",
+          Observacoes: formData.Observacoes || "",
+          Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
+          Km_Atual: kmAtual,
+          Litros: isFuel ? litros : undefined,
+          Preco_Litro: isFuel ? precoLitro : undefined,
+          Posto: isFuel ? nomePosto : undefined,
+          Motorista: formData.Motorista ? String(formData.Motorista).trim() : undefined,
+          Completou_O_Tanque: isFuel ? completouTanque : undefined,
+          Km_Percorrido: isFuel ? kmPercorridoCalculado : undefined,
+          Media_KmL: isFuel ? mediaKmLCalculada : undefined,
+          Descricao_Do_Veiculo: isFuel ? descVeiculo : undefined,
+          Nome_Posto: isFuel ? nomePosto : undefined,
+          Localizacao_Do_Posto: isFuel ? localizacaoPosto : undefined,
+          Comprovante_Url: isFuel ? comprovanteUrl : undefined,
+          Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "GASOLINA COMUM") : undefined,
+        };
 
-      await onSaveLancamento(itemToSave);
+        await onSaveLancamento(itemToSave);
+      } else if (isContaFixa) {
+        // Conta Fixa: gera 12 meses (o primeiro com status atual/Pago, os demais como Pendente)
+        const itemsToSave: Lancamento[] = [];
+        const baseDate = formData.Data || new Date().toISOString().split("T")[0];
+        const baseDesc = formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : "CONTA FIXA");
+
+        for (let i = 0; i < 12; i++) {
+          const itemDate = addMonthsToDate(baseDate, i);
+          const isFirst = i === 0;
+          itemsToSave.push({
+            Id: generateNewId("LANC"),
+            Data: itemDate,
+            Tipo: isFuel ? "ABASTECIMENTO" : (formData.Tipo ? String(formData.Tipo).toUpperCase() : "DESPESA"),
+            Categoria: finalCategoria,
+            Subcategoria: formData.Subcategoria || "",
+            Descricao: baseDesc,
+            Valor: finalValor,
+            Valor_Pago: isFirst ? finalValorPago : 0,
+            Conta: formData.Conta || (contas[0]?.Nome || ""),
+            Cartao: formData.Cartao || "",
+            Forma_Pagamento: formData.Forma_Pagamento || "PIX",
+            Status: isFirst ? (formData.Status || "Pago") : "Pendente",
+            Observacoes: formData.Observacoes ? `${formData.Observacoes} [Conta Fixa Mensal]` : "[Conta Fixa Mensal]",
+            Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
+            Km_Atual: isFuel && isFirst ? kmAtual : undefined,
+            Litros: isFuel ? litros : undefined,
+            Preco_Litro: isFuel ? precoLitro : undefined,
+            Posto: isFuel ? nomePosto : undefined,
+            Motorista: formData.Motorista ? String(formData.Motorista).trim() : undefined,
+            Completou_O_Tanque: isFuel ? completouTanque : undefined,
+            Km_Percorrido: isFuel && isFirst ? kmPercorridoCalculado : undefined,
+            Media_KmL: isFuel && isFirst ? mediaKmLCalculada : undefined,
+            Descricao_Do_Veiculo: isFuel ? descVeiculo : undefined,
+            Nome_Posto: isFuel ? nomePosto : undefined,
+            Localizacao_Do_Posto: isFuel ? localizacaoPosto : undefined,
+            Comprovante_Url: isFuel ? comprovanteUrl : undefined,
+            Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "GASOLINA COMUM") : undefined,
+          });
+        }
+
+        await onSaveLancamento(itemsToSave);
+      } else if (isParcelado) {
+        // Parcelado: divide valor total em N parcelas mensais
+        const N = Math.max(2, Math.min(72, numParcelas || 2));
+        const itemsToSave: Lancamento[] = [];
+        const baseDate = formData.Data || new Date().toISOString().split("T")[0];
+        const baseDesc = formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : "PARCELADO");
+        const parcelValue = Number((finalValor / N).toFixed(2));
+        const diff = Number((finalValor - parcelValue * N).toFixed(2));
+
+        for (let i = 0; i < N; i++) {
+          const itemDate = addMonthsToDate(baseDate, i);
+          const isFirst = i === 0;
+          const currentParcelValue = isFirst ? Number((parcelValue + diff).toFixed(2)) : parcelValue;
+          itemsToSave.push({
+            Id: generateNewId("LANC"),
+            Data: itemDate,
+            Tipo: isFuel ? "ABASTECIMENTO" : (formData.Tipo ? String(formData.Tipo).toUpperCase() : "DESPESA"),
+            Categoria: finalCategoria,
+            Subcategoria: formData.Subcategoria || "",
+            Descricao: `${baseDesc} (${i + 1}/${N})`,
+            Valor: currentParcelValue,
+            Valor_Pago: isFirst ? currentParcelValue : 0,
+            Conta: formData.Conta || (contas[0]?.Nome || ""),
+            Cartao: formData.Cartao || "",
+            Forma_Pagamento: formData.Forma_Pagamento || "PIX",
+            Status: isFirst ? (formData.Status || "Pago") : "Pendente",
+            Observacoes: formData.Observacoes ? `${formData.Observacoes} [Parcela ${i + 1}/${N}]` : `[Parcela ${i + 1}/${N}]`,
+            Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
+            Km_Atual: isFuel && isFirst ? kmAtual : undefined,
+            Litros: isFuel ? litros : undefined,
+            Preco_Litro: isFuel ? precoLitro : undefined,
+            Posto: isFuel ? nomePosto : undefined,
+            Motorista: formData.Motorista ? String(formData.Motorista).trim() : undefined,
+            Completou_O_Tanque: isFuel ? completouTanque : undefined,
+            Km_Percorrido: isFuel && isFirst ? kmPercorridoCalculado : undefined,
+            Media_KmL: isFuel && isFirst ? mediaKmLCalculada : undefined,
+            Descricao_Do_Veiculo: isFuel ? descVeiculo : undefined,
+            Nome_Posto: isFuel ? nomePosto : undefined,
+            Localizacao_Do_Posto: isFuel ? localizacaoPosto : undefined,
+            Comprovante_Url: isFuel ? comprovanteUrl : undefined,
+            Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "GASOLINA COMUM") : undefined,
+          });
+        }
+
+        await onSaveLancamento(itemsToSave);
+      }
       onCloseModal();
     } catch (err) {
       console.error("Erro ao salvar lançamento:", err);
@@ -1304,6 +1419,110 @@ export const LancamentosView: React.FC<Props> = ({
                     <div className="bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 flex items-center justify-between text-xs text-amber-300">
                       <span>KM Percorrido: <strong>+{previewKmPercorrido.toLocaleString("pt-BR")} km</strong></span>
                       <span>Média Estimada: <strong>{previewMediaKmL.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} km/L</strong></span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Opções de Recorrência / Parcelamento (Apenas para novos lançamentos) */}
+              {!editingItem && (
+                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-3">
+                  <span className="text-[11px] font-semibold text-slate-300 block">
+                    Recorrência & Parcelamento (Opcional)
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Opção 1: Conta Fixa / Mensal */}
+                    <label
+                      className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                        isContaFixa
+                          ? "bg-emerald-950/30 border-emerald-500/40 text-emerald-300"
+                          : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isContaFixa}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setIsContaFixa(checked);
+                          if (checked) setIsParcelado(false);
+                        }}
+                        className="w-4 h-4 rounded text-emerald-500 bg-slate-950 border-slate-700 focus:ring-0 focus:ring-offset-0"
+                      />
+                      <div className="text-left">
+                        <span className="font-medium text-xs block text-white">Conta Fixa / Mensal</span>
+                        <span className="text-[10px] text-slate-400 block">Repete todo mês (12 meses)</span>
+                      </div>
+                    </label>
+
+                    {/* Opção 2: Parcelado */}
+                    <label
+                      className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                        isParcelado
+                          ? "bg-indigo-950/30 border-indigo-500/40 text-indigo-300"
+                          : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isParcelado}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setIsParcelado(checked);
+                          if (checked) setIsContaFixa(false);
+                        }}
+                        className="w-4 h-4 rounded text-indigo-500 bg-slate-950 border-slate-700 focus:ring-0 focus:ring-offset-0"
+                      />
+                      <div className="text-left">
+                        <span className="font-medium text-xs block text-white">Parcelado</span>
+                        <span className="text-[10px] text-slate-400 block">Divide em parcelas mensais</span>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Detalhes do Parcelamento quando ativo */}
+                  {isParcelado && (
+                    <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                      <div className="grid grid-cols-2 gap-3 items-center">
+                        <div>
+                          <label className="block text-slate-400 text-[11px] mb-1">
+                            Número de Parcelas
+                          </label>
+                          <input
+                            type="number"
+                            min={2}
+                            max={72}
+                            value={numParcelas}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              setNumParcelas(isNaN(v) ? 2 : Math.max(2, Math.min(72, v)));
+                            }}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-xs font-bold"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-400 text-[11px] mb-1">
+                            Valor de cada Parcela
+                          </label>
+                          <div className="p-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-bold text-indigo-400">
+                            {numParcelas > 0 && parseCurrency(formData.Valor) > 0
+                              ? `R$ ${formatCurrency(parseCurrency(formData.Valor) / numParcelas)} /mês`
+                              : "R$ 0,00"}
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-400">
+                        Serão gerados {numParcelas} lançamentos mensais automáticos com a descrição identificada (ex: "(1/{numParcelas})", "(2/{numParcelas})"...).
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Informação sobre Conta Fixa quando ativa */}
+                  {isContaFixa && (
+                    <div className="pt-1 text-[10px] text-emerald-400/90">
+                      Serão geradas 12 projeções mensais com o mesmo valor e dia de vencimento nos meses seguintes.
                     </div>
                   )}
                 </div>
