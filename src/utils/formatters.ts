@@ -532,28 +532,72 @@ export function normalizeContaBancaria(raw: any): ContaBancaria {
 }
 
 /**
- * 18. Normalize CartaoCredito (18_Cartões_De_Crédito)
+ * 18. Normalize CartaoCredito (18_Cartões_De_Crédito: A-Id, B-Nome, C-Bandeira, D-Limite_Total, E-Dia_Fechamento, F-Dia_Vencimento, G-Cor_Hex, H-Ativo)
  */
 export function normalizeCartaoCredito(raw: any): CartaoCredito {
   if (!raw || typeof raw !== "object") return raw;
-  const limite = parseCurrency(raw.Limite ?? raw.limite ?? 0);
-  const fechamento = parseCurrency(raw.Fechamento ?? raw.fechamento ?? 10);
-  const vencimento = parseCurrency(raw.Vencimento ?? raw.vencimento ?? 20);
+  const limiteTotal = parseCurrency(
+    raw.Limite_Total ??
+      raw["Limite_Total"] ??
+      raw.limite_total ??
+      raw.Limite ??
+      raw.limite ??
+      0
+  );
+  const diaFechamento = parseCurrency(
+    raw.Dia_Fechamento ??
+      raw["Dia_Fechamento"] ??
+      raw.dia_fechamento ??
+      raw.Fechamento ??
+      raw.fechamento ??
+      10
+  );
+  const diaVencimento = parseCurrency(
+    raw.Dia_Vencimento ??
+      raw["Dia_Vencimento"] ??
+      raw.dia_vencimento ??
+      raw.Vencimento ??
+      raw.vencimento ??
+      20
+  );
+  const corHex = String(
+    raw.Cor_Hex ??
+      raw["Cor_Hex"] ??
+      raw.cor_hex ??
+      raw.Cor ??
+      raw.cor ??
+      "#0f172a"
+  ).trim();
   const gasto = parseCurrency(raw.Gasto ?? raw.gasto ?? 0);
-  const nome = raw.Nome ?? raw.nome ?? raw.Cartão ?? raw.Cartao ?? "Cartão de Crédito";
+  const rawNome = raw.Nome ?? raw.nome ?? raw.Cartão ?? raw.Cartao ?? "CARTÃO DE CRÉDITO";
+  const nome = String(rawNome).trim().toUpperCase();
+  const rawBandeira = raw.Bandeira ?? raw.bandeira ?? "MASTERCARD";
+  const bandeira = String(rawBandeira).trim().toUpperCase();
+
+  const isAtivo =
+    raw.Ativo !== false &&
+    raw.Ativo !== "NÃO" &&
+    raw.Ativo !== "NAO" &&
+    raw.Ativo !== "0" &&
+    raw.Ativo !== 0;
 
   return {
     ...raw,
-    Id: String(raw.Id || ""),
-    Nome: String(nome).trim(),
-    Limite: limite,
-    Fechamento: fechamento,
-    Vencimento: vencimento,
-    Cor: raw.Cor ?? raw.cor ?? "#0f172a",
-    Banco_ID: raw.Banco_ID ?? raw.Banco_Id ?? raw.banco_id ?? raw.bancoId ?? raw.Banco ?? "",
+    Id: String(raw.Id || "").trim(),
+    Nome: nome,
+    Bandeira: bandeira,
+    Limite_Total: limiteTotal,
+    Dia_Fechamento: diaFechamento,
+    Dia_Vencimento: diaVencimento,
+    Cor_Hex: corHex,
+    Ativo: isAtivo ? "SIM" : "NÃO",
+    // Aliases para compatibilidade interna
+    Limite: limiteTotal,
+    Fechamento: diaFechamento,
+    Vencimento: diaVencimento,
+    Cor: corHex,
+    Banco_ID: String(raw.Banco_ID ?? raw.Banco_Id ?? raw.banco_id ?? raw.Banco ?? "").trim().toUpperCase(),
     Gasto: gasto,
-    Ativo: raw.Ativo !== false && raw.Ativo !== "NÃO" && raw.Ativo !== "NAO",
-    Bandeira: raw.Bandeira ?? raw.bandeira ?? "Mastercard",
   };
 }
 

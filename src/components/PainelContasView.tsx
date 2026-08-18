@@ -1,30 +1,115 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Clock,
   AlertCircle,
   CheckCircle2,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  ArrowRight,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  Calendar,
+  X,
 } from "lucide-react";
 import { Lancamento } from "../types";
-import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { parseCurrency, formatCurrency, isLancamentoExcluded } from "../utils/formatters";
+
+type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
 
 interface Props {
   lancamentos: Lancamento[];
   onSaveLancamento: (lancamento: Lancamento) => Promise<void>;
 }
 
+function parseDateSafely(dateStr?: string | null): Date | null {
+  if (!dateStr) return null;
+  const parts = String(dateStr).trim().split(/[-/]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      return new Date(year, month, day);
+    } else if (parts[2].length === 4) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      return new Date(year, month, day);
+    }
+  }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancamento }) => {
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("ALL");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+
   const todayStr = new Date().toISOString().split("T")[0];
 
-  // Exclude deleted entries
-  const activeEntries = lancamentos.filter((l) => {
-    const s = String(l.Status || "").toUpperCase();
-    return s !== "EXCLUÍDO" && s !== "EXCLUIDO" && s !== "DELETED";
-  });
+  // Helper de checagem do período selecionado
+  const isDateInPeriod = (dateStr?: string | null): boolean => {
+    if (!dateStr) return periodFilter === "ALL";
+    if (periodFilter === "ALL") return true;
+
+    const itemDate = parseDateSafely(dateStr);
+    if (!itemDate) return true;
+
+    const now = new Date();
+
+    if (periodFilter === "CURRENT_MONTH") {
+      return (
+        itemDate.getFullYear() === now.getFullYear() &&
+        itemDate.getMonth() === now.getMonth()
+      );
+    }
+
+    if (periodFilter === "LAST_MONTH") {
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      return (
+        itemDate.getFullYear() === lastMonth.getFullYear() &&
+        itemDate.getMonth() === lastMonth.getMonth()
+      );
+    }
+
+    if (periodFilter === "CUSTOM") {
+      const itemTime = new Date(
+        itemDate.getFullYear(),
+        itemDate.getMonth(),
+        itemDate.getDate()
+      ).getTime();
+
+      if (startDate) {
+        const startObj = parseDateSafely(startDate);
+        if (startObj) {
+          const startTime = new Date(
+            startObj.getFullYear(),
+            startObj.getMonth(),
+            startObj.getDate()
+          ).getTime();
+          if (itemTime < startTime) return false;
+        }
+      }
+
+      if (endDate) {
+        const endObj = parseDateSafely(endDate);
+        if (endObj) {
+          const endTime = new Date(
+            endObj.getFullYear(),
+            endObj.getMonth(),
+            endObj.getDate()
+          ).getTime();
+          if (itemTime > endTime) return false;
+        }
+      }
+
+      return true;
+    }
+
+    return true;
+  };
+
+  // Exclude deleted entries and filter by period
+  const activeEntries = lancamentos
+    .filter((l) => !isLancamentoExcluded(l))
+    .filter((l) => isDateInPeriod(l.Data));
 
   // Group 1: Pagas
   const pagas = activeEntries.filter(
@@ -52,9 +137,9 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
   const grandTotal = totalPagas + totalVencidas + totalAVencer || 1;
 
   // Percentages for chart bar
-  const pctPagas = Math.round((totalPagas / grandTotal) * 100);
-  const pctVencidas = Math.round((totalVencidas / grandTotal) * 100);
-  const pctAVencer = Math.round((totalAVencer / grandTotal) * 100);
+  const pctPagas = grandTotal > 1 ? Math.round((totalPagas / grandTotal) * 100) : 0;
+  const pctVencidas = grandTotal > 1 ? Math.round((totalVencidas / grandTotal) * 100) : 0;
+  const pctAVencer = grandTotal > 1 ? Math.round((totalAVencer / grandTotal) * 100) : 0;
 
   const handleMarkAsPaid = async (l: Lancamento) => {
     await onSaveLancamento({
@@ -66,23 +151,87 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-          <Clock className="w-5 h-5 text-emerald-400" />
-          Painel de Contas (A Vencer / Vencidas / Pagas)
-        </h2>
-        <p className="text-xs text-slate-400">
-          Visão agrupada e inteligente de todos os lançamentos financeiros da aba <code className="text-emerald-400 font-mono">1_Lancamentos</code>.
-        </p>
+      {/* Header with Period Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+            <Clock className="w-5 h-5 text-emerald-400" />
+            Painel de Contas (A Vencer / Vencidas / Pagas)
+          </h2>
+          <p className="text-xs text-slate-400">
+            Visão agrupada e inteligente de todos os lançamentos financeiros da aba <code className="text-emerald-400 font-mono">1_Lancamentos</code>.
+          </p>
+        </div>
+
+        {/* Period Selector Dropdown */}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <select
+              value={periodFilter}
+              onChange={(e) => setPeriodFilter(e.target.value as PeriodFilterType)}
+              className="bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer appearance-none shadow-sm"
+            >
+              <option value="ALL">Todos os Períodos</option>
+              <option value="CURRENT_MONTH">Mês Atual</option>
+              <option value="LAST_MONTH">Mês Passado</option>
+              <option value="CUSTOM">Selecionar Período</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Custom Period Date Range Pickers (shown when periodFilter === "CUSTOM") */}
+      {periodFilter === "CUSTOM" && (
+        <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex flex-wrap items-center gap-3">
+          <span className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+            Intervalo de Datas:
+          </span>
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] text-slate-400">Data Inicial:</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] text-slate-400">Data Final:</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+          {(startDate || endDate) && (
+            <button
+              onClick={() => {
+                setStartDate("");
+                setEndDate("");
+              }}
+              className="flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 hover:underline px-2 py-1"
+            >
+              <X className="w-3 h-3" />
+              Limpar datas
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Proportional Overview Bar */}
       <div className="p-5 bg-slate-900 border border-slate-800 rounded-3xl space-y-3">
         <div className="flex items-center justify-between text-xs">
           <span className="font-bold text-white flex items-center gap-2">
             <PieChartIcon className="w-4 h-4 text-emerald-400" />
-            Proporção de Contas
+            Proporção de Contas {periodFilter === "CURRENT_MONTH" ? "(Mês Atual)" : periodFilter === "LAST_MONTH" ? "(Mês Passado)" : periodFilter === "CUSTOM" ? "(Período Personalizado)" : ""}
           </span>
           <span className="text-slate-400 font-mono">Total R$ {formatCurrency(grandTotal === 1 ? 0 : grandTotal)}</span>
         </div>
@@ -213,7 +362,7 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
           <div className="bg-slate-900 border border-slate-800 rounded-2xl divide-y divide-slate-800">
             {aVencer.length === 0 ? (
               <div className="p-6 text-center text-slate-500 text-xs">
-                Nenhuma conta a vencer cadastrada.
+                Nenhuma conta a vencer encontrada para o período selecionado.
               </div>
             ) : (
               aVencer.map((l, idx) => (
@@ -246,23 +395,29 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
         <div className="space-y-3">
           <h3 className="font-bold text-emerald-400 text-sm flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4" />
-            Últimas Contas Pagas ({pagas.length})
+            Contas Pagas ({pagas.length})
           </h3>
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl divide-y divide-slate-800">
-            {pagas.slice(0, 5).map((l, idx) => (
-              <div key={`${l.Id || 'paga'}-${idx}`} className="p-4 flex items-center justify-between gap-3 text-xs opacity-75">
-                <div>
-                  <h4 className="font-semibold text-slate-200">{l.Descricao}</h4>
-                  <p className="text-slate-500 font-mono">
-                    Data: {l.Data} • {l.Categoria}
-                  </p>
-                </div>
-                <span className="font-bold text-emerald-400 font-mono">
-                  R$ {formatCurrency(l.Valor)}
-                </span>
+            {pagas.length === 0 ? (
+              <div className="p-6 text-center text-slate-500 text-xs">
+                Nenhuma conta paga encontrada para o período selecionado.
               </div>
-            ))}
+            ) : (
+              pagas.slice(0, 10).map((l, idx) => (
+                <div key={`${l.Id || 'paga'}-${idx}`} className="p-4 flex items-center justify-between gap-3 text-xs opacity-80 hover:opacity-100 transition-opacity">
+                  <div>
+                    <h4 className="font-semibold text-slate-200">{l.Descricao}</h4>
+                    <p className="text-slate-500 font-mono">
+                      Data: {l.Data} • {l.Categoria}
+                    </p>
+                  </div>
+                  <span className="font-bold text-emerald-400 font-mono">
+                    R$ {formatCurrency(l.Valor)}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

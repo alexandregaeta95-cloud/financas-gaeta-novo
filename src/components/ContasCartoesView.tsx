@@ -51,26 +51,31 @@ export const ContasCartoesView: React.FC<Props> = ({
   // Cartão Modal State
   const [isCartaoModalOpen, setIsCartaoModalOpen] = useState(false);
   const [editingCartao, setEditingCartao] = useState<CartaoCredito | null>(null);
+  const [limiteCartaoDisplay, setLimiteCartaoDisplay] = useState<string>("");
   const [cartaoForm, setCartaoForm] = useState<Partial<CartaoCredito>>({
-    Nome: "Cartão Itaú Mastercard Black",
-    Limite: 15000,
-    Fechamento: 10,
-    Vencimento: 20,
-    Banco_ID: contas[0]?.Nome || "",
-    Cor: "#1e293b",
-    Ativo: true,
-    Bandeira: "Mastercard",
+    Nome: "CARTÃO MASTERCARD BLACK",
+    Bandeira: "MASTERCARD",
+    Limite_Total: 15000,
+    Dia_Fechamento: 10,
+    Dia_Vencimento: 20,
+    Banco_ID: contas[0]?.Nome ? contas[0].Nome.toUpperCase() : "",
+    Cor_Hex: "#1E293B",
+    Ativo: "SIM",
   });
 
   // Calculate dynamic current month spent sum for each card
   const calculateCardSpent = (cartaoName: string) => {
     const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
+    const cNameUpper = String(cartaoName || "").trim().toUpperCase();
     return lancamentos
       .filter((l) => {
         const s = String(l.Status || "").toUpperCase();
         return s !== "EXCLUÍDO" && s !== "EXCLUIDO" && s !== "DELETED";
       })
-      .filter((l) => (l.Cartão_Id || l.Cartao) === cartaoName)
+      .filter((l) => {
+        const lCard = String(l.Cartão_Id || l.Cartao || "").trim().toUpperCase();
+        return lCard === cNameUpper;
+      })
       .filter((l) => (l.Data || "").startsWith(currentMonth))
       .reduce((acc, curr) => acc + parseCurrency(curr.Valor), 0);
   };
@@ -85,7 +90,7 @@ export const ContasCartoesView: React.FC<Props> = ({
     } else {
       setEditingConta(null);
       setContaForm({
-        Nome: "Conta Corrente Itaú",
+        Nome: "CONTA CORRENTE ITAÚ",
         Tipo: "BANCO",
         Saldo_Inicial: 1000,
         Saldo_Atual: 1000,
@@ -108,13 +113,13 @@ export const ContasCartoesView: React.FC<Props> = ({
       : saldoIni;
     const item: ContaBancaria = {
       Id: editingConta?.Id || generateNewId("CONTA"),
-      Nome: contaForm.Nome || "Nova Conta",
+      Nome: String(contaForm.Nome || "NOVA CONTA").trim().toUpperCase(),
       Saldo_Inicial: saldoIni,
       Saldo_Atual: saldoAtu,
       Cor: contaForm.Cor || "#059669",
-      Tipo: contaForm.Tipo || "BANCO",
-      Agência: contaForm.Agência || "",
-      Conta: contaForm.Conta || "",
+      Tipo: String(contaForm.Tipo || "BANCO").trim().toUpperCase(),
+      Agência: String(contaForm.Agência || "").trim().toUpperCase(),
+      Conta: String(contaForm.Conta || "").trim().toUpperCase(),
       Limite: parseCurrency(contaForm.Limite),
       Ativa: contaForm.Ativa !== false,
     };
@@ -126,38 +131,73 @@ export const ContasCartoesView: React.FC<Props> = ({
   const handleOpenCartao = (card?: CartaoCredito) => {
     if (card) {
       setEditingCartao(card);
-      setCartaoForm({ ...card });
+      const lim = parseCurrency(card.Limite_Total ?? card.Limite ?? 0);
+      const fech = parseCurrency(card.Dia_Fechamento ?? card.Fechamento ?? 10);
+      const venc = parseCurrency(card.Dia_Vencimento ?? card.Vencimento ?? 20);
+      const cor = String(card.Cor_Hex ?? card.Cor ?? "#1E293B").toUpperCase();
+      const band = String(card.Bandeira || "MASTERCARD").toUpperCase();
+      const isAtivo = card.Ativo !== false && String(card.Ativo).toUpperCase() !== "NÃO" && String(card.Ativo).toUpperCase() !== "NAO";
+
+      setCartaoForm({
+        ...card,
+        Nome: String(card.Nome || "").toUpperCase(),
+        Bandeira: band,
+        Limite_Total: lim,
+        Dia_Fechamento: fech,
+        Dia_Vencimento: venc,
+        Cor_Hex: cor,
+        Ativo: isAtivo ? "SIM" : "NÃO",
+        Banco_ID: card.Banco_ID ? String(card.Banco_ID).toUpperCase() : "",
+      });
+      setLimiteCartaoDisplay(lim !== 0 ? formatCurrency(lim) : "");
     } else {
       setEditingCartao(null);
       setCartaoForm({
-        Nome: "Cartão Mastercard Black",
-        Limite: 15000,
-        Fechamento: 10,
-        Vencimento: 20,
-        Banco_ID: contas[0]?.Nome || "",
-        Cor: "#0f172a",
-        Ativo: true,
-        Bandeira: "Mastercard",
+        Nome: "CARTÃO MASTERCARD BLACK",
+        Bandeira: "MASTERCARD",
+        Limite_Total: 15000,
+        Dia_Fechamento: 10,
+        Dia_Vencimento: 20,
+        Banco_ID: contas[0]?.Nome ? String(contas[0].Nome).toUpperCase() : "",
+        Cor_Hex: "#1E293B",
+        Ativo: "SIM",
       });
+      setLimiteCartaoDisplay(formatCurrency(15000));
     }
     setIsCartaoModalOpen(true);
   };
 
   const handleSaveCartaoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const spent = calculateCardSpent(cartaoForm.Nome || "");
+    const nomeUpper = String(cartaoForm.Nome || "NOVO CARTÃO").trim().toUpperCase();
+    const bandeiraUpper = String(cartaoForm.Bandeira || "MASTERCARD").trim().toUpperCase();
+    const limTotal = parseCurrency(cartaoForm.Limite_Total ?? cartaoForm.Limite ?? 0);
+    const diaFech = parseCurrency(cartaoForm.Dia_Fechamento ?? cartaoForm.Fechamento ?? 10) || 10;
+    const diaVenc = parseCurrency(cartaoForm.Dia_Vencimento ?? cartaoForm.Vencimento ?? 20) || 20;
+    const corHex = String(cartaoForm.Cor_Hex ?? cartaoForm.Cor ?? "#1E293B").trim().toUpperCase();
+    const isAtivo = cartaoForm.Ativo !== false && String(cartaoForm.Ativo).toUpperCase() !== "NÃO" && String(cartaoForm.Ativo).toUpperCase() !== "NAO";
+    const spent = calculateCardSpent(nomeUpper);
+
+    // Mapeamento exato das colunas da aba 18_Cartões_De_Crédito:
+    // A-Id, B-Nome, C-Bandeira, D-Limite_Total, E-Dia_Fechamento, F-Dia_Vencimento, G-Cor_Hex, H-Ativo
     const item: CartaoCredito = {
       Id: editingCartao?.Id || generateNewId("CARD"),
-      Nome: cartaoForm.Nome || "Novo Cartão",
-      Limite: parseCurrency(cartaoForm.Limite),
-      Fechamento: parseCurrency(cartaoForm.Fechamento) || 10,
-      Vencimento: parseCurrency(cartaoForm.Vencimento) || 20,
-      Cor: cartaoForm.Cor || "#0f172a",
-      Banco_ID: cartaoForm.Banco_ID || "",
+      Nome: nomeUpper,
+      Bandeira: bandeiraUpper,
+      Limite_Total: limTotal,
+      Dia_Fechamento: diaFech,
+      Dia_Vencimento: diaVenc,
+      Cor_Hex: corHex,
+      Ativo: isAtivo ? "SIM" : "NÃO",
+      // Aliases para compatibilidade
+      Limite: limTotal,
+      Fechamento: diaFech,
+      Vencimento: diaVenc,
+      Cor: corHex,
+      Banco_ID: cartaoForm.Banco_ID ? String(cartaoForm.Banco_ID).trim().toUpperCase() : "",
       Gasto: spent,
-      Ativo: cartaoForm.Ativo !== false,
-      Bandeira: cartaoForm.Bandeira || "Visa",
     };
+
     await onSaveCartao(item);
     setIsCartaoModalOpen(false);
   };
@@ -302,7 +342,9 @@ export const ContasCartoesView: React.FC<Props> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {cartoes.map((card, idx) => {
               const currentSpent = calculateCardSpent(card.Nome);
-              const limit = parseCurrency(card.Limite) || 1000;
+              const limit = parseCurrency(card.Limite_Total ?? card.Limite) || 1000;
+              const fechamento = card.Dia_Fechamento ?? card.Fechamento ?? 10;
+              const vencimento = card.Dia_Vencimento ?? card.Vencimento ?? 20;
               const usedPct = Math.min(100, Math.round((currentSpent / limit) * 100));
 
               return (
@@ -320,7 +362,7 @@ export const ContasCartoesView: React.FC<Props> = ({
                           {card.Nome}
                         </h3>
                         <p className="text-xs text-slate-400">
-                          {card.Bandeira || "Cartão"} • Fecha dia {card.Fechamento} / Vence dia {card.Vencimento}
+                          {card.Bandeira || "CARTÃO"} • Fecha dia {fechamento} / Vence dia {vencimento}
                         </p>
                       </div>
                     </div>
@@ -491,62 +533,128 @@ export const ContasCartoesView: React.FC<Props> = ({
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Mastercard Black Itaú"
+                  placeholder="EX: NUBANK MASTERCARD BLACK"
                   value={cartaoForm.Nome}
                   onChange={(e) => setCartaoForm({ ...cartaoForm, Nome: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase font-semibold"
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Limite (R$)</label>
+                  <label className="text-slate-400 block mb-1">Bandeira</label>
+                  <select
+                    value={cartaoForm.Bandeira || "MASTERCARD"}
+                    onChange={(e) => setCartaoForm({ ...cartaoForm, Bandeira: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  >
+                    <option value="MASTERCARD">MASTERCARD</option>
+                    <option value="VISA">VISA</option>
+                    <option value="ELO">ELO</option>
+                    <option value="AMEX">AMEX</option>
+                    <option value="HIPERCARD">HIPERCARD</option>
+                    <option value="OUTRA">OUTRA</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 block mb-1">Limite Total (R$)</label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-slate-400 font-semibold text-sm select-none">
+                      R$
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      required
+                      placeholder="0,00"
+                      value={limiteCartaoDisplay}
+                      onChange={(e) => {
+                        const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                        setLimiteCartaoDisplay(formatted);
+                        setCartaoForm((prev) => ({
+                          ...prev,
+                          Limite_Total: numeric,
+                          Limite: numeric,
+                        }));
+                      }}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-10 text-white font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Dia Fechamento (1-31)</label>
                   <input
                     type="number"
-                    step="0.01"
+                    min="1"
+                    max="31"
                     required
-                    value={cartaoForm.Limite}
-                    onChange={(e) => setCartaoForm({ ...cartaoForm, Limite: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-slate-400 block mb-1">Dia Fechamento</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="31"
-                    value={cartaoForm.Fechamento}
-                    onChange={(e) => setCartaoForm({ ...cartaoForm, Fechamento: Number(e.target.value) })}
+                    value={cartaoForm.Dia_Fechamento ?? cartaoForm.Fechamento ?? 10}
+                    onChange={(e) => setCartaoForm({ ...cartaoForm, Dia_Fechamento: Number(e.target.value), Fechamento: Number(e.target.value) })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Dia Vencimento</label>
+                  <label className="text-slate-400 block mb-1">Dia Vencimento (1-31)</label>
                   <input
                     type="number"
                     min="1"
                     max="31"
-                    value={cartaoForm.Vencimento}
-                    onChange={(e) => setCartaoForm({ ...cartaoForm, Vencimento: Number(e.target.value) })}
+                    required
+                    value={cartaoForm.Dia_Vencimento ?? cartaoForm.Vencimento ?? 20}
+                    onChange={(e) => setCartaoForm({ ...cartaoForm, Dia_Vencimento: Number(e.target.value), Vencimento: Number(e.target.value) })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Cor de Identificação</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={cartaoForm.Cor_Hex || cartaoForm.Cor || "#1E293B"}
+                      onChange={(e) => setCartaoForm({ ...cartaoForm, Cor_Hex: e.target.value.toUpperCase(), Cor: e.target.value.toUpperCase() })}
+                      className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={cartaoForm.Cor_Hex || cartaoForm.Cor || "#1E293B"}
+                      onChange={(e) => setCartaoForm({ ...cartaoForm, Cor_Hex: e.target.value.toUpperCase(), Cor: e.target.value.toUpperCase() })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono text-xs uppercase"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 block mb-1">Status</label>
+                  <select
+                    value={cartaoForm.Ativo === false || cartaoForm.Ativo === "NÃO" || cartaoForm.Ativo === "NAO" ? "NÃO" : "SIM"}
+                    onChange={(e) => setCartaoForm({ ...cartaoForm, Ativo: e.target.value === "SIM" ? "SIM" : "NÃO" })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-semibold"
+                  >
+                    <option value="SIM">ATIVO (SIM)</option>
+                    <option value="NÃO">INATIVO (NÃO)</option>
+                  </select>
                 </div>
               </div>
 
               <div>
                 <label className="text-slate-400 block mb-1">Vincular à Conta Bancária (opcional)</label>
                 <select
-                  value={cartaoForm.Banco_ID}
-                  onChange={(e) => setCartaoForm({ ...cartaoForm, Banco_ID: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  value={cartaoForm.Banco_ID || ""}
+                  onChange={(e) => setCartaoForm({ ...cartaoForm, Banco_ID: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 >
-                  <option value="">Nenhuma (Independente)</option>
+                  <option value="">NENHUMA (INDEPENDENTE)</option>
                   {contas.map((c) => (
-                    <option key={c.Id} value={c.Nome}>
-                      {c.Nome}
+                    <option key={c.Id} value={c.Nome.toUpperCase()}>
+                      {c.Nome.toUpperCase()}
                     </option>
                   ))}
                 </select>

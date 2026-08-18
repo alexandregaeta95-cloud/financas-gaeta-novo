@@ -248,18 +248,23 @@ export interface ZonaDeRisco {
   Observação?: string;
 }
 
-// 18. Cartões de Crédito
+// 18. Cartões de Crédito (A-Id, B-Nome, C-Bandeira, D-Limite_Total, E-Dia_Fechamento, F-Dia_Vencimento, G-Cor_Hex, H-Ativo)
 export interface CartaoCredito {
   Id: string;
   Nome: string;
-  Limite: number;
-  Fechamento: number; // Dia do mês
-  Vencimento: number; // Dia do mês
+  Bandeira?: string;
+  Limite_Total: number;
+  Dia_Fechamento: number; // Dia do mês
+  Dia_Vencimento: number; // Dia do mês
+  Cor_Hex?: string;
+  Ativo: boolean | "SIM" | "NÃO";
+  // Compatibilidade e cálculos dinâmicos
+  Limite?: number;
+  Fechamento?: number;
+  Vencimento?: number;
   Cor?: string;
   Banco_ID?: string;
-  Gasto?: number; // Calculated dynamically
-  Ativo: boolean;
-  Bandeira?: string;
+  Gasto?: number;
 }
 
 // 19. Agenda e Compromissos
