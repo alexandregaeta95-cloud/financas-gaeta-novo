@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ShieldAlert, MapPin, Plus, Edit2, Trash2, X, Navigation, Volume2, BellRing } from "lucide-react";
+import { ShieldAlert, MapPin, Plus, Edit2, Trash2, X, Navigation, Volume2, VolumeX, BellRing } from "lucide-react";
 import { ZonaDeRisco } from "../types";
 import { generateNewId } from "../services/api";
 
@@ -32,6 +32,7 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [activeAlertZone, setActiveAlertZone] = useState<ZonaDeRisco | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
 
   const [form, setForm] = useState<Partial<ZonaDeRisco>>({
     Descrição: "Entrada da Comunidade X - Alagamento/Assalto",
@@ -43,6 +44,47 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
     Mensagem_De_Alerta: "CUIDADO: Zona de Alto Risco Registrada!",
     Observação: "Trancar portas e fechar vidros",
   });
+
+  // Sound generator function using Web Audio API
+  const playRiskAlertSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === "suspended") {
+        ctx.resume();
+      }
+      const now = ctx.currentTime;
+
+      // Pulse 1: 880Hz -> 1046.5Hz
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sawtooth";
+      osc1.frequency.setValueAtTime(880, now);
+      osc1.frequency.setValueAtTime(1046.5, now + 0.12);
+      gain1.gain.setValueAtTime(0.35, now);
+      gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.3);
+
+      // Pulse 2: 880Hz -> 1174.66Hz (250ms later)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "sawtooth";
+      osc2.frequency.setValueAtTime(880, now + 0.25);
+      osc2.frequency.setValueAtTime(1174.66, now + 0.38);
+      gain2.gain.setValueAtTime(0.4, now + 0.25);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.25);
+      osc2.stop(now + 0.6);
+    } catch (e) {
+      console.log("Audio alert failed or muted:", e);
+    }
+  };
 
   // Start GPS Geolocation Tracking
   useEffect(() => {
@@ -75,23 +117,7 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
           }
         }
 
-        if (triggeredZone) {
-          setActiveAlertZone(triggeredZone);
-          // Play audio beep
-          try {
-            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            osc.type = "sawtooth";
-            osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
-            osc.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.5);
-          } catch (e) {
-            console.log("Audio alert failed or muted:", e);
-          }
-        } else {
-          setActiveAlertZone(null);
-        }
+        setActiveAlertZone(triggeredZone);
       },
       (err) => {
         setGeoError("Permissão de GPS negada ou indisponível.");
@@ -101,6 +127,25 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, [zonas]);
+
+  // Periodic Sound Alert Loop while inside an active risk zone
+  useEffect(() => {
+    if (!activeAlertZone || isMuted) {
+      return;
+    }
+
+    // Play immediately when entering the zone
+    playRiskAlertSound();
+
+    // Repeat automatically every 6 seconds while inside the zone
+    const intervalId = setInterval(() => {
+      playRiskAlertSound();
+    }, 6000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [activeAlertZone, isMuted]);
 
   const handleOpenModal = (z?: ZonaDeRisco) => {
     if (z) {
@@ -180,14 +225,34 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
 
       {/* Proximity Risk Zone Alert Banner */}
       {activeAlertZone && (
-        <div className="p-5 bg-rose-600 text-white rounded-2xl flex items-center gap-4 animate-bounce shadow-xl">
-          <BellRing className="w-8 h-8 shrink-0" />
-          <div>
-            <h3 className="font-extrabold text-base uppercase tracking-wider">
-              ALERTA PROXIMIDADE: {activeAlertZone.Nível_De_Risco} RISCO
-            </h3>
-            <p className="text-xs font-semibold">{activeAlertZone.Mensagem_De_Alerta}</p>
-            <p className="text-[10px] text-rose-200 mt-0.5">"{activeAlertZone.Descrição}"</p>
+        <div className="p-5 bg-rose-600 text-white rounded-2xl flex items-center justify-between gap-4 shadow-xl border-2 border-rose-400">
+          <div className="flex items-center gap-3.5">
+            <BellRing className="w-8 h-8 shrink-0 animate-bounce text-yellow-300" />
+            <div>
+              <h3 className="font-extrabold text-base uppercase tracking-wider flex items-center gap-2">
+                ALERTA PROXIMIDADE: {activeAlertZone.Nível_De_Risco} RISCO
+              </h3>
+              <p className="text-xs font-semibold text-white">{activeAlertZone.Mensagem_De_Alerta}</p>
+              <p className="text-[11px] text-rose-200 mt-0.5">"{activeAlertZone.Descrição}"</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                if (isMuted) {
+                  setIsMuted(false);
+                  playRiskAlertSound();
+                } else {
+                  setIsMuted(true);
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-rose-800/80 hover:bg-rose-900 text-white text-xs font-bold rounded-xl transition-colors"
+              title={isMuted ? "Reativar alarme sonoro" : "Silenciar alarme"}
+            >
+              {isMuted ? <VolumeX className="w-4 h-4 text-rose-300" /> : <Volume2 className="w-4 h-4 text-emerald-300 animate-pulse" />}
+              <span>{isMuted ? "Silenciado" : "Alarme Ativo"}</span>
+            </button>
           </div>
         </div>
       )}
