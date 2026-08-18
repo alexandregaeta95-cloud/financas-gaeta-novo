@@ -41,6 +41,8 @@ export interface Lancamento {
   Localizacao_Do_Posto?: string;
   Comprovante_Url?: string;
   Tipo_Combustivel?: string; // Álcool, Álcool Aditivado, Gasolina Comum, Gasolina Aditivada
+  Recorrencia_Id?: string;
+  Parcela_Info?: string;
 }
 
 // 4. Abastecimentos (Mirror read-only view)

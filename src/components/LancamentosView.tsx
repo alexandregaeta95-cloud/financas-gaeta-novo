@@ -28,7 +28,7 @@ interface Props {
   categoriasCustom?: CategoriaCustomizada[];
   onSaveLancamento: (lancamento: Lancamento | Lancamento[]) => Promise<void>;
   onSaveCategoria?: (categoria: CategoriaCustomizada) => Promise<void>;
-  onDeleteLancamento: (id: string) => Promise<void>;
+  onDeleteLancamento: (id: string | string[], skipConfirm?: boolean) => Promise<void>;
   isModalOpen: boolean;
   onCloseModal: () => void;
   onOpenModal: () => void;
@@ -36,6 +36,18 @@ interface Props {
 }
 
 type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
+
+export function getSeriesId(l: Lancamento | null | undefined): string | null {
+  if (!l) return null;
+  if (l.Recorrencia_Id && String(l.Recorrencia_Id).trim()) {
+    return String(l.Recorrencia_Id).trim();
+  }
+  if (l.Observacoes && typeof l.Observacoes === "string") {
+    const match = l.Observacoes.match(/\[REC:([^\]]+)\]/);
+    if (match && match[1]) return match[1].trim();
+  }
+  return null;
+}
 
 function parseDateSafely(val: any): Date | null {
   if (!val) return null;
@@ -134,6 +146,35 @@ export const LancamentosView: React.FC<Props> = ({
   const [numParcelas, setNumParcelas] = useState<number>(2);
   const [saving, setSaving] = useState(false);
   const [capturingGps, setCapturingGps] = useState(false);
+  const [batchDeleteData, setBatchDeleteData] = useState<{
+    item: Lancamento;
+    futureItems: Lancamento[];
+  } | null>(null);
+  const [batchEditData, setBatchEditData] = useState<{
+    itemToSave: Lancamento;
+    futureItems: Lancamento[];
+    seriesId: string;
+    finalValor: number;
+    finalCategoria: string;
+  } | null>(null);
+
+  // Exclusão com detecção inteligente de série/recorrência
+  const handleDeleteClick = (item: Lancamento) => {
+    const seriesId = getSeriesId(item);
+    if (seriesId) {
+      const futureItems = lancamentos.filter(
+        (l) => !isExcludedItem(l) && getSeriesId(l) === seriesId && l.Data >= item.Data && l.Id !== item.Id
+      );
+      if (futureItems.length > 0) {
+        setBatchDeleteData({
+          item,
+          futureItems,
+        });
+        return;
+      }
+    }
+    onDeleteLancamento(item.Id);
+  };
 
   // Função auxiliar para capturar geolocalização do navegador
   const getCoordinates = (): Promise<{ lat: number; lng: number } | null> => {
@@ -229,7 +270,7 @@ export const LancamentosView: React.FC<Props> = ({
     Valor_Pago: 0,
     Conta: "",
     Forma_Pagamento: "PIX",
-    Status: "Pago",
+    Status: "Pendente",
     Observacoes: "",
     Veiculo: defaultVeic?.Modelo || "",
     Km_Atual: defaultVeic?.Km_Atual || 0,
@@ -332,7 +373,7 @@ export const LancamentosView: React.FC<Props> = ({
         Valor_Pago: 0,
         Conta: "",
         Forma_Pagamento: "PIX",
-        Status: "Pago",
+        Status: "Pendente",
         Observacoes: "",
         Veiculo: defV?.Modelo || "",
         Km_Atual: defV?.Km_Atual || 0,
@@ -368,7 +409,7 @@ export const LancamentosView: React.FC<Props> = ({
       Valor_Pago: 0,
       Conta: "",
       Forma_Pagamento: "PIX",
-      Status: "Pago",
+      Status: "Pendente",
       Observacoes: "",
       Veiculo: defV?.Modelo || "",
       Km_Atual: defV?.Km_Atual || 0,
@@ -543,20 +584,74 @@ export const LancamentosView: React.FC<Props> = ({
         }
       }
 
-      if (editingItem || (!isContaFixa && !isParcelado)) {
+      const chosenStatus = formData.Status || "Pendente";
+      const isChosenPago = String(chosenStatus).trim().toUpperCase() === "PAGO";
+
+      if (editingItem) {
         const itemToSave: Lancamento = {
-          Id: editingItem?.Id || generateNewId("LANC"),
+          Id: editingItem.Id,
           Data: formData.Data || new Date().toISOString().split("T")[0],
           Tipo: isFuel ? "ABASTECIMENTO" : (formData.Tipo ? String(formData.Tipo).toUpperCase() : "DESPESA"),
           Categoria: finalCategoria,
           Subcategoria: formData.Subcategoria || "",
           Descricao: formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : ""),
           Valor: finalValor,
-          Valor_Pago: finalValorPago,
+          Valor_Pago: isChosenPago ? (finalValorPago || finalValor) : 0,
           Conta: formData.Conta || (contas[0]?.Nome || ""),
           Cartao: formData.Cartao || "",
           Forma_Pagamento: formData.Forma_Pagamento || "PIX",
-          Status: formData.Status || "Pago",
+          Status: chosenStatus,
+          Observacoes: formData.Observacoes || "",
+          Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
+          Km_Atual: kmAtual,
+          Litros: isFuel ? litros : undefined,
+          Preco_Litro: isFuel ? precoLitro : undefined,
+          Posto: isFuel ? nomePosto : undefined,
+          Motorista: formData.Motorista ? String(formData.Motorista).trim() : undefined,
+          Completou_O_Tanque: isFuel ? completouTanque : undefined,
+          Km_Percorrido: isFuel ? kmPercorridoCalculado : undefined,
+          Media_KmL: isFuel ? mediaKmLCalculada : undefined,
+          Descricao_Do_Veiculo: isFuel ? descVeiculo : undefined,
+          Nome_Posto: isFuel ? nomePosto : undefined,
+          Localizacao_Do_Posto: isFuel ? localizacaoPosto : undefined,
+          Comprovante_Url: isFuel ? comprovanteUrl : undefined,
+          Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "GASOLINA COMUM") : undefined,
+          Recorrencia_Id: editingItem.Recorrencia_Id,
+          Parcela_Info: editingItem.Parcela_Info,
+        };
+
+        const seriesId = getSeriesId(editingItem);
+        if (seriesId) {
+          const futureItems = lancamentos.filter(
+            (l) => !isExcludedItem(l) && getSeriesId(l) === seriesId && l.Data >= editingItem.Data && l.Id !== editingItem.Id
+          );
+          if (futureItems.length > 0) {
+            setBatchEditData({
+              itemToSave,
+              futureItems,
+              seriesId,
+              finalValor,
+              finalCategoria,
+            });
+            return;
+          }
+        }
+
+        await onSaveLancamento(itemToSave);
+      } else if (!isContaFixa && !isParcelado) {
+        const itemToSave: Lancamento = {
+          Id: generateNewId("LANC"),
+          Data: formData.Data || new Date().toISOString().split("T")[0],
+          Tipo: isFuel ? "ABASTECIMENTO" : (formData.Tipo ? String(formData.Tipo).toUpperCase() : "DESPESA"),
+          Categoria: finalCategoria,
+          Subcategoria: formData.Subcategoria || "",
+          Descricao: formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : ""),
+          Valor: finalValor,
+          Valor_Pago: isChosenPago ? (finalValorPago || finalValor) : 0,
+          Conta: formData.Conta || (contas[0]?.Nome || ""),
+          Cartao: formData.Cartao || "",
+          Forma_Pagamento: formData.Forma_Pagamento || "PIX",
+          Status: chosenStatus,
           Observacoes: formData.Observacoes || "",
           Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
           Km_Atual: kmAtual,
@@ -576,7 +671,8 @@ export const LancamentosView: React.FC<Props> = ({
 
         await onSaveLancamento(itemToSave);
       } else if (isContaFixa) {
-        // Conta Fixa: gera 12 meses (o primeiro com status atual/Pago, os demais como Pendente)
+        // Conta Fixa: gera 12 meses (o primeiro respeita o Status escolhido pelo usuário no formulário, os demais como Pendente)
+        const seriesId = generateNewId("FIX");
         const itemsToSave: Lancamento[] = [];
         const baseDate = formData.Data || new Date().toISOString().split("T")[0];
         const baseDesc = formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : "CONTA FIXA");
@@ -584,6 +680,8 @@ export const LancamentosView: React.FC<Props> = ({
         for (let i = 0; i < 12; i++) {
           const itemDate = addMonthsToDate(baseDate, i);
           const isFirst = i === 0;
+          const itemStatus = isFirst ? chosenStatus : "Pendente";
+          const isItemPago = String(itemStatus).toUpperCase() === "PAGO";
           itemsToSave.push({
             Id: generateNewId("LANC"),
             Data: itemDate,
@@ -592,12 +690,14 @@ export const LancamentosView: React.FC<Props> = ({
             Subcategoria: formData.Subcategoria || "",
             Descricao: baseDesc,
             Valor: finalValor,
-            Valor_Pago: isFirst ? finalValorPago : 0,
+            Valor_Pago: isItemPago ? (finalValorPago || finalValor) : 0,
             Conta: formData.Conta || (contas[0]?.Nome || ""),
             Cartao: formData.Cartao || "",
             Forma_Pagamento: formData.Forma_Pagamento || "PIX",
-            Status: isFirst ? (formData.Status || "Pago") : "Pendente",
-            Observacoes: formData.Observacoes ? `${formData.Observacoes} [Conta Fixa Mensal]` : "[Conta Fixa Mensal]",
+            Status: itemStatus,
+            Observacoes: formData.Observacoes ? `${formData.Observacoes} [Conta Fixa Mensal] [REC:${seriesId}]` : `[Conta Fixa Mensal] [REC:${seriesId}]`,
+            Recorrencia_Id: seriesId,
+            Parcela_Info: `${i + 1}/12`,
             Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
             Km_Atual: isFuel && isFirst ? kmAtual : undefined,
             Litros: isFuel ? litros : undefined,
@@ -617,7 +717,8 @@ export const LancamentosView: React.FC<Props> = ({
 
         await onSaveLancamento(itemsToSave);
       } else if (isParcelado) {
-        // Parcelado: divide valor total em N parcelas mensais
+        // Parcelado: divide valor total em N parcelas mensais (a primeira parcela respeita o Status escolhido pelo usuário)
+        const seriesId = generateNewId("PARC");
         const N = Math.max(2, Math.min(72, numParcelas || 2));
         const itemsToSave: Lancamento[] = [];
         const baseDate = formData.Data || new Date().toISOString().split("T")[0];
@@ -629,6 +730,8 @@ export const LancamentosView: React.FC<Props> = ({
           const itemDate = addMonthsToDate(baseDate, i);
           const isFirst = i === 0;
           const currentParcelValue = isFirst ? Number((parcelValue + diff).toFixed(2)) : parcelValue;
+          const itemStatus = isFirst ? chosenStatus : "Pendente";
+          const isItemPago = String(itemStatus).toUpperCase() === "PAGO";
           itemsToSave.push({
             Id: generateNewId("LANC"),
             Data: itemDate,
@@ -637,12 +740,14 @@ export const LancamentosView: React.FC<Props> = ({
             Subcategoria: formData.Subcategoria || "",
             Descricao: `${baseDesc} (${i + 1}/${N})`,
             Valor: currentParcelValue,
-            Valor_Pago: isFirst ? currentParcelValue : 0,
+            Valor_Pago: isItemPago ? currentParcelValue : 0,
             Conta: formData.Conta || (contas[0]?.Nome || ""),
             Cartao: formData.Cartao || "",
             Forma_Pagamento: formData.Forma_Pagamento || "PIX",
-            Status: isFirst ? (formData.Status || "Pago") : "Pendente",
-            Observacoes: formData.Observacoes ? `${formData.Observacoes} [Parcela ${i + 1}/${N}]` : `[Parcela ${i + 1}/${N}]`,
+            Status: itemStatus,
+            Observacoes: formData.Observacoes ? `${formData.Observacoes} [Parcela ${i + 1}/${N}] [REC:${seriesId}]` : `[Parcela ${i + 1}/${N}] [REC:${seriesId}]`,
+            Recorrencia_Id: seriesId,
+            Parcela_Info: `${i + 1}/${N}`,
             Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
             Km_Atual: isFuel && isFirst ? kmAtual : undefined,
             Litros: isFuel ? litros : undefined,
@@ -935,6 +1040,11 @@ export const LancamentosView: React.FC<Props> = ({
                             {item.Tipo_Combustivel}
                           </span>
                         )}
+                        {getSeriesId(item) && (
+                          <span className="px-2 py-0.5 rounded bg-indigo-950/50 text-[10px] text-indigo-300 border border-indigo-500/30">
+                            {item.Parcela_Info ? `Parcela ${item.Parcela_Info}` : "Recorrente"}
+                          </span>
+                        )}
                         {isFuel && (item.Localizacao_Do_Posto || item.Posto) && (
                           <button
                             type="button"
@@ -990,7 +1100,7 @@ export const LancamentosView: React.FC<Props> = ({
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => onDeleteLancamento(item.Id)}
+                        onClick={() => handleDeleteClick(item)}
                         className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                         title="Excluir (Soft delete)"
                       >
@@ -1125,7 +1235,37 @@ export const LancamentosView: React.FC<Props> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Status</label>
+                  <select
+                    value={formData.Status || "Pendente"}
+                    onChange={(e) => {
+                      const newStatus = e.target.value;
+                      const isNowPago = newStatus === "Pago";
+                      setFormData((prev) => ({
+                        ...prev,
+                        Status: newStatus,
+                        Valor_Pago: isNowPago ? (prev.Valor_Pago || prev.Valor || 0) : 0,
+                      }));
+                      if (isNowPago) {
+                        const val = formData.Valor_Pago || formData.Valor || 0;
+                        setValorPagoDisplay(val > 0 ? formatCurrency(val) : "");
+                      } else {
+                        setValorPagoDisplay("0,00");
+                      }
+                    }}
+                    className={`w-full bg-slate-950 border rounded-xl p-2 font-medium ${
+                      (formData.Status || "Pendente") === "Pago"
+                        ? "text-emerald-400 border-emerald-500/40"
+                        : "text-amber-400 border-amber-500/40"
+                    }`}
+                  >
+                    <option value="Pendente">Pendente</option>
+                    <option value="Pago">Pago</option>
+                  </select>
+                </div>
+
                 <div>
                   <label className="block text-slate-400 mb-1">Valor Pago (R$)</label>
                   <div className="relative flex items-center">
@@ -1140,7 +1280,11 @@ export const LancamentosView: React.FC<Props> = ({
                       onChange={(e) => {
                         const { numeric, formatted } = formatCurrencyInput(e.target.value);
                         setValorPagoDisplay(formatted);
-                        setFormData((prev) => ({ ...prev, Valor_Pago: numeric }));
+                        setFormData((prev) => ({
+                          ...prev,
+                          Valor_Pago: numeric,
+                          Status: numeric > 0 ? "Pago" : prev.Status,
+                        }));
                       }}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 pl-10 text-white font-bold"
                     />
@@ -1556,6 +1700,156 @@ export const LancamentosView: React.FC<Props> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão em Lote para Séries/Parcelamentos */}
+      {batchDeleteData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="p-2.5 bg-rose-500/10 rounded-xl">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white">Excluir Lançamento em Série</h3>
+                <p className="text-xs text-slate-400">Conta Fixa / Parcelamento Vinculado</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1.5 text-xs">
+              <p className="font-semibold text-white truncate">{batchDeleteData.item.Descricao}</p>
+              <div className="flex items-center justify-between text-slate-400">
+                <span>Vencimento: <strong className="text-slate-200">{batchDeleteData.item.Data}</strong></span>
+                <span>Valor: <strong className="text-rose-400">R$ {formatCurrency(batchDeleteData.item.Valor)}</strong></span>
+              </div>
+              <p className="text-amber-400 text-[11px] pt-1 border-t border-slate-800/80">
+                Existem mais <strong>{batchDeleteData.futureItems.length}</strong> parcelas/lançamentos futuros nesta série.
+              </p>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              Como você deseja realizar a exclusão?
+            </p>
+
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  const allIds = [batchDeleteData.item.Id, ...batchDeleteData.futureItems.map((f) => f.Id)];
+                  await onDeleteLancamento(allIds, true);
+                  setBatchDeleteData(null);
+                }}
+                className="w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-rose-950/40"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Excluir este e todos os {batchDeleteData.futureItems.length} futuros</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  await onDeleteLancamento(batchDeleteData.item.Id, true);
+                  setBatchDeleteData(null);
+                }}
+                className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition-colors"
+              >
+                Excluir apenas esta parcela
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBatchDeleteData(null)}
+                className="w-full py-2 px-4 text-slate-400 hover:text-slate-200 text-xs transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Edição em Lote para Séries/Parcelamentos */}
+      {batchEditData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-indigo-400">
+              <div className="p-2.5 bg-indigo-500/10 rounded-xl">
+                <Edit2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white">Atualizar Série Recorrente</h3>
+                <p className="text-xs text-slate-400">Propagação de alterações</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1.5 text-xs">
+              <p className="font-semibold text-white truncate">{batchEditData.itemToSave.Descricao}</p>
+              <div className="flex items-center justify-between text-slate-400">
+                <span>Novo Valor: <strong className="text-emerald-400">R$ {formatCurrency(batchEditData.itemToSave.Valor)}</strong></span>
+                <span>Categoria: <strong className="text-slate-200">{batchEditData.itemToSave.Categoria}</strong></span>
+              </div>
+              <p className="text-indigo-300 text-[11px] pt-1 border-t border-slate-800/80">
+                Existem mais <strong>{batchEditData.futureItems.length}</strong> parcelas/meses futuros vinculados a esta série.
+              </p>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              Deseja aplicar as novas informações somente neste lançamento ou atualizar também os meses seguintes?
+            </p>
+
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  const updatedFutures = batchEditData.futureItems.map((futureItem) => {
+                    let nextDesc = formData.Descricao || futureItem.Descricao;
+                    const parcelMatch = futureItem.Descricao.match(/\(\d+\/\d+\)$/);
+                    if (parcelMatch && !nextDesc.endsWith(parcelMatch[0])) {
+                      nextDesc = `${nextDesc.replace(/\s*\(\d+\/\d+\)$/, "")} ${parcelMatch[0]}`;
+                    }
+                    return {
+                      ...futureItem,
+                      Valor: batchEditData.itemToSave.Valor,
+                      Categoria: batchEditData.itemToSave.Categoria,
+                      Subcategoria: formData.Subcategoria || futureItem.Subcategoria || "",
+                      Conta: batchEditData.itemToSave.Conta,
+                      Cartao: batchEditData.itemToSave.Cartao,
+                      Forma_Pagamento: batchEditData.itemToSave.Forma_Pagamento,
+                      Descricao: nextDesc,
+                    };
+                  });
+                  await onSaveLancamento([batchEditData.itemToSave, ...updatedFutures]);
+                  setBatchEditData(null);
+                  onCloseModal();
+                }}
+                className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-950/40"
+              >
+                <Check className="w-4 h-4" />
+                <span>Aplicar neste e nos {batchEditData.futureItems.length} meses futuros</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  await onSaveLancamento(batchEditData.itemToSave);
+                  setBatchEditData(null);
+                  onCloseModal();
+                }}
+                className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition-colors"
+              >
+                Alterar apenas este mês
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBatchEditData(null)}
+                className="w-full py-2 px-4 text-slate-400 hover:text-slate-200 text-xs transition-colors"
+              >
+                Voltar à edição
+              </button>
+            </div>
           </div>
         </div>
       )}

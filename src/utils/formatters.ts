@@ -362,6 +362,20 @@ export function normalizeLancamento(raw: any): Lancamento {
         raw.tipoCombustivel ??
         ""
     ).trim(),
+    Recorrencia_Id: String(
+      raw.Recorrencia_Id ??
+        raw["Recorrencia_Id"] ??
+        raw.recorrencia_id ??
+        (raw.Observacoes && typeof raw.Observacoes === "string" ? raw.Observacoes.match(/\[REC:([^\]]+)\]/)?.[1] : "") ??
+        (raw.OBS && typeof raw.OBS === "string" ? raw.OBS.match(/\[REC:([^\]]+)\]/)?.[1] : "") ??
+        ""
+    ).trim() || undefined,
+    Parcela_Info: String(
+      raw.Parcela_Info ??
+        raw["Parcela_Info"] ??
+        raw.parcela_info ??
+        ""
+    ).trim() || undefined,
   };
 }
 

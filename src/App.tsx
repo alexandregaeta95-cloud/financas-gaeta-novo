@@ -284,12 +284,21 @@ export default function App() {
   };
 
   // Handler: Delete Lancamento (with automatic bank account dynamic balance recalculation)
-  const handleDeleteLancamento = async (id: string) => {
-    if (!window.confirm("Deseja realmente marcar este lançamento como excluído?")) return;
+  const handleDeleteLancamento = async (idOrIds: string | string[], skipConfirm: boolean = false) => {
+    const idsToDelete = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
+    if (idsToDelete.length === 0) return;
 
-    const itemToDelete = lancamentos.find((l) => l.Id === id);
+    if (!skipConfirm) {
+      const msg = idsToDelete.length > 1
+        ? `Deseja realmente excluir estes ${idsToDelete.length} lançamentos?`
+        : "Deseja realmente marcar este lançamento como excluído?";
+      if (!window.confirm(msg)) return;
+    }
+
+    const idSet = new Set(idsToDelete.map((id) => String(id).trim()));
+    const itemsToDelete = lancamentos.filter((l) => idSet.has(String(l.Id).trim()));
     const nextLancamentos = lancamentos.filter(
-      (l) => l.Id !== id && String(l.Id).trim() !== String(id).trim()
+      (l) => !idSet.has(String(l.Id).trim())
     );
     setLancamentos(nextLancamentos);
 
@@ -300,9 +309,9 @@ export default function App() {
     setContas(updatedContasToSave);
 
     try {
-      const payload = itemToDelete
-        ? [{ ...itemToDelete, Status: "EXCLUÍDO" }]
-        : [{ Id: id, Status: "EXCLUÍDO" }];
+      const payload = itemsToDelete.length > 0
+        ? itemsToDelete.map((item) => ({ ...item, Status: "EXCLUÍDO" as const }))
+        : idsToDelete.map((id) => ({ Id: id, Status: "EXCLUÍDO" as const }));
       await saveSheetRecords(SHEET_NAMES.LANCAMENTOS, payload, "SOFT_DELETE");
       if (updatedContasToSave.length > 0) {
         await saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT");
