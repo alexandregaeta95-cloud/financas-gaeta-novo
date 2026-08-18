@@ -14,7 +14,8 @@ import {
   MapPin,
   ExternalLink,
   Navigation,
-  Loader2
+  Loader2,
+  Calendar,
 } from "lucide-react";
 import { Lancamento, Veiculo, ContaBancaria, CategoriaCustomizada } from "../types";
 import { generateNewId } from "../services/api";
@@ -32,6 +33,38 @@ interface Props {
   onCloseModal: () => void;
   onOpenModal: () => void;
   initialFuelingMode?: boolean;
+}
+
+type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
+
+function parseDateSafely(val: any): Date | null {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  const s = String(val).trim();
+  if (!s) return null;
+
+  // DD/MM/YYYY or DD-MM-YYYY
+  const brMatch = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+  if (brMatch) {
+    const day = parseInt(brMatch[1], 10);
+    const month = parseInt(brMatch[2], 10) - 1;
+    const year = parseInt(brMatch[3], 10);
+    const d = new Date(year, month, day);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // YYYY-MM-DD or ISO
+  const isoMatch = s.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10) - 1;
+    const day = parseInt(isoMatch[3], 10);
+    const d = new Date(year, month, day);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 function isReceitaItem(l: any): boolean {
@@ -74,6 +107,9 @@ export const LancamentosView: React.FC<Props> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("ALL");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("ALL");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [editingItem, setEditingItem] = useState<Lancamento | null>(null);
   const [saving, setSaving] = useState(false);
   const [capturingGps, setCapturingGps] = useState(false);
@@ -519,6 +555,67 @@ export const LancamentosView: React.FC<Props> = ({
     }
   };
 
+  // Date Period Filter Logic
+  const isDateInPeriod = (dateStr: string): boolean => {
+    if (periodFilter === "ALL") return true;
+
+    const itemDate = parseDateSafely(dateStr);
+    if (!itemDate) return true;
+
+    const now = new Date();
+
+    if (periodFilter === "CURRENT_MONTH") {
+      return (
+        itemDate.getFullYear() === now.getFullYear() &&
+        itemDate.getMonth() === now.getMonth()
+      );
+    }
+
+    if (periodFilter === "LAST_MONTH") {
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      return (
+        itemDate.getFullYear() === lastMonth.getFullYear() &&
+        itemDate.getMonth() === lastMonth.getMonth()
+      );
+    }
+
+    if (periodFilter === "CUSTOM") {
+      const itemTime = new Date(
+        itemDate.getFullYear(),
+        itemDate.getMonth(),
+        itemDate.getDate()
+      ).getTime();
+
+      if (startDate) {
+        const startObj = parseDateSafely(startDate);
+        if (startObj) {
+          const startTime = new Date(
+            startObj.getFullYear(),
+            startObj.getMonth(),
+            startObj.getDate()
+          ).getTime();
+          if (itemTime < startTime) return false;
+        }
+      }
+
+      if (endDate) {
+        const endObj = parseDateSafely(endDate);
+        if (endObj) {
+          const endTime = new Date(
+            endObj.getFullYear(),
+            endObj.getMonth(),
+            endObj.getDate()
+          ).getTime();
+          if (itemTime > endTime) return false;
+        }
+      }
+
+      return true;
+    }
+
+    return true;
+  };
+
   // Filtered List
   const filteredList = lancamentos
     .filter((item) => !isExcludedItem(item))
@@ -535,12 +632,17 @@ export const LancamentosView: React.FC<Props> = ({
       }
       return true;
     })
+    .filter((item) => isDateInPeriod(item.Data))
     .filter(
       (item) =>
         (item.Descricao || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.Categoria || "").toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .sort((a, b) => new Date(b.Data).getTime() - new Date(a.Data).getTime());
+    .sort((a, b) => {
+      const dateA = parseDateSafely(a.Data)?.getTime() || 0;
+      const dateB = parseDateSafely(b.Data)?.getTime() || 0;
+      return dateB - dateA;
+    });
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
@@ -571,38 +673,103 @@ export const LancamentosView: React.FC<Props> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col md:flex-row gap-3 items-center justify-between">
-        <div className="relative w-full md:w-72">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-          <input
-            type="text"
-            placeholder="Buscar por descrição ou categoria..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
-          />
+      <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+        <div className="flex flex-col xl:flex-row gap-3 items-stretch xl:items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center flex-1">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Buscar por descrição ou categoria..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+
+            {/* Period Selector */}
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+                <select
+                  value={periodFilter}
+                  onChange={(e) => setPeriodFilter(e.target.value as PeriodFilterType)}
+                  className="bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer appearance-none"
+                >
+                  <option value="ALL">Todos os Períodos</option>
+                  <option value="CURRENT_MONTH">Mês Atual</option>
+                  <option value="LAST_MONTH">Mês Passado</option>
+                  <option value="CUSTOM">Selecionar Período</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Type Filter Tabs (Todos / Despesas / Receitas / Abastecimentos) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 xl:pb-0 shrink-0">
+            {[
+              { id: "ALL", label: "Todos" },
+              { id: "Despesa", label: "Despesas" },
+              { id: "Receita", label: "Receitas" },
+              { id: "Abastecimento", label: "Abastecimentos" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setFilterType(tab.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
+                  filterType === tab.id
+                    ? "bg-slate-800 text-emerald-400 border border-emerald-500/30"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-          {[
-            { id: "ALL", label: "Todos" },
-            { id: "Despesa", label: "Despesas" },
-            { id: "Receita", label: "Receitas" },
-            { id: "Abastecimento", label: "Abastecimentos" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilterType(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
-                filterType === tab.id
-                  ? "bg-slate-800 text-emerald-400 border border-emerald-500/30"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* Custom Period Date Range Pickers (shown when periodFilter === "CUSTOM") */}
+        {periodFilter === "CUSTOM" && (
+          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800/80">
+            <span className="text-xs text-slate-400 font-medium">Intervalo de Datas:</span>
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] text-slate-400">Data Inicial:</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] text-slate-400">Data Final:</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            {(startDate || endDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                className="text-[11px] text-slate-400 hover:text-rose-400 underline transition-colors"
+              >
+                Limpar datas
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Transactions Table / List */}
