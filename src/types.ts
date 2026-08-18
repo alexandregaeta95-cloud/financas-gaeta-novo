@@ -238,6 +238,10 @@ export interface ItemMercado {
 export interface ZonaDeRisco {
   Id: string;
   Descrição: string;
+  Nome_Local?: string;
+  Bairro_Cidade?: string;
+  Nivel_Risco?: string;
+  Tipo_Ocorrencia?: string;
   Nível_De_Risco: "BAIXO" | "MÉDIO" | "ALTO" | "EXTREMO";
   Latitude: number;
   Longitude: number;
@@ -246,6 +250,7 @@ export interface ZonaDeRisco {
   Mensagem_De_Alerta?: string;
   Data_Registro?: string;
   Observação?: string;
+  Observacoes?: string;
 }
 
 // 18. Cartões de Crédito (A-Id, B-Nome, C-Bandeira, D-Limite_Total, E-Dia_Fechamento, F-Dia_Vencimento, G-Cor_Hex, H-Ativo)

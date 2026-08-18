@@ -155,12 +155,15 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
       setEditingZona(null);
       setForm({
         Descrição: "",
+        Nome_Local: "",
+        Bairro_Cidade: "",
+        Tipo_Ocorrencia: "",
         Nível_De_Risco: "ALTO",
         Latitude: userLocation?.lat || -23.55052,
         Longitude: userLocation?.lng || -46.633308,
         "Raio_(M)": 500,
         Ativo: "SIM",
-        Mensagem_De_Alerta: "CUIDADO: Zona de Alto Risco Registrada!",
+        Mensagem_De_Alerta: "CUIDADO: ZONA DE ALTO RISCO REGISTRADA!",
         Observação: "",
       });
     }
@@ -169,17 +172,28 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const desc = (form.Descrição || form.Nome_Local || "ZONA DE RISCO").trim().toUpperCase();
+    const obs = (form.Observação || form.Observacoes || "").trim().toUpperCase();
+    const bairro = (form.Bairro_Cidade || "").trim().toUpperCase();
+    const ocorrencia = (form.Tipo_Ocorrencia || "").trim().toUpperCase();
+    const msg = (form.Mensagem_De_Alerta || "ATENÇÃO!").trim().toUpperCase();
+
     const item: ZonaDeRisco = {
       Id: editingZona?.Id || generateNewId("RISCO"),
-      Descrição: form.Descrição || "Zona de Risco",
+      Descrição: desc,
+      Nome_Local: desc,
+      Bairro_Cidade: bairro,
+      Tipo_Ocorrencia: ocorrencia,
+      Nivel_Risco: form.Nível_De_Risco || "ALTO",
       Nível_De_Risco: form.Nível_De_Risco || "ALTO",
       Latitude: Number(form.Latitude) || 0,
       Longitude: Number(form.Longitude) || 0,
       "Raio_(M)": Number(form["Raio_(M)"]) || 300,
       Ativo: form.Ativo || "SIM",
-      Mensagem_De_Alerta: form.Mensagem_De_Alerta || "Atenção!",
-      Data_Registro: new Date().toISOString().split("T")[0],
-      Observação: form.Observação || "",
+      Mensagem_De_Alerta: msg,
+      Data_Registro: form.Data_Registro || new Date().toISOString().split("T")[0],
+      Observação: obs,
+      Observacoes: obs,
     };
     await onSaveZona(item);
     setIsModalOpen(false);
@@ -284,10 +298,15 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
                   </div>
                   <div>
                     <h3 className="font-bold text-white text-base leading-tight">
-                      {z.Descrição}
+                      {z.Descrição || z.Nome_Local}
                     </h3>
+                    {(z.Bairro_Cidade || z.Tipo_Ocorrencia) && (
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {[z.Bairro_Cidade, z.Tipo_Ocorrencia].filter(Boolean).join(" • ")}
+                      </p>
+                    )}
                     <span
-                      className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
+                      className={`text-[10px] font-extrabold px-2 py-0.5 rounded mt-1 inline-block ${
                         z.Nível_De_Risco === "EXTREMO"
                           ? "bg-rose-600 text-white"
                           : z.Nível_De_Risco === "ALTO"
@@ -330,7 +349,7 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs text-xs">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-base text-white">
                 {editingZona ? "Editar Zona de Risco" : "Cadastrar Zona de Risco"}
@@ -342,15 +361,38 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="text-slate-400 block mb-1">Descrição do Local</label>
+                <label className="text-slate-400 block mb-1">Nome do Local / Descrição</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Trecho com alto índice de assaltos / alagamento"
+                  placeholder="Ex: ENTRADA DA COMUNIDADE X - ASSALTOS"
                   value={form.Descrição}
                   onChange={(e) => setForm({ ...form, Descrição: e.target.value.toUpperCase() })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Bairro / Cidade</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: CENTRO"
+                    value={form.Bairro_Cidade || ""}
+                    onChange={(e) => setForm({ ...form, Bairro_Cidade: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Tipo de Ocorrência</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: ASSALTO / ALAGAMENTO"
+                    value={form.Tipo_Ocorrencia || ""}
+                    onChange={(e) => setForm({ ...form, Tipo_Ocorrencia: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -408,6 +450,17 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
                   type="text"
                   value={form.Mensagem_De_Alerta}
                   onChange={(e) => setForm({ ...form, Mensagem_De_Alerta: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Observações</label>
+                <input
+                  type="text"
+                  placeholder="Ex: EVITAR À NOITE, FECHAR VIDROS"
+                  value={form.Observação || form.Observacoes || ""}
+                  onChange={(e) => setForm({ ...form, Observação: e.target.value.toUpperCase(), Observacoes: e.target.value.toUpperCase() })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
               </div>

@@ -81,7 +81,7 @@ var HEADERS_BY_SHEET = {
   "14_Oficina": ["Id", "Data", "Descrição", "KM", "Valor_A_PG", "Valor_Pago", "Oficina_Nome", "Comprovante_Url", "Observações", "VeiculoID", "Veiculo"],
   "15_Manutenções_Agendadas": ["Id", "Veículo", "Descrição", "Tipo_Agendamento", "Data_Alvo", "KM_Alvo", "Recorrente", "Frequência_Meses", "Frequência_KM", "Status", "Prioridade", "Oficina_Nome", "Observações"],
   "16_Lista_De_Mercado": ["Id", "Item", "Categoria", "Quantidade", "Unidade", "Valor_Unitário", "Valor_Total", "Preco_Estimado", "Data_Pedido", "Data_Compra", "Comprado", "Observação"],
-  "17_Zonas_De_Risco": ["Id", "Descrição", "Nível_De_Risco", "Latitude", "Longitude", "Raio_(M)", "Ativo", "Mensagem_De_Alerta", "Data_Registro", "Observação"],
+  "17_Zonas_De_Risco": ["Id", "Nome_Local", "Bairro_Cidade", "Nivel_Risco", "Tipo_Ocorrencia", "Observacoes", "Latitude", "Longitude", "Raio_(M)", "Ativo", "Mensagem_De_Alerta", "Data_Registro"],
   "18_Cartões_De_Crédito": ["Id", "Nome", "Bandeira", "Limite_Total", "Dia_Fechamento", "Dia_Vencimento", "Cor_Hex", "Ativo"],
   "19_Agenda_E_Compromissos": ["Id", "Titulo", "Data", "Hora", "Descrição", "Cor_De_Identificação", "Efeito_Alerta_(Piscando)", "Lembrete_Ativo", "Dias_De_Antecedência", "Concluído", "Categoria"]
 };
@@ -399,7 +399,13 @@ function writeSheetRecords(ss, sheetName, items, action) {
     { key: "Nome_Posto", label: "Nome_Posto" },
     { key: "Localizacao_Do_Posto", label: "Localização_Do_Posto" },
     { key: "Comprovante_Url", label: "Comprovante_Url" },
-    { key: "Tipo_Combustivel", label: "Tipo_Combustivel" }
+    { key: "Tipo_Combustivel", label: "Tipo_Combustivel" },
+    { key: "Latitude", label: "Latitude" },
+    { key: "Longitude", label: "Longitude" },
+    { key: "Raio_(M)", label: "Raio_(M)" },
+    { key: "Ativo", label: "Ativo" },
+    { key: "Mensagem_De_Alerta", label: "Mensagem_De_Alerta" },
+    { key: "Data_Registro", label: "Data_Registro" }
   ];
 
   items.forEach(function(item) {

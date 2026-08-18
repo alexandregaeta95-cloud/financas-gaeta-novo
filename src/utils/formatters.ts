@@ -883,18 +883,59 @@ export function normalizeZonaDeRisco(raw: any): ZonaDeRisco {
     raw["Raio_(M)"] ?? raw["Raio_(m)"] ?? raw.Raio ?? raw.raio ?? 300
   );
 
+  const desc =
+    raw.Nome_Local ??
+    raw.nome_local ??
+    raw.Descrição ??
+    raw.Descricao ??
+    raw.descricao ??
+    "Zona de Risco";
+
+  const nivelRaw =
+    raw.Nível_De_Risco ??
+    raw.Nivel_Risco ??
+    raw.Nivel_De_Risco ??
+    raw.nivel_risco ??
+    raw.nivel ??
+    "MÉDIO";
+
+  const nivelStr = String(nivelRaw).toUpperCase();
+  const nivelVal = (
+    nivelStr.includes("EXTREM")
+      ? "EXTREMO"
+      : nivelStr.includes("ALT")
+      ? "ALTO"
+      : nivelStr.includes("BAIX")
+      ? "BAIXO"
+      : "MÉDIO"
+  ) as "BAIXO" | "MÉDIO" | "ALTO" | "EXTREMO";
+
+  const obs =
+    raw.Observações ??
+    raw.Observacoes ??
+    raw.observacoes ??
+    raw.Observação ??
+    raw.Observacao ??
+    raw.observacao ??
+    "";
+
   return {
     ...raw,
     Id: String(raw.Id || ""),
-    Descrição: raw.Descrição ?? raw.Descricao ?? raw.descricao ?? "Zona de Risco",
-    Nível_De_Risco: (raw.Nível_De_Risco ?? raw.Nivel_De_Risco ?? raw.nivel ?? "MÉDIO") as any,
+    Nome_Local: String(raw.Nome_Local ?? desc).trim(),
+    Bairro_Cidade: String(raw.Bairro_Cidade ?? raw.bairro_cidade ?? "").trim(),
+    Nivel_Risco: nivelVal,
+    Tipo_Ocorrencia: String(raw.Tipo_Ocorrencia ?? raw.tipo_ocorrencia ?? "").trim(),
+    Descrição: String(desc).trim(),
+    Nível_De_Risco: nivelVal,
     Latitude: lat,
     Longitude: lng,
     "Raio_(M)": raio || 300,
     Ativo: raw.Ativo !== false && raw.Ativo !== "NÃO" && raw.Ativo !== "NAO",
-    Mensagem_De_Alerta: raw.Mensagem_De_Alerta ?? raw.mensagem ?? "",
+    Mensagem_De_Alerta: raw.Mensagem_De_Alerta ?? raw.mensagem ?? "CUIDADO: Zona de Risco Registrada!",
     Data_Registro: formatDateBR(raw.Data_Registro ?? raw.data ?? ""),
-    Observação: raw.Observação ?? raw.Observacao ?? "",
+    Observação: obs,
+    Observacoes: obs,
   };
 }
 

@@ -435,6 +435,53 @@ export async function saveSheetRecords<T = any>(
       enriched["Tipo_de_Combustível"] = val;
     }
 
+    // 17_Zonas_De_Risco mappings (both legacy and new GPS columns)
+    if (
+      item.Nome_Local !== undefined ||
+      item.Descrição !== undefined ||
+      item.Descricao !== undefined ||
+      item.Nivel_Risco !== undefined ||
+      item.Nível_De_Risco !== undefined
+    ) {
+      const nomeVal = item.Nome_Local ?? item.Descrição ?? item.Descricao ?? "";
+      enriched["Nome_Local"] = nomeVal;
+      enriched["Descrição"] = nomeVal;
+      enriched["Descricao"] = nomeVal;
+
+      const nivelVal = item.Nivel_Risco ?? item.Nível_De_Risco ?? item.Nivel_De_Risco ?? "MÉDIO";
+      enriched["Nivel_Risco"] = nivelVal;
+      enriched["Nível_De_Risco"] = nivelVal;
+      enriched["Nivel_De_Risco"] = nivelVal;
+
+      enriched["Bairro_Cidade"] = item.Bairro_Cidade ?? item["Bairro_Cidade"] ?? "";
+      enriched["Tipo_Ocorrencia"] = item.Tipo_Ocorrencia ?? item["Tipo_Ocorrencia"] ?? "";
+
+      const obsVal = item.Observacoes ?? item["Observações"] ?? item.Observação ?? item.Observacao ?? "";
+      enriched["Observacoes"] = obsVal;
+      enriched["Observações"] = obsVal;
+      enriched["Observação"] = obsVal;
+      enriched["Observacao"] = obsVal;
+
+      if (item.Latitude !== undefined) enriched["Latitude"] = item.Latitude;
+      if (item.Longitude !== undefined) enriched["Longitude"] = item.Longitude;
+      if (item["Raio_(M)"] !== undefined || item.Raio !== undefined) {
+        enriched["Raio_(M)"] = item["Raio_(M)"] ?? item.Raio ?? 300;
+        enriched["Raio_(m)"] = enriched["Raio_(M)"];
+        enriched["Raio"] = enriched["Raio_(M)"];
+      }
+      if (item.Ativo !== undefined) {
+        enriched["Ativo"] = item.Ativo === false || item.Ativo === "NÃO" || item.Ativo === "NAO" ? "NÃO" : "SIM";
+      }
+      if (item.Mensagem_De_Alerta !== undefined) {
+        enriched["Mensagem_De_Alerta"] = item.Mensagem_De_Alerta;
+        enriched["Mensagem"] = item.Mensagem_De_Alerta;
+      }
+      if (item.Data_Registro !== undefined) {
+        enriched["Data_Registro"] = item.Data_Registro;
+        enriched["Data"] = item.Data_Registro;
+      }
+    }
+
     return enriched;
   });
 
