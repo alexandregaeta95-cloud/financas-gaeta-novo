@@ -1,7 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { ShieldAlert, MapPin, Plus, Edit2, Trash2, X, Navigation, Volume2, VolumeX, BellRing } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { ShieldAlert, MapPin, Plus, Edit2, Trash2, X, Navigation, Volume2, VolumeX, BellRing, Zap, Loader2 } from "lucide-react";
 import { ZonaDeRisco } from "../types";
 import { generateNewId } from "../services/api";
+
+const DEFAULT_TIPOS_OCORRENCIA = [
+  "ASSALTO",
+  "ALAGAMENTO",
+  "ARRASTÃO",
+  "ACIDENTE DE TRÂNSITO",
+  "TRÁFICO / TIROTEIO",
+  "FURTO DE VEÍCULO",
+  "ILUMINAÇÃO PRECÁRIA",
+  "BURACO / VIA DANIFICADA",
+  "OUTROS",
+];
 
 interface Props {
   zonas: ZonaDeRisco[];
@@ -33,6 +45,26 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
   const [geoError, setGeoError] = useState<string | null>(null);
   const [activeAlertZone, setActiveAlertZone] = useState<ZonaDeRisco | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+
+  // Dynamic available occurrence types
+  const availableTipos = useMemo(() => {
+    const set = new Set<string>(DEFAULT_TIPOS_OCORRENCIA.filter((t) => t !== "OUTROS"));
+    zonas.forEach((z) => {
+      if (z.Tipo_Ocorrencia && String(z.Tipo_Ocorrencia).trim()) {
+        set.add(String(z.Tipo_Ocorrencia).trim().toUpperCase());
+      }
+    });
+    return [...Array.from(set), "OUTROS"];
+  }, [zonas]);
+
+  const [selectedTipo, setSelectedTipo] = useState<string>("ASSALTO");
+  const [customTipo, setCustomTipo] = useState<string>("");
+
+  // Quick Risk Modal State
+  const [isQuickModalOpen, setIsQuickModalOpen] = useState(false);
+  const [quickNivel, setQuickNivel] = useState<"ALTO" | "MÉDIO" | "BAIXO">("ALTO");
+  const [quickLocal, setQuickLocal] = useState<string>("");
+  const [isQuickSaving, setIsQuickSaving] = useState(false);
 
   const [form, setForm] = useState<Partial<ZonaDeRisco>>({
     Descrição: "Entrada da Comunidade X - Alagamento/Assalto",
@@ -151,13 +183,26 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
     if (z) {
       setEditingZona(z);
       setForm({ ...z });
+      const currentTipo = (z.Tipo_Ocorrencia || "").trim().toUpperCase();
+      if (currentTipo && availableTipos.includes(currentTipo) && currentTipo !== "OUTROS") {
+        setSelectedTipo(currentTipo);
+        setCustomTipo("");
+      } else if (currentTipo) {
+        setSelectedTipo("OUTROS");
+        setCustomTipo(currentTipo);
+      } else {
+        setSelectedTipo("ASSALTO");
+        setCustomTipo("");
+      }
     } else {
       setEditingZona(null);
+      setSelectedTipo("ASSALTO");
+      setCustomTipo("");
       setForm({
         Descrição: "",
         Nome_Local: "",
         Bairro_Cidade: "",
-        Tipo_Ocorrencia: "",
+        Tipo_Ocorrencia: "ASSALTO",
         Nível_De_Risco: "ALTO",
         Latitude: userLocation?.lat || -23.55052,
         Longitude: userLocation?.lng || -46.633308,
@@ -170,12 +215,47 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
     setIsModalOpen(true);
   };
 
+  const handleOpenQuickModal = () => {
+    setQuickNivel("ALTO");
+    setQuickLocal("");
+    setIsQuickModalOpen(true);
+  };
+
+  const handleQuickSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const localNome = (quickLocal.trim() || "PONTO DE RISCO GPS").toUpperCase();
+    setIsQuickSaving(true);
+    try {
+      const item: ZonaDeRisco = {
+        Id: generateNewId("RISCO"),
+        Descrição: localNome,
+        Nome_Local: localNome,
+        Bairro_Cidade: "",
+        Tipo_Ocorrencia: "OUTROS",
+        Nivel_Risco: quickNivel,
+        Nível_De_Risco: quickNivel,
+        Latitude: userLocation?.lat || -23.55052,
+        Longitude: userLocation?.lng || -46.633308,
+        "Raio_(M)": 500,
+        Ativo: "SIM",
+        Mensagem_De_Alerta: `CUIDADO: ZONA DE RISCO ${quickNivel} REGISTRADA!`,
+        Data_Registro: new Date().toISOString().split("T")[0],
+        Observação: "",
+        Observacoes: "",
+      };
+      await onSaveZona(item);
+      setIsQuickModalOpen(false);
+    } finally {
+      setIsQuickSaving(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const desc = (form.Descrição || form.Nome_Local || "ZONA DE RISCO").trim().toUpperCase();
     const obs = (form.Observação || form.Observacoes || "").trim().toUpperCase();
     const bairro = (form.Bairro_Cidade || "").trim().toUpperCase();
-    const ocorrencia = (form.Tipo_Ocorrencia || "").trim().toUpperCase();
+    const ocorrencia = (selectedTipo === "OUTROS" ? customTipo : selectedTipo || form.Tipo_Ocorrencia || "").trim().toUpperCase();
     const msg = (form.Mensagem_De_Alerta || "ATENÇÃO!").trim().toUpperCase();
 
     const item: ZonaDeRisco = {
@@ -213,13 +293,23 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
           </p>
         </div>
 
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium rounded-xl transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Cadastrar Zona de Risco</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <button
+            onClick={handleOpenQuickModal}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 text-xs font-black rounded-xl transition-all shadow-lg shadow-rose-950/40 active:scale-95 animate-pulse"
+          >
+            <Zap className="w-4 h-4 fill-slate-950" />
+            <span>Registrar Risco Agora</span>
+          </button>
+
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl transition-colors border border-slate-700"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Cadastro Completo</span>
+          </button>
+        </div>
       </div>
 
       {/* Geolocation Status Indicator */}
@@ -346,6 +436,109 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
         })}
       </div>
 
+      {/* Quick Risk Modal (Fast 1-touch capture) */}
+      {isQuickModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs text-xs">
+          <div className="bg-slate-900 border-2 border-amber-500/60 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl shadow-amber-500/10">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
+                  <Zap className="w-5 h-5 fill-amber-400" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-white tracking-wide">
+                    REGISTRO RÁPIDO DE RISCO
+                  </h3>
+                  <p className="text-[10px] text-emerald-400 font-mono">
+                    📍 GPS: {userLocation ? `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}` : "Capturando posição..."}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsQuickModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickSubmit} className="space-y-4">
+              {/* Step 1: Nivel de Risco */}
+              <div className="space-y-1.5">
+                <label className="text-slate-300 font-bold block text-xs">
+                  1. NÍVEL DE RISCO (1 TOQUE)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["ALTO", "MÉDIO", "BAIXO"] as const).map((lvl) => {
+                    const isSelected = quickNivel === lvl;
+                    const colorClass =
+                      lvl === "ALTO"
+                        ? isSelected
+                          ? "bg-rose-600 text-white ring-2 ring-rose-400 font-black shadow-lg shadow-rose-600/30"
+                          : "bg-rose-950/40 text-rose-300 border border-rose-800/60 hover:bg-rose-900/60"
+                        : lvl === "MÉDIO"
+                        ? isSelected
+                          ? "bg-amber-500 text-slate-950 ring-2 ring-amber-300 font-black shadow-lg shadow-amber-500/30"
+                          : "bg-amber-950/40 text-amber-300 border border-amber-800/60 hover:bg-amber-900/60"
+                        : isSelected
+                        ? "bg-blue-600 text-white ring-2 ring-blue-400 font-black shadow-lg shadow-blue-600/30"
+                        : "bg-blue-950/40 text-blue-300 border border-blue-800/60 hover:bg-blue-900/60";
+
+                    return (
+                      <button
+                        key={lvl}
+                        type="button"
+                        onClick={() => setQuickNivel(lvl)}
+                        className={`py-3 px-2 rounded-xl text-center text-xs font-bold uppercase transition-all active:scale-95 ${colorClass}`}
+                      >
+                        {lvl}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Step 2: Nome do Local */}
+              <div className="space-y-1.5">
+                <label className="text-slate-300 font-bold block text-xs">
+                  2. NOME DO LOCAL / REGIÃO
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="EX: VIADUTO / POSTO / CRUZAMENTO"
+                  value={quickLocal}
+                  onChange={(e) => setQuickLocal(e.target.value.toUpperCase())}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white text-sm font-semibold uppercase placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                />
+              </div>
+
+              {/* Big Action Save Button */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isQuickSaving}
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 font-black text-sm rounded-xl flex items-center justify-center gap-2 shadow-xl shadow-rose-900/30 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isQuickSaving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
+                      <span>SALVANDO PONTO...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5 fill-slate-950" />
+                      <span>SALVAR RISCO AGORA</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs text-xs">
@@ -385,13 +578,39 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Tipo de Ocorrência</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: ASSALTO / ALAGAMENTO"
-                    value={form.Tipo_Ocorrencia || ""}
-                    onChange={(e) => setForm({ ...form, Tipo_Ocorrencia: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
-                  />
+                  <select
+                    value={selectedTipo}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedTipo(val);
+                      if (val !== "OUTROS") {
+                        setForm((prev) => ({ ...prev, Tipo_Ocorrencia: val }));
+                      } else {
+                        setForm((prev) => ({ ...prev, Tipo_Ocorrencia: customTipo }));
+                      }
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  >
+                    {availableTipos.map((tipo) => (
+                      <option key={tipo} value={tipo}>
+                        {tipo === "OUTROS" ? "OUTROS (DIGITAR NOVO)" : tipo}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedTipo === "OUTROS" && (
+                    <input
+                      type="text"
+                      autoFocus
+                      placeholder="DIGITE O NOVO TIPO"
+                      value={customTipo}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase();
+                        setCustomTipo(val);
+                        setForm((prev) => ({ ...prev, Tipo_Ocorrencia: val }));
+                      }}
+                      className="w-full mt-1.5 bg-slate-950 border border-rose-500/40 rounded-xl p-2.5 text-white uppercase placeholder-slate-600 focus:outline-none focus:border-rose-500"
+                    />
+                  )}
                 </div>
               </div>
 
