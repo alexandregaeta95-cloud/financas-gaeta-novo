@@ -63,21 +63,13 @@ export const ContasCartoesView: React.FC<Props> = ({
     Ativo: "SIM",
   });
 
-  // Calculate dynamic current month spent sum for each card
+  // Calculate dynamic current month spent sum for each card using calculateCardBalance
   const calculateCardSpent = (cartaoName: string) => {
-    const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
     const cNameUpper = String(cartaoName || "").trim().toUpperCase();
-    return lancamentos
-      .filter((l) => {
-        const s = String(l.Status || "").toUpperCase();
-        return s !== "EXCLUÍDO" && s !== "EXCLUIDO" && s !== "DELETED";
-      })
-      .filter((l) => {
-        const lCard = String(l.Cartão_Id || l.Cartao || "").trim().toUpperCase();
-        return lCard === cNameUpper;
-      })
-      .filter((l) => (l.Data || "").startsWith(currentMonth))
-      .reduce((acc, curr) => acc + parseCurrency(curr.Valor), 0);
+    const card =
+      cartoes.find((c) => String(c.Nome || "").trim().toUpperCase() === cNameUpper) ||
+      ({ Nome: cartaoName } as CartaoCredito);
+    return calculateCardBalance(card, lancamentos).currentSpent;
   };
 
   // Save Conta

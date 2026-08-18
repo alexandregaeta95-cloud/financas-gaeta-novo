@@ -1007,6 +1007,12 @@ export function calculateAccountCurrentBalance(
 /**
  * Calculates dynamic balance, current invoice spent, and available limit for a credit card
  * based on its total limit and active (non-excluded) transactions linked to this card.
+ *
+ * Rules:
+ * 1. Despesas no cartão sempre contam na Fatura Atual imediatamente, independente do status (Pendente ou Pago),
+ *    pois toda compra no cartão é dívida assumida no momento da transação.
+ * 2. Pagamento de fatura só abate da Fatura Atual quando o status for "PAGO" (ou houver Valor_Pago).
+ *    Se estiver "PENDENTE" ou "AGENDADO", ainda não foi debitado e não abate.
  */
 export function calculateCardBalance(
   cartao: CartaoCredito,
@@ -1055,6 +1061,8 @@ export function calculateCardBalance(
     const tipo = String(l.Tipo || "").trim().toUpperCase();
     const cat = String(l.Categoria || "").trim().toUpperCase();
     const desc = String(l.Descricao || rawL.Descrição || "").trim().toUpperCase();
+    const status = String(l.Status || "").trim().toUpperCase();
+    const valorPago = parseCurrency(l.Valor_Pago ?? 0);
 
     const isPagamentoFatura =
       cat === "PAGAMENTO DE FATURA" ||
@@ -1069,10 +1077,24 @@ export function calculateCardBalance(
     const isReceita = tipo === "RECEITA" || tipo === "RECEITAS" || cat === "RECEITA";
 
     if (isPagamentoFatura || isReceita) {
-      // Abatimento da fatura / estorno / pagamento
-      paymentsTotal += valor;
+      // Pagamento de fatura ou estorno:
+      // Só abate da fatura se o pagamento foi efetivado (Status PAGO / REALIZADO / CONCLUÍDO ou Valor_Pago > 0)
+      const isPaid =
+        status === "PAGO" ||
+        status === "PAGA" ||
+        status === "REALIZADO" ||
+        status === "CONCLUÍDO" ||
+        status === "CONCLUIDO" ||
+        status === "LIQUIDADO" ||
+        valorPago > 0;
+
+      if (isPaid) {
+        const paymentAmount = valorPago > 0 ? valorPago : valor;
+        paymentsTotal += paymentAmount;
+      }
     } else {
-      // Despesa no cartão
+      // Despesa no cartão:
+      // Conta SEMPRE na fatura atual imediatamente, independente de ser "Pendente" ou "Pago"
       expensesTotal += valor;
     }
   });
