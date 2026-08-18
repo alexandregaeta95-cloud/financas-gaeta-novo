@@ -260,7 +260,9 @@ export const ContasCartoesView: React.FC<Props> = ({
                   </div>
                   <div>
                     <span className="text-slate-500 text-[10px] block">Limite Disponível</span>
-                    <span className="font-semibold text-slate-300">R$ {formatCurrency(c.Limite)}</span>
+                    <span className="font-semibold text-slate-300">
+                      R$ {formatCurrency(c.Saldo_Atual ?? c.Saldo_Inicial)}
+                    </span>
                   </div>
                   {c.Agência && (
                     <div>
