@@ -1003,3 +1003,91 @@ export function calculateAccountCurrentBalance(
 
   return initial + delta;
 }
+
+/**
+ * Calculates dynamic balance, current invoice spent, and available limit for a credit card
+ * based on its total limit and active (non-excluded) transactions linked to this card.
+ */
+export function calculateCardBalance(
+  cartao: CartaoCredito,
+  lancamentos: Lancamento[]
+): {
+  totalLimit: number;
+  currentSpent: number;
+  availableLimit: number;
+  expensesTotal: number;
+  paymentsTotal: number;
+} {
+  if (!cartao) {
+    return { totalLimit: 0, currentSpent: 0, availableLimit: 0, expensesTotal: 0, paymentsTotal: 0 };
+  }
+
+  const totalLimit = parseCurrency(cartao.Limite_Total ?? cartao.Limite ?? 0);
+  const targetCardName = String(cartao.Nome || "").trim().toUpperCase();
+  const targetCardId = String(cartao.Id || "").trim().toUpperCase();
+
+  if (!targetCardName && !targetCardId) {
+    return { totalLimit, currentSpent: 0, availableLimit: totalLimit, expensesTotal: 0, paymentsTotal: 0 };
+  }
+
+  let expensesTotal = 0;
+  let paymentsTotal = 0;
+
+  (lancamentos || []).forEach((l) => {
+    // Skip excluded / deleted
+    if (isLancamentoExcluded(l)) {
+      return;
+    }
+
+    const rawL = l as unknown as Record<string, unknown>;
+    const itemCard = String(l.Cartao || rawL.Cartão_Id || rawL.Cartão || "").trim().toUpperCase();
+    const itemConta = String(l.Conta || "").trim().toUpperCase();
+    const isLinkedToThisCard =
+      (targetCardName && itemCard === targetCardName) ||
+      (targetCardId && itemCard === targetCardId) ||
+      (targetCardName && itemConta === targetCardName);
+
+    if (!isLinkedToThisCard) {
+      return;
+    }
+
+    const valor = parseCurrency(l.Valor ?? 0);
+    const tipo = String(l.Tipo || "").trim().toUpperCase();
+    const cat = String(l.Categoria || "").trim().toUpperCase();
+    const desc = String(l.Descricao || rawL.Descrição || "").trim().toUpperCase();
+
+    const isPagamentoFatura =
+      cat === "PAGAMENTO DE FATURA" ||
+      cat === "PAGAMENTO FATURA" ||
+      cat === "FATURA CARTÃO" ||
+      cat === "FATURA CARTAO" ||
+      desc.includes("PAGAMENTO DE FATURA") ||
+      desc.includes("PAGAMENTO DA FATURA") ||
+      desc.includes("PAGAMENTO FATURA") ||
+      tipo === "PAGAMENTO";
+
+    const isReceita = tipo === "RECEITA" || tipo === "RECEITAS" || cat === "RECEITA";
+
+    if (isPagamentoFatura || isReceita) {
+      // Abatimento da fatura / estorno / pagamento
+      paymentsTotal += valor;
+    } else {
+      // Despesa no cartão
+      expensesTotal += valor;
+    }
+  });
+
+  // Fatura Atual líquida (não fica negativa)
+  const currentSpent = Math.max(0, expensesTotal - paymentsTotal);
+  // Limite Disponível (Limite Total - Fatura Atual)
+  const availableLimit = Math.max(0, totalLimit - currentSpent);
+
+  return {
+    totalLimit,
+    currentSpent,
+    availableLimit,
+    expensesTotal,
+    paymentsTotal,
+  };
+}
+

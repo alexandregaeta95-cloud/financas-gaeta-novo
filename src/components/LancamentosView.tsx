@@ -16,15 +16,17 @@ import {
   Navigation,
   Loader2,
   Calendar,
+  CreditCard,
 } from "lucide-react";
-import { Lancamento, Veiculo, ContaBancaria, CategoriaCustomizada } from "../types";
+import { Lancamento, Veiculo, ContaBancaria, CartaoCredito, CategoriaCustomizada } from "../types";
 import { generateNewId } from "../services/api";
-import { parseCurrency, formatCurrency, isLancamentoExcluded } from "../utils/formatters";
+import { parseCurrency, formatCurrency, formatCurrencyInput, isLancamentoExcluded } from "../utils/formatters";
 
 interface Props {
   lancamentos: Lancamento[];
   veiculos: Veiculo[];
   contas: ContaBancaria[];
+  cartoes?: CartaoCredito[];
   categoriasCustom?: CategoriaCustomizada[];
   onSaveLancamento: (lancamento: Lancamento | Lancamento[]) => Promise<void>;
   onSaveCategoria?: (categoria: CategoriaCustomizada) => Promise<void>;
@@ -126,6 +128,7 @@ export const LancamentosView: React.FC<Props> = ({
   lancamentos,
   veiculos,
   contas,
+  cartoes = [],
   categoriasCustom = [],
   onSaveLancamento,
   onSaveCategoria,
@@ -1293,34 +1296,131 @@ export const LancamentosView: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-slate-400 mb-1">Forma de Pagamento</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: PIX, Cartão, Dinheiro"
-                    value={formData.Forma_Pagamento || ""}
-                    onChange={(e) => setFormData({ ...formData, Forma_Pagamento: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
-                  />
+                  <select
+                    value={formData.Forma_Pagamento || "PIX"}
+                    onChange={(e) => {
+                      const newForma = e.target.value.toUpperCase();
+                      setFormData((prev) => ({
+                        ...prev,
+                        Forma_Pagamento: newForma,
+                        Cartao: newForma === "CARTÃO DE CRÉDITO" ? (prev.Cartao || cartoes[0]?.Nome || "") : prev.Cartao,
+                      }));
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase font-medium"
+                  >
+                    <option value="PIX">PIX</option>
+                    <option value="CARTÃO DE CRÉDITO">CARTÃO DE CRÉDITO</option>
+                    <option value="CARTÃO DE DÉBITO">CARTÃO DE DÉBITO</option>
+                    <option value="DINHEIRO">DINHEIRO</option>
+                    <option value="TRANSFERÊNCIA">TRANSFERÊNCIA</option>
+                    <option value="BOLETO">BOLETO</option>
+                    <option value="OUTRO">OUTRO</option>
+                  </select>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-slate-400 mb-1">Conta (Banco / Cartão de Débito)</label>
-                <select
-                  value={formData.Conta || ""}
-                  onChange={(e) => setFormData({ ...formData, Conta: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
-                >
-                  <option value="">Selecione uma conta...</option>
-                  {contas.map((c) => (
-                    <option key={c.Id || c.Nome} value={c.Nome}>
-                      {c.Nome} {c.Tipo ? `(${c.Tipo})` : ""}
-                    </option>
-                  ))}
-                  {formData.Conta && !contas.some((c) => c.Nome === formData.Conta) && (
-                    <option value={formData.Conta}>{formData.Conta}</option>
+              {/* Se a categoria for Pagamento de Fatura */}
+              {(String(formData.Categoria || "").toUpperCase().includes("FATURA") ||
+                String(formData.Descricao || "").toUpperCase().includes("PAGAMENTO DE FATURA") ||
+                String(formData.Descricao || "").toUpperCase().includes("FATURA")) ? (
+                <div className="p-3.5 bg-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-3">
+                  <div className="flex items-center gap-2 text-indigo-300 font-semibold text-xs">
+                    <CreditCard className="w-4 h-4 text-indigo-400" />
+                    <span>Pagamento de Fatura de Cartão de Crédito</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    O valor pago sairá da <strong>Conta Bancária</strong> e abaterá a fatura do <strong>Cartão de Crédito</strong> selecionado, liberando o limite disponível.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1">
+                        Conta Bancária de Saída (Origem)
+                      </label>
+                      <select
+                        value={formData.Conta || ""}
+                        onChange={(e) => setFormData({ ...formData, Conta: e.target.value.toUpperCase() })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase text-xs"
+                      >
+                        <option value="">Selecione a conta de saída...</option>
+                        {contas.map((c) => (
+                          <option key={c.Id || c.Nome} value={c.Nome.toUpperCase()}>
+                            {c.Nome.toUpperCase()} {c.Tipo ? `(${c.Tipo})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1">
+                        Cartão de Crédito Quitado (Destino)
+                      </label>
+                      <select
+                        required
+                        value={formData.Cartao || ""}
+                        onChange={(e) => setFormData({ ...formData, Cartao: e.target.value.toUpperCase() })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase font-bold text-xs"
+                      >
+                        <option value="">Selecione o cartão de crédito...</option>
+                        {cartoes.map((card) => (
+                          <option key={card.Id || card.Nome} value={card.Nome.toUpperCase()}>
+                            {card.Nome.toUpperCase()} ({card.Bandeira || "CARTÃO"})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 mb-1">Conta Bancária / Débito</label>
+                    <select
+                      value={formData.Conta || ""}
+                      onChange={(e) => setFormData({ ...formData, Conta: e.target.value.toUpperCase() })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                    >
+                      <option value="">Selecione uma conta...</option>
+                      {contas.map((c) => (
+                        <option key={c.Id || c.Nome} value={c.Nome.toUpperCase()}>
+                          {c.Nome.toUpperCase()} {c.Tipo ? `(${c.Tipo})` : ""}
+                        </option>
+                      ))}
+                      {formData.Conta && !contas.some((c) => c.Nome.toUpperCase() === (formData.Conta || "").toUpperCase()) && (
+                        <option value={formData.Conta.toUpperCase()}>{formData.Conta.toUpperCase()}</option>
+                      )}
+                    </select>
+                  </div>
+
+                  {(formData.Forma_Pagamento === "CARTÃO DE CRÉDITO" || cartoes.length > 0) && (
+                    <div>
+                      <label className="block text-slate-400 mb-1">
+                        Cartão de Crédito {formData.Forma_Pagamento === "CARTÃO DE CRÉDITO" ? "(Obrigatório)" : "(Opcional)"}
+                      </label>
+                      <select
+                        value={formData.Cartao || ""}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setFormData((prev) => ({
+                            ...prev,
+                            Cartao: val,
+                            Forma_Pagamento: val ? "CARTÃO DE CRÉDITO" : prev.Forma_Pagamento,
+                          }));
+                        }}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                      >
+                        <option value="">Nenhum (Usar Conta Bancária)</option>
+                        {cartoes.map((card) => (
+                          <option key={card.Id || card.Nome} value={card.Nome.toUpperCase()}>
+                            {card.Nome.toUpperCase()} ({card.Bandeira || "CARTÃO"})
+                          </option>
+                        ))}
+                        {formData.Cartao && !cartoes.some((c) => c.Nome.toUpperCase() === (formData.Cartao || "").toUpperCase()) && (
+                          <option value={formData.Cartao.toUpperCase()}>{formData.Cartao.toUpperCase()}</option>
+                        )}
+                      </select>
+                    </div>
                   )}
-                </select>
-              </div>
+                </div>
+              )}
 
               {/* Extra Fueling Fields if Categoria === ABASTECIMENTO */}
               {(formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento") && (

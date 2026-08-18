@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { ContaBancaria, CartaoCredito, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
-import { parseCurrency, formatCurrency, formatCurrencyInput } from "../utils/formatters";
+import { parseCurrency, formatCurrency, formatCurrencyInput, calculateCardBalance } from "../utils/formatters";
 
 interface Props {
   contas: ContaBancaria[];
@@ -328,7 +328,7 @@ export const ContasCartoesView: React.FC<Props> = ({
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-xs text-slate-400">
-              Cartões de crédito com cálculo automático de faturas e gastos do mês
+              Cartões de crédito com cálculo automático de limite disponível, faturas e abatimentos
             </span>
             <button
               onClick={() => handleOpenCartao()}
@@ -339,13 +339,15 @@ export const ContasCartoesView: React.FC<Props> = ({
             </button>
           </div>
 
+          {/* Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {cartoes.map((card, idx) => {
-              const currentSpent = calculateCardSpent(card.Nome);
-              const limit = parseCurrency(card.Limite_Total ?? card.Limite) || 1000;
+              const cardBal = calculateCardBalance(card, lancamentos);
               const fechamento = card.Dia_Fechamento ?? card.Fechamento ?? 10;
               const vencimento = card.Dia_Vencimento ?? card.Vencimento ?? 20;
-              const usedPct = Math.min(100, Math.round((currentSpent / limit) * 100));
+              const usedPct = cardBal.totalLimit > 0
+                ? Math.min(100, Math.round((cardBal.currentSpent / cardBal.totalLimit) * 100))
+                : 0;
 
               return (
                 <div
@@ -358,7 +360,7 @@ export const ContasCartoesView: React.FC<Props> = ({
                         <CreditCard className="w-6 h-6" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-white text-base leading-tight">
+                        <h3 className="font-bold text-white text-base leading-tight uppercase">
                           {card.Nome}
                         </h3>
                         <p className="text-xs text-slate-400">
@@ -375,11 +377,41 @@ export const ContasCartoesView: React.FC<Props> = ({
                     </button>
                   </div>
 
+                  {/* Saldo / Limite Highlights */}
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Limite Disponível</span>
+                      <span className="font-bold text-emerald-400 text-sm">
+                        R$ {formatCurrency(cardBal.availableLimit)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Fatura Atual (Gasto)</span>
+                      <span className="font-bold text-amber-400 text-sm">
+                        R$ {formatCurrency(cardBal.currentSpent)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Limite Total</span>
+                      <span className="font-semibold text-slate-300">
+                        R$ {formatCurrency(cardBal.totalLimit)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Total Pago / Abatido</span>
+                      <span className="font-semibold text-slate-400">
+                        R$ {formatCurrency(cardBal.paymentsTotal)}
+                      </span>
+                    </div>
+                  </div>
+
                   {/* Limit Progress Bar */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs">
-                      <span className="text-slate-400">Fatura Atual (Gasto Mês):</span>
-                      <strong className="text-amber-400">R$ {formatCurrency(currentSpent)}</strong>
+                      <span className="text-slate-400">Uso do Limite:</span>
+                      <span className={`font-semibold ${usedPct > 80 ? "text-rose-400" : "text-slate-300"}`}>
+                        {usedPct}% utilizado
+                      </span>
                     </div>
                     <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                       <div
@@ -389,16 +421,12 @@ export const ContasCartoesView: React.FC<Props> = ({
                         style={{ width: `${usedPct}%` }}
                       />
                     </div>
-                    <div className="flex justify-between text-[10px] text-slate-500">
-                      <span>Limite Total: R$ {formatCurrency(limit)}</span>
-                      <span>{usedPct}% do limite</span>
-                    </div>
                   </div>
 
                   {card.Banco_ID && (
                     <div className="text-[11px] text-slate-400 border-t border-slate-800/80 pt-2 flex justify-between">
-                      <span>Débito em conta:</span>
-                      <strong className="text-slate-200">{card.Banco_ID}</strong>
+                      <span>Débito / Vinculado a:</span>
+                      <strong className="text-slate-200 uppercase">{card.Banco_ID}</strong>
                     </div>
                   )}
                 </div>

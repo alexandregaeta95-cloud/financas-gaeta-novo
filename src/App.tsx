@@ -382,6 +382,7 @@ export default function App() {
             lancamentos={lancamentos}
             veiculos={veiculos}
             contas={contas}
+            cartoes={cartoes}
             categoriasCustom={categoriasCustom}
             onSaveLancamento={handleSaveLancamento}
             onSaveCategoria={(cat) =>
