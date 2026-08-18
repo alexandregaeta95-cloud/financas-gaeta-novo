@@ -1319,10 +1319,14 @@ export const LancamentosView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Se a categoria for Pagamento de Fatura */}
-              {(String(formData.Categoria || "").toUpperCase().includes("FATURA") ||
-                String(formData.Descricao || "").toUpperCase().includes("PAGAMENTO DE FATURA") ||
-                String(formData.Descricao || "").toUpperCase().includes("FATURA")) ? (
+              {/* Se a categoria for explicitamente Pagamento de Fatura */}
+              {(String(formData.Categoria || "").trim().toUpperCase() === "PAGAMENTO DE FATURA" ||
+                String(formData.Categoria || "").trim().toUpperCase() === "PAGAMENTO FATURA" ||
+                String(formData.Categoria || "").trim().toUpperCase() === "FATURA CARTÃO" ||
+                String(formData.Categoria || "").trim().toUpperCase() === "FATURA CARTAO" ||
+                String(formData.Descricao || "").trim().toUpperCase().startsWith("PAGAMENTO DE FATURA") ||
+                String(formData.Descricao || "").trim().toUpperCase().startsWith("PAGAMENTO DA FATURA") ||
+                String(formData.Descricao || "").trim().toUpperCase().startsWith("PAGAMENTO FATURA")) ? (
                 <div className="p-3.5 bg-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-3">
                   <div className="flex items-center gap-2 text-indigo-300 font-semibold text-xs">
                     <CreditCard className="w-4 h-4 text-indigo-400" />

@@ -1028,13 +1028,28 @@ export function calculateCardBalance(
     return { totalLimit: 0, currentSpent: 0, availableLimit: 0, expensesTotal: 0, paymentsTotal: 0 };
   }
 
+  const norm = (val: unknown) =>
+    String(val || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^A-Z0-9\s]/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toUpperCase();
+
   const totalLimit = parseCurrency(cartao.Limite_Total ?? cartao.Limite ?? 0);
-  const targetCardName = String(cartao.Nome || "").trim().toUpperCase();
-  const targetCardId = String(cartao.Id || "").trim().toUpperCase();
+  const targetCardName = norm(cartao.Nome);
+  const targetCardId = norm(cartao.Id);
+  const targetBandeira = norm(cartao.Bandeira);
 
   if (!targetCardName && !targetCardId) {
     return { totalLimit, currentSpent: 0, availableLimit: totalLimit, expensesTotal: 0, paymentsTotal: 0 };
   }
+
+  // Extrai palavras-chave significativas do nome do cartão (ex: "NUBANK", "MASTERCARD", "BLACK")
+  const targetKeywords = targetCardName
+    .split(" ")
+    .filter((w) => w.length >= 3 && w !== "CARTAO" && w !== "CREDITO" && w !== "DEBITO" && w !== "CARD" && w !== "BANCO");
 
   let expensesTotal = 0;
   let paymentsTotal = 0;
@@ -1046,46 +1061,79 @@ export function calculateCardBalance(
     }
 
     const rawL = l as unknown as Record<string, unknown>;
-    const itemCard = String(l.Cartao || rawL.Cartão_Id || rawL.Cartão || "").trim().toUpperCase();
-    const itemConta = String(l.Conta || "").trim().toUpperCase();
-    const isLinkedToThisCard =
-      (targetCardName && itemCard === targetCardName) ||
-      (targetCardId && itemCard === targetCardId) ||
-      (targetCardName && itemConta === targetCardName);
+    const itemCard = norm(l.Cartao || rawL.Cartão_Id || rawL.Cartão || rawL.Cartao_Id || rawL.Cartão_Nome || rawL.Cartao_Nome);
+    const itemConta = norm(l.Conta || rawL.Conta_Bancaria);
+    const itemForma = norm(l.Forma_Pagamento || rawL.Forma_De_Pagamento);
+    const itemDesc = norm(l.Descricao || rawL.Descrição);
+    const itemObs = norm(l.Observacoes || rawL.Observações);
+    const tipo = norm(l.Tipo);
+    const cat = norm(l.Categoria);
 
-    if (!isLinkedToThisCard) {
+    // Verificação flexível de vínculo com o cartão:
+    // 1. Vínculo direto pelo campo Cartão / Cartão_Id
+    let isLinked = false;
+    if (itemCard) {
+      if (
+        itemCard === targetCardName ||
+        (targetCardId && itemCard === targetCardId) ||
+        (targetCardName && (itemCard.includes(targetCardName) || targetCardName.includes(itemCard))) ||
+        (targetKeywords.length > 0 && targetKeywords.some((kw) => itemCard.includes(kw)))
+      ) {
+        isLinked = true;
+      }
+    }
+
+    // 2. Vínculo pelo campo Conta (se o usuário selecionou o cartão na coluna Conta)
+    if (!isLinked && itemConta) {
+      if (
+        itemConta === targetCardName ||
+        (targetCardId && itemConta === targetCardId) ||
+        (targetCardName && (itemConta.includes(targetCardName) || targetCardName.includes(itemConta))) ||
+        (targetKeywords.length > 0 && targetKeywords.some((kw) => itemConta.includes(kw)))
+      ) {
+        isLinked = true;
+      }
+    }
+
+    // 3. Vínculo por Forma de Pagamento = CARTÃO DE CRÉDITO com menção no texto
+    if (!isLinked && (itemForma.includes("CARTAO") || itemForma.includes("CREDITO"))) {
+      if (
+        (targetKeywords.length > 0 && targetKeywords.some((kw) => itemForma.includes(kw) || itemDesc.includes(kw) || itemObs.includes(kw))) ||
+        (targetBandeira && (itemDesc.includes(targetBandeira) || itemForma.includes(targetBandeira)))
+      ) {
+        isLinked = true;
+      }
+    }
+
+    if (!isLinked) {
       return;
     }
 
     const valor = parseCurrency(l.Valor ?? 0);
-    const tipo = String(l.Tipo || "").trim().toUpperCase();
-    const cat = String(l.Categoria || "").trim().toUpperCase();
-    const desc = String(l.Descricao || rawL.Descrição || "").trim().toUpperCase();
-    const status = String(l.Status || "").trim().toUpperCase();
+    const status = norm(l.Status);
     const valorPago = parseCurrency(l.Valor_Pago ?? 0);
 
     const isPagamentoFatura =
-      cat === "PAGAMENTO DE FATURA" ||
-      cat === "PAGAMENTO FATURA" ||
-      cat === "FATURA CARTÃO" ||
-      cat === "FATURA CARTAO" ||
-      desc.includes("PAGAMENTO DE FATURA") ||
-      desc.includes("PAGAMENTO DA FATURA") ||
-      desc.includes("PAGAMENTO FATURA") ||
+      cat.includes("PAGAMENTO DE FATURA") ||
+      cat.includes("PAGAMENTO FATURA") ||
+      cat.includes("FATURA CARTAO") ||
+      cat.includes("FATURA") ||
+      itemDesc.includes("PAGAMENTO DE FATURA") ||
+      itemDesc.includes("PAGAMENTO DA FATURA") ||
+      itemDesc.includes("PAGAMENTO FATURA") ||
       tipo === "PAGAMENTO";
 
-    const isReceita = tipo === "RECEITA" || tipo === "RECEITAS" || cat === "RECEITA";
+    const isReceita = tipo.includes("RECEITA") || cat.includes("RECEITA");
 
     if (isPagamentoFatura || isReceita) {
       // Pagamento de fatura ou estorno:
       // Só abate da fatura se o pagamento foi efetivado (Status PAGO / REALIZADO / CONCLUÍDO ou Valor_Pago > 0)
       const isPaid =
-        status === "PAGO" ||
-        status === "PAGA" ||
-        status === "REALIZADO" ||
-        status === "CONCLUÍDO" ||
-        status === "CONCLUIDO" ||
-        status === "LIQUIDADO" ||
+        status.includes("PAGO") ||
+        status.includes("PAGA") ||
+        status.includes("REALIZADO") ||
+        status.includes("CONCLUIDO") ||
+        status.includes("LIQUIDADO") ||
         valorPago > 0;
 
       if (isPaid) {
