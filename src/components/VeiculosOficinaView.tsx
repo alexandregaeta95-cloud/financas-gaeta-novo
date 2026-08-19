@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Car,
   Wrench,
@@ -7,15 +7,15 @@ import {
   Edit2,
   Trash2,
   AlertTriangle,
-  CheckCircle2,
   Clock,
   X,
-  Gauge,
-  FileText
+  Search,
 } from "lucide-react";
 import { Veiculo, ServicoOficina, ManutencaoAgendada } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
+
+type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
 
 interface Props {
   veiculos: Veiculo[];
@@ -24,6 +24,39 @@ interface Props {
   onSaveVeiculo: (veiculo: Veiculo) => Promise<void>;
   onSaveServico: (servico: ServicoOficina) => Promise<void>;
   onSaveManutencao: (manutencao: ManutencaoAgendada) => Promise<void>;
+  onDeleteVeiculo: (id: string) => Promise<void>;
+  onDeleteServico: (id: string) => Promise<void>;
+  onDeleteManutencao: (id: string) => Promise<void>;
+}
+
+function parseDateSafely(val: any): Date | null {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  const s = String(val).trim();
+  if (!s) return null;
+
+  // DD/MM/YYYY or DD-MM-YYYY
+  const brMatch = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+  if (brMatch) {
+    const day = parseInt(brMatch[1], 10);
+    const month = parseInt(brMatch[2], 10) - 1;
+    const year = parseInt(brMatch[3], 10);
+    const d = new Date(year, month, day);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // YYYY-MM-DD or ISO
+  const isoMatch = s.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10) - 1;
+    const day = parseInt(isoMatch[3], 10);
+    const d = new Date(year, month, day);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 export const VeiculosOficinaView: React.FC<Props> = ({
@@ -33,8 +66,27 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   onSaveVeiculo,
   onSaveServico,
   onSaveManutencao,
+  onDeleteVeiculo,
+  onDeleteServico,
+  onDeleteManutencao,
 }) => {
   const [activeTab, setActiveTab] = useState<"veiculos" | "oficina" | "agendadas">("veiculos");
+
+  // Filter and Search States
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("ALL");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
+  // Delete Confirmation State
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    type: "veiculo" | "servico" | "manutencao";
+    id: string;
+    title: string;
+    subtitle?: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Veículo Modal State
   const [isVeiculoModalOpen, setIsVeiculoModalOpen] = useState(false);
@@ -86,6 +138,113 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     Oficina_Nome: "",
     Observações: "",
   });
+
+  // Helper for Date Period Filter
+  const isDateInPeriod = (dateStr?: string | null): boolean => {
+    if (periodFilter === "ALL") return true;
+    if (!dateStr) return true;
+
+    const itemDate = parseDateSafely(dateStr);
+    if (!itemDate) return true;
+
+    const now = new Date();
+
+    if (periodFilter === "CURRENT_MONTH") {
+      return (
+        itemDate.getFullYear() === now.getFullYear() &&
+        itemDate.getMonth() === now.getMonth()
+      );
+    }
+
+    if (periodFilter === "LAST_MONTH") {
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      return (
+        itemDate.getFullYear() === lastMonth.getFullYear() &&
+        itemDate.getMonth() === lastMonth.getMonth()
+      );
+    }
+
+    if (periodFilter === "CUSTOM") {
+      const itemTime = new Date(
+        itemDate.getFullYear(),
+        itemDate.getMonth(),
+        itemDate.getDate()
+      ).getTime();
+
+      if (startDate) {
+        const startObj = parseDateSafely(startDate);
+        if (startObj) {
+          const startTime = new Date(
+            startObj.getFullYear(),
+            startObj.getMonth(),
+            startObj.getDate()
+          ).getTime();
+          if (itemTime < startTime) return false;
+        }
+      }
+
+      if (endDate) {
+        const endObj = parseDateSafely(endDate);
+        if (endObj) {
+          const endTime = new Date(
+            endObj.getFullYear(),
+            endObj.getMonth(),
+            endObj.getDate()
+          ).getTime();
+          if (itemTime > endTime) return false;
+        }
+      }
+
+      return true;
+    }
+
+    return true;
+  };
+
+  // Filtered lists for each tab
+  const filteredVeiculos = useMemo(() => {
+    return veiculos.filter((v) => {
+      if (!searchTerm.trim()) return true;
+      const q = searchTerm.toLowerCase();
+      return (
+        (v.Marca || "").toLowerCase().includes(q) ||
+        (v.Modelo || "").toLowerCase().includes(q) ||
+        (v.Placa || "").toLowerCase().includes(q) ||
+        (v.Motorista || "").toLowerCase().includes(q) ||
+        (v.Descrição || "").toLowerCase().includes(q)
+      );
+    });
+  }, [veiculos, searchTerm]);
+
+  const filteredServicos = useMemo(() => {
+    return servicos
+      .filter((s) => isDateInPeriod(s.Data))
+      .filter((s) => {
+        if (!searchTerm.trim()) return true;
+        const q = searchTerm.toLowerCase();
+        return (
+          (s.Descrição || "").toLowerCase().includes(q) ||
+          (s.Veiculo || "").toLowerCase().includes(q) ||
+          (s.Oficina_Nome || "").toLowerCase().includes(q) ||
+          (s.Observações || "").toLowerCase().includes(q)
+        );
+      });
+  }, [servicos, periodFilter, startDate, endDate, searchTerm]);
+
+  const filteredManutencoes = useMemo(() => {
+    return manutencoes
+      .filter((m) => isDateInPeriod(m.Data_Alvo))
+      .filter((m) => {
+        if (!searchTerm.trim()) return true;
+        const q = searchTerm.toLowerCase();
+        return (
+          (m.Descrição || "").toLowerCase().includes(q) ||
+          (m.Veículo || "").toLowerCase().includes(q) ||
+          (m.Oficina_Nome || "").toLowerCase().includes(q) ||
+          (m.Observações || "").toLowerCase().includes(q)
+        );
+      });
+  }, [manutencoes, periodFilter, startDate, endDate, searchTerm]);
 
   // Open Veículo Modal
   const handleOpenVeiculo = (v?: Veiculo) => {
@@ -270,7 +429,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 : "text-slate-400 hover:text-white"
             }`}
           >
-            Veículos ({veiculos.length})
+            Veículos ({filteredVeiculos.length})
           </button>
           <button
             onClick={() => setActiveTab("oficina")}
@@ -280,7 +439,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 : "text-slate-400 hover:text-white"
             }`}
           >
-            Histórico Oficina ({servicos.length})
+            Histórico Oficina ({filteredServicos.length})
           </button>
           <button
             onClick={() => setActiveTab("agendadas")}
@@ -290,7 +449,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 : "text-slate-400 hover:text-white"
             }`}
           >
-            Manutenções Agendadas ({manutencoes.length})
+            Manutenções Agendadas ({filteredManutencoes.length})
             {alertManutencoes.length > 0 && (
               <span className="ml-1 px-1.5 py-0.2 bg-amber-500 text-slate-950 font-bold rounded-full text-[10px]">
                 {alertManutencoes.length}
@@ -321,6 +480,76 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         </div>
       )}
 
+      {/* Filter and Search Bar (Todos os Períodos, Mês Atual, Mês Passado, Selecionar Período) */}
+      <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+          {/* Search Input */}
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <input
+              type="text"
+              placeholder={
+                activeTab === "veiculos"
+                  ? "Buscar por marca, modelo, placa ou motorista..."
+                  : activeTab === "oficina"
+                  ? "Buscar por serviço, veículo ou oficina..."
+                  : "Buscar por manutenção, veículo ou oficina..."
+              }
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+            />
+          </div>
+
+          {/* Period Selector */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+              <select
+                value={periodFilter}
+                onChange={(e) => setPeriodFilter(e.target.value as PeriodFilterType)}
+                className="bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer appearance-none"
+              >
+                <option value="ALL">Todos os Períodos</option>
+                <option value="CURRENT_MONTH">Mês Atual</option>
+                <option value="LAST_MONTH">Mês Passado</option>
+                <option value="CUSTOM">Selecionar Período</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Period Date Range Pickers (shown when periodFilter === "CUSTOM") */}
+        {periodFilter === "CUSTOM" && (
+          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800/80">
+            <span className="text-xs text-slate-400 font-medium">Intervalo de Datas:</span>
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] text-slate-400">Data Inicial:</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] text-slate-400">Data Final:</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* 1. VEÍCULOS TAB */}
       {activeTab === "veiculos" && (
         <div className="space-y-4">
@@ -330,67 +559,91 @@ export const VeiculosOficinaView: React.FC<Props> = ({
             </span>
             <button
               onClick={() => handleOpenVeiculo()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Cadastrar Veículo</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {veiculos.map((v, idx) => (
-              <div
-                key={`${v.Id || 'veic'}-${idx}`}
-                className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
-                      <Car className="w-6 h-6" />
+          {filteredVeiculos.length === 0 ? (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
+              Nenhum veículo encontrado com os filtros atuais.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredVeiculos.map((v, idx) => (
+                <div
+                  key={`${v.Id || 'veic'}-${idx}`}
+                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+                        <Car className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-base leading-tight">
+                          {v.Marca} {v.Modelo}
+                        </h3>
+                        <p className="text-xs text-slate-400 font-mono">
+                          Placa: <strong className="text-emerald-400">{v.Placa}</strong> • Ano: {v.Ano}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenVeiculo(v)}
+                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                        title="Editar Veículo"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() =>
+                          setDeleteConfirm({
+                            isOpen: true,
+                            type: "veiculo",
+                            id: v.Id,
+                            title: `${v.Marca} ${v.Modelo}`,
+                            subtitle: `Placa: ${v.Placa || "Sem placa"} • Motorista: ${v.Motorista || "—"}`,
+                          })
+                        }
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        title="Excluir Veículo"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Motorista</span>
+                      <span className="font-semibold text-slate-200">{v.Motorista || "—"}</span>
                     </div>
                     <div>
-                      <h3 className="font-bold text-white text-base leading-tight">
-                        {v.Marca} {v.Modelo}
-                      </h3>
-                      <p className="text-xs text-slate-400 font-mono">
-                        Placa: <strong className="text-emerald-400">{v.Placa}</strong> • Ano: {v.Ano}
-                      </p>
+                      <span className="text-slate-500 text-[10px] block">KM Atual</span>
+                      <span className="font-bold text-emerald-400 font-mono">{v.Km_Atual} KM</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Combustível</span>
+                      <span className="text-slate-300">{v.Combustível}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Renavam</span>
+                      <span className="text-slate-300 font-mono">{v.Renavam || "—"}</span>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleOpenVeiculo(v)}
-                    className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
+                  {v.Descrição && (
+                    <p className="text-xs text-slate-400 italic">"{v.Descrição}"</p>
+                  )}
                 </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Motorista</span>
-                    <span className="font-semibold text-slate-200">{v.Motorista || "—"}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">KM Atual</span>
-                    <span className="font-bold text-emerald-400 font-mono">{v.Km_Atual} KM</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Combustível</span>
-                    <span className="text-slate-300">{v.Combustível}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Renavam</span>
-                    <span className="text-slate-300 font-mono">{v.Renavam || "—"}</span>
-                  </div>
-                </div>
-
-                {v.Descrição && (
-                  <p className="text-xs text-slate-400 italic">"{v.Descrição}"</p>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -403,7 +656,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
             </span>
             <button
               onClick={() => handleOpenServico()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Registrar Serviço</span>
@@ -411,12 +664,12 @@ export const VeiculosOficinaView: React.FC<Props> = ({
           </div>
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800">
-            {servicos.length === 0 ? (
+            {filteredServicos.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-xs">
-                Nenhum serviço de oficina registrado ainda.
+                Nenhum serviço de oficina encontrado no período selecionado.
               </div>
             ) : (
-              servicos.map((s, idx) => (
+              filteredServicos.map((s, idx) => (
                 <div key={`${s.Id || 'serv'}-${idx}`} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                   <div className="flex items-start gap-3">
                     <div className="p-2.5 rounded-xl bg-slate-800 text-emerald-400 shrink-0 mt-0.5">
@@ -440,12 +693,30 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                         R$ {formatCurrency(parseCurrency(s.Valor_Pago) || parseCurrency(s.Valor_A_PG))}
                       </span>
                     </div>
-                    <button
-                      onClick={() => handleOpenServico(s)}
-                      className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenServico(s)}
+                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                        title="Editar Serviço"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() =>
+                          setDeleteConfirm({
+                            isOpen: true,
+                            type: "servico",
+                            id: s.Id,
+                            title: s.Descrição,
+                            subtitle: `Veículo: ${s.Veiculo} • Data: ${s.Data} • Valor: R$ ${formatCurrency(parseCurrency(s.Valor_Pago) || parseCurrency(s.Valor_A_PG))}`,
+                          })
+                        }
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        title="Excluir Serviço"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -463,82 +734,181 @@ export const VeiculosOficinaView: React.FC<Props> = ({
             </span>
             <button
               onClick={() => handleOpenManutencao()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Agendar Manutenção</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {manutencoes.map((m, idx) => {
-              const isDone = m.Status === "CONCLUÍDO" || m.Status === "Concluída";
-              return (
-                <div
-                  key={`${m.Id || 'manut'}-${idx}`}
-                  className={`p-4 rounded-2xl border space-y-3 ${
-                    isDone
-                      ? "bg-slate-900/50 border-slate-800/60 opacity-75"
-                      : "bg-slate-900 border-slate-800"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-xl ${isDone ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
-                        <Clock className="w-4 h-4" />
+          {filteredManutencoes.length === 0 ? (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
+              Nenhuma manutenção agendada encontrada no período selecionado.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredManutencoes.map((m, idx) => {
+                const isDone = m.Status === "CONCLUÍDO" || m.Status === "Concluída";
+                return (
+                  <div
+                    key={`${m.Id || 'manut'}-${idx}`}
+                    className={`p-4 rounded-2xl border space-y-3 ${
+                      isDone
+                        ? "bg-slate-900/50 border-slate-800/60 opacity-75"
+                        : "bg-slate-900 border-slate-800"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-2 rounded-xl ${isDone ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
+                          <Clock className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-white text-sm">{m.Descrição}</h4>
+                          <span className="text-xs text-slate-400">{m.Veículo}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() =>
+                            onSaveManutencao({
+                              ...m,
+                              Status: isDone ? "PENDENTE" : "CONCLUÍDO",
+                            })
+                          }
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                            isDone
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              : "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
+                          }`}
+                        >
+                          {isDone ? "CONCLUÍDO" : "MARCAR CONCLUÍDO"}
+                        </button>
+                        <button
+                          onClick={() => handleOpenManutencao(m)}
+                          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                          title="Editar Manutenção"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() =>
+                            setDeleteConfirm({
+                              isOpen: true,
+                              type: "manutencao",
+                              id: m.Id,
+                              title: m.Descrição,
+                              subtitle: `Veículo: ${m.Veículo} • Data Alvo: ${m.Data_Alvo || "—"} • KM Alvo: ${m.KM_Alvo || "—"} KM`,
+                            })
+                          }
+                          className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                          title="Excluir Manutenção"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">Data Alvo</span>
+                        <span className="font-semibold text-slate-200">{m.Data_Alvo || "—"}</span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-white text-sm">{m.Descrição}</h4>
-                        <span className="text-xs text-slate-400">{m.Veículo}</span>
+                        <span className="text-slate-500 text-[10px] block">KM Alvo</span>
+                        <span className="font-bold text-amber-400 font-mono">{m.KM_Alvo || "—"} KM</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">Recorrente</span>
+                        <span className="text-slate-300">{m.Recorrente || "NÃO"} ({m.Frequência_Meses || 0} meses / {m.Frequência_KM || 0} KM)</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">Oficina Recomendada</span>
+                        <span className="text-slate-300">{m.Oficina_Nome || "A definir"}</span>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() =>
-                          onSaveManutencao({
-                            ...m,
-                            Status: isDone ? "PENDENTE" : "CONCLUÍDO",
-                          })
-                        }
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
-                          isDone
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                            : "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
-                        }`}
-                      >
-                        {isDone ? "CONCLUÍDO" : "MARCAR CONCLUÍDO"}
-                      </button>
-                      <button
-                        onClick={() => handleOpenManutencao(m)}
-                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                    </div>
                   </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Data Alvo</span>
-                      <span className="font-semibold text-slate-200">{m.Data_Alvo || "—"}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">KM Alvo</span>
-                      <span className="font-bold text-amber-400 font-mono">{m.KM_Alvo || "—"} KM</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Recorrente</span>
-                      <span className="text-slate-300">{m.Recorrente || "NÃO"} ({m.Frequência_Meses || 0} meses / {m.Frequência_KM || 0} KM)</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Oficina Recomendada</span>
-                      <span className="text-slate-300">{m.Oficina_Nome || "A definir"}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && deleteConfirm.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="p-2.5 bg-rose-500/10 rounded-xl">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white">
+                  Confirmar Exclusão
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {deleteConfirm.type === "veiculo"
+                    ? "Excluir Veículo"
+                    : deleteConfirm.type === "servico"
+                    ? "Excluir Histórico de Oficina"
+                    : "Excluir Manutenção Agendada"}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1 text-xs">
+              <p className="font-semibold text-white truncate">
+                {deleteConfirm.title}
+              </p>
+              {deleteConfirm.subtitle && (
+                <p className="text-slate-400 text-[11px]">
+                  {deleteConfirm.subtitle}
+                </p>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-300">
+              Tem certeza que deseja excluir este registro? Esta ação marcará o registro como excluído na planilha.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!deleteConfirm) return;
+                  setIsDeleting(true);
+                  try {
+                    if (deleteConfirm.type === "veiculo") {
+                      await onDeleteVeiculo(deleteConfirm.id);
+                    } else if (deleteConfirm.type === "servico") {
+                      await onDeleteServico(deleteConfirm.id);
+                    } else if (deleteConfirm.type === "manutencao") {
+                      await onDeleteManutencao(deleteConfirm.id);
+                    }
+                    setDeleteConfirm(null);
+                  } catch (err) {
+                    console.error("Erro ao excluir registro:", err);
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-rose-950/40"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeleting ? "Excluindo..." : "Confirmar Exclusão"}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

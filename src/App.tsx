@@ -526,6 +526,9 @@ export default function App() {
             onSaveVeiculo={(v) => handleSaveGeneric(SHEET_NAMES.VEICULOS, v, setVeiculos)}
             onSaveServico={(s) => handleSaveGeneric(SHEET_NAMES.OFICINA, s, setServicos)}
             onSaveManutencao={(m) => handleSaveGeneric(SHEET_NAMES.MANUTENCOES_AGENDADAS, m, setManutencoes)}
+            onDeleteVeiculo={(id) => handleDeleteGeneric(SHEET_NAMES.VEICULOS, id, setVeiculos)}
+            onDeleteServico={(id) => handleDeleteGeneric(SHEET_NAMES.OFICINA, id, setServicos)}
+            onDeleteManutencao={(id) => handleDeleteGeneric(SHEET_NAMES.MANUTENCOES_AGENDADAS, id, setManutencoes)}
           />
         )}
 
