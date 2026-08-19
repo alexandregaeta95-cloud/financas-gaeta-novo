@@ -6,10 +6,6 @@ import {
   Edit2,
   Trash2,
   X,
-  Wallet,
-  TrendingDown,
-  Building2,
-  DollarSign
 } from "lucide-react";
 import { ContaBancaria, CartaoCredito, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
@@ -21,6 +17,8 @@ interface Props {
   lancamentos?: Lancamento[];
   onSaveConta: (conta: ContaBancaria) => Promise<void>;
   onSaveCartao: (cartao: CartaoCredito) => Promise<void>;
+  onDeleteConta: (id: string) => Promise<void>;
+  onDeleteCartao: (id: string) => Promise<void>;
 }
 
 export const ContasCartoesView: React.FC<Props> = ({
@@ -29,8 +27,20 @@ export const ContasCartoesView: React.FC<Props> = ({
   lancamentos = [],
   onSaveConta,
   onSaveCartao,
+  onDeleteConta,
+  onDeleteCartao,
 }) => {
   const [activeTab, setActiveTab] = useState<"contas" | "cartoes">("contas");
+
+  // Delete Confirmation State
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    type: "conta" | "cartao";
+    id: string;
+    title: string;
+    subtitle?: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Conta Modal State
   const [isContaModalOpen, setIsContaModalOpen] = useState(false);
@@ -243,75 +253,99 @@ export const ContasCartoesView: React.FC<Props> = ({
             </span>
             <button
               onClick={() => handleOpenConta()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Nova Conta Bancária</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {contas.map((c, idx) => (
-              <div
-                key={`${c.Id || 'conta'}-${idx}`}
-                className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
-                      <Landmark className="w-6 h-6" />
+          {contas.length === 0 ? (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
+              Nenhuma conta bancária cadastrada ainda.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {contas.map((c, idx) => (
+                <div
+                  key={`${c.Id || 'conta'}-${idx}`}
+                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+                        <Landmark className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-base leading-tight">
+                          {c.Nome}
+                        </h3>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+                          {c.Tipo}
+                        </span>
+                      </div>
                     </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenConta(c)}
+                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                        title="Editar Conta"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() =>
+                          setDeleteConfirm({
+                            isOpen: true,
+                            type: "conta",
+                            id: c.Id,
+                            title: c.Nome,
+                            subtitle: `Tipo: ${c.Tipo} • Saldo: R$ ${formatCurrency(c.Saldo_Atual ?? c.Saldo_Inicial)}`,
+                          })
+                        }
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        title="Excluir Conta Bancária"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
                     <div>
-                      <h3 className="font-bold text-white text-base leading-tight">
-                        {c.Nome}
-                      </h3>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
-                        {c.Tipo}
+                      <span className="text-slate-500 text-[10px] block">Saldo Atual</span>
+                      <span className={`font-bold ${(c.Saldo_Atual ?? c.Saldo_Inicial) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                        R$ {formatCurrency(c.Saldo_Atual ?? c.Saldo_Inicial)}
                       </span>
                     </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleOpenConta(c)}
-                    className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Saldo Atual</span>
-                    <span className={`font-bold ${(c.Saldo_Atual ?? c.Saldo_Inicial) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      R$ {formatCurrency(c.Saldo_Atual ?? c.Saldo_Inicial)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Saldo Inicial</span>
-                    <span className="font-semibold text-slate-300">R$ {formatCurrency(c.Saldo_Inicial)}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Limite Disponível</span>
-                    <span className="font-semibold text-slate-300">
-                      R$ {formatCurrency(c.Saldo_Atual ?? c.Saldo_Inicial)}
-                    </span>
-                  </div>
-                  {c.Agência && (
                     <div>
-                      <span className="text-slate-500 text-[10px] block">Agência</span>
-                      <span className="font-mono text-slate-300">{c.Agência}</span>
+                      <span className="text-slate-500 text-[10px] block">Saldo Inicial</span>
+                      <span className="font-semibold text-slate-300">R$ {formatCurrency(c.Saldo_Inicial)}</span>
                     </div>
-                  )}
-                  {c.Conta && (
                     <div>
-                      <span className="text-slate-500 text-[10px] block">Conta</span>
-                      <span className="font-mono text-slate-300">{c.Conta}</span>
+                      <span className="text-slate-500 text-[10px] block">Limite Disponível</span>
+                      <span className="font-semibold text-slate-300">
+                        R$ {formatCurrency(c.Saldo_Atual ?? c.Saldo_Inicial)}
+                      </span>
                     </div>
-                  )}
+                    {c.Agência && (
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">Agência</span>
+                        <span className="font-mono text-slate-300">{c.Agência}</span>
+                      </div>
+                    )}
+                    {c.Conta && (
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">Conta</span>
+                        <span className="font-mono text-slate-300">{c.Conta}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -324,7 +358,7 @@ export const ContasCartoesView: React.FC<Props> = ({
             </span>
             <button
               onClick={() => handleOpenCartao()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Novo Cartão de Crédito</span>
@@ -332,98 +366,195 @@ export const ContasCartoesView: React.FC<Props> = ({
           </div>
 
           {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cartoes.map((card, idx) => {
-              const cardBal = calculateCardBalance(card, lancamentos);
-              const fechamento = card.Dia_Fechamento ?? card.Fechamento ?? 10;
-              const vencimento = card.Dia_Vencimento ?? card.Vencimento ?? 20;
-              const usedPct = cardBal.totalLimit > 0
-                ? Math.min(100, Math.round((cardBal.currentSpent / cardBal.totalLimit) * 100))
-                : 0;
+          {cartoes.length === 0 ? (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
+              Nenhum cartão de crédito cadastrado ainda.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {cartoes.map((card, idx) => {
+                const cardBal = calculateCardBalance(card, lancamentos);
+                const fechamento = card.Dia_Fechamento ?? card.Fechamento ?? 10;
+                const vencimento = card.Dia_Vencimento ?? card.Vencimento ?? 20;
+                const usedPct = cardBal.totalLimit > 0
+                  ? Math.min(100, Math.round((cardBal.currentSpent / cardBal.totalLimit) * 100))
+                  : 0;
 
-              return (
-                <div
-                  key={`${card.Id || 'card'}-${idx}`}
-                  className="p-5 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl space-y-4 relative hover:border-slate-700 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
-                        <CreditCard className="w-6 h-6" />
+                return (
+                  <div
+                    key={`${card.Id || 'card'}-${idx}`}
+                    className="p-5 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl space-y-4 relative hover:border-slate-700 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
+                          <CreditCard className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-white text-base leading-tight uppercase">
+                            {card.Nome}
+                          </h3>
+                          <p className="text-xs text-slate-400">
+                            {card.Bandeira || "CARTÃO"} • Fecha dia {fechamento} / Vence dia {vencimento}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOpenCartao(card)}
+                          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                          title="Editar Cartão"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() =>
+                            setDeleteConfirm({
+                              isOpen: true,
+                              type: "cartao",
+                              id: card.Id,
+                              title: card.Nome,
+                              subtitle: `Bandeira: ${card.Bandeira || "CARTÃO"} • Limite Total: R$ ${formatCurrency(card.Limite_Total ?? card.Limite ?? 0)}`,
+                            })
+                          }
+                          className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                          title="Excluir Cartão de Crédito"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Saldo / Limite Highlights */}
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">Limite Disponível</span>
+                        <span className="font-bold text-emerald-400 text-sm">
+                          R$ {formatCurrency(cardBal.availableLimit)}
+                        </span>
                       </div>
                       <div>
-                        <h3 className="font-bold text-white text-base leading-tight uppercase">
-                          {card.Nome}
-                        </h3>
-                        <p className="text-xs text-slate-400">
-                          {card.Bandeira || "CARTÃO"} • Fecha dia {fechamento} / Vence dia {vencimento}
-                        </p>
+                        <span className="text-slate-500 text-[10px] block">Fatura Atual (Gasto)</span>
+                        <span className="font-bold text-amber-400 text-sm">
+                          R$ {formatCurrency(cardBal.currentSpent)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">Limite Total</span>
+                        <span className="font-semibold text-slate-300">
+                          R$ {formatCurrency(cardBal.totalLimit)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 text-[10px] block">Total Pago / Abatido</span>
+                        <span className="font-semibold text-slate-400">
+                          R$ {formatCurrency(cardBal.paymentsTotal)}
+                        </span>
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleOpenCartao(card)}
-                      className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                    {/* Limit Progress Bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-400">Uso do Limite:</span>
+                        <span className={`font-semibold ${usedPct > 80 ? "text-rose-400" : "text-slate-300"}`}>
+                          {usedPct}% utilizado
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${
+                            usedPct > 80 ? "bg-rose-500" : "bg-amber-500"
+                          }`}
+                          style={{ width: `${usedPct}%` }}
+                        />
+                      </div>
+                    </div>
 
-                  {/* Saldo / Limite Highlights */}
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/80">
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Limite Disponível</span>
-                      <span className="font-bold text-emerald-400 text-sm">
-                        R$ {formatCurrency(cardBal.availableLimit)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Fatura Atual (Gasto)</span>
-                      <span className="font-bold text-amber-400 text-sm">
-                        R$ {formatCurrency(cardBal.currentSpent)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Limite Total</span>
-                      <span className="font-semibold text-slate-300">
-                        R$ {formatCurrency(cardBal.totalLimit)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Total Pago / Abatido</span>
-                      <span className="font-semibold text-slate-400">
-                        R$ {formatCurrency(cardBal.paymentsTotal)}
-                      </span>
-                    </div>
+                    {card.Banco_ID && (
+                      <div className="text-[11px] text-slate-400 border-t border-slate-800/80 pt-2 flex justify-between">
+                        <span>Débito / Vinculado a:</span>
+                        <strong className="text-slate-200 uppercase">{card.Banco_ID}</strong>
+                      </div>
+                    )}
                   </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
-                  {/* Limit Progress Bar */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-slate-400">Uso do Limite:</span>
-                      <span className={`font-semibold ${usedPct > 80 ? "text-rose-400" : "text-slate-300"}`}>
-                        {usedPct}% utilizado
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all ${
-                          usedPct > 80 ? "bg-rose-500" : "bg-amber-500"
-                        }`}
-                        style={{ width: `${usedPct}%` }}
-                      />
-                    </div>
-                  </div>
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && deleteConfirm.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="p-2.5 bg-rose-500/10 rounded-xl">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white">
+                  Confirmar Exclusão
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {deleteConfirm.type === "conta"
+                    ? "Excluir Conta Bancária"
+                    : "Excluir Cartão de Crédito"}
+                </p>
+              </div>
+            </div>
 
-                  {card.Banco_ID && (
-                    <div className="text-[11px] text-slate-400 border-t border-slate-800/80 pt-2 flex justify-between">
-                      <span>Débito / Vinculado a:</span>
-                      <strong className="text-slate-200 uppercase">{card.Banco_ID}</strong>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1 text-xs">
+              <p className="font-semibold text-white truncate">
+                {deleteConfirm.title}
+              </p>
+              {deleteConfirm.subtitle && (
+                <p className="text-slate-400 text-[11px]">
+                  {deleteConfirm.subtitle}
+                </p>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-300">
+              Tem certeza que deseja excluir este registro? Esta ação marcará o registro como excluído na planilha.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!deleteConfirm) return;
+                  setIsDeleting(true);
+                  try {
+                    if (deleteConfirm.type === "conta") {
+                      await onDeleteConta(deleteConfirm.id);
+                    } else if (deleteConfirm.type === "cartao") {
+                      await onDeleteCartao(deleteConfirm.id);
+                    }
+                    setDeleteConfirm(null);
+                  } catch (err) {
+                    console.error("Erro ao excluir registro:", err);
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-rose-950/40"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeleting ? "Excluindo..." : "Confirmar Exclusão"}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -539,6 +539,8 @@ export default function App() {
             lancamentos={lancamentos}
             onSaveConta={(c) => handleSaveGeneric(SHEET_NAMES.CONTAS_BANCARIAS, c, setContas)}
             onSaveCartao={(card) => handleSaveGeneric(SHEET_NAMES.CARTOES_CREDITO, card, setCartoes)}
+            onDeleteConta={(id) => handleDeleteGeneric(SHEET_NAMES.CONTAS_BANCARIAS, id, setContas)}
+            onDeleteCartao={(id) => handleDeleteGeneric(SHEET_NAMES.CARTOES_CREDITO, id, setCartoes)}
           />
         )}
 
