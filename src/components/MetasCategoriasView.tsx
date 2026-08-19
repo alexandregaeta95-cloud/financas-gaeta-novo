@@ -14,6 +14,23 @@ interface Props {
   onDeleteCategoria: (id: string) => Promise<void>;
 }
 
+const MESES = [
+  { value: "01", label: "01 - Janeiro" },
+  { value: "02", label: "02 - Fevereiro" },
+  { value: "03", label: "03 - Março" },
+  { value: "04", label: "04 - Abril" },
+  { value: "05", label: "05 - Maio" },
+  { value: "06", label: "06 - Junho" },
+  { value: "07", label: "07 - Julho" },
+  { value: "08", label: "08 - Agosto" },
+  { value: "09", label: "09 - Setembro" },
+  { value: "10", label: "10 - Outubro" },
+  { value: "11", label: "11 - Novembro" },
+  { value: "12", label: "12 - Dezembro" },
+];
+
+const ANOS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
+
 /**
  * Extracts normalized year and month from diverse date formats:
  * - YYYY-MM-DD or YYYY-MM (e.g., "2026-08-19", "2026-08")
@@ -84,13 +101,17 @@ export const MetasCategoriasView: React.FC<Props> = ({
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Meta Modal
+  // Meta Modal & Fields
   const [isMetaModalOpen, setIsMetaModalOpen] = useState(false);
   const [editingMeta, setEditingMeta] = useState<MetaCategoria | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    String(new Date().getMonth() + 1).padStart(2, "0")
+  );
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [metaForm, setMetaForm] = useState<Partial<MetaCategoria>>({
     Categoria: "MERCADO",
     Valor_Meta: 800,
-    Mes_Ano: new Date().toISOString().substring(0, 7),
+    Mes_Ano: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`,
     Alerta_Porcentagem: 80,
   });
 
@@ -103,6 +124,39 @@ export const MetasCategoriasView: React.FC<Props> = ({
     Icone: "Tag",
     Cor_Hex: "#10b981",
   });
+
+  const handleOpenMetaModal = (m?: MetaCategoria) => {
+    const now = new Date();
+    if (m) {
+      setEditingMeta(m);
+      const parsedYM = extractYearMonth(m.Mes_Ano);
+      const y = parsedYM?.year || now.getFullYear();
+      const mo = parsedYM?.month
+        ? String(parsedYM.month).padStart(2, "0")
+        : String(now.getMonth() + 1).padStart(2, "0");
+
+      setSelectedYear(y);
+      setSelectedMonth(mo);
+      setMetaForm({
+        ...m,
+        Mes_Ano: `${y}-${mo}`,
+      });
+    } else {
+      setEditingMeta(null);
+      const y = now.getFullYear();
+      const mo = String(now.getMonth() + 1).padStart(2, "0");
+
+      setSelectedYear(y);
+      setSelectedMonth(mo);
+      setMetaForm({
+        Categoria: "MERCADO",
+        Valor_Meta: 800,
+        Mes_Ano: `${y}-${mo}`,
+        Alerta_Porcentagem: 80,
+      });
+    }
+    setIsMetaModalOpen(true);
+  };
 
   // Calculate actual spending for a meta based on its category and target month/year
   const getSpentForMeta = (meta: MetaCategoria) => {
@@ -137,7 +191,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
       Id: editingMeta?.Id || generateNewId("META"),
       Categoria: (metaForm.Categoria || "OUTROS").toUpperCase(),
       Valor_Meta: parseCurrency(metaForm.Valor_Meta),
-      Mes_Ano: metaForm.Mes_Ano || new Date().toISOString().substring(0, 7),
+      Mes_Ano: `${selectedYear}-${selectedMonth}`,
       Alerta_Porcentagem: parseCurrency(metaForm.Alerta_Porcentagem) || 80,
     };
     await onSaveMeta(item);
@@ -205,16 +259,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
               Defina o teto mensal de gastos por categoria e acompanhe o progresso real dos lançamentos
             </span>
             <button
-              onClick={() => {
-                setEditingMeta(null);
-                setMetaForm({
-                  Categoria: "MERCADO",
-                  Valor_Meta: 800,
-                  Mes_Ano: new Date().toISOString().substring(0, 7),
-                  Alerta_Porcentagem: 80,
-                });
-                setIsMetaModalOpen(true);
-              }}
+              onClick={() => handleOpenMetaModal()}
               className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4" />
@@ -252,11 +297,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
 
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => {
-                            setEditingMeta(m);
-                            setMetaForm({ ...m });
-                            setIsMetaModalOpen(true);
-                          }}
+                          onClick={() => handleOpenMetaModal(m)}
                           className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                           title="Editar Meta"
                         >
@@ -498,27 +539,47 @@ export const MetasCategoriasView: React.FC<Props> = ({
                 />
               </div>
 
+              <div>
+                <label className="text-slate-400 block mb-1">Valor Meta Mensal (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={metaForm.Valor_Meta}
+                  onChange={(e) => setMetaForm({ ...metaForm, Valor_Meta: Number(e.target.value) })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Valor Meta Mensal (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={metaForm.Valor_Meta}
-                    onChange={(e) => setMetaForm({ ...metaForm, Valor_Meta: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold"
-                  />
+                  <label className="text-slate-400 block mb-1">Mês de Referência</label>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-medium cursor-pointer"
+                  >
+                    {MESES.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Mês de Referência (YYYY-MM)</label>
-                  <input
-                    type="month"
-                    value={metaForm.Mes_Ano || new Date().toISOString().substring(0, 7)}
-                    onChange={(e) => setMetaForm({ ...metaForm, Mes_Ano: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"
-                  />
+                  <label className="text-slate-400 block mb-1">Ano</label>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono cursor-pointer"
+                  >
+                    {ANOS.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
