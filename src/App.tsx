@@ -573,6 +573,7 @@ export default function App() {
           <AgendaCompromissosView
             agenda={agenda}
             onSaveCompromisso={(item) => handleSaveGeneric(SHEET_NAMES.AGENDA, item, setAgenda)}
+            onDeleteCompromisso={(id) => handleDeleteGeneric(SHEET_NAMES.AGENDA, id, setAgenda)}
           />
         )}
 
