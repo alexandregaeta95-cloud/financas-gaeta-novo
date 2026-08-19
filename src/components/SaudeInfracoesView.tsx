@@ -8,7 +8,6 @@ import {
   Trash2,
   X,
   AlertCircle,
-  Calendar,
   Clock,
   CheckCircle2,
   Bell
@@ -25,6 +24,9 @@ interface Props {
   onSaveConsulta: (consulta: ConsultaMedica) => Promise<void>;
   onSaveReceita: (receita: ReceitaMedica) => Promise<void>;
   onSaveInfracao: (infracao: Infracao) => Promise<void>;
+  onDeleteConsulta: (id: string) => Promise<void>;
+  onDeleteReceita: (id: string) => Promise<void>;
+  onDeleteInfracao: (id: string) => Promise<void>;
 }
 
 export const SaudeInfracoesView: React.FC<Props> = ({
@@ -35,8 +37,21 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   onSaveConsulta,
   onSaveReceita,
   onSaveInfracao,
+  onDeleteConsulta,
+  onDeleteReceita,
+  onDeleteInfracao,
 }) => {
   const [activeTab, setActiveTab] = useState<"consultas" | "receitas" | "infracoes">("consultas");
+
+  // Delete Confirmation State
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    type: "consulta" | "receita" | "infracao";
+    id: string;
+    title: string;
+    subtitle?: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Consulta Modal State
   const [isConsultaModalOpen, setIsConsultaModalOpen] = useState(false);
@@ -331,76 +346,98 @@ export const SaudeInfracoesView: React.FC<Props> = ({
             </span>
             <button
               onClick={() => handleOpenConsulta()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Agendar Consulta</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {consultas.map((c, idx) => (
-              <div
-                key={`${c.Id || 'cons'}-${idx}`}
-                className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
-                      <Stethoscope className="w-6 h-6" />
+          {consultas.length === 0 ? (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
+              Nenhuma consulta médica cadastrada ainda.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {consultas.map((c, idx) => (
+                <div
+                  key={`${c.Id || 'cons'}-${idx}`}
+                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+                        <Stethoscope className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-base leading-tight">
+                          {c.Especialidade}
+                        </h3>
+                        <p className="text-xs text-slate-400">{c.Médico || "Médico não informado"}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          c.Status === "Realizada"
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                            : c.Status === "Cancelada"
+                            ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                            : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                        }`}
+                      >
+                        {c.Status}
+                      </span>
+                      <button
+                        onClick={() => handleOpenConsulta(c)}
+                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                        title="Editar Consulta"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() =>
+                          setDeleteConfirm({
+                            isOpen: true,
+                            type: "consulta",
+                            id: c.Id,
+                            title: `${c.Especialidade} - ${c.Médico || "Médico não informado"}`,
+                            subtitle: `Data: ${c.Data}${c.Horas ? ` às ${formatarHora(c.Horas)}` : ""} • Local: ${c.Local || "—"}`,
+                          })
+                        }
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        title="Excluir Consulta"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Data & Horário</span>
+                      <span className="font-semibold text-slate-200">
+                        {c.Data} {formatarHora(c.Horas) && `às ${formatarHora(c.Horas)}`}
+                      </span>
                     </div>
                     <div>
-                      <h3 className="font-bold text-white text-base leading-tight">
-                        {c.Especialidade}
-                      </h3>
-                      <p className="text-xs text-slate-400">{c.Médico || "Médico não informado"}</p>
+                      <span className="text-slate-500 text-[10px] block">Lembrete Ativo</span>
+                      <span className="font-bold text-emerald-400">{c.Lembrete_Ativo || "SIM"}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-slate-500 text-[10px] block">Local</span>
+                      <span className="text-slate-300">{c.Local || "Não especificado"}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        c.Status === "Realizada"
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                          : c.Status === "Cancelada"
-                          ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                          : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                      }`}
-                    >
-                      {c.Status}
-                    </span>
-                    <button
-                      onClick={() => handleOpenConsulta(c)}
-                      className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {c.Observação && (
+                    <p className="text-xs text-slate-400 italic">"{c.Observação}"</p>
+                  )}
                 </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Data & Horário</span>
-                    <span className="font-semibold text-slate-200">
-                      {c.Data} {formatarHora(c.Horas) && `às ${formatarHora(c.Horas)}`}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Lembrete Ativo</span>
-                    <span className="font-bold text-emerald-400">{c.Lembrete_Ativo || "SIM"}</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-slate-500 text-[10px] block">Local</span>
-                    <span className="text-slate-300">{c.Local || "Não especificado"}</span>
-                  </div>
-                </div>
-
-                {c.Observação && (
-                  <p className="text-xs text-slate-400 italic">"{c.Observação}"</p>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -413,61 +450,85 @@ export const SaudeInfracoesView: React.FC<Props> = ({
             </span>
             <button
               onClick={() => handleOpenReceita()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Cadastrar Receita</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {receitas.map((r, idx) => (
-              <div
-                key={`${r.Id || 'rec'}-${idx}`}
-                className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
-                      <FileText className="w-6 h-6" />
+          {receitas.length === 0 ? (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
+              Nenhuma receita médica cadastrada ainda.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {receitas.map((r, idx) => (
+                <div
+                  key={`${r.Id || 'rec'}-${idx}`}
+                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
+                        <FileText className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-base leading-tight">
+                          {r.Medicamento}
+                        </h3>
+                        <p className="text-xs text-slate-400">
+                          {r.Dosagem} • {r.Frequência}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenReceita(r)}
+                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                        title="Editar Receita"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() =>
+                          setDeleteConfirm({
+                            isOpen: true,
+                            type: "receita",
+                            id: r.Id,
+                            title: r.Medicamento,
+                            subtitle: `Dosagem: ${r.Dosagem || "—"} • Vencimento: ${r.Data_Vencimento || r.Data_Validade || "—"} • Médico: ${r.Médico || "—"}`,
+                          })
+                        }
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        title="Excluir Receita"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Médico Prescritor</span>
+                      <span className="font-semibold text-slate-200">{r.Médico || "—"}</span>
                     </div>
                     <div>
-                      <h3 className="font-bold text-white text-base leading-tight">
-                        {r.Medicamento}
-                      </h3>
-                      <p className="text-xs text-slate-400">
-                        {r.Dosagem} • {r.Frequência}
-                      </p>
+                      <span className="text-slate-500 text-[10px] block">Validade / Vencimento</span>
+                      <span className="font-bold text-rose-400">{r.Data_Vencimento || r.Data_Validade || "—"}</span>
                     </div>
+                    {r.Instruções && (
+                      <div className="col-span-2">
+                        <span className="text-slate-500 text-[10px] block">Instruções de Uso</span>
+                        <span className="text-slate-300">{r.Instruções}</span>
+                      </div>
+                    )}
                   </div>
-
-                  <button
-                    onClick={() => handleOpenReceita(r)}
-                    className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
                 </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Médico Prescritor</span>
-                    <span className="font-semibold text-slate-200">{r.Médico || "—"}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Validade / Vencimento</span>
-                    <span className="font-bold text-rose-400">{r.Data_Vencimento || r.Data_Validade || "—"}</span>
-                  </div>
-                  {r.Instruções && (
-                    <div className="col-span-2">
-                      <span className="text-slate-500 text-[10px] block">Instruções de Uso</span>
-                      <span className="text-slate-300">{r.Instruções}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -480,62 +541,163 @@ export const SaudeInfracoesView: React.FC<Props> = ({
             </span>
             <button
               onClick={() => handleOpenInfracao()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Registrar Infração</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {infracoes.map((inf, idx) => (
-              <div
-                key={`${inf.Id || 'inf'}-${idx}`}
-                className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400">
-                      <AlertOctagon className="w-6 h-6" />
+          {infracoes.length === 0 ? (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
+              Nenhuma infração cadastrada ainda.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {infracoes.map((inf, idx) => (
+                <div
+                  key={`${inf.Id || 'inf'}-${idx}`}
+                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400">
+                        <AlertOctagon className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-base leading-tight">
+                          {inf.Título || inf.Descrição}
+                        </h3>
+                        <p className="text-xs text-slate-400 font-mono">
+                          Protocolo: {inf.Protocolo || "—"} • Veículo: {inf.Veículo} ({inf.Placa})
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenInfracao(inf)}
+                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                        title="Editar Infração"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() =>
+                          setDeleteConfirm({
+                            isOpen: true,
+                            type: "infracao",
+                            id: inf.Id,
+                            title: inf.Título || inf.Descrição,
+                            subtitle: `Veículo: ${inf.Veículo} (${inf.Placa}) • Valor: R$ ${formatCurrency(inf.Valor)} • Protocolo: ${inf.Protocolo || "—"}`,
+                          })
+                        }
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        title="Excluir Infração"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Valor da Multa</span>
+                      <span className="font-bold text-rose-400">R$ {formatCurrency(inf.Valor)}</span>
                     </div>
                     <div>
-                      <h3 className="font-bold text-white text-base leading-tight">
-                        {inf.Título || inf.Descrição}
-                      </h3>
-                      <p className="text-xs text-slate-400 font-mono">
-                        Protocolo: {inf.Protocolo || "—"} • Veículo: {inf.Veículo} ({inf.Placa})
-                      </p>
+                      <span className="text-slate-500 text-[10px] block">Pontuação</span>
+                      <span className="font-semibold text-amber-400">{inf.Pontos || 0} pts</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Status</span>
+                      <span className="font-bold text-emerald-400">{inf.Status}</span>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleOpenInfracao(inf)}
-                    className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
+                  {inf.Localização && (
+                    <p className="text-xs text-slate-400">📍 Location: {inf.Localização}</p>
+                  )}
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-                <div className="grid grid-cols-3 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Valor da Multa</span>
-                    <span className="font-bold text-rose-400">R$ {formatCurrency(inf.Valor)}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Pontuação</span>
-                    <span className="font-semibold text-amber-400">{inf.Pontos || 0} pts</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Status</span>
-                    <span className="font-bold text-emerald-400">{inf.Status}</span>
-                  </div>
-                </div>
-
-                {inf.Localização && (
-                  <p className="text-xs text-slate-400">📍 Location: {inf.Localização}</p>
-                )}
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && deleteConfirm.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="p-2.5 bg-rose-500/10 rounded-xl">
+                <Trash2 className="w-5 h-5" />
               </div>
-            ))}
+              <div>
+                <h3 className="font-bold text-sm text-white">
+                  Confirmar Exclusão
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {deleteConfirm.type === "consulta"
+                    ? "Excluir Consulta Médica"
+                    : deleteConfirm.type === "receita"
+                    ? "Excluir Receita Médica"
+                    : "Excluir Infração de Trânsito"}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1 text-xs">
+              <p className="font-semibold text-white truncate">
+                {deleteConfirm.title}
+              </p>
+              {deleteConfirm.subtitle && (
+                <p className="text-slate-400 text-[11px]">
+                  {deleteConfirm.subtitle}
+                </p>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-300">
+              Tem certeza que deseja excluir este registro? Esta ação marcará o registro como excluído na planilha.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!deleteConfirm) return;
+                  setIsDeleting(true);
+                  try {
+                    if (deleteConfirm.type === "consulta") {
+                      await onDeleteConsulta(deleteConfirm.id);
+                    } else if (deleteConfirm.type === "receita") {
+                      await onDeleteReceita(deleteConfirm.id);
+                    } else if (deleteConfirm.type === "infracao") {
+                      await onDeleteInfracao(deleteConfirm.id);
+                    }
+                    setDeleteConfirm(null);
+                  } catch (err) {
+                    console.error("Erro ao excluir registro:", err);
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-rose-950/40"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeleting ? "Excluindo..." : "Confirmar Exclusão"}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
