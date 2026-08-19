@@ -32,16 +32,86 @@ const MESES = [
 const ANOS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
 
 /**
+ * Normalizes text removing accents, diacritics, extra spaces, and uppercase.
+ */
+function normalizeCategory(cat?: string | null): string {
+  if (!cat) return "";
+  return String(cat)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_\-\s]+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+/**
+ * Checks if a meta category matches a lancamento category, ignoring accents/case
+ * and handling common synonymous categories (such as Combustível / Abastecimento).
+ */
+function categoriesMatch(metaCat?: string | null, lancamentoCat?: string | null, lancamentoTipo?: string | null): boolean {
+  const mNorm = normalizeCategory(metaCat);
+  const lNorm = normalizeCategory(lancamentoCat);
+  const tNorm = normalizeCategory(lancamentoTipo);
+
+  if (!mNorm) return false;
+
+  // Direct normalized match (e.g. "MERCADO" === "MERCADO", "SAUDE" === "SAUDE")
+  if (mNorm === lNorm) return true;
+
+  // Fuel / Abastecimento cross-matching
+  const isFuelMeta = mNorm === "COMBUSTIVEL" || mNorm === "ABASTECIMENTO" || mNorm === "GASOLINA";
+  const isFuelLancamento =
+    lNorm === "COMBUSTIVEL" ||
+    lNorm === "ABASTECIMENTO" ||
+    lNorm === "GASOLINA" ||
+    tNorm === "ABASTECIMENTO";
+
+  if (isFuelMeta && isFuelLancamento) {
+    return true;
+  }
+
+  // Supermercado / Mercado
+  if (
+    (mNorm === "MERCADO" && lNorm === "SUPERMERCADO") ||
+    (mNorm === "SUPERMERCADO" && lNorm === "MERCADO")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Extracts normalized year and month from diverse date formats:
+ * - Google Sheets serial numbers (e.g., 46253 -> year: 2026, month: 8)
  * - YYYY-MM-DD or YYYY-MM (e.g., "2026-08-19", "2026-08")
  * - DD/MM/YYYY or DD/MM/YY (e.g., "19/08/2026", "19/08/26")
  * - MM/YYYY or MM/YY (e.g., "08/2026", "08/26")
  */
-function extractYearMonth(dateStr?: string | null): { year: number; month: number } | null {
-  if (!dateStr) return null;
-  const str = String(dateStr).trim();
+function extractYearMonth(dateVal?: any): { year: number; month: number } | null {
+  if (dateVal === null || dateVal === undefined || dateVal === "") return null;
 
-  // Format YYYY-MM or YYYY-MM-DD
+  // If already a Date instance
+  if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
+    return { year: dateVal.getFullYear(), month: dateVal.getMonth() + 1 };
+  }
+
+  // If numeric serial number from Excel / Google Sheets
+  const num = typeof dateVal === "number" ? dateVal : Number(String(dateVal).trim());
+  if (!isNaN(num) && num >= 10000 && num <= 90000) {
+    // Google Sheets epoch is 1899-12-30
+    const utcDays = num - 25569;
+    const utcValue = utcDays * 86400 * 1000;
+    const d = new Date(utcValue);
+    if (!isNaN(d.getTime())) {
+      return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 };
+    }
+  }
+
+  const str = String(dateVal).trim();
+  if (!str) return null;
+
+  // Format YYYY-MM or YYYY-MM-DD (e.g. "2026-08", "2026-08-19", "2026-08-19T00:00:00")
   const isoMatch = str.match(/^(\d{4})[-/.](\d{1,2})/);
   if (isoMatch) {
     const year = parseInt(isoMatch[1], 10);
@@ -51,21 +121,27 @@ function extractYearMonth(dateStr?: string | null): { year: number; month: numbe
     }
   }
 
-  // Format DD/MM/YYYY or DD-MM-YYYY
-  const brFullMatch = str.match(/^\d{1,2}[-/.](\d{1,2})[-/.](\d{4})/);
+  // Format DD/MM/YYYY or DD-MM-YYYY or DD/MM/YY
+  const brFullMatch = str.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
   if (brFullMatch) {
-    const month = parseInt(brFullMatch[1], 10);
-    const year = parseInt(brFullMatch[2], 10);
+    const month = parseInt(brFullMatch[2], 10);
+    let year = parseInt(brFullMatch[3], 10);
+    if (year < 100) {
+      year = year < 70 ? 2000 + year : 1900 + year;
+    }
     if (year > 1900 && month >= 1 && month <= 12) {
       return { year, month };
     }
   }
 
-  // Format MM/YYYY or MM-YYYY
-  const myMatch = str.match(/^(\d{1,2})[-/.](\d{4})$/);
+  // Format MM/YYYY or MM-YYYY or MM/YY
+  const myMatch = str.match(/^(\d{1,2})[-/.](\d{2,4})$/);
   if (myMatch) {
     const month = parseInt(myMatch[1], 10);
-    const year = parseInt(myMatch[2], 10);
+    let year = parseInt(myMatch[2], 10);
+    if (year < 100) {
+      year = year < 70 ? 2000 + year : 1900 + year;
+    }
     if (year > 1900 && month >= 1 && month <= 12) {
       return { year, month };
     }
@@ -170,7 +246,6 @@ export const MetasCategoriasView: React.FC<Props> = ({
       year: now.getFullYear(),
       month: now.getMonth() + 1,
     };
-    const catUpper = String(meta.Categoria || "").trim().toUpperCase();
 
     return lancamentos
       .filter((l) => {
@@ -181,7 +256,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
         const s = String(l.Status || "").trim().toUpperCase();
         return s !== "EXCLUÍDO" && s !== "EXCLUIDO" && s !== "DELETED" && s !== "CANCELADO";
       })
-      .filter((l) => String(l.Categoria || "").trim().toUpperCase() === catUpper)
+      .filter((l) => categoriesMatch(meta.Categoria, l.Categoria, l.Tipo))
       .filter((l) => {
         const lYM = extractYearMonth(l.Data);
         if (!lYM) return false;
