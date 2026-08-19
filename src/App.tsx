@@ -344,6 +344,21 @@ export default function App() {
     }
   };
 
+  // Generic Delete
+  const handleDeleteGeneric = async (
+    sheetName: string,
+    id: string,
+    setStateFn: React.Dispatch<React.SetStateAction<any[]>>
+  ) => {
+    setStateFn((prev) => prev.filter((i) => String(i.Id).trim() !== String(id).trim()));
+
+    try {
+      await saveSheetRecords(sheetName, [{ Id: id }], "SOFT_DELETE");
+    } catch (err: any) {
+      alert(`Erro ao excluir na aba ${sheetName}: ${err.message || err}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col">
       {/* Top Sync Status Bar */}
@@ -475,6 +490,7 @@ export default function App() {
           <ZonasDeRiscoView
             zonas={zonasRisco}
             onSaveZona={(z) => handleSaveGeneric(SHEET_NAMES.ZONAS_RISCO, z, setZonasRisco)}
+            onDeleteZona={(id) => handleDeleteGeneric(SHEET_NAMES.ZONAS_RISCO, id, setZonasRisco)}
           />
         )}
 

@@ -18,6 +18,7 @@ const DEFAULT_TIPOS_OCORRENCIA = [
 interface Props {
   zonas: ZonaDeRisco[];
   onSaveZona: (zona: ZonaDeRisco) => Promise<void>;
+  onDeleteZona?: (id: string) => Promise<void>;
 }
 
 // Haversine formula to compute distance in meters between two lat/lng points
@@ -36,9 +37,10 @@ function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c; // distance in meters
 }
 
-export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
+export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZona }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingZona, setEditingZona] = useState<ZonaDeRisco | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // User current geolocation
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -247,6 +249,23 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
       setIsQuickModalOpen(false);
     } finally {
       setIsQuickSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editingZona?.Id) return;
+    const nome = editingZona.Descrição || editingZona.Nome_Local || "esta zona de risco";
+    if (!window.confirm(`Deseja realmente excluir a zona de risco "${nome}"?`)) {
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      if (onDeleteZona) {
+        await onDeleteZona(editingZona.Id);
+      }
+      setIsModalOpen(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -684,20 +703,41 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona }) => {
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-slate-400 hover:text-white"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl"
-                >
-                  Salvar
-                </button>
+              <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+                {editingZona ? (
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={handleDelete}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-500/50 rounded-xl font-semibold text-xs transition-colors disabled:opacity-50"
+                    title="Excluir Zona de Risco"
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+                    ) : (
+                      <Trash2 className="w-4 h-4 text-rose-400" />
+                    )}
+                    <span>Excluir</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 text-slate-400 hover:text-white"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl"
+                  >
+                    Salvar
+                  </button>
+                </div>
               </div>
             </form>
           </div>
