@@ -230,6 +230,9 @@ export interface ItemMercado {
   Preco_Estimado?: number;
   Data_Pedido?: string;
   Data_Compra?: string;
+  Data_Lembrete?: string; // YYYY-MM-DD
+  Hora_Lembrete?: string; // HH:mm
+  Lembrete_Ativo?: "SIM" | "NÃO" | boolean;
   Comprado: boolean | "SIM" | "NÃO";
   Observação?: string;
 }
@@ -326,4 +329,17 @@ export interface ApiResponse<T = any> {
   message?: string;
   sheet?: string;
   updatedCount?: number;
+}
+
+// 20. Sistema de Notificações do Aplicativo
+export interface AppNotification {
+  id: string;
+  type: "agenda" | "saude" | "veiculos" | "financas" | "mercado";
+  title: string;
+  message: string;
+  targetView: "agenda" | "saude" | "veiculos" | "lancamentos" | "painel_contas" | "lista_mercado" | "contas";
+  severity: "info" | "warning" | "urgent";
+  timestamp: number;
+  read?: boolean;
+  dateStr?: string;
 }

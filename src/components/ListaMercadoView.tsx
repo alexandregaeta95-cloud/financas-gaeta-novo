@@ -10,6 +10,9 @@ import {
   ShoppingCart,
   Loader2,
   CheckCircle2,
+  Clock,
+  Bell,
+  Calendar,
 } from "lucide-react";
 import { ItemMercado, ContaBancaria, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
@@ -34,6 +37,15 @@ export const ListaMercadoView: React.FC<Props> = ({
   const [editingItem, setEditingItem] = useState<ItemMercado | null>(null);
   const [quickInput, setQuickInput] = useState("");
   const [valorEstDisplay, setValorEstDisplay] = useState("");
+
+  // Modal de Lembrete Geral de Compras
+  const [isGeneralReminderModalOpen, setIsGeneralReminderModalOpen] = useState(false);
+  const [generalReminderDate, setGeneralReminderDate] = useState(() => {
+    return localStorage.getItem("gaeta_mercado_general_date") || "";
+  });
+  const [generalReminderTime, setGeneralReminderTime] = useState(() => {
+    return localStorage.getItem("gaeta_mercado_general_time") || "10:00";
+  });
 
   // Campos para a Finalização de Compra
   const [checkoutValorTotal, setCheckoutValorTotal] = useState<number>(0);
@@ -85,6 +97,9 @@ export const ListaMercadoView: React.FC<Props> = ({
     Valor_Unitário: 5.5,
     Valor_Estimado: 11.0,
     Preco_Estimado: 11.0,
+    Data_Lembrete: "",
+    Hora_Lembrete: "10:00",
+    Lembrete_Ativo: false,
     Comprado: false,
     Observação: "",
   });
@@ -152,6 +167,9 @@ export const ListaMercadoView: React.FC<Props> = ({
         Unidade: normalizedUnit,
         Preco_Estimado: estNum,
         Valor_Estimado: estNum,
+        Data_Lembrete: item.Data_Lembrete || "",
+        Hora_Lembrete: item.Hora_Lembrete || "10:00",
+        Lembrete_Ativo: item.Lembrete_Ativo !== false && item.Lembrete_Ativo !== "NÃO",
       });
       setValorEstDisplay(estNum > 0 ? formatCurrency(estNum) : "");
     } else {
@@ -164,6 +182,9 @@ export const ListaMercadoView: React.FC<Props> = ({
         Valor_Unitário: 0,
         Valor_Estimado: 0,
         Preco_Estimado: 0,
+        Data_Lembrete: "",
+        Hora_Lembrete: "10:00",
+        Lembrete_Ativo: false,
         Comprado: false,
         Observação: "",
       });
@@ -194,11 +215,26 @@ export const ListaMercadoView: React.FC<Props> = ({
       Preco_Estimado: estimatedVal,
       Data_Pedido: form.Data_Pedido || new Date().toISOString().split("T")[0],
       Data_Compra: form.Data_Compra || "",
+      Data_Lembrete: form.Data_Lembrete || "",
+      Hora_Lembrete: form.Hora_Lembrete || "",
+      Lembrete_Ativo: form.Data_Lembrete ? (form.Lembrete_Ativo ? "SIM" : "NÃO") : undefined,
       Comprado: form.Comprado === true || form.Comprado === "SIM",
       Observação: form.Observação || "",
     };
     await onSaveItem(item);
     setIsModalOpen(false);
+  };
+
+  const handleSaveGeneralReminder = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (generalReminderDate) {
+      localStorage.setItem("gaeta_mercado_general_date", generalReminderDate);
+      localStorage.setItem("gaeta_mercado_general_time", generalReminderTime || "10:00");
+    } else {
+      localStorage.removeItem("gaeta_mercado_general_date");
+      localStorage.removeItem("gaeta_mercado_general_time");
+    }
+    setIsGeneralReminderModalOpen(false);
   };
 
   const handleToggleBought = async (item: ItemMercado) => {
@@ -298,16 +334,31 @@ export const ListaMercadoView: React.FC<Props> = ({
           </h2>
           <p className="text-xs text-slate-400">
             Aba <code className="text-emerald-400 font-mono">16_Lista_De_Mercado</code>
+            {generalReminderDate && (
+              <span className="ml-2 inline-flex items-center gap-1 text-teal-400 font-medium">
+                • Lembrete agendado: {generalReminderDate} às {generalReminderTime}
+              </span>
+            )}
           </p>
         </div>
 
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Adicionar Item Detalhado</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsGeneralReminderModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-semibold rounded-xl transition-colors"
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>{generalReminderDate ? "⏰ Lembrete Agendado" : "⏰ Agendar Ida ao Mercado"}</span>
+          </button>
+
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Adicionar Item</span>
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -380,13 +431,24 @@ export const ListaMercadoView: React.FC<Props> = ({
                   </button>
 
                   <div>
-                    <span
-                      className={`font-bold text-sm block ${
-                        isBought ? "line-through text-slate-400" : "text-white"
-                      }`}
-                    >
-                      {item.Item}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`font-bold text-sm ${
+                          isBought ? "line-through text-slate-400" : "text-white"
+                        }`}
+                      >
+                        {item.Item}
+                      </span>
+                      {!isBought && item.Data_Lembrete && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20 text-[10px] font-semibold">
+                          <Clock className="w-2.5 h-2.5" />
+                          <span>
+                            {item.Data_Lembrete}
+                            {item.Hora_Lembrete ? ` às ${item.Hora_Lembrete}` : ""}
+                          </span>
+                        </span>
+                      )}
+                    </div>
                     <span className="text-slate-400 text-[10px]">
                       Qtd: {item.Quantidade} {item.Unidade ? String(item.Unidade).toUpperCase() : "UN"} • Categoria: {item.Categoria || "MERCADO"}
                     </span>
@@ -630,6 +692,34 @@ export const ListaMercadoView: React.FC<Props> = ({
                 </div>
               </div>
 
+              {/* Lembrete de Compra deste Item */}
+              <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
+                <div className="flex items-center gap-1.5 text-teal-400 font-semibold text-xs">
+                  <Clock className="w-4 h-4" />
+                  <span>Lembrete de Compra (Opcional)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-slate-400 block mb-1 text-[11px]">Data do Lembrete</label>
+                    <input
+                      type="date"
+                      value={form.Data_Lembrete || ""}
+                      onChange={(e) => setForm({ ...form, Data_Lembrete: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-slate-400 block mb-1 text-[11px]">Horário</label>
+                    <input
+                      type="time"
+                      value={form.Hora_Lembrete || "10:00"}
+                      onChange={(e) => setForm({ ...form, Hora_Lembrete: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
                 <button
                   type="button"
@@ -644,6 +734,86 @@ export const ListaMercadoView: React.FC<Props> = ({
                 >
                   Salvar
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Lembrete Geral de Ida ao Mercado */}
+      {isGeneralReminderModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs text-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-teal-400">
+                <Clock className="w-5 h-5" />
+                <h3 className="font-bold text-base text-white">Agendar Ida ao Mercado</h3>
+              </div>
+              <button onClick={() => setIsGeneralReminderModalOpen(false)}>
+                <X className="w-5 h-5 text-slate-400 hover:text-white" />
+              </button>
+            </div>
+
+            <p className="text-slate-300 text-xs leading-relaxed">
+              Defina o dia e horário que você pretende ir ao supermercado. O app enviará uma notificação lembrando você de conferir seus itens pendentes!
+            </p>
+
+            <form onSubmit={handleSaveGeneralReminder} className="space-y-3">
+              <div>
+                <label className="text-slate-400 block mb-1 font-medium">Data da Ida ao Mercado</label>
+                <input
+                  type="date"
+                  required
+                  value={generalReminderDate}
+                  onChange={(e) => setGeneralReminderDate(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1 font-medium">Horário Previsto</label>
+                <input
+                  type="time"
+                  required
+                  value={generalReminderTime}
+                  onChange={(e) => setGeneralReminderTime(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                />
+              </div>
+
+              <div className="flex justify-between items-center gap-2 pt-3 border-t border-slate-800">
+                {generalReminderDate ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGeneralReminderDate("");
+                      localStorage.removeItem("gaeta_mercado_general_date");
+                      localStorage.removeItem("gaeta_mercado_general_time");
+                      setIsGeneralReminderModalOpen(false);
+                    }}
+                    className="text-rose-400 hover:text-rose-300 text-xs font-semibold"
+                  >
+                    Remover Lembrete
+                  </button>
+                ) : (
+                  <div />
+                )}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsGeneralReminderModalOpen(false)}
+                    className="px-3 py-1.5 text-slate-400 hover:text-white"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
+                  >
+                    Salvar Lembrete
+                  </button>
+                </div>
               </div>
             </form>
           </div>

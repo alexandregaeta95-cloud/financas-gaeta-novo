@@ -19,6 +19,8 @@ import { ZonasDeRiscoView } from "./components/ZonasDeRiscoView";
 import { ListaMercadoView } from "./components/ListaMercadoView";
 import { IndicacoesPostosView } from "./components/IndicacoesPostosView";
 import { PainelContasView } from "./components/PainelContasView";
+import { NotificationCenterModal } from "./components/NotificationCenterModal";
+import { NotificationToast } from "./components/NotificationToast";
 
 import {
   Lancamento,
@@ -38,6 +40,7 @@ import {
   CategoriaCustomizada,
   PerfilUsuario,
   SyncState,
+  AppNotification,
   SHEET_NAMES,
 } from "./types";
 
@@ -50,6 +53,7 @@ import {
 } from "./services/api";
 
 import { calculateAccountCurrentBalance } from "./utils/formatters";
+import { evaluateAllNotifications } from "./services/notificationEngine";
 
 export default function App() {
   const [activeView, setActiveView] = useState<ModuleView>("dashboard");
@@ -151,6 +155,79 @@ export default function App() {
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [isLancamentoModalOpen, setIsLancamentoModalOpen] = useState(false);
   const [isFuelingModeModal, setIsFuelingModeModal] = useState(false);
+
+  // In-App Notification System States
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+  const [activeToast, setActiveToast] = useState<AppNotification | null>(null);
+
+  // Notification Engine Evaluation
+  const checkNotifications = useCallback(() => {
+    const freshNotifs = evaluateAllNotifications({
+      agenda,
+      lancamentos,
+      consultas,
+      infracoes,
+      manutencoes,
+      servicos,
+      veiculos,
+      itensMercado,
+    });
+
+    setNotifications((prev) => {
+      const readIds = new Set(prev.filter((p) => p.read).map((p) => p.id));
+      const previousIds = new Set(prev.map((p) => p.id));
+
+      const updated = freshNotifs.map((n) => ({
+        ...n,
+        read: readIds.has(n.id) || n.read,
+      }));
+
+      // Find any newly arrived warning or urgent priority notification to toast
+      const newlyAdded = updated.filter(
+        (n) => !previousIds.has(n.id) && !n.read && (n.severity === "urgent" || n.severity === "warning")
+      );
+      if (newlyAdded.length > 0) {
+        setActiveToast(newlyAdded[0]);
+      }
+
+      return updated;
+    });
+  }, [
+    agenda,
+    lancamentos,
+    consultas,
+    infracoes,
+    manutencoes,
+    servicos,
+    veiculos,
+    itensMercado,
+  ]);
+
+  // Run notification check on data changes and periodically every 60 seconds
+  useEffect(() => {
+    checkNotifications();
+    const interval = setInterval(() => {
+      checkNotifications();
+    }, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [checkNotifications]);
+
+  const handleDismissNotification = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+  };
+
+  const handleDismissAllNotifications = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleNavigateFromNotification = (view: ModuleView) => {
+    setActiveView(view);
+    setIsNotificationCenterOpen(false);
+    setActiveToast(null);
+  };
 
   // Load All Sheet Data safely from Google Apps Script via Express Proxy
   const handleSyncAll = useCallback(async () => {
@@ -369,7 +446,12 @@ export default function App() {
       />
 
       {/* Main Navigation */}
-      <Navigation activeView={activeView} onSelectView={setActiveView} />
+      <Navigation
+        activeView={activeView}
+        onSelectView={setActiveView}
+        notificationCount={notifications.filter((n) => !n.read).length}
+        onOpenNotifications={() => setIsNotificationCenterOpen(true)}
+      />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
@@ -522,6 +604,24 @@ export default function App() {
         onConnectedSuccess={() => {
           handleSyncAll();
         }}
+      />
+
+      {/* Notification Toast Alert */}
+      <NotificationToast
+        notification={activeToast}
+        onClose={() => setActiveToast(null)}
+        onNavigate={handleNavigateFromNotification}
+      />
+
+      {/* Notification Center Modal */}
+      <NotificationCenterModal
+        isOpen={isNotificationCenterOpen}
+        onClose={() => setIsNotificationCenterOpen(false)}
+        notifications={notifications}
+        onDismiss={handleDismissNotification}
+        onDismissAll={handleDismissAllNotifications}
+        onNavigate={handleNavigateFromNotification}
+        onRefreshNotifications={checkNotifications}
       />
     </div>
   );

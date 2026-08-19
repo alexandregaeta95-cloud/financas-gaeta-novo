@@ -12,7 +12,8 @@ import {
   Target,
   CalendarDays,
   ShieldAlert,
-  ShoppingBag
+  ShoppingBag,
+  Bell,
 } from "lucide-react";
 
 export type ModuleView =
@@ -32,9 +33,16 @@ export type ModuleView =
 interface Props {
   activeView: ModuleView;
   onSelectView: (view: ModuleView) => void;
+  notificationCount?: number;
+  onOpenNotifications?: () => void;
 }
 
-export const Navigation: React.FC<Props> = ({ activeView, onSelectView }) => {
+export const Navigation: React.FC<Props> = ({
+  activeView,
+  onSelectView,
+  notificationCount = 0,
+  onOpenNotifications,
+}) => {
   const navItems: { id: ModuleView; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: "dashboard", label: "Início", icon: LayoutDashboard },
     { id: "lancamentos", label: "Finanças", icon: Receipt },
@@ -66,26 +74,43 @@ export const Navigation: React.FC<Props> = ({ activeView, onSelectView }) => {
           </div>
         </div>
 
-        <nav className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80 overflow-x-auto max-w-4xl">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeView === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onSelectView(item.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                  isActive
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+        <div className="flex items-center gap-3">
+          <nav className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80 overflow-x-auto max-w-3xl">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onSelectView(item.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                    isActive
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {onOpenNotifications && (
+            <button
+              onClick={onOpenNotifications}
+              className="relative p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all shadow-xs"
+              title="Central de Notificações"
+            >
+              <Bell className="w-4 h-4" />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 bg-rose-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center animate-pulse shadow-md">
+                  {notificationCount > 9 ? "9+" : notificationCount}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Mobile Top Header Banner */}
@@ -96,6 +121,21 @@ export const Navigation: React.FC<Props> = ({ activeView, onSelectView }) => {
           </div>
           <span className="font-bold text-sm text-white">Finanças Gaeta</span>
         </div>
+
+        {onOpenNotifications && (
+          <button
+            onClick={onOpenNotifications}
+            className="relative p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition-all"
+            title="Central de Notificações"
+          >
+            <Bell className="w-4 h-4" />
+            {notificationCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-500 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center animate-pulse">
+                {notificationCount > 9 ? "9+" : notificationCount}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Mobile Bottom Scrollable Navigation Bar */}

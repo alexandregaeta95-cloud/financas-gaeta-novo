@@ -1,0 +1,25 @@
+{
+  "short_name": "Finanças Gaeta",
+  "name": "Finanças Gaeta - Sistema Integrado de Gestão",
+  "description": "Sistema Integrado de Gestão Financeira, Veicular, Agenda e Lembretes",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/"
+}
