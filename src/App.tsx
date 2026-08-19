@@ -551,6 +551,8 @@ export default function App() {
             lancamentos={lancamentos}
             onSaveMeta={(meta) => handleSaveGeneric(SHEET_NAMES.METAS_CATEGORIA, meta, setMetas)}
             onSaveCategoria={(cat) => handleSaveGeneric(SHEET_NAMES.CATEGORIAS_CUSTOMIZADAS, cat, setCategoriasCustom)}
+            onDeleteMeta={(id) => handleDeleteGeneric(SHEET_NAMES.METAS_CATEGORIA, id, setMetas)}
+            onDeleteCategoria={(id) => handleDeleteGeneric(SHEET_NAMES.CATEGORIAS_CUSTOMIZADAS, id, setCategoriasCustom)}
           />
         )}
 
