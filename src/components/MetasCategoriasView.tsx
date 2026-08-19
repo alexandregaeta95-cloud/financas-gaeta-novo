@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Target, Tag, Plus, Edit2, Trash2, X, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { MetaCategoria, CategoriaCustomizada, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
-import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { parseCurrency, formatCurrency, formatCurrencyInput } from "../utils/formatters";
 
 interface Props {
   metas: MetaCategoria[];
@@ -104,6 +104,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
   // Meta Modal & Fields
   const [isMetaModalOpen, setIsMetaModalOpen] = useState(false);
   const [editingMeta, setEditingMeta] = useState<MetaCategoria | null>(null);
+  const [valorMetaDisplay, setValorMetaDisplay] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>(
     String(new Date().getMonth() + 1).padStart(2, "0")
   );
@@ -137,8 +138,11 @@ export const MetasCategoriasView: React.FC<Props> = ({
 
       setSelectedYear(y);
       setSelectedMonth(mo);
+      const numericVal = parseCurrency(m.Valor_Meta);
+      setValorMetaDisplay(numericVal > 0 ? formatCurrency(numericVal) : "");
       setMetaForm({
         ...m,
+        Valor_Meta: numericVal,
         Mes_Ano: `${y}-${mo}`,
       });
     } else {
@@ -148,6 +152,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
 
       setSelectedYear(y);
       setSelectedMonth(mo);
+      setValorMetaDisplay("800,00");
       setMetaForm({
         Categoria: "MERCADO",
         Valor_Meta: 800,
@@ -541,14 +546,24 @@ export const MetasCategoriasView: React.FC<Props> = ({
 
               <div>
                 <label className="text-slate-400 block mb-1">Valor Meta Mensal (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={metaForm.Valor_Meta}
-                  onChange={(e) => setMetaForm({ ...metaForm, Valor_Meta: Number(e.target.value) })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold"
-                />
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-slate-400 font-semibold text-xs select-none">
+                    R$
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0,00"
+                    required
+                    value={valorMetaDisplay}
+                    onChange={(e) => {
+                      const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                      setValorMetaDisplay(formatted);
+                      setMetaForm((prev) => ({ ...prev, Valor_Meta: numeric }));
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-9 text-white font-bold"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
