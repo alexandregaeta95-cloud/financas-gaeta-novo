@@ -257,6 +257,7 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
         ) : (
           <div className="divide-y divide-slate-800/80">
             {fuelEntries.map((item, idx) => {
+              console.log('DEBUG abastecimento:', item);
               const valor = parseCurrency(item.Valor_Pago) || parseCurrency(item.Valor);
               const litros = parseCurrency(item.Litros);
               const preco = parseCurrency(item.Preco_Litro) || (litros > 0 ? valor / litros : 0);
