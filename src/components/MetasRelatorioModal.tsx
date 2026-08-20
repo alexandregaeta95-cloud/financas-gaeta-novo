@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   X,
   Printer,
@@ -15,6 +15,14 @@ import {
 } from "lucide-react";
 import { MetaCategoria, Lancamento } from "../types";
 import { formatCurrency, parseCurrency } from "../utils/formatters";
+import {
+  extractYearMonth,
+  normalizeCategory,
+  categoriesMatch,
+  calculateSpentForCategoryAndMonth,
+  getSpentForMeta,
+  MONTH_NAMES_MAP,
+} from "../utils/metasCalculations";
 
 interface Props {
   isOpen: boolean;
@@ -53,154 +61,42 @@ const MESES_ABREV = [
   "Dez",
 ];
 
-const MONTH_NAMES_MAP: Record<string, number> = {
-  jan: 1, janeiro: 1, january: 1,
-  fev: 2, fevereiro: 2, february: 2,
-  mar: 3, marco: 3, março: 3, march: 3,
-  abr: 4, abril: 4, april: 4,
-  mai: 5, maio: 5, may: 5,
-  jun: 6, junho: 6, june: 6,
-  jul: 7, julho: 7, july: 7,
-  ago: 8, agosto: 8, august: 8,
-  set: 9, setembro: 9, september: 9,
-  out: 10, outubro: 10, october: 10,
-  nov: 11, novembro: 11, november: 11,
-  dez: 12, dezembro: 12, december: 12,
-};
-
-function normalizeCategory(cat?: string | null): string {
-  if (!cat) return "";
-  return String(cat)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[_\-\s]+/g, " ")
-    .trim()
-    .toUpperCase();
-}
-
-function categoriesMatch(
-  metaCat?: string | null,
-  lancamentoCat?: string | null,
-  lancamentoTipo?: string | null
-): boolean {
-  const mNorm = normalizeCategory(metaCat);
-  const lNorm = normalizeCategory(lancamentoCat);
-  const tNorm = normalizeCategory(lancamentoTipo);
-
-  if (!mNorm) return false;
-  if (mNorm === lNorm) return true;
-
-  const isFuelMeta = mNorm === "COMBUSTIVEL" || mNorm === "ABASTECIMENTO" || mNorm === "GASOLINA";
-  const isFuelLancamento =
-    lNorm === "COMBUSTIVEL" ||
-    lNorm === "ABASTECIMENTO" ||
-    lNorm === "GASOLINA" ||
-    tNorm === "ABASTECIMENTO";
-
-  if (isFuelMeta && isFuelLancamento) return true;
-
-  if (
-    (mNorm === "MERCADO" && lNorm === "SUPERMERCADO") ||
-    (mNorm === "SUPERMERCADO" && lNorm === "MERCADO")
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function extractYearMonth(dateVal?: any): { year: number; month: number } | null {
-  if (dateVal === null || dateVal === undefined || dateVal === "") return null;
-
-  if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
-    return { year: dateVal.getUTCFullYear(), month: dateVal.getUTCMonth() + 1 };
-  }
-
-  if (typeof dateVal === "number" && dateVal > 20000 && dateVal < 60000) {
-    const epoch = new Date(Date.UTC(1899, 11, 30));
-    const jsDate = new Date(epoch.getTime() + dateVal * 86400000);
-    if (!isNaN(jsDate.getTime())) {
-      return { year: jsDate.getUTCFullYear(), month: jsDate.getUTCMonth() + 1 };
-    }
-  }
-
-  const str = String(dateVal).trim();
-  if (!str) return null;
-
-  const isoMatch = str.match(/^(\d{4})[-/.](\d{1,2})/);
-  if (isoMatch) {
-    const year = parseInt(isoMatch[1], 10);
-    const month = parseInt(isoMatch[2], 10);
-    if (month >= 1 && month <= 12) {
-      return { year, month };
-    }
-  }
-
-  const brFullMatch = str.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
-  if (brFullMatch) {
-    const month = parseInt(brFullMatch[2], 10);
-    let year = parseInt(brFullMatch[3], 10);
-    if (year < 100) {
-      year = year < 70 ? 2000 + year : 1900 + year;
-    }
-    if (month >= 1 && month <= 12 && year > 1900) {
-      return { year, month };
-    }
-  }
-
-  const brMonthYearMatch = str.match(/^(\d{1,2})[-/.](\d{2,4})$/);
-  if (brMonthYearMatch) {
-    const month = parseInt(brMonthYearMatch[1], 10);
-    let year = parseInt(brMonthYearMatch[2], 10);
-    if (year < 100) {
-      year = year < 70 ? 2000 + year : 1900 + year;
-    }
-    if (month >= 1 && month <= 12 && year > 1900) {
-      return { year, month };
-    }
-  }
-
-  const textMonthMatch = str.toLowerCase().match(/^([a-zçãé]+)[-/\s]+(\d{2,4})$/);
-  if (textMonthMatch) {
-    const monthName = textMonthMatch[1].normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    let year = parseInt(textMonthMatch[2], 10);
-    if (year < 100) {
-      year = year < 70 ? 2000 + year : 1900 + year;
-    }
-    const month = MONTH_NAMES_MAP[monthName] || MONTH_NAMES_MAP[monthName.slice(0, 3)];
-    if (month && year > 1900) {
-      return { year, month };
-    }
-  }
-
-  const singleMonthMatch = str.match(/^0?([1-9]|1[0-2])$/);
-  if (singleMonthMatch) {
-    const month = parseInt(singleMonthMatch[1], 10);
-    return { year: new Date().getUTCFullYear(), month };
-  }
-
-  const d = new Date(str);
-  if (!isNaN(d.getTime())) {
-    return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 };
-  }
-
-  return null;
-}
-
 export const MetasRelatorioModal: React.FC<Props> = ({
   isOpen,
   onClose,
   metas,
   lancamentos,
 }) => {
-  const currentDate = new Date();
-  const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth() + 1);
+  // Determine default month and year from active metas or lancamentos
+  const defaultYM = useMemo(() => {
+    for (const m of metas) {
+      const ym = extractYearMonth(m.Mes_Ano);
+      if (ym?.year && ym?.month) return ym;
+    }
+    for (const l of lancamentos) {
+      const ym = extractYearMonth(l.Data);
+      if (ym?.year && ym?.month) return ym;
+    }
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  }, [metas, lancamentos]);
+
+  const [selectedYear, setSelectedYear] = useState<number>(defaultYM.year);
+  const [selectedMonth, setSelectedMonth] = useState<number>(defaultYM.month);
+
+  // Sync with defaultYM when modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedYear(defaultYM.year);
+      setSelectedMonth(defaultYM.month);
+    }
+  }, [isOpen, defaultYM.year, defaultYM.month]);
 
   // Available months and years in system
   const availableYears = useMemo(() => {
     const years = new Set<number>();
-    years.add(currentDate.getFullYear());
+    years.add(new Date().getFullYear());
+    years.add(defaultYM.year);
     metas.forEach((m) => {
       const ym = extractYearMonth(m.Mes_Ano);
       if (ym?.year) years.add(ym.year);
@@ -210,38 +106,17 @@ export const MetasRelatorioModal: React.FC<Props> = ({
       if (ym?.year) years.add(ym.year);
     });
     return Array.from(years).sort((a, b) => b - a);
-  }, [metas, lancamentos, currentDate]);
+  }, [metas, lancamentos, defaultYM.year]);
 
-  // Metas for selected month & year (or fallback to latest)
+  // Metas for selected month & year (calculated with EXACT same function as main screen)
   const reportMetas = useMemo(() => {
     return metas.map((m) => {
-      const targetYM = extractYearMonth(m.Mes_Ano) || {
-        year: selectedYear,
-        month: selectedMonth,
-      };
-
-      const metaCatNorm = normalizeCategory(m.Categoria);
-      const isIncomeMeta =
-        metaCatNorm === "RECEITA" ||
-        metaCatNorm === "RENDIMENTO" ||
-        metaCatNorm === "SALARIO" ||
-        metaCatNorm === "ENTRADA";
-
-      const spent = lancamentos
-        .filter((l) => {
-          const t = String(l.Tipo || "").trim().toUpperCase();
-          if (isIncomeMeta) {
-            return t === "RECEITA";
-          }
-          return t === "DESPESA" || t === "ABASTECIMENTO";
-        })
-        .filter((l) => {
-          const lYM = extractYearMonth(l.Data);
-          if (!lYM) return false;
-          return lYM.year === selectedYear && lYM.month === selectedMonth;
-        })
-        .filter((l) => categoriesMatch(m.Categoria, l.Categoria, l.Tipo))
-        .reduce((sum, l) => sum + (parseCurrency(l.Valor_Pago ?? l.Valor) || 0), 0);
+      const spent = calculateSpentForCategoryAndMonth(
+        m.Categoria,
+        selectedYear,
+        selectedMonth,
+        lancamentos
+      );
 
       const target = parseCurrency(m.Valor_Meta) || 1;
       const pct = Math.round((spent / target) * 100);
@@ -259,7 +134,6 @@ export const MetasRelatorioModal: React.FC<Props> = ({
         isOver,
         isNear,
         saldo,
-        isIncomeMeta,
       };
     });
   }, [metas, lancamentos, selectedYear, selectedMonth]);
@@ -285,7 +159,7 @@ export const MetasRelatorioModal: React.FC<Props> = ({
     };
   }, [reportMetas]);
 
-  // Historical calculation: Last 6 months evolution
+  // Historical calculation: Last 6 months evolution using the unified calculation
   const historicalData = useMemo(() => {
     const monthsList: { label: string; year: number; month: number }[] = [];
     for (let i = 5; i >= 0; i--) {
@@ -313,17 +187,12 @@ export const MetasRelatorioModal: React.FC<Props> = ({
       let monthTotal = 0;
 
       topCategories.forEach((cat) => {
-        const spent = lancamentos
-          .filter((l) => {
-            const t = String(l.Tipo || "").trim().toUpperCase();
-            return t === "DESPESA" || t === "ABASTECIMENTO";
-          })
-          .filter((l) => {
-            const lYM = extractYearMonth(l.Data);
-            return lYM && lYM.year === mo.year && lYM.month === mo.month;
-          })
-          .filter((l) => categoriesMatch(cat, l.Categoria, l.Tipo))
-          .reduce((sum, l) => sum + (parseCurrency(l.Valor_Pago ?? l.Valor) || 0), 0);
+        const spent = calculateSpentForCategoryAndMonth(
+          cat,
+          mo.year,
+          mo.month,
+          lancamentos
+        );
 
         categorySpent[cat] = spent;
         monthTotal += spent;
