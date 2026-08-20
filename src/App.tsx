@@ -592,6 +592,7 @@ export default function App() {
             itens={itensMercado}
             contas={contas}
             onSaveItem={(item) => handleSaveGeneric(SHEET_NAMES.LISTA_MERCADO, item, setItensMercado)}
+            onDeleteItem={(id) => handleDeleteGeneric(SHEET_NAMES.LISTA_MERCADO, id, setItensMercado)}
             onSaveLancamento={handleSaveLancamento}
             onClearLista={async () => {
               const itemsToDelete = itensMercado.map((i) => ({ Id: i.Id }));
