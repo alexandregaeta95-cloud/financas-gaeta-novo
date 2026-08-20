@@ -90,13 +90,13 @@ export const ListaMercadoView: React.FC<Props> = ({
   );
 
   const [form, setForm] = useState<Partial<ItemMercado>>({
-    Item: "Leite Integral",
+    Item: "",
     Categoria: "MERCADO",
-    Quantidade: 2,
+    Quantidade: 1,
     Unidade: "UN",
-    Valor_Unitário: 5.5,
-    Valor_Estimado: 11.0,
-    Preco_Estimado: 11.0,
+    Valor_Unitário: 0,
+    Valor_Estimado: 0,
+    Preco_Estimado: 0,
     Data_Lembrete: "",
     Hora_Lembrete: "10:00",
     Lembrete_Ativo: false,
@@ -159,19 +159,29 @@ export const ListaMercadoView: React.FC<Props> = ({
   const handleOpenModal = (item?: ItemMercado) => {
     if (item) {
       setEditingItem(item);
-      const estNum = parseCurrency(item.Preco_Estimado ?? item.Valor_Estimado ?? 0);
+      const qty =
+        item.Quantidade !== undefined && item.Quantidade !== null && !isNaN(Number(item.Quantidade))
+          ? Number(item.Quantidade)
+          : 1;
+      let unitPrice = parseCurrency(item.Valor_Unitário);
+      const totalEst = parseCurrency(item.Preco_Estimado ?? item.Valor_Estimado ?? item.Valor_Total);
+      if (unitPrice === 0 && totalEst > 0 && qty > 0) {
+        unitPrice = totalEst / qty;
+      }
       const rawUnit = (item.Unidade || "").toUpperCase().trim();
       const normalizedUnit = rawUnit === "KG" ? "KG" : "UN";
       setForm({
         ...item,
+        Quantidade: qty,
         Unidade: normalizedUnit,
-        Preco_Estimado: estNum,
-        Valor_Estimado: estNum,
+        Valor_Unitário: unitPrice,
+        Preco_Estimado: totalEst,
+        Valor_Estimado: totalEst,
         Data_Lembrete: item.Data_Lembrete || "",
         Hora_Lembrete: item.Hora_Lembrete || "10:00",
         Lembrete_Ativo: item.Lembrete_Ativo !== false && item.Lembrete_Ativo !== "NÃO",
       });
-      setValorEstDisplay(estNum > 0 ? formatCurrency(estNum) : "");
+      setValorEstDisplay(unitPrice > 0 ? formatCurrency(unitPrice) : "");
     } else {
       setEditingItem(null);
       setForm({
@@ -195,13 +205,12 @@ export const ListaMercadoView: React.FC<Props> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const qty = parseCurrency(form.Quantidade) || 1;
-    const unitPrice = parseCurrency(form.Valor_Unitário);
-    let totalVal = parseCurrency(form.Valor_Total);
-    if (totalVal === 0 && unitPrice > 0) {
-      totalVal = qty * unitPrice;
-    }
-    const estimatedVal = parseCurrency(form.Preco_Estimado ?? form.Valor_Estimado) || totalVal;
+    const qty =
+      form.Quantidade !== "" && form.Quantidade !== undefined && !isNaN(Number(form.Quantidade))
+        ? Number(form.Quantidade)
+        : 1;
+    const unitPrice = parseCurrency(form.Valor_Unitário ?? form.Preco_Estimado ?? form.Valor_Estimado);
+    const totalEst = qty * unitPrice;
 
     const item: ItemMercado = {
       Id: editingItem?.Id || generateNewId("MERC"),
@@ -210,9 +219,9 @@ export const ListaMercadoView: React.FC<Props> = ({
       Quantidade: qty,
       Unidade: form.Unidade === "KG" ? "KG" : "UN",
       Valor_Unitário: unitPrice,
-      Valor_Total: totalVal,
-      Valor_Estimado: estimatedVal,
-      Preco_Estimado: estimatedVal,
+      Valor_Total: totalEst,
+      Valor_Estimado: totalEst,
+      Preco_Estimado: totalEst,
       Data_Pedido: form.Data_Pedido || new Date().toISOString().split("T")[0],
       Data_Compra: form.Data_Compra || "",
       Data_Lembrete: form.Data_Lembrete || "",
@@ -645,14 +654,24 @@ export const ListaMercadoView: React.FC<Props> = ({
                 </datalist>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Quantidade</label>
                   <input
                     type="number"
-                    value={form.Quantidade}
-                    onChange={(e) => setForm({ ...form, Quantidade: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                    min="0"
+                    step="any"
+                    placeholder="1"
+                    value={form.Quantidade !== undefined && form.Quantidade !== null ? form.Quantidade : ""}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setForm((prev) => ({
+                        ...prev,
+                        Quantidade: v === "" ? ("" as any) : Number(v),
+                      }));
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-semibold focus:outline-hidden focus:border-emerald-500"
                   />
                 </div>
                 <div>
@@ -666,8 +685,13 @@ export const ListaMercadoView: React.FC<Props> = ({
                     <option value="KG">KG</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Valor Est. (R$)</label>
+                  <label className="text-slate-400 block mb-1">
+                    Valor Est. (R$) <span className="text-[10px] text-slate-500 font-normal">(Unitário)</span>
+                  </label>
                   <div className="relative flex items-center">
                     <span className="absolute left-2.5 text-slate-400 font-semibold text-xs select-none">
                       R$
@@ -677,16 +701,39 @@ export const ListaMercadoView: React.FC<Props> = ({
                       inputMode="numeric"
                       placeholder="0,00"
                       value={valorEstDisplay}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => {
                         const { numeric, formatted } = formatCurrencyInput(e.target.value);
                         setValorEstDisplay(formatted);
                         setForm((prev) => ({
                           ...prev,
+                          Valor_Unitário: numeric,
                           Valor_Estimado: numeric,
                           Preco_Estimado: numeric,
                         }));
                       }}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-8 text-white font-bold text-xs"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-8 text-white font-bold text-xs focus:outline-hidden focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 block mb-1">Total Estimado</label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2.5 text-emerald-400 font-semibold text-xs select-none">
+                      R$
+                    </span>
+                    <input
+                      type="text"
+                      readOnly
+                      tabIndex={-1}
+                      value={formatCurrency(
+                        (form.Quantidade !== "" && form.Quantidade !== undefined && !isNaN(Number(form.Quantidade))
+                          ? Number(form.Quantidade)
+                          : 0) *
+                          (parseCurrency(form.Valor_Unitário ?? form.Preco_Estimado ?? form.Valor_Estimado) || 0)
+                      )}
+                      className="w-full bg-slate-950/70 border border-slate-800 text-emerald-400 font-mono font-bold rounded-xl p-2.5 pl-8 text-xs cursor-default select-none focus:outline-hidden"
                     />
                   </div>
                 </div>
