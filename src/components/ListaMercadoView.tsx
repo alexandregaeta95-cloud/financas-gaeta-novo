@@ -89,6 +89,14 @@ export const ListaMercadoView: React.FC<Props> = ({
     ])
   );
 
+  const itensSugeridos = Array.from(
+    new Set(
+      itens
+        .map((i) => String(i.Item || "").trim().toUpperCase())
+        .filter((name) => name.length > 0)
+    )
+  ).sort();
+
   const [form, setForm] = useState<Partial<ItemMercado>>({
     Item: "",
     Categoria: "MERCADO",
@@ -630,11 +638,17 @@ export const ListaMercadoView: React.FC<Props> = ({
                 <input
                   type="text"
                   required
+                  list="itens-mercado"
                   placeholder="Ex: Leite, Café, Pão"
                   value={form.Item}
                   onChange={(e) => setForm({ ...form, Item: e.target.value.toUpperCase() })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                 />
+                <datalist id="itens-mercado">
+                  {itensSugeridos.map((itemNome) => (
+                    <option key={itemNome} value={itemNome} />
+                  ))}
+                </datalist>
               </div>
 
               <div>
