@@ -232,7 +232,7 @@ export const Dashboard: React.FC<Props> = ({
       {/* Quick Action Buttons */}
       <div className="flex flex-wrap gap-3">
         <button
-          onClick={onOpenNewLancamentoModal}
+          onClick={() => onNavigate("lancamentos")}
           className="flex-1 min-w-[140px] flex items-center justify-center gap-2 p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-all shadow-md active:scale-95"
         >
           <PlusCircle className="w-4 h-4" />
@@ -240,7 +240,7 @@ export const Dashboard: React.FC<Props> = ({
         </button>
 
         <button
-          onClick={onOpenNewAbastecimentoModal}
+          onClick={() => onNavigate("lancamentos")}
           className="flex-1 min-w-[140px] flex items-center justify-center gap-2 p-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold rounded-xl text-xs border border-amber-500/20 transition-all active:scale-95"
         >
           <Fuel className="w-4 h-4" />
