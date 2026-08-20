@@ -505,7 +505,7 @@ export default function App() {
 
         {activeView === "abastecimentos" && (
           <AbastecimentosView
-            abastecimentos={abastecimentos}
+            lancamentos={lancamentos}
             onOpenNewFueling={() => {
               setIsFuelingModeModal(true);
               setIsLancamentoModalOpen(true);
