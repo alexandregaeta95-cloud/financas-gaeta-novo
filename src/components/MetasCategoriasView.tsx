@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Target, Tag, Plus, Edit2, Trash2, X, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Target, Tag, Plus, Edit2, Trash2, X, AlertTriangle, CheckCircle2, BarChart3 } from "lucide-react";
 import { MetaCategoria, CategoriaCustomizada, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency, formatCurrencyInput } from "../utils/formatters";
+import { MetasRelatorioModal } from "./MetasRelatorioModal";
 
 interface Props {
   metas: MetaCategoria[];
@@ -218,6 +219,9 @@ export const MetasCategoriasView: React.FC<Props> = ({
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Report Modal
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
   // Meta Modal & Fields
   const [isMetaModalOpen, setIsMetaModalOpen] = useState(false);
   const [editingMeta, setEditingMeta] = useState<MetaCategoria | null>(null);
@@ -381,17 +385,28 @@ export const MetasCategoriasView: React.FC<Props> = ({
       {/* 1. METAS DE CATEGORIA */}
       {activeTab === "metas" && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <span className="text-xs text-slate-400">
               Defina o teto mensal de gastos por categoria e acompanhe o progresso real dos lançamentos
             </span>
-            <button
-              onClick={() => handleOpenMetaModal()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nova Meta</span>
-            </button>
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <button
+                onClick={() => setIsReportModalOpen(true)}
+                className="flex items-center gap-2 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-slate-600 text-xs font-semibold rounded-xl transition-all shadow-xs"
+                title="Visualizar relatório detalhado com gráficos e impressão em PDF"
+              >
+                <BarChart3 className="w-4 h-4 text-emerald-400" />
+                <span>Relatório & Gráficos (PDF)</span>
+              </button>
+
+              <button
+                onClick={() => handleOpenMetaModal()}
+                className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nova Meta</span>
+              </button>
+            </div>
           </div>
 
           {metas.length === 0 ? (
@@ -829,6 +844,14 @@ export const MetasCategoriasView: React.FC<Props> = ({
           </div>
         </div>
       )}
+
+      {/* Relatório Executivo de Metas & Gráficos / PDF */}
+      <MetasRelatorioModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        metas={metas}
+        lancamentos={lancamentos}
+      />
     </div>
   );
 };
