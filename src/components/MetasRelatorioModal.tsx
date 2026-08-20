@@ -83,6 +83,7 @@ export const MetasRelatorioModal: React.FC<Props> = ({
 
   const [selectedYear, setSelectedYear] = useState<number>(defaultYM.year);
   const [selectedMonth, setSelectedMonth] = useState<number>(defaultYM.month);
+  const [calculationMode, setCalculationMode] = useState<"competencia" | "por_meta">("competencia");
 
   // Sync with defaultYM when modal is opened
   useEffect(() => {
@@ -108,15 +109,29 @@ export const MetasRelatorioModal: React.FC<Props> = ({
     return Array.from(years).sort((a, b) => b - a);
   }, [metas, lancamentos, defaultYM.year]);
 
-  // Metas for selected month & year (calculated with EXACT same function as main screen)
+  // Metas for selected month & year (or individual meta month)
   const reportMetas = useMemo(() => {
     return metas.map((m) => {
-      const spent = calculateSpentForCategoryAndMonth(
-        m.Categoria,
-        selectedYear,
-        selectedMonth,
-        lancamentos
-      );
+      let spent = 0;
+      let refLabel = "";
+
+      if (calculationMode === "por_meta") {
+        spent = getSpentForMeta(m, lancamentos);
+        const ym = extractYearMonth(m.Mes_Ano);
+        if (ym) {
+          refLabel = `${MESES_ABREV[ym.month - 1]}/${String(ym.year).slice(-2)}`;
+        } else {
+          refLabel = "Geral";
+        }
+      } else {
+        spent = calculateSpentForCategoryAndMonth(
+          m.Categoria,
+          selectedYear,
+          selectedMonth,
+          lancamentos
+        );
+        refLabel = `${MESES_ABREV[selectedMonth - 1]}/${String(selectedYear).slice(-2)}`;
+      }
 
       const target = parseCurrency(m.Valor_Meta) || 1;
       const pct = Math.round((spent / target) * 100);
@@ -134,9 +149,10 @@ export const MetasRelatorioModal: React.FC<Props> = ({
         isOver,
         isNear,
         saldo,
+        refLabel,
       };
     });
-  }, [metas, lancamentos, selectedYear, selectedMonth]);
+  }, [metas, lancamentos, selectedYear, selectedMonth, calculationMode]);
 
   // Totals for the selected month
   const totals = useMemo(() => {
@@ -296,13 +312,50 @@ export const MetasRelatorioModal: React.FC<Props> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Mode Selector Toggle */}
+            <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => setCalculationMode("competencia")}
+                className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                  calculationMode === "competencia"
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+                title="Calcula todas as categorias para o mês/ano selecionado no filtro"
+              >
+                Por Competência
+              </button>
+              <button
+                type="button"
+                onClick={() => setCalculationMode("por_meta")}
+                className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                  calculationMode === "por_meta"
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+                title="Calcula cada categoria respeitando o mês de referência individual configurado na meta"
+              >
+                Por Mês de Cada Meta
+              </button>
+            </div>
+
             {/* Filter selectors */}
-            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs">
+            <div
+              className={`flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs transition-opacity ${
+                calculationMode === "por_meta" ? "opacity-60" : "opacity-100"
+              }`}
+            >
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
                 className="bg-transparent text-white font-medium focus:outline-hidden cursor-pointer"
+                title={
+                  calculationMode === "por_meta"
+                    ? "Filtro de competência para o histórico"
+                    : "Mês selecionado"
+                }
               >
                 {MESES_NOMES.map((name, i) => (
                   <option key={name} value={i + 1} className="bg-slate-900 text-white">
@@ -315,6 +368,11 @@ export const MetasRelatorioModal: React.FC<Props> = ({
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
                 className="bg-transparent text-white font-medium focus:outline-hidden cursor-pointer ml-1"
+                title={
+                  calculationMode === "por_meta"
+                    ? "Filtro de competência para o histórico"
+                    : "Ano selecionado"
+                }
               >
                 {availableYears.map((y) => (
                   <option key={y} value={y} className="bg-slate-900 text-white">
@@ -362,7 +420,12 @@ export const MetasRelatorioModal: React.FC<Props> = ({
                 Desempenho de Metas de Categoria
               </h1>
               <p className="text-xs text-slate-400 print-text-muted mt-0.5">
-                Competência: <strong className="text-white print-text-dark">{currentMonthName} de {selectedYear}</strong>
+                Modo de Cálculo:{" "}
+                <strong className="text-white print-text-dark">
+                  {calculationMode === "competencia"
+                    ? `Competência ${currentMonthName} de ${selectedYear}`
+                    : "Mês de Referência Individual de Cada Meta"}
+                </strong>
               </p>
             </div>
 
@@ -438,7 +501,11 @@ export const MetasRelatorioModal: React.FC<Props> = ({
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-white print-text-dark uppercase tracking-wider flex items-center gap-2">
                 <Layers className="w-4 h-4 text-emerald-400 print:text-emerald-700" />
-                Detalhamento por Categoria ({currentMonthName}/{selectedYear})
+                Detalhamento por Categoria (
+                {calculationMode === "competencia"
+                  ? `${currentMonthName}/${selectedYear}`
+                  : "Mês Individual da Meta"}
+                )
               </h2>
               <span className="text-[11px] text-slate-400 print-text-muted">
                 Valores calculados em tempo real
@@ -469,7 +536,14 @@ export const MetasRelatorioModal: React.FC<Props> = ({
                         className="hover:bg-slate-800/30 transition-colors"
                       >
                         <td className="p-3 font-semibold text-white print-text-dark">
-                          {m.Categoria}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span>{m.Categoria}</span>
+                            {calculationMode === "por_meta" && (
+                              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 print:bg-emerald-100 print:text-emerald-800 border border-emerald-500/20">
+                                {m.refLabel}
+                              </span>
+                            )}
+                          </div>
                           <span className="block text-[10px] font-normal text-slate-400 print-text-muted">
                             Alerta configurado em {m.alertThreshold}%
                           </span>
@@ -575,7 +649,10 @@ export const MetasRelatorioModal: React.FC<Props> = ({
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-white print-text-dark text-xs uppercase tracking-wider flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-emerald-400 print:text-emerald-700" />
-                  Comparativo Meta vs. Realizado ({currentMonthName})
+                  Comparativo Meta vs. Realizado{" "}
+                  {calculationMode === "competencia"
+                    ? `(${currentMonthName}/${selectedYear})`
+                    : "(Mês de Cada Meta)"}
                 </h3>
                 <div className="flex items-center gap-3 text-[10px]">
                   <span className="flex items-center gap-1 text-slate-400 print-text-muted">
