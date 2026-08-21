@@ -161,17 +161,22 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
 
   // Calculate Fuel Stats safely using parseCurrency from 1_Lancamentos
   const totalGasto = useMemo(() => {
-    return fuelEntries.reduce(
-      (acc, curr) => acc + (parseCurrency(curr.Valor_Pago) || parseCurrency(curr.Valor)),
-      0
-    );
+    return fuelEntries.reduce((acc, curr: any) => {
+      const val =
+        parseCurrency(curr["Valor Pago"]) ||
+        parseCurrency(curr.Valor_Pago) ||
+        parseCurrency(curr["Valor_Pago"]) ||
+        parseCurrency(curr.Valor) ||
+        parseCurrency(curr["Valor"]);
+      return acc + val;
+    }, 0);
   }, [fuelEntries]);
 
   const totalLitros = useMemo(() => {
-    return fuelEntries.reduce(
-      (acc, curr) => acc + parseCurrency(curr.Litros),
-      0
-    );
+    return fuelEntries.reduce((acc, curr: any) => {
+      const l = parseCurrency(curr.Litros) || parseCurrency(curr["Litros"]);
+      return acc + l;
+    }, 0);
   }, [fuelEntries]);
 
   const precoMedioLitro = totalLitros > 0 ? totalGasto / totalLitros : 0;
@@ -257,10 +262,15 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
         ) : (
           <div className="divide-y divide-slate-800/80">
             {fuelEntries.map((item, idx) => {
-              console.log('DEBUG abastecimento:', item);
-              const valor = parseCurrency(item.Valor_Pago) || parseCurrency(item.Valor);
-              const litros = parseCurrency(item.Litros);
-              const preco = parseCurrency(item.Preco_Litro) || (litros > 0 ? valor / litros : 0);
+              const itemAny = item as any;
+              const valor =
+                parseCurrency(itemAny["Valor Pago"]) ||
+                parseCurrency(item.Valor_Pago) ||
+                parseCurrency(itemAny["Valor_Pago"]) ||
+                parseCurrency(item.Valor) ||
+                parseCurrency(itemAny["Valor"]);
+              const litros = parseCurrency(item.Litros) || parseCurrency(itemAny["Litros"]);
+              const preco = parseCurrency(item.Preco_Litro) || parseCurrency(itemAny["Preço_Litro"]) || (litros > 0 ? valor / litros : 0);
               const km = parseCurrency(item.Km_Atual);
               const kmPercorrido = parseCurrency(item.Km_Percorrido);
               const mediaKmL = parseCurrency(item.Media_KmL);
