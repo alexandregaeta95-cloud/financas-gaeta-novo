@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { ShieldAlert, MapPin, Plus, Edit2, Trash2, X, Navigation, Volume2, VolumeX, BellRing, Zap, Loader2 } from "lucide-react";
 import { ZonaDeRisco } from "../types";
 import { generateNewId } from "../services/api";
@@ -79,12 +79,20 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
     Observação: "Trancar portas e fechar vidros",
   });
 
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
   // Sound generator function using Web Audio API
-  const playRiskAlertSound = () => {
+  const playRiskAlertSound = useCallback(() => {
     try {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+
+      if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+        audioCtxRef.current = new AudioCtx();
+      }
+      const ctx = audioCtxRef.current;
       if (ctx.state === "suspended") {
         ctx.resume();
       }
@@ -118,7 +126,7 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
     } catch (e) {
       console.log("Audio alert failed or muted:", e);
     }
-  };
+  }, []);
 
   // Start GPS Geolocation Tracking
   useEffect(() => {
@@ -179,7 +187,7 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
     return () => {
       clearInterval(intervalId);
     };
-  }, [activeAlertZone, isMuted]);
+  }, [activeAlertZone, isMuted, playRiskAlertSound]);
 
   const handleOpenModal = (z?: ZonaDeRisco) => {
     if (z) {
