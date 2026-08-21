@@ -1,6 +1,6 @@
 {
   "name": "Finanças Gaeta",
   "description": "App pessoal de gestão financeira e de veículo com sincronização Google Sheets e PWA",
-  "requestFramePermissions": ["geolocation"],
+  "requestFramePermissions": ["camera", "geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

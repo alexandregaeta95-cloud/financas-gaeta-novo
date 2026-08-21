@@ -2,8 +2,21 @@ import express from "express";
 import path from "path";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
+
+let aiClient: GoogleGenAI | null = null;
+function getGenAI(): GoogleGenAI {
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY não configurada no ambiente do servidor.");
+    }
+    aiClient = new GoogleGenAI({ apiKey });
+  }
+  return aiClient;
+}
 
 const ALLOWED_GOOGLE_DOMAINS = [
   "script.google.com",
@@ -45,7 +58,101 @@ async function startServer() {
     res.json({
       hasAppsScriptUrl: Boolean(process.env.APPS_SCRIPT_URL),
       appsScriptUrlConfigured: process.env.APPS_SCRIPT_URL ? true : false,
+      hasGeminiApiKey: Boolean(process.env.GEMINI_API_KEY),
     });
+  });
+
+  // Food / Meal analysis with Gemini AI
+  app.post("/api/analyze-food", async (req, res) => {
+    try {
+      const { imageBase64, mimeType = "image/jpeg" } = req.body;
+
+      if (!imageBase64 || typeof imageBase64 !== "string") {
+        res.status(400).json({
+          status: "error",
+          message: "Nenhuma imagem foi enviada para análise.",
+        });
+        return;
+      }
+
+      // Clean base64 string if data URL prefix was included
+      const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z0-9+]+;base64,/, "");
+
+      const genAI = getGenAI();
+
+      const prompt = `Você é um nutricionista especialista em estimativa visual de calorias e macronutrientes.
+Analise a imagem da refeição, prato ou alimento com atenção e determine:
+1. Nome claro e representativo do prato ou alimento (ex: "Prato Feito: Arroz, Feijão, Frango Grelhado e Salada").
+2. Descrição concisa dos itens visíveis.
+3. Estimativa aproximada de calorias totais (kcal).
+4. Estimativa de proteínas (g), carboidratos (g) e gorduras (g).
+5. Lista de cada item identificado com porção estimada, calorias e proteínas do item.
+6. Uma dica ou observação nutricional construtiva.
+
+Retorne estritamente um JSON com a seguinte estrutura:
+{
+  "nomePrato": "string",
+  "descricao": "string",
+  "caloriasEstimadas": number,
+  "proteinasEstimadas": number,
+  "carboidratosEstimados": number,
+  "gordurasEstimadas": number,
+  "itensIdentificados": [
+    {
+      "item": "string",
+      "porcaoAproximada": "string",
+      "calorias": number,
+      "proteinas": number
+    }
+  ],
+  "dicasNutricionais": "string"
+}`;
+
+      const response = await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                inlineData: {
+                  mimeType: mimeType || "image/jpeg",
+                  data: cleanBase64,
+                },
+              },
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
+        config: {
+          responseMimeType: "application/json",
+        },
+      });
+
+      const responseText = response.text || "{}";
+      let parsedData;
+      try {
+        parsedData = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.error("Erro ao fazer parse do JSON do Gemini:", parseErr, responseText);
+        // Fallback sanitize json code blocks
+        const sanitized = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+        parsedData = JSON.parse(sanitized);
+      }
+
+      res.json({
+        status: "success",
+        data: parsedData,
+      });
+    } catch (err: any) {
+      console.error("[Gemini Food Analysis Error]:", err);
+      res.status(500).json({
+        status: "error",
+        message: err.message || "Falha ao analisar a imagem do alimento com Gemini.",
+      });
+    }
   });
 
   // Proxy endpoint to communicate with Google Apps Script

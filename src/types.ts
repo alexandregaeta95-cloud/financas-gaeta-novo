@@ -352,3 +352,25 @@ export interface AppNotification {
   read?: boolean;
   dateStr?: string;
 }
+
+// 21. Análise Nutricional de Alimentos (IA)
+export interface AlimentoItem {
+  item: string;
+  porcaoAproximada?: string;
+  calorias?: number;
+  proteinas?: number;
+}
+
+export interface AlimentoAnaliseResult {
+  id?: string;
+  dataHora?: string;
+  nomePrato: string;
+  descricao: string;
+  caloriasEstimadas: number;
+  proteinasEstimadas: number;
+  carboidratosEstimados?: number;
+  gordurasEstimadas?: number;
+  itensIdentificados: AlimentoItem[];
+  dicasNutricionais?: string;
+  imagemPreview?: string;
+}

@@ -10,11 +10,17 @@ import {
   AlertCircle,
   Clock,
   CheckCircle2,
-  Bell
+  Bell,
+  Camera,
+  Sparkles,
+  Utensils,
+  Flame,
+  Zap,
 } from "lucide-react";
 import { ConsultaMedica, ReceitaMedica, Infracao, Veiculo } from "../types";
 import { generateNewId } from "../services/api";
 import { formatarHora, formatDateBR, parseCurrency, formatCurrency } from "../utils/formatters";
+import { AnalisarAlimentoModal } from "./AnalisarAlimentoModal";
 
 interface Props {
   consultas: ConsultaMedica[];
@@ -52,6 +58,9 @@ export const SaudeInfracoesView: React.FC<Props> = ({
     subtitle?: string;
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Food Analysis Modal State
+  const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
 
   // Consulta Modal State
   const [isConsultaModalOpen, setIsConsultaModalOpen] = useState(false);
@@ -252,49 +261,91 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* AI Food Analysis Action Button */}
           <button
-            onClick={() => setActiveTab("consultas")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
-              activeTab === "consultas"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "text-slate-400 hover:text-white"
-            }`}
+            onClick={() => setIsFoodModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-950/40 border border-emerald-500/30"
           >
-            Consultas Médicas ({consultas.length})
-            {alertConsultas.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.2 bg-amber-500 text-slate-950 font-bold rounded-full text-[10px]">
-                {alertConsultas.length}
-              </span>
-            )}
+            <Camera className="w-4 h-4 text-white" />
+            <span>📷 Analisar Alimento</span>
+            <span className="px-1.5 py-0.2 bg-emerald-400/20 text-emerald-200 text-[10px] rounded-md font-mono hidden sm:inline">
+              IA
+            </span>
           </button>
-          <button
-            onClick={() => setActiveTab("receitas")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
-              activeTab === "receitas"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            Receitas Médicas ({receitas.length})
-            {alertReceitas.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white font-bold rounded-full text-[10px]">
-                {alertReceitas.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("infracoes")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeTab === "infracoes"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            Infrações ({infracoes.length})
-          </button>
+
+          {/* Tab Switcher */}
+          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setActiveTab("consultas")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
+                activeTab === "consultas"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Consultas ({consultas.length})
+              {alertConsultas.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 bg-amber-500 text-slate-950 font-bold rounded-full text-[10px]">
+                  {alertConsultas.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab("receitas")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
+                activeTab === "receitas"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Receitas ({receitas.length})
+              {alertReceitas.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white font-bold rounded-full text-[10px]">
+                  {alertReceitas.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab("infracoes")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === "infracoes"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Infrações ({infracoes.length})
+            </button>
+          </div>
         </div>
+      </div>
+
+      {/* AI Nutrition Feature Highlight Banner */}
+      <div className="p-4 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/30 border border-emerald-500/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+            <Camera className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+              Nutrição & Estimativa de Alimentos
+              <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> Gemini IA
+              </span>
+            </h4>
+            <p className="text-xs text-slate-400">
+              Tire uma foto ou escolha uma imagem do seu prato para calcular calorias e proteínas aproximadas.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setIsFoodModalOpen(true)}
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shrink-0 shadow-md shadow-emerald-950/50"
+        >
+          <Camera className="w-4 h-4" />
+          <span>Tirar / Enviar Foto</span>
+        </button>
       </div>
 
       {/* Medical Reminder Alert Banners */}
@@ -962,6 +1013,12 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           </div>
         </div>
       )}
+
+      {/* AI Food / Meal Analysis Modal */}
+      <AnalisarAlimentoModal
+        isOpen={isFoodModalOpen}
+        onClose={() => setIsFoodModalOpen(false)}
+      />
     </div>
   );
 };
