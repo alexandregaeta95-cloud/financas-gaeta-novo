@@ -974,8 +974,16 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                   <label className="text-slate-400 block mb-1">KM Atual</label>
                   <input
                     type="number"
-                    value={veiculoForm.Km_Atual}
-                    onChange={(e) => setVeiculoForm({ ...veiculoForm, Km_Atual: Number(e.target.value) })}
+                    value={veiculoForm.Km_Atual !== undefined && veiculoForm.Km_Atual !== null ? veiculoForm.Km_Atual : ""}
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setVeiculoForm({
+                        ...veiculoForm,
+                        Km_Atual: v === "" ? ("" as any) : Number(v),
+                      });
+                    }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono"
                   />
                 </div>
