@@ -587,8 +587,12 @@ export const LancamentosView: React.FC<Props> = ({
         }
       }
 
-      const chosenStatus = formData.Status || "Pendente";
-      const isChosenPago = String(chosenStatus).trim().toUpperCase() === "PAGO";
+      const chosenStatus = formData.Status
+        ? String(formData.Status).trim().toUpperCase() === "PAGO"
+          ? "PAGO"
+          : "PENDENTE"
+        : "PENDENTE";
+      const isChosenPago = chosenStatus === "PAGO";
 
       if (editingItem) {
         const itemToSave: Lancamento = {
@@ -674,7 +678,7 @@ export const LancamentosView: React.FC<Props> = ({
 
         await onSaveLancamento(itemToSave);
       } else if (isContaFixa) {
-        // Conta Fixa: gera 12 meses (o primeiro respeita o Status escolhido pelo usuário no formulário, os demais como Pendente)
+        // Conta Fixa: gera 12 meses (o primeiro respeita o Status escolhido pelo usuário no formulário, os demais como PENDENTE)
         const seriesId = generateNewId("FIX");
         const itemsToSave: Lancamento[] = [];
         const baseDate = formData.Data || new Date().toISOString().split("T")[0];
@@ -683,8 +687,8 @@ export const LancamentosView: React.FC<Props> = ({
         for (let i = 0; i < 12; i++) {
           const itemDate = addMonthsToDate(baseDate, i);
           const isFirst = i === 0;
-          const itemStatus = isFirst ? chosenStatus : "Pendente";
-          const isItemPago = String(itemStatus).toUpperCase() === "PAGO";
+          const itemStatus = isFirst ? chosenStatus : "PENDENTE";
+          const isItemPago = itemStatus === "PAGO";
           itemsToSave.push({
             Id: generateNewId("LANC"),
             Data: itemDate,
@@ -733,8 +737,8 @@ export const LancamentosView: React.FC<Props> = ({
           const itemDate = addMonthsToDate(baseDate, i);
           const isFirst = i === 0;
           const currentParcelValue = isFirst ? Number((parcelValue + diff).toFixed(2)) : parcelValue;
-          const itemStatus = isFirst ? chosenStatus : "Pendente";
-          const isItemPago = String(itemStatus).toUpperCase() === "PAGO";
+          const itemStatus = isFirst ? chosenStatus : "PENDENTE";
+          const isItemPago = itemStatus === "PAGO";
           itemsToSave.push({
             Id: generateNewId("LANC"),
             Data: itemDate,
@@ -1242,10 +1246,10 @@ export const LancamentosView: React.FC<Props> = ({
                 <div>
                   <label className="block text-slate-400 mb-1">Status</label>
                   <select
-                    value={formData.Status || "Pendente"}
+                    value={String(formData.Status || "").toUpperCase() === "PAGO" ? "PAGO" : "PENDENTE"}
                     onChange={(e) => {
                       const newStatus = e.target.value;
-                      const isNowPago = newStatus === "Pago";
+                      const isNowPago = newStatus === "PAGO";
                       setFormData((prev) => ({
                         ...prev,
                         Status: newStatus,
@@ -1259,13 +1263,13 @@ export const LancamentosView: React.FC<Props> = ({
                       }
                     }}
                     className={`w-full bg-slate-950 border rounded-xl p-2 font-medium ${
-                      (formData.Status || "Pendente") === "Pago"
+                      String(formData.Status || "").toUpperCase() === "PAGO"
                         ? "text-emerald-400 border-emerald-500/40"
                         : "text-amber-400 border-amber-500/40"
                     }`}
                   >
-                    <option value="Pendente">Pendente</option>
-                    <option value="Pago">Pago</option>
+                    <option value="PENDENTE">Pendente</option>
+                    <option value="PAGO">Pago</option>
                   </select>
                 </div>
 

@@ -25,7 +25,16 @@ export interface Lancamento {
   Conta?: string;
   Cartao?: string;
   Forma_Pagamento?: string;
-  Status: "Pago" | "Pendente" | "Cancelado" | "Excluído";
+  Status:
+    | "PAGO"
+    | "PENDENTE"
+    | "CANCELADO"
+    | "EXCLUÍDO"
+    | "Pago"
+    | "Pendente"
+    | "Cancelado"
+    | "Excluído"
+    | string;
   Observacoes?: string;
   Veiculo?: string; // Optional reference to vehicle if fuel/maintenance expense
   Km_Atual?: number; // Distance in KM (numerical, NOT date formatted)
