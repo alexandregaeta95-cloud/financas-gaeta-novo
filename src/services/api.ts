@@ -436,23 +436,65 @@ export async function saveSheetRecords<T = any>(
       item.Nome_Prato !== undefined ||
       item.Calorias_Estimadas !== undefined
     ) {
-      const foodId = item.id || item.Id || item.ID || `ALIM_${Date.now()}`;
+      // Strip out huge base64 images to prevent payload blowup / Google Sheets cell overflow
+      delete enriched.imagemPreview;
+      delete enriched.imagem_preview;
+      delete enriched.Imagem_Preview;
+      delete enriched.Imagem;
+      delete enriched.imagem;
+
+      const foodId = String(item.id || item.Id || item.ID || `ALIM_${Date.now()}`);
+      const dataVal = String(item.data || item.Data || new Date().toISOString().split("T")[0]);
+      const dataHoraVal = String(item.dataHora || item.Data_Hora || item.DataHora || dataVal);
+      const pratoVal = String(item.nomePrato || item.Nome_Prato || item.Nome || item.Prato || "Refeição");
+      const calVal = Math.round(Number(item.caloriasEstimadas ?? item.Calorias_Estimadas ?? item.Calorias ?? item.calorias ?? 0));
+      const protVal = Math.round(Number(item.proteinasEstimadas ?? item.Proteinas_Estimadas ?? item.Proteinas ?? item.proteinas ?? 0));
+      const carbVal = Math.round(Number(item.carboidratosEstimados ?? item.Carboidratos_Estimados ?? item.Carboidratos ?? item.carboidratos ?? 0));
+      const gordVal = Math.round(Number(item.gordurasEstimadas ?? item.Gorduras_Estimadas ?? item.Gorduras ?? item.gorduras ?? 0));
+      const descVal = String(item.descricao || item.Descricao || item.Classificacao_Geral || item.classificacao_geral || "");
+      
+      let itensVal = "";
+      if (typeof item.itensIdentificados === "object" && item.itensIdentificados !== null) {
+        itensVal = JSON.stringify(item.itensIdentificados);
+      } else {
+        itensVal = String(item.Itens_Identificados || item.itens_identificados || item.itensIdentificados || item.Itens || "");
+      }
+
+      const dicasVal = String(item.dicasNutricionais || item.Dicas_Nutricionais || item.dicas_nutricionais || item.dicas || item.Dicas || "");
+      const obsVal = String(item.observacoes || item.Observacoes || item.observações || item["Observações"] || item.obs || item.OBS || "");
+      const criacaoVal = String(item.Data_Criacao || item.data_criacao || item.dataCriacao || new Date().toISOString());
+
+      // Canonical columns (Uppercase snake_case)
       enriched["Id"] = foodId;
+      enriched["Data"] = dataVal;
+      enriched["Data_Hora"] = dataHoraVal;
+      enriched["Nome_Prato"] = pratoVal;
+      enriched["Calorias_Estimadas"] = calVal;
+      enriched["Proteinas_Estimadas"] = protVal;
+      enriched["Carboidratos_Estimados"] = carbVal;
+      enriched["Gorduras_Estimadas"] = gordVal;
+      enriched["Classificacao_Geral"] = descVal;
+      enriched["Itens_Identificados"] = itensVal;
+      enriched["Dicas_Nutricionais"] = dicasVal;
+      enriched["Observacoes"] = obsVal;
+      enriched["Data_Criacao"] = criacaoVal;
+
+      // Aliases (camelCase & lowercase) to ensure existing sheets match seamlessly
       enriched["id"] = foodId;
-      enriched["Data"] = item.data || item.Data || new Date().toISOString().split("T")[0];
-      enriched["Data_Hora"] = item.dataHora || item.Data_Hora || item.DataHora || enriched["Data"];
-      enriched["Nome_Prato"] = item.nomePrato || item.Nome_Prato || item.Nome || item.Prato || "Refeição";
-      enriched["Calorias_Estimadas"] = item.caloriasEstimadas ?? item.Calorias_Estimadas ?? 0;
-      enriched["Proteinas_Estimadas"] = item.proteinasEstimadas ?? item.Proteinas_Estimadas ?? 0;
-      enriched["Carboidratos_Estimados"] = item.carboidratosEstimados ?? item.Carboidratos_Estimados ?? 0;
-      enriched["Gorduras_Estimadas"] = item.gordurasEstimadas ?? item.Gorduras_Estimadas ?? 0;
-      enriched["Classificacao_Geral"] = item.descricao || item.Descricao || item.Classificacao_Geral || "";
-      enriched["Itens_Identificados"] = typeof item.itensIdentificados === "object"
-        ? JSON.stringify(item.itensIdentificados)
-        : (item.Itens_Identificados || item.itensIdentificados || "");
-      enriched["Dicas_Nutricionais"] = item.dicasNutricionais || item.Dicas_Nutricionais || item.dicas || "";
-      enriched["Observacoes"] = item.observacoes || item.Observacoes || item["Observações"] || "";
-      enriched["Data_Criacao"] = item.Data_Criacao || item.dataCriacao || new Date().toISOString();
+      enriched["data"] = dataVal;
+      enriched["dataHora"] = dataHoraVal;
+      enriched["nomePrato"] = pratoVal;
+      enriched["caloriasEstimadas"] = calVal;
+      enriched["proteinasEstimadas"] = protVal;
+      enriched["carboidratosEstimados"] = carbVal;
+      enriched["gordurasEstimadas"] = gordVal;
+      enriched["descricao"] = descVal;
+      enriched["Descricao"] = descVal;
+      enriched["classificacaoGeral"] = descVal;
+      enriched["itensIdentificados"] = itensVal;
+      enriched["dicasNutricionais"] = dicasVal;
+      enriched["observacoes"] = obsVal;
+      enriched["dataCriacao"] = criacaoVal;
     }
 
     // Saldo_Inicial and Saldo_Atual mapping with Brazilian currency format support (5_Contas_Bancarias)
