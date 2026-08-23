@@ -23,6 +23,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
   const [hora, setHora] = useState("");
   const [valorPrincipal, setValorPrincipal] = useState<string>("");
   const [valorSecundario, setValorSecundario] = useState<string>("");
+  const [batimentosBpm, setBatimentosBpm] = useState<string>("");
   const [contexto, setContexto] = useState<string>("JEJUM");
   const [observacoes, setObservacoes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +54,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
 
         setValorPrincipal(initialData.Valor_Principal ? String(initialData.Valor_Principal) : "");
         setValorSecundario(initialData.Valor_Secundario ? String(initialData.Valor_Secundario) : "");
+        setBatimentosBpm(initialData.Batimentos_Bpm ? String(initialData.Batimentos_Bpm) : "");
         setContexto(initialData.Contexto || "JEJUM");
         setObservacoes(initialData.Observacoes || "");
       } else {
@@ -67,6 +69,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
         setHora(`${hh}:${min}`);
         setValorPrincipal("");
         setValorSecundario("");
+        setBatimentosBpm("");
         setContexto("JEJUM");
         setObservacoes("");
       }
@@ -86,11 +89,20 @@ export const RegistroSaudeModal: React.FC<Props> = ({
     }
 
     let valS: number | undefined = undefined;
+    let bpm: number | undefined = undefined;
     if (tipo === "PRESSAO") {
       valS = parseFloat(valorSecundario.replace(",", "."));
       if (isNaN(valS) || valS <= 0) {
         setErrorMsg("Para pressão arterial, informe a pressão diastólica (mínima).");
         return;
+      }
+      if (batimentosBpm.trim()) {
+        const parsedBpm = parseInt(batimentosBpm.replace(/\D/g, ""), 10);
+        if (isNaN(parsedBpm) || parsedBpm <= 0) {
+          setErrorMsg("Informe um número inteiro válido para os batimentos cardíacos (bpm).");
+          return;
+        }
+        bpm = parsedBpm;
       }
     }
 
@@ -109,6 +121,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
         Data_Hora: dataHoraFinal,
         Valor_Principal: valP,
         Valor_Secundario: valS,
+        Batimentos_Bpm: tipo === "PRESSAO" ? bpm : undefined,
         Contexto: tipo === "GLICEMIA" ? contexto : undefined,
         Observacoes: observacoes.trim(),
         Data_Criacao: initialData?.Data_Criacao || new Date().toISOString(),
@@ -280,47 +293,74 @@ export const RegistroSaudeModal: React.FC<Props> = ({
           )}
 
           {tipo === "PRESSAO" && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Sistólica (Máxima) *
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="1"
-                    min="50"
-                    max="280"
-                    required
-                    placeholder="Ex: 120"
-                    value={valorPrincipal}
-                    onChange={(e) => setValorPrincipal(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-rose-400 focus:outline-none focus:border-rose-500 pr-14"
-                  />
-                  <span className="absolute right-3 top-3 text-xs text-slate-400 font-medium">
-                    mmHg
-                  </span>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Sistólica (Máxima) *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="1"
+                      min="50"
+                      max="280"
+                      required
+                      placeholder="Ex: 120"
+                      value={valorPrincipal}
+                      onChange={(e) => setValorPrincipal(e.target.value)}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-rose-400 focus:outline-none focus:border-rose-500 pr-14"
+                    />
+                    <span className="absolute right-3 top-3 text-xs text-slate-400 font-medium">
+                      mmHg
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Diastólica (Mínima) *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="1"
+                      min="30"
+                      max="180"
+                      required
+                      placeholder="Ex: 80"
+                      value={valorSecundario}
+                      onChange={(e) => setValorSecundario(e.target.value)}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-rose-300 focus:outline-none focus:border-rose-500 pr-14"
+                    />
+                    <span className="absolute right-3 top-3 text-xs text-slate-400 font-medium">
+                      mmHg
+                    </span>
+                  </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Diastólica (Mínima) *
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5 text-rose-400" />
+                    Batimentos Cardíacos (bpm)
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">Opcional</span>
                 </label>
                 <div className="relative">
                   <input
                     type="number"
                     step="1"
                     min="30"
-                    max="180"
-                    required
-                    placeholder="Ex: 80"
-                    value={valorSecundario}
-                    onChange={(e) => setValorSecundario(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-rose-300 focus:outline-none focus:border-rose-500 pr-14"
+                    max="250"
+                    placeholder="Ex: 72"
+                    value={batimentosBpm}
+                    onChange={(e) => setBatimentosBpm(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-rose-300 focus:outline-none focus:border-rose-500 pr-14"
                   />
-                  <span className="absolute right-3 top-3 text-xs text-slate-400 font-medium">
-                    mmHg
+                  <span className="absolute right-3.5 top-2.5 text-xs text-slate-400 font-medium">
+                    bpm
                   </span>
                 </div>
               </div>

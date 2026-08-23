@@ -113,6 +113,7 @@ export const ControleSaudeView: React.FC<Props> = ({
           r.Data_Hora?.toLowerCase().includes(q) ||
           String(r.Valor_Principal).includes(q) ||
           (r.Valor_Secundario !== undefined && String(r.Valor_Secundario).includes(q)) ||
+          (r.Batimentos_Bpm !== undefined && String(r.Batimentos_Bpm).includes(q)) ||
           r.Contexto?.toLowerCase().includes(q)
       );
     }
@@ -140,6 +141,7 @@ export const ControleSaudeView: React.FC<Props> = ({
         data: displayDate,
         valorPrincipal: r.Valor_Principal,
         valorSecundario: r.Valor_Secundario,
+        bpm: r.Batimentos_Bpm,
         contexto: r.Contexto,
         obs: r.Observacoes,
       };
@@ -218,6 +220,7 @@ export const ControleSaudeView: React.FC<Props> = ({
     return {
       latestSis: sis,
       latestDia: dia,
+      latestBpm: latest.Batimentos_Bpm,
       classificacao,
       colorClass,
       bgBadge,
@@ -651,12 +654,18 @@ export const ControleSaudeView: React.FC<Props> = ({
                   {pressaoStats.latestSis}/{pressaoStats.latestDia}{" "}
                   <span className="text-xs font-semibold text-slate-400">mmHg</span>
                 </div>
-                <div className="mt-1.5">
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   <span
                     className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border ${pressaoStats.bgBadge}`}
                   >
                     {pressaoStats.classificacao}
                   </span>
+                  {pressaoStats.latestBpm ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-rose-300 bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded-md font-semibold">
+                      <Activity className="w-2.5 h-2.5" />
+                      {pressaoStats.latestBpm} bpm
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
@@ -846,14 +855,22 @@ export const ControleSaudeView: React.FC<Props> = ({
                             </div>
                           </td>
                           <td className="py-3 px-4 whitespace-nowrap">
-                            <span className="text-sm font-black text-rose-400">
-                              {reg.Valor_Principal}
-                            </span>
-                            <span className="text-slate-500 mx-1">/</span>
-                            <span className="text-sm font-black text-indigo-400">
-                              {reg.Valor_Secundario || 0}
-                            </span>
-                            <span className="text-[11px] text-slate-400 ml-1">mmHg</span>
+                            <div className="flex items-center">
+                              <span className="text-sm font-black text-rose-400">
+                                {reg.Valor_Principal}
+                              </span>
+                              <span className="text-slate-500 mx-1">/</span>
+                              <span className="text-sm font-black text-indigo-400">
+                                {reg.Valor_Secundario || 0}
+                              </span>
+                              <span className="text-[11px] text-slate-400 ml-1">mmHg</span>
+                            </div>
+                            {reg.Batimentos_Bpm ? (
+                              <div className="text-[11px] text-rose-300 font-medium flex items-center gap-1 mt-0.5">
+                                <Activity className="w-3 h-3 text-rose-400 inline" />
+                                <span>{reg.Batimentos_Bpm} bpm</span>
+                              </div>
+                            ) : null}
                           </td>
                           <td className="py-3 px-4 whitespace-nowrap">
                             <span

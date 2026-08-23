@@ -327,6 +327,7 @@ export interface RegistroSaude {
   Data_Hora: string; // YYYY-MM-DD or YYYY-MM-DDTHH:mm
   Valor_Principal: number; // Peso in kg, Sistólica in mmHg, or Glicemia in mg/dL
   Valor_Secundario?: number; // Diastólica in mmHg
+  Batimentos_Bpm?: number; // Batimentos Cardíacos (bpm) - opcional para Pressão Arterial
   Contexto?: "JEJUM" | "POS_REFEICAO" | string; // For Glicemia
   Observacoes?: string;
   Data_Criacao?: string;

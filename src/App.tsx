@@ -166,6 +166,7 @@ export default function App() {
         Data_Hora: "2026-08-12 08:30",
         Valor_Principal: 120,
         Valor_Secundario: 80,
+        Batimentos_Bpm: 72,
         Observacoes: "Pressão arterial ideal em repouso",
       },
       {
@@ -174,6 +175,7 @@ export default function App() {
         Data_Hora: "2026-08-20 19:15",
         Valor_Principal: 125,
         Valor_Secundario: 82,
+        Batimentos_Bpm: 76,
         Observacoes: "Aferição noturna pós expediente",
       },
       {

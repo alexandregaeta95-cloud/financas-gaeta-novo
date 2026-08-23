@@ -1204,7 +1204,7 @@ export function calculateCardBalance(
 }
 
 /**
- * 20. Normalize RegistroSaude (20_Controle_Saude: Id, Tipo_Registro, Data_Hora, Valor_Principal, Valor_Secundario, Contexto, Observacoes, Data_Criacao)
+ * 20. Normalize RegistroSaude (20_Controle_Saude: Id, Tipo_Registro, Data_Hora, Valor_Principal, Valor_Secundario, Batimentos_Bpm, Contexto, Observacoes, Data_Criacao)
  */
 export function normalizeRegistroSaude(raw: any): RegistroSaude {
   if (!raw || typeof raw !== "object") return raw;
@@ -1214,6 +1214,10 @@ export function normalizeRegistroSaude(raw: any): RegistroSaude {
   );
   const valorSecundario = raw.Valor_Secundario !== undefined || raw.valor_secundario !== undefined || raw.Diastolica !== undefined
     ? parseCurrency(raw.Valor_Secundario ?? raw.valor_secundario ?? raw.Diastolica ?? 0)
+    : undefined;
+  const rawBpm = raw.Batimentos_Bpm ?? raw.batimentos_bpm ?? raw.Batimentos ?? raw.batimentos ?? raw.Bpm ?? raw.bpm ?? raw.BPM;
+  const batimentosBpm = rawBpm !== undefined && rawBpm !== null && String(rawBpm).trim() !== ""
+    ? Math.round(parseCurrency(rawBpm))
     : undefined;
   const dataHora = String(
     raw.Data_Hora ?? raw.data_hora ?? raw.Data ?? raw.data ?? new Date().toISOString().split("T")[0]
@@ -1228,6 +1232,7 @@ export function normalizeRegistroSaude(raw: any): RegistroSaude {
     Data_Hora: dataHora,
     Valor_Principal: valorPrincipal,
     Valor_Secundario: valorSecundario,
+    Batimentos_Bpm: batimentosBpm && batimentosBpm > 0 ? batimentosBpm : undefined,
     Contexto: contexto,
     Observacoes: String(obs).trim(),
     Data_Criacao: raw.Data_Criacao ?? raw.data_criacao ?? new Date().toISOString(),
