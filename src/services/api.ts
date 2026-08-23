@@ -606,7 +606,9 @@ export async function saveSheetRecords<T = any>(
     let updatedCached = [...currentCached];
 
     itemsToSave.forEach((itemToSave) => {
-      const existingIdx = updatedCached.findIndex((c) => c.Id === itemToSave.Id);
+      const existingIdx = updatedCached.findIndex(
+        (c) => String(c.Id || c.id).trim() === String(itemToSave.Id || itemToSave.id).trim()
+      );
       if (action === "SOFT_DELETE") {
         if (existingIdx !== -1) {
           updatedCached.splice(existingIdx, 1);

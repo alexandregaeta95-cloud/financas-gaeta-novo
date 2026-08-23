@@ -477,18 +477,25 @@ export default function App() {
     item: any,
     setStateFn: React.Dispatch<React.SetStateAction<any[]>>
   ) => {
+    const targetId = String(item.Id || item.id || item.ID || `ID_${Date.now()}`);
+    const normalizedItem = {
+      ...item,
+      Id: targetId,
+      id: targetId,
+    };
+
     setStateFn((prev) => {
-      const idx = prev.findIndex((i) => i.Id === item.Id);
+      const idx = prev.findIndex((i) => String(i.Id || i.id).trim() === targetId.trim());
       if (idx !== -1) {
         const next = [...prev];
-        next[idx] = item;
+        next[idx] = normalizedItem;
         return next;
       }
-      return [item, ...prev];
+      return [normalizedItem, ...prev];
     });
 
     try {
-      await saveSheetRecords(sheetName, [item], "UPSERT");
+      await saveSheetRecords(sheetName, [normalizedItem], "UPSERT");
     } catch (err: any) {
       alert(`Erro ao gravar na aba ${sheetName}: ${err.message || err}`);
     }
@@ -500,10 +507,11 @@ export default function App() {
     id: string,
     setStateFn: React.Dispatch<React.SetStateAction<any[]>>
   ) => {
-    setStateFn((prev) => prev.filter((i) => String(i.Id).trim() !== String(id).trim()));
+    const targetId = String(id).trim();
+    setStateFn((prev) => prev.filter((i) => String(i.Id || i.id).trim() !== targetId));
 
     try {
-      await saveSheetRecords(sheetName, [{ Id: id }], "SOFT_DELETE");
+      await saveSheetRecords(sheetName, [{ Id: targetId, id: targetId }], "SOFT_DELETE");
     } catch (err: any) {
       alert(`Erro ao excluir na aba ${sheetName}: ${err.message || err}`);
     }
