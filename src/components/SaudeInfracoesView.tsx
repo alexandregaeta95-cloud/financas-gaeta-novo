@@ -32,33 +32,37 @@ interface Props {
   receitas: ReceitaMedica[];
   infracoes: Infracao[];
   registrosSaude?: RegistroSaude[];
+  alimentos?: AlimentoAnaliseResult[];
   veiculos?: Veiculo[];
   onSaveConsulta: (consulta: ConsultaMedica) => Promise<void>;
   onSaveReceita: (receita: ReceitaMedica) => Promise<void>;
   onSaveInfracao: (infracao: Infracao) => Promise<void>;
   onSaveRegistroSaude?: (registro: RegistroSaude) => Promise<void>;
+  onSaveAlimento?: (alimento: AlimentoAnaliseResult) => Promise<void>;
   onDeleteConsulta: (id: string) => Promise<void>;
   onDeleteReceita: (id: string) => Promise<void>;
   onDeleteInfracao: (id: string) => Promise<void>;
   onDeleteRegistroSaude?: (id: string) => Promise<void>;
+  onDeleteAlimento?: (id: string) => Promise<void>;
 }
-
-const FOOD_STORAGE_KEY = "gaeta_alimentos_history";
 
 export const SaudeInfracoesView: React.FC<Props> = ({
   consultas,
   receitas,
   infracoes,
   registrosSaude = [],
+  alimentos = [],
   veiculos = [],
   onSaveConsulta,
   onSaveReceita,
   onSaveInfracao,
   onSaveRegistroSaude,
+  onSaveAlimento,
   onDeleteConsulta,
   onDeleteReceita,
   onDeleteInfracao,
   onDeleteRegistroSaude,
+  onDeleteAlimento,
 }) => {
   const [activeTab, setActiveTab] = useState<"consultas" | "receitas" | "infracoes" | "alimentos" | "controle_saude">("consultas");
 
@@ -77,43 +81,40 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   const [editingRegistroSaude, setEditingRegistroSaude] = useState<RegistroSaude | null>(null);
   const [defaultTipoRegistro, setDefaultTipoRegistro] = useState<"PESO" | "PRESSAO" | "GLICEMIA">("PESO");
 
-  // Food Analysis Modal & History State
+  // Food Analysis Modal & History State (21_Analise_Alimentos)
   const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
-  const [alimentosHistory, setAlimentosHistory] = useState<AlimentoAnaliseResult[]>([]);
   const [editingAlimento, setEditingAlimento] = useState<AlimentoAnaliseResult | null>(null);
   const [isEditAlimentoModalOpen, setIsEditAlimentoModalOpen] = useState(false);
 
-  // Load food history from localStorage
-  useEffect(() => {
+  const handleSaveAlimentoItem = async (alimento: AlimentoAnaliseResult) => {
     try {
-      const saved = localStorage.getItem(FOOD_STORAGE_KEY);
-      if (saved) {
-        setAlimentosHistory(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.error("Erro ao carregar histórico de alimentos:", e);
-    }
-  }, []);
+      const now = new Date();
+      const id = alimento.id || (alimento as any).Id || `ALIM_${Date.now()}`;
+      const itemToSave: AlimentoAnaliseResult = {
+        ...alimento,
+        id,
+        data: alimento.data || now.toISOString().split("T")[0],
+        dataHora:
+          alimento.dataHora ||
+          now.toLocaleString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+      };
 
-  const handleSaveAlimentoItem = (alimento: AlimentoAnaliseResult) => {
-    try {
-      const existingIndex = alimentosHistory.findIndex((a) => a.id === alimento.id);
-      let updated: AlimentoAnaliseResult[];
-      if (existingIndex >= 0) {
-        updated = [...alimentosHistory];
-        updated[existingIndex] = alimento;
-      } else {
-        updated = [alimento, ...alimentosHistory];
+      if (onSaveAlimento) {
+        await onSaveAlimento(itemToSave);
       }
-      setAlimentosHistory(updated);
-      localStorage.setItem(FOOD_STORAGE_KEY, JSON.stringify(updated));
     } catch (e) {
       console.error("Erro ao salvar alimento no histórico:", e);
     }
   };
 
   const handleDeleteAlimentoItem = (id: string) => {
-    const item = alimentosHistory.find((a) => a.id === id);
+    const item = alimentos.find((a) => a.id === id || (a as any).Id === id);
     setDeleteConfirm({
       isOpen: true,
       type: "alimento",
@@ -121,14 +122,6 @@ export const SaudeInfracoesView: React.FC<Props> = ({
       title: item?.nomePrato || "Análise de Alimento",
       subtitle: `Calorias: ${item?.caloriasEstimadas || 0} kcal • Proteínas: ${item?.proteinasEstimadas || 0}g • Data: ${item?.dataHora || item?.data || "—"}`,
     });
-  };
-
-  const handleConfirmDeleteAlimento = () => {
-    if (!deleteConfirm || deleteConfirm.type !== "alimento") return;
-    const updated = alimentosHistory.filter((a) => a.id !== deleteConfirm.id);
-    setAlimentosHistory(updated);
-    localStorage.setItem(FOOD_STORAGE_KEY, JSON.stringify(updated));
-    setDeleteConfirm(null);
   };
 
   const handleOpenEditAlimento = (alimento: AlimentoAnaliseResult) => {
@@ -442,7 +435,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
               }`}
             >
               <Utensils className="w-3.5 h-3.5" />
-              <span>Alimentos IA ({alimentosHistory.length})</span>
+              <span>Alimentos IA ({alimentos.length})</span>
             </button>
             <button
               onClick={() => setActiveTab("controle_saude")}
@@ -815,10 +808,10 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 4. ALIMENTOS & NUTRIÇÃO (HISTÓRICO IA) */}
+      {/* 4. ALIMENTOS & NUTRIÇÃO (HISTÓRICO IA - ABA 21) */}
       {activeTab === "alimentos" && (
         <HistoricoAlimentosView
-          alimentos={alimentosHistory}
+          alimentos={alimentos}
           onOpenAnalysisModal={() => setIsFoodModalOpen(true)}
           onSelectAlimento={(item) => {
             setEditingAlimento(item);
@@ -901,7 +894,9 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                     } else if (deleteConfirm.type === "infracao") {
                       await onDeleteInfracao(deleteConfirm.id);
                     } else if (deleteConfirm.type === "alimento") {
-                      handleConfirmDeleteAlimento();
+                      if (onDeleteAlimento) {
+                        await onDeleteAlimento(deleteConfirm.id);
+                      }
                     } else if (deleteConfirm.type === "saude") {
                       if (onDeleteRegistroSaude) {
                         await onDeleteRegistroSaude(deleteConfirm.id);

@@ -319,6 +319,7 @@ export const SHEET_NAMES = {
   CARTOES_CREDITO: "18_Cartões_De_Crédito",
   AGENDA: "19_Agenda_E_Compromissos",
   CONTROLE_SAUDE: "20_Controle_Saude",
+  ANALISE_ALIMENTOS: "21_Analise_Alimentos",
 } as const;
 
 export interface RegistroSaude {

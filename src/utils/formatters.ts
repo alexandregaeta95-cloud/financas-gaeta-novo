@@ -21,6 +21,8 @@ import {
   ZonaDeRisco,
   CompromissoAgenda,
   RegistroSaude,
+  AlimentoAnaliseResult,
+  AlimentoItem,
 } from "../types";
 
 /**
@@ -1255,6 +1257,88 @@ export function normalizeRegistroSaude(raw: any): RegistroSaude {
     Contexto: contexto,
     Observacoes: String(obs).trim().toUpperCase(),
     Data_Criacao: raw.Data_Criacao ?? raw.data_criacao ?? new Date().toISOString(),
+  };
+}
+
+/**
+ * 21. Normalize AlimentoAnalise (21_Analise_Alimentos: Id, Data, Data_Hora, Nome_Prato, Calorias_Estimadas, Proteinas_Estimadas, Carboidratos_Estimados, Gorduras_Estimadas, Classificacao_Geral, Itens_Identificados, Dicas_Nutricionais, Observacoes, Data_Criacao)
+ */
+export function normalizeAlimentoAnalise(raw: any): AlimentoAnaliseResult {
+  if (!raw || typeof raw !== "object") return raw;
+
+  const id = String(raw.Id || raw.id || raw.ID || `ALIM_${Date.now()}`);
+  const data = String(raw.Data || raw.data || new Date().toISOString().split("T")[0]).trim();
+  const dataHora = String(raw.Data_Hora || raw.data_hora || raw.DataHora || raw.dataHora || data).trim();
+  const nomePrato = String(
+    raw.Nome_Prato || raw.nome_prato || raw.NomePrato || raw.nomePrato || raw.Nome || raw.Prato || "Refeição"
+  ).trim();
+  const descricao = String(raw.Classificacao_Geral || raw.classificacao_geral || raw.Descricao || raw.descricao || raw.Descricao_Geral || raw.descricao_geral || "").trim();
+  const caloriasEstimadas = Math.round(parseCurrency(raw.Calorias_Estimadas ?? raw.calorias_estimadas ?? raw.Calorias ?? raw.calorias ?? raw.caloriasEstimadas ?? 0));
+  const proteinasEstimadas = Math.round(parseCurrency(raw.Proteinas_Estimadas ?? raw.proteinas_estimadas ?? raw.Proteinas ?? raw.proteinas ?? raw.proteinasEstimadas ?? 0));
+  const carboidratosEstimados = Math.round(parseCurrency(raw.Carboidratos_Estimados ?? raw.carboidratos_estimados ?? raw.Carboidratos ?? raw.carboidratos ?? raw.carboidratosEstimados ?? 0));
+  const gordurasEstimadas = Math.round(parseCurrency(raw.Gorduras_Estimadas ?? raw.gorduras_estimadas ?? raw.Gorduras ?? raw.gorduras ?? raw.gordurasEstimadas ?? 0));
+
+  let itensIdentificados: AlimentoItem[] = [];
+  const rawItens = raw.Itens_Identificados ?? raw.itens_identificados ?? raw.itensIdentificados ?? raw.Itens ?? raw.itens;
+  if (Array.isArray(rawItens)) {
+    itensIdentificados = rawItens
+      .map((it: any) => ({
+        item: String(it.item || it.nome || it.Item || it.Nome || "").trim(),
+        porcaoAproximada: it.porcaoAproximada || it.porcao || it.Porcao || undefined,
+        calorias: it.calorias !== undefined ? parseCurrency(it.calorias) : undefined,
+        proteinas: it.proteinas !== undefined ? parseCurrency(it.proteinas) : undefined,
+      }))
+      .filter((it: any) => it.item.length > 0);
+  } else if (typeof rawItens === "string" && rawItens.trim()) {
+    try {
+      const parsed = JSON.parse(rawItens);
+      if (Array.isArray(parsed)) {
+        itensIdentificados = parsed
+          .map((it: any) => ({
+            item: String(it.item || it.nome || it.Item || it.Nome || "").trim(),
+            porcaoAproximada: it.porcaoAproximada || it.porcao || it.Porcao || undefined,
+            calorias: it.calorias !== undefined ? parseCurrency(it.calorias) : undefined,
+            proteinas: it.proteinas !== undefined ? parseCurrency(it.proteinas) : undefined,
+          }))
+          .filter((it: any) => it.item.length > 0);
+      }
+    } catch {
+      itensIdentificados = rawItens
+        .split(/[\n,;]+/)
+        .map((str: string) => ({ item: str.trim() }))
+        .filter((it: any) => it.item.length > 0);
+    }
+  }
+
+  const dicasNutricionais = String(raw.Dicas_Nutricionais || raw.dicas_nutricionais || raw.dicasNutricionais || raw.Dicas || raw.dicas || "").trim();
+  const observacoes = String(
+    raw.Observacoes ||
+    raw.observacoes ||
+    raw["Observações"] ||
+    raw.observações ||
+    raw.OBS ||
+    raw.obs ||
+    raw.Observacao ||
+    raw.observacao ||
+    ""
+  ).trim();
+  const imagemPreview = raw.Imagem_Preview || raw.imagem_preview || raw.imagemPreview || raw.Imagem || undefined;
+  const dataCriacao = raw.Data_Criacao || raw.data_criacao || raw.DataCriacao || raw.dataCriacao || new Date().toISOString();
+
+  return {
+    id,
+    data,
+    dataHora,
+    nomePrato,
+    descricao: descricao || undefined,
+    caloriasEstimadas,
+    proteinasEstimadas,
+    carboidratosEstimados,
+    gordurasEstimadas,
+    itensIdentificados,
+    dicasNutricionais: dicasNutricionais || undefined,
+    observacoes: observacoes || undefined,
+    imagemPreview,
   };
 }
 

@@ -36,7 +36,9 @@ var SHEET_NAMES = [
   "16_Lista_De_Mercado",
   "17_Zonas_De_Risco",
   "18_Cartões_De_Crédito",
-  "19_Agenda_E_Compromissos"
+  "19_Agenda_E_Compromissos",
+  "20_Controle_Saude",
+  "21_Analise_Alimentos"
 ];
 
 // Mapeamento de cabeçalhos por aba
@@ -83,7 +85,9 @@ var HEADERS_BY_SHEET = {
   "16_Lista_De_Mercado": ["Id", "Item", "Categoria", "Quantidade", "Unidade", "Valor_Unitário", "Valor_Total", "Preco_Estimado", "Data_Pedido", "Data_Compra", "Comprado", "Observação"],
   "17_Zonas_De_Risco": ["Id", "Nome_Local", "Bairro_Cidade", "Nivel_Risco", "Tipo_Ocorrencia", "Observacoes", "Latitude", "Longitude", "Raio_(M)", "Ativo", "Mensagem_De_Alerta", "Data_Registro"],
   "18_Cartões_De_Crédito": ["Id", "Nome", "Bandeira", "Limite_Total", "Dia_Fechamento", "Dia_Vencimento", "Cor_Hex", "Ativo"],
-  "19_Agenda_E_Compromissos": ["Id", "Titulo", "Data", "Hora", "Descrição", "Cor_De_Identificação", "Efeito_Alerta_(Piscando)", "Lembrete_Ativo", "Dias_De_Antecedência", "Concluído", "Categoria"]
+  "19_Agenda_E_Compromissos": ["Id", "Titulo", "Data", "Hora", "Descrição", "Cor_De_Identificação", "Efeito_Alerta_(Piscando)", "Lembrete_Ativo", "Dias_De_Antecedência", "Concluído", "Categoria"],
+  "20_Controle_Saude": ["Id", "Tipo_Registro", "Data_Hora", "Valor_Principal", "Valor_Secundario", "Batimentos_Bpm", "Contexto", "Observacoes", "Data_Criacao"],
+  "21_Analise_Alimentos": ["Id", "Data", "Data_Hora", "Nome_Prato", "Calorias_Estimadas", "Proteinas_Estimadas", "Carboidratos_Estimados", "Gorduras_Estimadas", "Classificacao_Geral", "Itens_Identificados", "Dicas_Nutricionais", "Observacoes", "Data_Criacao"]
 };
 
 /**

@@ -42,6 +42,7 @@ import {
   SyncState,
   AppNotification,
   RegistroSaude,
+  AlimentoAnaliseResult,
   SHEET_NAMES,
 } from "./types";
 
@@ -196,6 +197,9 @@ export default function App() {
       },
     ];
   });
+  const [alimentos, setAlimentos] = useState<AlimentoAnaliseResult[]>(() =>
+    getCachedSheetData<AlimentoAnaliseResult>(SHEET_NAMES.ANALISE_ALIMENTOS)
+  );
   const [metas, setMetas] = useState<MetaCategoria[]>(() =>
     getCachedSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
   );
@@ -363,6 +367,9 @@ export default function App() {
         .catch(() => {});
       fetchSheetData<RegistroSaude>(SHEET_NAMES.CONTROLE_SAUDE)
         .then((data) => data && setRegistrosSaude(data))
+        .catch(() => {});
+      fetchSheetData<AlimentoAnaliseResult>(SHEET_NAMES.ANALISE_ALIMENTOS)
+        .then((data) => data && setAlimentos(data))
         .catch(() => {});
       fetchSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
         .then((data) => data && setMetas(data))
@@ -628,15 +635,18 @@ export default function App() {
             receitas={receitas}
             infracoes={infracoes}
             registrosSaude={registrosSaude}
+            alimentos={alimentos}
             veiculos={veiculos}
             onSaveConsulta={(c) => handleSaveGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, c, setConsultas)}
             onSaveReceita={(r) => handleSaveGeneric(SHEET_NAMES.RECEITAS_MEDICAS, r, setReceitas)}
             onSaveInfracao={(inf) => handleSaveGeneric(SHEET_NAMES.INFRACOES, inf, setInfracoes)}
             onSaveRegistroSaude={(reg) => handleSaveGeneric(SHEET_NAMES.CONTROLE_SAUDE, reg, setRegistrosSaude)}
+            onSaveAlimento={(alim) => handleSaveGeneric(SHEET_NAMES.ANALISE_ALIMENTOS, alim, setAlimentos)}
             onDeleteConsulta={(id) => handleDeleteGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, id, setConsultas)}
             onDeleteReceita={(id) => handleDeleteGeneric(SHEET_NAMES.RECEITAS_MEDICAS, id, setReceitas)}
             onDeleteInfracao={(id) => handleDeleteGeneric(SHEET_NAMES.INFRACOES, id, setInfracoes)}
             onDeleteRegistroSaude={(id) => handleDeleteGeneric(SHEET_NAMES.CONTROLE_SAUDE, id, setRegistrosSaude)}
+            onDeleteAlimento={(id) => handleDeleteGeneric(SHEET_NAMES.ANALISE_ALIMENTOS, id, setAlimentos)}
           />
         )}
 

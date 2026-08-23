@@ -26,6 +26,7 @@ import {
   normalizeZonaDeRisco,
   normalizeCompromissoAgenda,
   normalizeRegistroSaude,
+  normalizeAlimentoAnalise,
 } from "../utils/formatters";
 
 const LOCAL_STORAGE_KEY_PREFIX = "financas_gaeta_cache_";
@@ -126,6 +127,9 @@ export function normalizeRecordBySheet(sheetName: string, item: any): any {
   }
   if (s.includes("saude") || s.includes("saúde") || s.includes("biometria") || sheetName === SHEET_NAMES.CONTROLE_SAUDE) {
     return normalizeRegistroSaude(item);
+  }
+  if (s.includes("alimento") || s.includes("nutri") || sheetName === SHEET_NAMES.ANALISE_ALIMENTOS) {
+    return normalizeAlimentoAnalise(item);
   }
   return item;
 }
@@ -420,6 +424,35 @@ export async function saveSheetRecords<T = any>(
         enriched["Data Criacao"] = item.Data_Criacao;
         enriched["Data_criacao"] = item.Data_Criacao;
       }
+    }
+
+    // 21_Analise_Alimentos mappings
+    if (
+      sheetName === SHEET_NAMES.ANALISE_ALIMENTOS ||
+      sheetName === "21_Analise_Alimentos" ||
+      sheetName.includes("Alimento") ||
+      item.nomePrato !== undefined ||
+      item.caloriasEstimadas !== undefined ||
+      item.Nome_Prato !== undefined ||
+      item.Calorias_Estimadas !== undefined
+    ) {
+      const foodId = item.id || item.Id || item.ID || `ALIM_${Date.now()}`;
+      enriched["Id"] = foodId;
+      enriched["id"] = foodId;
+      enriched["Data"] = item.data || item.Data || new Date().toISOString().split("T")[0];
+      enriched["Data_Hora"] = item.dataHora || item.Data_Hora || item.DataHora || enriched["Data"];
+      enriched["Nome_Prato"] = item.nomePrato || item.Nome_Prato || item.Nome || item.Prato || "Refeição";
+      enriched["Calorias_Estimadas"] = item.caloriasEstimadas ?? item.Calorias_Estimadas ?? 0;
+      enriched["Proteinas_Estimadas"] = item.proteinasEstimadas ?? item.Proteinas_Estimadas ?? 0;
+      enriched["Carboidratos_Estimados"] = item.carboidratosEstimados ?? item.Carboidratos_Estimados ?? 0;
+      enriched["Gorduras_Estimadas"] = item.gordurasEstimadas ?? item.Gorduras_Estimadas ?? 0;
+      enriched["Classificacao_Geral"] = item.descricao || item.Descricao || item.Classificacao_Geral || "";
+      enriched["Itens_Identificados"] = typeof item.itensIdentificados === "object"
+        ? JSON.stringify(item.itensIdentificados)
+        : (item.Itens_Identificados || item.itensIdentificados || "");
+      enriched["Dicas_Nutricionais"] = item.dicasNutricionais || item.Dicas_Nutricionais || item.dicas || "";
+      enriched["Observacoes"] = item.observacoes || item.Observacoes || item["Observações"] || "";
+      enriched["Data_Criacao"] = item.Data_Criacao || item.dataCriacao || new Date().toISOString();
     }
 
     // Saldo_Inicial and Saldo_Atual mapping with Brazilian currency format support (5_Contas_Bancarias)
