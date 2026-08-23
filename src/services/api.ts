@@ -365,22 +365,60 @@ export async function saveSheetRecords<T = any>(
         item["Observacao"] ??
         item["Observação"];
 
-      if (
-        sheetName === SHEET_NAMES.CONTROLE_SAUDE ||
-        sheetName === "20_Controle_Saude" ||
-        sheetName.includes("Controle_Saude")
-      ) {
-        enriched["Observacoes"] = typeof val === "string" ? val.toUpperCase() : val;
-        delete enriched["Observações"];
-        delete enriched["OBS"];
-        delete enriched["obs"];
-        delete enriched["Observação"];
-        delete enriched["Observacao"];
-      } else {
-        enriched["Observacoes"] = val;
-        enriched["Observações"] = val;
-        enriched["OBS"] = val;
-        enriched["Observação"] = val;
+      const upperVal = typeof val === "string" ? val.toUpperCase() : val !== undefined && val !== null ? String(val).toUpperCase() : "";
+      enriched["Observacoes"] = upperVal;
+      enriched["Observações"] = upperVal;
+      enriched["OBS"] = upperVal;
+      enriched["Observação"] = upperVal;
+      enriched["Observacao"] = upperVal;
+    }
+
+    // 20_Controle_Saude biometric mappings
+    if (
+      sheetName === SHEET_NAMES.CONTROLE_SAUDE ||
+      sheetName === "20_Controle_Saude" ||
+      sheetName.includes("Controle_Saude") ||
+      item.Tipo_Registro !== undefined ||
+      item.Valor_Principal !== undefined
+    ) {
+      if (item.Tipo_Registro !== undefined) {
+        enriched["Tipo_Registro"] = item.Tipo_Registro;
+        enriched["Tipo Registro"] = item.Tipo_Registro;
+        enriched["Tipo_registro"] = item.Tipo_Registro;
+        enriched["Tipo"] = item.Tipo_Registro;
+      }
+      if (item.Data_Hora !== undefined) {
+        enriched["Data_Hora"] = item.Data_Hora;
+        enriched["Data Hora"] = item.Data_Hora;
+        enriched["Data_hora"] = item.Data_Hora;
+        enriched["Data"] = item.Data_Hora;
+      }
+      if (item.Valor_Principal !== undefined) {
+        enriched["Valor_Principal"] = item.Valor_Principal;
+        enriched["Valor Principal"] = item.Valor_Principal;
+        enriched["Valor_principal"] = item.Valor_Principal;
+      }
+      if (item.Valor_Secundario !== undefined) {
+        enriched["Valor_Secundario"] = item.Valor_Secundario;
+        enriched["Valor Secundario"] = item.Valor_Secundario;
+        enriched["Valor_secundario"] = item.Valor_Secundario;
+      }
+      if (item.Batimentos_Bpm !== undefined) {
+        enriched["Batimentos_Bpm"] = item.Batimentos_Bpm;
+        enriched["Batimentos Bpm"] = item.Batimentos_Bpm;
+        enriched["Batimentos_bpm"] = item.Batimentos_Bpm;
+        enriched["Batimentos"] = item.Batimentos_Bpm;
+        enriched["BPM"] = item.Batimentos_Bpm;
+        enriched["Bpm"] = item.Batimentos_Bpm;
+      }
+      if (item.Contexto !== undefined) {
+        enriched["Contexto"] = item.Contexto;
+        enriched["contexto"] = item.Contexto;
+      }
+      if (item.Data_Criacao !== undefined) {
+        enriched["Data_Criacao"] = item.Data_Criacao;
+        enriched["Data Criacao"] = item.Data_Criacao;
+        enriched["Data_criacao"] = item.Data_Criacao;
       }
     }
 

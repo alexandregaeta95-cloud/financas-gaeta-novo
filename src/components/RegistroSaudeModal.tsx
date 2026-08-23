@@ -11,6 +11,49 @@ interface Props {
   defaultTipo?: "PESO" | "PRESSAO" | "GLICEMIA";
 }
 
+// Helper to parse date and time reliably from any format (ISO, YYYY-MM-DD HH:mm, DD/MM/YYYY HH:mm)
+function parseDataHora(dtStr?: string): { data: string; hora: string } {
+  if (!dtStr || !dtStr.trim()) {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const hh = String(now.getHours()).padStart(2, "0");
+    const min = String(now.getMinutes()).padStart(2, "0");
+    return { data: `${yyyy}-${mm}-${dd}`, hora: `${hh}:${min}` };
+  }
+
+  let datePart = "";
+  let timePart = "";
+
+  const trimmed = dtStr.trim();
+  if (trimmed.includes("T")) {
+    const parts = trimmed.split("T");
+    datePart = parts[0];
+    timePart = parts[1]?.substring(0, 5) || "";
+  } else if (trimmed.includes(" ")) {
+    const parts = trimmed.split(/\s+/);
+    datePart = parts[0];
+    timePart = parts[1]?.substring(0, 5) || "";
+  } else {
+    datePart = trimmed;
+  }
+
+  // Convert DD/MM/YYYY -> YYYY-MM-DD for <input type="date">
+  if (datePart.includes("/")) {
+    const dParts = datePart.split("/");
+    if (dParts.length === 3) {
+      const day = dParts[0].padStart(2, "0");
+      const month = dParts[1].padStart(2, "0");
+      let year = dParts[2];
+      if (year.length === 2) year = `20${year}`;
+      datePart = `${year}-${month}-${day}`;
+    }
+  }
+
+  return { data: datePart, hora: timePart };
+}
+
 export const RegistroSaudeModal: React.FC<Props> = ({
   isOpen,
   onClose,
@@ -43,51 +86,62 @@ export const RegistroSaudeModal: React.FC<Props> = ({
   useEffect(() => {
     if (isOpen) {
       setErrorMsg("");
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, "0");
-      const dd = String(now.getDate()).padStart(2, "0");
-      const hh = String(now.getHours()).padStart(2, "0");
-      const min = String(now.getMinutes()).padStart(2, "0");
 
       if (initialData) {
-        const itemTipo =
-          initialData.Tipo_Registro === "PRESSAO" || initialData.Tipo_Registro === "Pressão"
-            ? "PRESSAO"
-            : initialData.Tipo_Registro === "GLICEMIA" || initialData.Tipo_Registro === "Glicemia"
-            ? "GLICEMIA"
-            : "PESO";
+        const rawTipo = String(initialData.Tipo_Registro || "").trim().toUpperCase();
+        const itemTipo = rawTipo.includes("PRESS")
+          ? "PRESSAO"
+          : rawTipo.includes("GLIC")
+          ? "GLICEMIA"
+          : "PESO";
 
         setTipo(itemTipo);
 
-        // Split data and time if concatenated
-        const dtStr = initialData.Data_Hora || "";
-        if (dtStr.includes("T") || dtStr.includes(" ")) {
-          const parts = dtStr.includes("T") ? dtStr.split("T") : dtStr.split(" ");
-          setData(parts[0] || "");
-          setHora(parts[1]?.substring(0, 5) || "");
-        } else {
-          setData(dtStr);
-          setHora("");
-        }
+        const { data: parsedData, hora: parsedHora } = parseDataHora(initialData.Data_Hora);
+        setData(parsedData);
+        setHora(parsedHora);
+
+        const obsValue = initialData.Observacoes ? String(initialData.Observacoes).toUpperCase() : "";
 
         if (itemTipo === "PESO") {
           setPesoValor(initialData.Valor_Principal ? String(initialData.Valor_Principal) : "");
-          setPesoObs(initialData.Observacoes ? initialData.Observacoes.toUpperCase() : "");
+          setPesoObs(obsValue);
+          // Clear other sub-tabs to avoid data mixing
+          setPressaoSistolica("");
+          setPressaoDiastolica("");
+          setPressaoBpm("");
+          setPressaoObs("");
+          setGlicemiaValor("");
+          setGlicemiaContexto("JEJUM");
+          setGlicemiaObs("");
         } else if (itemTipo === "PRESSAO") {
           setPressaoSistolica(initialData.Valor_Principal ? String(initialData.Valor_Principal) : "");
           setPressaoDiastolica(initialData.Valor_Secundario ? String(initialData.Valor_Secundario) : "");
           setPressaoBpm(initialData.Batimentos_Bpm ? String(initialData.Batimentos_Bpm) : "");
-          setPressaoObs(initialData.Observacoes ? initialData.Observacoes.toUpperCase() : "");
+          setPressaoObs(obsValue);
+          // Clear other sub-tabs to avoid data mixing
+          setPesoValor("");
+          setPesoObs("");
+          setGlicemiaValor("");
+          setGlicemiaContexto("JEJUM");
+          setGlicemiaObs("");
         } else if (itemTipo === "GLICEMIA") {
           setGlicemiaValor(initialData.Valor_Principal ? String(initialData.Valor_Principal) : "");
           setGlicemiaContexto(initialData.Contexto || "JEJUM");
-          setGlicemiaObs(initialData.Observacoes ? initialData.Observacoes.toUpperCase() : "");
+          setGlicemiaObs(obsValue);
+          // Clear other sub-tabs to avoid data mixing
+          setPesoValor("");
+          setPesoObs("");
+          setPressaoSistolica("");
+          setPressaoDiastolica("");
+          setPressaoBpm("");
+          setPressaoObs("");
         }
       } else {
         setTipo(defaultTipo);
-        setData(`${yyyy}-${mm}-${dd}`);
-        setHora(`${hh}:${min}`);
+        const { data: defaultData, hora: defaultHora } = parseDataHora();
+        setData(defaultData);
+        setHora(defaultHora);
         setPesoValor("");
         setPesoObs("");
         setPressaoSistolica("");
