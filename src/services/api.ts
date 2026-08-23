@@ -364,10 +364,24 @@ export async function saveSheetRecords<T = any>(
         item.OBS ??
         item["Observacao"] ??
         item["Observação"];
-      enriched["Observacoes"] = val;
-      enriched["Observações"] = val;
-      enriched["OBS"] = val;
-      enriched["Observação"] = val;
+
+      if (
+        sheetName === SHEET_NAMES.CONTROLE_SAUDE ||
+        sheetName === "20_Controle_Saude" ||
+        sheetName.includes("Controle_Saude")
+      ) {
+        enriched["Observacoes"] = typeof val === "string" ? val.toUpperCase() : val;
+        delete enriched["Observações"];
+        delete enriched["OBS"];
+        delete enriched["obs"];
+        delete enriched["Observação"];
+        delete enriched["Observacao"];
+      } else {
+        enriched["Observacoes"] = val;
+        enriched["Observações"] = val;
+        enriched["OBS"] = val;
+        enriched["Observação"] = val;
+      }
     }
 
     // Saldo_Inicial and Saldo_Atual mapping with Brazilian currency format support (5_Contas_Bancarias)

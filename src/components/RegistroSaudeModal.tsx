@@ -21,25 +21,44 @@ export const RegistroSaudeModal: React.FC<Props> = ({
   const [tipo, setTipo] = useState<"PESO" | "PRESSAO" | "GLICEMIA">(defaultTipo);
   const [data, setData] = useState("");
   const [hora, setHora] = useState("");
-  const [valorPrincipal, setValorPrincipal] = useState<string>("");
-  const [valorSecundario, setValorSecundario] = useState<string>("");
-  const [batimentosBpm, setBatimentosBpm] = useState<string>("");
-  const [contexto, setContexto] = useState<string>("JEJUM");
-  const [observacoes, setObservacoes] = useState("");
+
+  // Sub-aba 1: Peso
+  const [pesoValor, setPesoValor] = useState<string>("");
+  const [pesoObs, setPesoObs] = useState("");
+
+  // Sub-aba 2: Pressão Arterial
+  const [pressaoSistolica, setPressaoSistolica] = useState<string>("");
+  const [pressaoDiastolica, setPressaoDiastolica] = useState<string>("");
+  const [pressaoBpm, setPressaoBpm] = useState<string>("");
+  const [pressaoObs, setPressaoObs] = useState("");
+
+  // Sub-aba 3: Glicemia
+  const [glicemiaValor, setGlicemiaValor] = useState<string>("");
+  const [glicemiaContexto, setGlicemiaContexto] = useState<string>("JEJUM");
+  const [glicemiaObs, setGlicemiaObs] = useState("");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       setErrorMsg("");
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const hh = String(now.getHours()).padStart(2, "0");
+      const min = String(now.getMinutes()).padStart(2, "0");
+
       if (initialData) {
-        setTipo(
+        const itemTipo =
           initialData.Tipo_Registro === "PRESSAO" || initialData.Tipo_Registro === "Pressão"
             ? "PRESSAO"
             : initialData.Tipo_Registro === "GLICEMIA" || initialData.Tipo_Registro === "Glicemia"
             ? "GLICEMIA"
-            : "PESO"
-        );
+            : "PESO";
+
+        setTipo(itemTipo);
 
         // Split data and time if concatenated
         const dtStr = initialData.Data_Hora || "";
@@ -52,26 +71,32 @@ export const RegistroSaudeModal: React.FC<Props> = ({
           setHora("");
         }
 
-        setValorPrincipal(initialData.Valor_Principal ? String(initialData.Valor_Principal) : "");
-        setValorSecundario(initialData.Valor_Secundario ? String(initialData.Valor_Secundario) : "");
-        setBatimentosBpm(initialData.Batimentos_Bpm ? String(initialData.Batimentos_Bpm) : "");
-        setContexto(initialData.Contexto || "JEJUM");
-        setObservacoes(initialData.Observacoes || "");
+        if (itemTipo === "PESO") {
+          setPesoValor(initialData.Valor_Principal ? String(initialData.Valor_Principal) : "");
+          setPesoObs(initialData.Observacoes ? initialData.Observacoes.toUpperCase() : "");
+        } else if (itemTipo === "PRESSAO") {
+          setPressaoSistolica(initialData.Valor_Principal ? String(initialData.Valor_Principal) : "");
+          setPressaoDiastolica(initialData.Valor_Secundario ? String(initialData.Valor_Secundario) : "");
+          setPressaoBpm(initialData.Batimentos_Bpm ? String(initialData.Batimentos_Bpm) : "");
+          setPressaoObs(initialData.Observacoes ? initialData.Observacoes.toUpperCase() : "");
+        } else if (itemTipo === "GLICEMIA") {
+          setGlicemiaValor(initialData.Valor_Principal ? String(initialData.Valor_Principal) : "");
+          setGlicemiaContexto(initialData.Contexto || "JEJUM");
+          setGlicemiaObs(initialData.Observacoes ? initialData.Observacoes.toUpperCase() : "");
+        }
       } else {
         setTipo(defaultTipo);
-        const now = new Date();
-        const yyyy = now.getFullYear();
-        const mm = String(now.getMonth() + 1).padStart(2, "0");
-        const dd = String(now.getDate()).padStart(2, "0");
-        const hh = String(now.getHours()).padStart(2, "0");
-        const min = String(now.getMinutes()).padStart(2, "0");
         setData(`${yyyy}-${mm}-${dd}`);
         setHora(`${hh}:${min}`);
-        setValorPrincipal("");
-        setValorSecundario("");
-        setBatimentosBpm("");
-        setContexto("JEJUM");
-        setObservacoes("");
+        setPesoValor("");
+        setPesoObs("");
+        setPressaoSistolica("");
+        setPressaoDiastolica("");
+        setPressaoBpm("");
+        setPressaoObs("");
+        setGlicemiaValor("");
+        setGlicemiaContexto("JEJUM");
+        setGlicemiaObs("");
       }
     }
   }, [isOpen, initialData, defaultTipo]);
@@ -82,33 +107,52 @@ export const RegistroSaudeModal: React.FC<Props> = ({
     e.preventDefault();
     setErrorMsg("");
 
-    const valP = parseFloat(valorPrincipal.replace(",", "."));
-    if (isNaN(valP) || valP <= 0) {
-      setErrorMsg("Informe um valor principal válido e maior que zero.");
+    if (!data) {
+      setErrorMsg("A data do registro é obrigatória.");
       return;
     }
 
+    let valP = 0;
     let valS: number | undefined = undefined;
     let bpm: number | undefined = undefined;
-    if (tipo === "PRESSAO") {
-      valS = parseFloat(valorSecundario.replace(",", "."));
-      if (isNaN(valS) || valS <= 0) {
-        setErrorMsg("Para pressão arterial, informe a pressão diastólica (mínima).");
+    let contexto: string | undefined = undefined;
+    let obs = "";
+
+    if (tipo === "PESO") {
+      valP = parseFloat(pesoValor.replace(",", "."));
+      if (isNaN(valP) || valP <= 0) {
+        setErrorMsg("Informe o peso corporal (kg) válido e maior que zero.");
         return;
       }
-      if (batimentosBpm.trim()) {
-        const parsedBpm = parseInt(batimentosBpm.replace(/\D/g, ""), 10);
+      obs = pesoObs;
+    } else if (tipo === "PRESSAO") {
+      valP = parseFloat(pressaoSistolica.replace(",", "."));
+      if (isNaN(valP) || valP <= 0) {
+        setErrorMsg("Informe a pressão sistólica (máxima) válida.");
+        return;
+      }
+      valS = parseFloat(pressaoDiastolica.replace(",", "."));
+      if (isNaN(valS) || valS <= 0) {
+        setErrorMsg("Informe a pressão diastólica (mínima) válida.");
+        return;
+      }
+      if (pressaoBpm.trim()) {
+        const parsedBpm = parseInt(pressaoBpm.replace(/\D/g, ""), 10);
         if (isNaN(parsedBpm) || parsedBpm <= 0) {
           setErrorMsg("Informe um número inteiro válido para os batimentos cardíacos (bpm).");
           return;
         }
         bpm = parsedBpm;
       }
-    }
-
-    if (!data) {
-      setErrorMsg("A data do registro é obrigatória.");
-      return;
+      obs = pressaoObs;
+    } else if (tipo === "GLICEMIA") {
+      valP = parseFloat(glicemiaValor.replace(",", "."));
+      if (isNaN(valP) || valP <= 0) {
+        setErrorMsg("Informe o valor da glicemia (mg/dL) válido.");
+        return;
+      }
+      contexto = glicemiaContexto;
+      obs = glicemiaObs;
     }
 
     setIsSubmitting(true);
@@ -123,7 +167,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
         Valor_Secundario: valS,
         Batimentos_Bpm: tipo === "PRESSAO" ? bpm : undefined,
         Contexto: tipo === "GLICEMIA" ? contexto : undefined,
-        Observacoes: observacoes.trim(),
+        Observacoes: obs.trim().toUpperCase(),
         Data_Criacao: initialData?.Data_Criacao || new Date().toISOString(),
       };
 
@@ -266,34 +310,49 @@ export const RegistroSaudeModal: React.FC<Props> = ({
 
           {/* Dynamic Value Fields Based on Tipo */}
           {tipo === "PESO" && (
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Peso Corporal (kg) *
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.1"
-                  min="20"
-                  max="350"
-                  required
-                  placeholder="Ex: 78.5"
-                  value={valorPrincipal}
-                  onChange={(e) => setValorPrincipal(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-amber-400 focus:outline-none focus:border-amber-500 pr-12"
-                />
-                <span className="absolute right-3.5 top-2.5 text-sm font-semibold text-slate-400">
-                  kg
-                </span>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Peso Corporal (kg) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="20"
+                    max="350"
+                    required
+                    placeholder="Ex: 78.5"
+                    value={pesoValor}
+                    onChange={(e) => setPesoValor(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-amber-400 focus:outline-none focus:border-amber-500 pr-12"
+                  />
+                  <span className="absolute right-3.5 top-2.5 text-sm font-semibold text-slate-400">
+                    kg
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Dica: Pese-se preferencialmente pela manhã em jejum e após urinar.
+                </p>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Dica: Pese-se preferencialmente pela manhã em jejum e após urinar.
-              </p>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Observações / Contexto (Peso)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Ex: Pela manhã em jejum; após treino de pernas..."
+                  value={pesoObs}
+                  onChange={(e) => setPesoObs(e.target.value.toUpperCase())}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 uppercase"
+                />
+              </div>
             </div>
           )}
 
           {tipo === "PRESSAO" && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -307,8 +366,8 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                       max="280"
                       required
                       placeholder="Ex: 120"
-                      value={valorPrincipal}
-                      onChange={(e) => setValorPrincipal(e.target.value)}
+                      value={pressaoSistolica}
+                      onChange={(e) => setPressaoSistolica(e.target.value)}
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-rose-400 focus:outline-none focus:border-rose-500 pr-14"
                     />
                     <span className="absolute right-3 top-3 text-xs text-slate-400 font-medium">
@@ -329,8 +388,8 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                       max="180"
                       required
                       placeholder="Ex: 80"
-                      value={valorSecundario}
-                      onChange={(e) => setValorSecundario(e.target.value)}
+                      value={pressaoDiastolica}
+                      onChange={(e) => setPressaoDiastolica(e.target.value)}
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-rose-300 focus:outline-none focus:border-rose-500 pr-14"
                     />
                     <span className="absolute right-3 top-3 text-xs text-slate-400 font-medium">
@@ -355,8 +414,8 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                     min="30"
                     max="250"
                     placeholder="Ex: 72"
-                    value={batimentosBpm}
-                    onChange={(e) => setBatimentosBpm(e.target.value)}
+                    value={pressaoBpm}
+                    onChange={(e) => setPressaoBpm(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-rose-300 focus:outline-none focus:border-rose-500 pr-14"
                   />
                   <span className="absolute right-3.5 top-2.5 text-xs text-slate-400 font-medium">
@@ -364,65 +423,79 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                   </span>
                 </div>
               </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Observações / Sintomas (Pressão)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Ex: Aferido em repouso de 5 min; após tomar café..."
+                  value={pressaoObs}
+                  onChange={(e) => setPressaoObs(e.target.value.toUpperCase())}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 uppercase"
+                />
+              </div>
             </div>
           )}
 
           {tipo === "GLICEMIA" && (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Glicemia Capilar *
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="1"
-                    min="20"
-                    max="600"
-                    required
-                    placeholder="Ex: 95"
-                    value={valorPrincipal}
-                    onChange={(e) => setValorPrincipal(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-emerald-400 focus:outline-none focus:border-emerald-500 pr-16"
-                  />
-                  <span className="absolute right-3.5 top-3 text-xs font-semibold text-slate-400">
-                    mg/dL
-                  </span>
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Glicemia Capilar *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="1"
+                      min="20"
+                      max="600"
+                      required
+                      placeholder="Ex: 95"
+                      value={glicemiaValor}
+                      onChange={(e) => setGlicemiaValor(e.target.value)}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-emerald-400 focus:outline-none focus:border-emerald-500 pr-16"
+                    />
+                    <span className="absolute right-3.5 top-3 text-xs font-semibold text-slate-400">
+                      mg/dL
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Contexto da Medição
+                  </label>
+                  <select
+                    value={glicemiaContexto}
+                    onChange={(e) => setGlicemiaContexto(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="JEJUM">Jejum (8h+ sem ingestão)</option>
+                    <option value="POS_REFEICAO">Pós-Refeição (2h após comer)</option>
+                    <option value="PRE_REFEICAO">Pré-Refeição / Antes de Comer</option>
+                    <option value="AO_DEITAR">Antes de Dormir / Ao Deitar</option>
+                    <option value="ALEATORIO">Casual / Aleatório</option>
+                  </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Contexto da Medição
+                  Observações / Alimentos (Glicemia)
                 </label>
-                <select
-                  value={contexto}
-                  onChange={(e) => setContexto(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
-                >
-                  <option value="JEJUM">Jejum (8h+ sem ingestão)</option>
-                  <option value="POS_REFEICAO">Pós-Refeição (2h após comer)</option>
-                  <option value="PRE_REFEICAO">Pré-Refeição / Antes de Comer</option>
-                  <option value="AO_DEITAR">Antes de Dormir / Ao Deitar</option>
-                  <option value="ALEATORIO">Casual / Aleatório</option>
-                </select>
+                <textarea
+                  rows={2}
+                  placeholder="Ex: 2 horas após almoço com massas; jejum de 10 horas..."
+                  value={glicemiaObs}
+                  onChange={(e) => setGlicemiaObs(e.target.value.toUpperCase())}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 uppercase"
+                />
               </div>
             </div>
           )}
-
-          {/* Observações */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Observações / Sintomas / Contexto
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Ex: Aferido em repouso de 5 minutos; treino leve pela manhã; pós almoço..."
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-            />
-          </div>
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">

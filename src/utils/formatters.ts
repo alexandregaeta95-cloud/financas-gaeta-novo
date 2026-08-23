@@ -1223,10 +1223,29 @@ export function normalizeRegistroSaude(raw: any): RegistroSaude {
     raw.Data_Hora ?? raw.data_hora ?? raw.Data ?? raw.data ?? new Date().toISOString().split("T")[0]
   ).trim();
   const contexto = raw.Contexto ?? raw.contexto ? String(raw.Contexto ?? raw.contexto).trim().toUpperCase() : undefined;
-  const obs = raw.Observacoes ?? raw.observacoes ?? raw.Observação ?? raw.observacao ?? "";
+  const obs =
+    raw.Observacoes ??
+    raw.observacoes ??
+    raw["Observações"] ??
+    raw.observações ??
+    raw.OBS ??
+    raw.obs ??
+    raw.Observação ??
+    raw.observacao ??
+    raw["Observacao"] ??
+    "";
+
+  const cleanRaw = { ...raw };
+  delete cleanRaw["Observações"];
+  delete cleanRaw["observações"];
+  delete cleanRaw["OBS"];
+  delete cleanRaw["obs"];
+  delete cleanRaw["Observação"];
+  delete cleanRaw["observacao"];
+  delete cleanRaw["Observacao"];
 
   return {
-    ...raw,
+    ...cleanRaw,
     Id: String(raw.Id || raw.id || ""),
     Tipo_Registro: tipo,
     Data_Hora: dataHora,
@@ -1234,7 +1253,7 @@ export function normalizeRegistroSaude(raw: any): RegistroSaude {
     Valor_Secundario: valorSecundario,
     Batimentos_Bpm: batimentosBpm && batimentosBpm > 0 ? batimentosBpm : undefined,
     Contexto: contexto,
-    Observacoes: String(obs).trim(),
+    Observacoes: String(obs).trim().toUpperCase(),
     Data_Criacao: raw.Data_Criacao ?? raw.data_criacao ?? new Date().toISOString(),
   };
 }
