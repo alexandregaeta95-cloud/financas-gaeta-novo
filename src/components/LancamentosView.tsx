@@ -1124,24 +1124,52 @@ export const LancamentosView: React.FC<Props> = ({
 
       {/* Add / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl text-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-base text-white">
-                {editingItem ? "Editar Lançamento" : "Novo Lançamento / Abastecimento"}
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl text-slate-100 flex flex-col max-h-[92vh] sm:max-h-[90vh] my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 shrink-0 bg-slate-900">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {(formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "ABASTECIMENTO" || formData.Tipo === "Abastecimento") ? (
+                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                    <Fuel className="w-5 h-5" />
+                  </div>
+                ) : (
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                    <Plus className="w-5 h-5" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm sm:text-base text-white truncate">
+                    {editingItem
+                      ? (formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "ABASTECIMENTO" || formData.Tipo === "Abastecimento"
+                          ? "Editar Abastecimento"
+                          : "Editar Lançamento")
+                      : (formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "ABASTECIMENTO" || formData.Tipo === "Abastecimento"
+                          ? "Registrar Abastecimento"
+                          : "Novo Lançamento")}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 truncate">
+                    {(formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "ABASTECIMENTO" || formData.Tipo === "Abastecimento")
+                      ? "Dados de combustível, veículo e odômetro (1_Lancamentos)"
+                      : "Controle financeiro integrado (1_Lancamentos)"}
+                  </p>
+                </div>
+              </div>
               <button
+                type="button"
                 onClick={onCloseModal}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors shrink-0 ml-2"
+                aria-label="Fechar"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+            {/* Modal Scrollable Form Body */}
+            <form id="lancamento-form" onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto flex-1 overscroll-contain space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 mb-1">Tipo</label>
+                  <label className="block text-slate-400 text-xs mb-1">Tipo</label>
                   <select
                     value={formData.Tipo ? String(formData.Tipo).toUpperCase() : "DESPESA"}
                     onChange={(e) => {
@@ -1152,7 +1180,7 @@ export const LancamentosView: React.FC<Props> = ({
                         Categoria: t === "ABASTECIMENTO" ? "ABASTECIMENTO" : prev.Categoria,
                       }));
                     }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-emerald-500"
                   >
                     <option value="DESPESA">DESPESA</option>
                     <option value="RECEITA">RECEITA</option>
@@ -1161,39 +1189,39 @@ export const LancamentosView: React.FC<Props> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 mb-1">Data</label>
+                  <label className="block text-slate-400 text-xs mb-1">Data</label>
                   <input
                     type="date"
                     value={formData.Data}
                     onChange={(e) => setFormData({ ...formData, Data: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-emerald-500"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Descrição</label>
+                <label className="block text-slate-400 text-xs mb-1">Descrição</label>
                 <input
                   type="text"
                   placeholder="Ex: Mercado, Salário, Abastecimento Shell..."
                   value={formData.Descricao}
                   onChange={(e) => setFormData({ ...formData, Descricao: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white placeholder-slate-600 uppercase"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white placeholder-slate-600 uppercase text-xs focus:outline-none focus:border-emerald-500"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 mb-1">Categoria</label>
+                  <label className="block text-slate-400 text-xs mb-1">Categoria</label>
                   <input
                     type="text"
                     list="categorias-lancamentos-list"
                     placeholder="Selecione ou digite..."
                     value={formData.Categoria || ""}
                     onChange={(e) => setFormData({ ...formData, Categoria: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-emerald-500"
                     required
                   />
                   <datalist id="categorias-lancamentos-list">
@@ -1204,9 +1232,9 @@ export const LancamentosView: React.FC<Props> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 mb-1">Valor Total (R$)</label>
+                  <label className="block text-slate-400 text-xs mb-1">Valor Total (R$)</label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-3 text-slate-400 font-semibold text-sm select-none">
+                    <span className="absolute left-3 text-slate-400 font-semibold text-xs select-none">
                       R$
                     </span>
                     <input
@@ -1219,7 +1247,7 @@ export const LancamentosView: React.FC<Props> = ({
                         setValorDisplay(formatted);
                         
                         // Atualização automática de Litros se Preço/Litro já estiver preenchido
-                        const isFuel = formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento";
+                        const isFuel = formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento" || formData.Tipo === "ABASTECIMENTO";
                         const prc = Number(formData.Preco_Litro || 0);
                         let calculatedLitros = formData.Litros;
                         
@@ -1235,8 +1263,8 @@ export const LancamentosView: React.FC<Props> = ({
                           Litros: calculatedLitros,
                         }));
                       }}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 pl-10 text-white font-bold"
-                      required={formData.Categoria !== "ABASTECIMENTO"}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-10 text-white font-bold text-xs focus:outline-none focus:border-emerald-500"
+                      required={formData.Categoria !== "ABASTECIMENTO" && formData.Tipo !== "ABASTECIMENTO"}
                     />
                   </div>
                 </div>
@@ -1244,7 +1272,7 @@ export const LancamentosView: React.FC<Props> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-slate-400 mb-1">Status</label>
+                  <label className="block text-slate-400 text-xs mb-1">Status</label>
                   <select
                     value={String(formData.Status || "").toUpperCase() === "PAGO" ? "PAGO" : "PENDENTE"}
                     onChange={(e) => {
@@ -1262,7 +1290,7 @@ export const LancamentosView: React.FC<Props> = ({
                         setValorPagoDisplay("0,00");
                       }
                     }}
-                    className={`w-full bg-slate-950 border rounded-xl p-2 font-medium ${
+                    className={`w-full bg-slate-950 border rounded-xl p-2.5 text-xs font-medium focus:outline-none ${
                       String(formData.Status || "").toUpperCase() === "PAGO"
                         ? "text-emerald-400 border-emerald-500/40"
                         : "text-amber-400 border-amber-500/40"
@@ -1274,9 +1302,9 @@ export const LancamentosView: React.FC<Props> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 mb-1">Valor Pago (R$)</label>
+                  <label className="block text-slate-400 text-xs mb-1">Valor Pago (R$)</label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-3 text-slate-400 font-semibold text-sm select-none">
+                    <span className="absolute left-3 text-slate-400 font-semibold text-xs select-none">
                       R$
                     </span>
                     <input
@@ -1293,13 +1321,13 @@ export const LancamentosView: React.FC<Props> = ({
                           Status: numeric > 0 ? "Pago" : prev.Status,
                         }));
                       }}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 pl-10 text-white font-bold"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-10 text-white font-bold text-xs focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 mb-1">Forma de Pagamento</label>
+                  <label className="block text-slate-400 text-xs mb-1">Forma de Pagamento</label>
                   <select
                     value={formData.Forma_Pagamento || "PIX"}
                     onChange={(e) => {
@@ -1310,7 +1338,7 @@ export const LancamentosView: React.FC<Props> = ({
                         Cartao: newForma === "CARTÃO DE CRÉDITO" ? (prev.Cartao || cartoes[0]?.Nome || "") : prev.Cartao,
                       }));
                     }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase font-medium"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs font-medium focus:outline-none focus:border-emerald-500"
                   >
                     <option value="PIX">PIX</option>
                     <option value="CARTÃO DE CRÉDITO">CARTÃO DE CRÉDITO</option>
@@ -1347,7 +1375,7 @@ export const LancamentosView: React.FC<Props> = ({
                       <select
                         value={formData.Conta || ""}
                         onChange={(e) => setFormData({ ...formData, Conta: e.target.value.toUpperCase() })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase text-xs"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-indigo-500"
                       >
                         <option value="">Selecione a conta de saída...</option>
                         {contas.map((c) => (
@@ -1365,7 +1393,7 @@ export const LancamentosView: React.FC<Props> = ({
                         required
                         value={formData.Cartao || ""}
                         onChange={(e) => setFormData({ ...formData, Cartao: e.target.value.toUpperCase() })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase font-bold text-xs"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase font-bold text-xs focus:outline-none focus:border-indigo-500"
                       >
                         <option value="">Selecione o cartão de crédito...</option>
                         {cartoes.map((card) => (
@@ -1380,11 +1408,11 @@ export const LancamentosView: React.FC<Props> = ({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-400 mb-1">Conta Bancária / Débito</label>
+                    <label className="block text-slate-400 text-xs mb-1">Conta Bancária / Débito</label>
                     <select
                       value={formData.Conta || ""}
                       onChange={(e) => setFormData({ ...formData, Conta: e.target.value.toUpperCase() })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-emerald-500"
                     >
                       <option value="">Selecione uma conta...</option>
                       {contas.map((c) => (
@@ -1400,7 +1428,7 @@ export const LancamentosView: React.FC<Props> = ({
 
                   {(formData.Forma_Pagamento === "CARTÃO DE CRÉDITO" || cartoes.length > 0) && (
                     <div>
-                      <label className="block text-slate-400 mb-1">
+                      <label className="block text-slate-400 text-xs mb-1">
                         Cartão de Crédito {formData.Forma_Pagamento === "CARTÃO DE CRÉDITO" ? "(Obrigatório)" : "(Opcional)"}
                       </label>
                       <select
@@ -1413,7 +1441,7 @@ export const LancamentosView: React.FC<Props> = ({
                             Forma_Pagamento: val ? "CARTÃO DE CRÉDITO" : prev.Forma_Pagamento,
                           }));
                         }}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-emerald-500"
                       >
                         <option value="">Nenhum (Usar Conta Bancária)</option>
                         {cartoes.map((card) => (
@@ -1431,16 +1459,26 @@ export const LancamentosView: React.FC<Props> = ({
               )}
 
               {/* Extra Fueling Fields if Categoria === ABASTECIMENTO */}
-              {(formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento") && (
-                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-3">
-                  <span className="font-semibold text-amber-400 block flex items-center gap-1.5">
-                    <Fuel className="w-4 h-4" /> Detalhes do Abastecimento (Espelho 4_Abastecimentos)
-                  </span>
-
-                  {/* Veículo e Motorista (Sugerido/Auto-preenchido da aba 9_Veículos) */}
-                  <div className="grid grid-cols-2 gap-2">
+              {(formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento" || formData.Tipo === "ABASTECIMENTO") && (
+                <div className="p-3.5 sm:p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-3.5">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-amber-500/20 rounded-lg text-amber-400 shrink-0">
+                      <Fuel className="w-4 h-4" />
+                    </div>
                     <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">Veículo</label>
+                      <span className="font-bold text-amber-300 block text-xs sm:text-sm">
+                        Detalhes do Abastecimento
+                      </span>
+                      <span className="text-[10px] text-amber-400/80 block">
+                        Dados de combustível, hodômetro e localização
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Veículo e Motorista */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="min-w-0">
+                      <label className="block text-slate-300 text-[11px] font-medium mb-1">Veículo</label>
                       <select
                         value={formData.Veiculo || ""}
                         onChange={(e) => {
@@ -1454,7 +1492,6 @@ export const LancamentosView: React.FC<Props> = ({
                           setFormData((prev) => ({
                             ...prev,
                             Veiculo: selectedVeicName,
-                            // Preenche automaticamente o motorista associado da aba 9_Veiculos
                             Motorista: selectedVeic?.Motorista ? selectedVeic.Motorista.trim() : prev.Motorista,
                             Km_Atual:
                               selectedVeic?.Km_Atual && selectedVeic.Km_Atual > 0
@@ -1462,7 +1499,7 @@ export const LancamentosView: React.FC<Props> = ({
                                 : prev.Km_Atual,
                           }));
                         }}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500"
                       >
                         <option value="">Selecione o veículo...</option>
                         {veiculos.map((v) => (
@@ -1476,8 +1513,8 @@ export const LancamentosView: React.FC<Props> = ({
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">
+                    <div className="min-w-0">
+                      <label className="block text-slate-300 text-[11px] font-medium mb-1">
                         Motorista
                       </label>
                       <input
@@ -1486,7 +1523,7 @@ export const LancamentosView: React.FC<Props> = ({
                         placeholder="Ex: Carlos / Alexandre"
                         value={formData.Motorista || ""}
                         onChange={(e) => setFormData({ ...formData, Motorista: e.target.value.toUpperCase() })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white uppercase"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-amber-500"
                       />
                       <datalist id="motoristas-cadastrados">
                         {motoristasDisponiveis.map((m) => (
@@ -1498,7 +1535,7 @@ export const LancamentosView: React.FC<Props> = ({
 
                   {/* Tipo de Combustível */}
                   <div>
-                    <label className="block text-slate-400 text-[11px] mb-1">
+                    <label className="block text-slate-300 text-[11px] font-medium mb-1">
                       Tipo de Combustível
                     </label>
                     <select
@@ -1506,18 +1543,22 @@ export const LancamentosView: React.FC<Props> = ({
                       onChange={(e) =>
                         setFormData({ ...formData, Tipo_Combustivel: e.target.value })
                       }
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500"
                     >
                       <option value="ÁLCOOL">ÁLCOOL</option>
                       <option value="ÁLCOOL ADITIVADO">ÁLCOOL ADITIVADO</option>
                       <option value="GASOLINA COMUM">GASOLINA COMUM</option>
                       <option value="GASOLINA ADITIVADA">GASOLINA ADITIVADA</option>
+                      <option value="DIESEL S10">DIESEL S10</option>
+                      <option value="DIESEL COMUM">DIESEL COMUM</option>
+                      <option value="GNV">GNV</option>
                     </select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">Litros</label>
+                  {/* Litros e Preço/Litro */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="min-w-0">
+                      <label className="block text-slate-300 text-[11px] font-medium mb-1">Litros</label>
                       <input
                         type="text"
                         inputMode="decimal"
@@ -1530,7 +1571,6 @@ export const LancamentosView: React.FC<Props> = ({
                           const lit = parseFloat(cleanVal) || 0;
                           const prc = Number(formData.Preco_Litro || 0);
                           
-                          // Se digitar Litros e já houver Preço/Litro, recalcula Valor Total se desejado
                           if (lit > 0 && prc > 0 && (!formData.Valor || formData.Valor === 0)) {
                             const total = Number((lit * prc).toFixed(2));
                             setValorDisplay(formatCurrency(total));
@@ -1546,11 +1586,11 @@ export const LancamentosView: React.FC<Props> = ({
                             }));
                           }
                         }}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500"
                       />
                     </div>
-                    <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">Preço/Litro (R$)</label>
+                    <div className="min-w-0">
+                      <label className="block text-slate-300 text-[11px] font-medium mb-1">Preço/Litro (R$)</label>
                       <input
                         type="text"
                         inputMode="decimal"
@@ -1563,7 +1603,6 @@ export const LancamentosView: React.FC<Props> = ({
                           const prc = parseFloat(cleanVal) || 0;
                           const currentValor = Number(formData.Valor || 0);
                           
-                          // Cálculo em tempo real: Litros = Valor ÷ Preço_Litro
                           let calculatedLitros = formData.Litros;
                           if (currentValor > 0 && prc > 0) {
                             const lit = Number((currentValor / prc).toFixed(2));
@@ -1577,14 +1616,15 @@ export const LancamentosView: React.FC<Props> = ({
                             Litros: calculatedLitros,
                           }));
                         }}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">KM Atual (Hodômetro)</label>
+                  {/* KM Atual e Tanque Cheio */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="min-w-0">
+                      <label className="block text-slate-300 text-[11px] font-medium mb-1">KM Atual (Hodômetro)</label>
                       <input
                         type="number"
                         placeholder="Ex: 85200"
@@ -1592,15 +1632,15 @@ export const LancamentosView: React.FC<Props> = ({
                         onChange={(e) =>
                           setFormData({ ...formData, Km_Atual: parseFloat(e.target.value) || 0 })
                         }
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500"
                       />
                     </div>
-                    <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">Completou o Tanque?</label>
+                    <div className="min-w-0">
+                      <label className="block text-slate-300 text-[11px] font-medium mb-1">Completou o Tanque?</label>
                       <select
                         value={formData.Completou_O_Tanque || "SIM"}
                         onChange={(e) => setFormData({ ...formData, Completou_O_Tanque: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500"
                       >
                         <option value="SIM">SIM (Tanque Cheio)</option>
                         <option value="NÃO">NÃO (Parcial)</option>
@@ -1608,25 +1648,26 @@ export const LancamentosView: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-slate-400 text-[11px] mb-1">Posto de Combustível</label>
+                  {/* Posto e Localização / Coordenadas GPS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="min-w-0">
+                      <label className="block text-slate-300 text-[11px] font-medium mb-1">Posto de Combustível</label>
                       <input
                         type="text"
                         placeholder="Ex: Posto Ipiranga"
                         value={formData.Posto || ""}
                         onChange={(e) => setFormData({ ...formData, Posto: e.target.value.toUpperCase() })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white uppercase"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-amber-500"
                       />
                     </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-slate-400 text-[11px]">Localização / Coordenadas GPS</label>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
+                        <label className="block text-slate-300 text-[11px] font-medium">Localização / GPS</label>
                         <button
                           type="button"
                           onClick={handleCaptureGpsNow}
                           disabled={capturingGps}
-                          className="text-[10px] text-amber-400 hover:text-amber-300 inline-flex items-center gap-1 font-medium transition-colors"
+                          className="text-[10px] text-amber-400 hover:text-amber-300 inline-flex items-center gap-1 font-semibold transition-colors py-0.5 px-2 rounded bg-amber-500/10 hover:bg-amber-500/20 cursor-pointer"
                           title="Capturar coordenadas GPS do seu dispositivo agora"
                         >
                           {capturingGps ? (
@@ -1637,7 +1678,7 @@ export const LancamentosView: React.FC<Props> = ({
                           ) : (
                             <>
                               <Navigation className="w-3 h-3" />
-                              <span>Capturar GPS Atual</span>
+                              <span>Capturar GPS</span>
                             </>
                           )}
                         </button>
@@ -1645,32 +1686,33 @@ export const LancamentosView: React.FC<Props> = ({
                       <div className="relative">
                         <input
                           type="text"
-                          placeholder="Ex: -23.55052,-46.633308 ou Av. Brasil, 1500"
+                          placeholder="Ex: -23.55052,-46.633308 ou Av. Brasil"
                           value={formData.Localizacao_Do_Posto || ""}
                           onChange={(e) => setFormData({ ...formData, Localizacao_Do_Posto: e.target.value.toUpperCase() })}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 pl-7 text-white text-xs uppercase"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-8 text-white text-xs uppercase focus:outline-none focus:border-amber-500"
                         />
-                        <MapPin className="w-3.5 h-3.5 text-slate-500 absolute left-2 top-2" />
+                        <MapPin className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3 pointer-events-none" />
                       </div>
                     </div>
                   </div>
 
+                  {/* Comprovante */}
                   <div>
-                    <label className="block text-slate-400 text-[11px] mb-1">Comprovante (URL / Foto)</label>
+                    <label className="block text-slate-300 text-[11px] font-medium mb-1">Comprovante (URL / Foto)</label>
                     <input
                       type="text"
                       placeholder="Ex: https://..."
                       value={formData.Comprovante_Url || ""}
                       onChange={(e) => setFormData({ ...formData, Comprovante_Url: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white text-xs"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500"
                     />
                   </div>
 
                   {/* Cálculo Automático Estimado */}
                   {(previewKmPercorrido > 0 || previewMediaKmL > 0) && (
-                    <div className="bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 flex items-center justify-between text-xs text-amber-300">
-                      <span>KM Percorrido: <strong>+{previewKmPercorrido.toLocaleString("pt-BR")} km</strong></span>
-                      <span>Média Estimada: <strong>{previewMediaKmL.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} km/L</strong></span>
+                    <div className="bg-amber-950/50 border border-amber-500/30 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs text-amber-300">
+                      <span>KM Percorrido: <strong className="text-amber-200">+{previewKmPercorrido.toLocaleString("pt-BR")} km</strong></span>
+                      <span>Média Estimada: <strong className="text-teal-300 font-bold">{previewMediaKmL.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} km/L</strong></span>
                     </div>
                   )}
                 </div>
@@ -1678,15 +1720,15 @@ export const LancamentosView: React.FC<Props> = ({
 
               {/* Opções de Recorrência / Parcelamento (Apenas para novos lançamentos) */}
               {!editingItem && (
-                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-3">
-                  <span className="text-[11px] font-semibold text-slate-300 block">
+                <div className="p-3.5 sm:p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3">
+                  <span className="text-xs font-semibold text-slate-300 block">
                     Recorrência & Parcelamento (Opcional)
                   </span>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {/* Opção 1: Conta Fixa / Mensal */}
                     <label
-                      className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                      className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${
                         isContaFixa
                           ? "bg-emerald-950/30 border-emerald-500/40 text-emerald-300"
                           : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
@@ -1710,7 +1752,7 @@ export const LancamentosView: React.FC<Props> = ({
 
                     {/* Opção 2: Parcelado */}
                     <label
-                      className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                      className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${
                         isParcelado
                           ? "bg-indigo-950/30 border-indigo-500/40 text-indigo-300"
                           : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
@@ -1736,7 +1778,7 @@ export const LancamentosView: React.FC<Props> = ({
                   {/* Detalhes do Parcelamento quando ativo */}
                   {isParcelado && (
                     <div className="pt-2 border-t border-slate-800/80 space-y-2">
-                      <div className="grid grid-cols-2 gap-3 items-center">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                         <div>
                           <label className="block text-slate-400 text-[11px] mb-1">
                             Número de Parcelas
@@ -1750,7 +1792,7 @@ export const LancamentosView: React.FC<Props> = ({
                               const v = parseInt(e.target.value, 10);
                               setNumParcelas(isNaN(v) ? 2 : Math.max(2, Math.min(72, v)));
                             }}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-xs font-bold"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white text-xs font-bold"
                             required
                           />
                         </div>
@@ -1758,7 +1800,7 @@ export const LancamentosView: React.FC<Props> = ({
                           <label className="block text-slate-400 text-[11px] mb-1">
                             Valor de cada Parcela
                           </label>
-                          <div className="p-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-bold text-indigo-400">
+                          <div className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-indigo-400">
                             {numParcelas > 0 && parseCurrency(formData.Valor) > 0
                               ? `R$ ${formatCurrency(parseCurrency(formData.Valor) / numParcelas)} /mês`
                               : "R$ 0,00"}
@@ -1781,33 +1823,44 @@ export const LancamentosView: React.FC<Props> = ({
               )}
 
               <div>
-                <label className="block text-slate-400 mb-1">Observações</label>
+                <label className="block text-slate-400 text-xs mb-1">Observações</label>
                 <textarea
                   rows={2}
                   placeholder="Observações adicionais..."
                   value={formData.Observacoes || ""}
                   onChange={(e) => setFormData({ ...formData, Observacoes: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white placeholder-slate-600 resize-none uppercase"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white placeholder-slate-600 resize-none uppercase text-xs focus:outline-none focus:border-emerald-500"
                 />
               </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={onCloseModal}
-                  className="px-4 py-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl transition-colors"
-                >
-                  {saving ? "Salvando..." : "Salvar Lançamento"}
-                </button>
-              </div>
             </form>
+
+            {/* Modal Pinned Footer */}
+            <div className="flex items-center justify-end gap-2.5 p-3.5 sm:p-4 border-t border-slate-800 bg-slate-900/95 shrink-0">
+              <button
+                type="button"
+                onClick={onCloseModal}
+                className="px-4 py-2.5 text-xs font-medium text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                form="lancamento-form"
+                type="submit"
+                disabled={saving}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-emerald-950/40 disabled:opacity-50 cursor-pointer"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Salvando...</span>
+                  </>
+                ) : (
+                  <span>
+                    Salvar {formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "ABASTECIMENTO" || formData.Tipo === "Abastecimento" ? "Abastecimento" : "Lançamento"}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
