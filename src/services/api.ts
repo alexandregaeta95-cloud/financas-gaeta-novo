@@ -25,6 +25,7 @@ import {
   normalizeItemMercado,
   normalizeZonaDeRisco,
   normalizeCompromissoAgenda,
+  normalizeRegistroSaude,
 } from "../utils/formatters";
 
 const LOCAL_STORAGE_KEY_PREFIX = "financas_gaeta_cache_";
@@ -122,6 +123,9 @@ export function normalizeRecordBySheet(sheetName: string, item: any): any {
   }
   if (s.includes("agenda") || s.includes("compromisso") || sheetName === SHEET_NAMES.AGENDA) {
     return normalizeCompromissoAgenda(item);
+  }
+  if (s.includes("saude") || s.includes("saúde") || s.includes("biometria") || sheetName === SHEET_NAMES.CONTROLE_SAUDE) {
+    return normalizeRegistroSaude(item);
   }
   return item;
 }

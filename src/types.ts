@@ -318,7 +318,19 @@ export const SHEET_NAMES = {
   ZONAS_RISCO: "17_Zonas_De_Risco",
   CARTOES_CREDITO: "18_Cartões_De_Crédito",
   AGENDA: "19_Agenda_E_Compromissos",
+  CONTROLE_SAUDE: "20_Controle_Saude",
 } as const;
+
+export interface RegistroSaude {
+  Id: string;
+  Tipo_Registro: "PESO" | "PRESSAO" | "GLICEMIA" | string;
+  Data_Hora: string; // YYYY-MM-DD or YYYY-MM-DDTHH:mm
+  Valor_Principal: number; // Peso in kg, Sistólica in mmHg, or Glicemia in mg/dL
+  Valor_Secundario?: number; // Diastólica in mmHg
+  Contexto?: "JEJUM" | "POS_REFEICAO" | string; // For Glicemia
+  Observacoes?: string;
+  Data_Criacao?: string;
+}
 
 export type SheetNameKey = keyof typeof SHEET_NAMES;
 
@@ -362,10 +374,11 @@ export interface AlimentoItem {
 }
 
 export interface AlimentoAnaliseResult {
-  id?: string;
+  id: string;
+  data: string; // YYYY-MM-DD
   dataHora?: string;
   nomePrato: string;
-  descricao: string;
+  descricao?: string;
   caloriasEstimadas: number;
   proteinasEstimadas: number;
   carboidratosEstimados?: number;
@@ -373,4 +386,5 @@ export interface AlimentoAnaliseResult {
   itensIdentificados: AlimentoItem[];
   dicasNutricionais?: string;
   imagemPreview?: string;
+  observacoes?: string;
 }

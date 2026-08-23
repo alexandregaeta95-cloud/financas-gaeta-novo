@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Stethoscope,
   FileText,
@@ -16,51 +16,168 @@ import {
   Utensils,
   Flame,
   Zap,
+  Activity,
 } from "lucide-react";
-import { ConsultaMedica, ReceitaMedica, Infracao, Veiculo } from "../types";
+import { ConsultaMedica, ReceitaMedica, Infracao, Veiculo, AlimentoAnaliseResult, RegistroSaude } from "../types";
 import { generateNewId } from "../services/api";
 import { formatarHora, formatDateBR, parseCurrency, formatCurrency } from "../utils/formatters";
 import { AnalisarAlimentoModal } from "./AnalisarAlimentoModal";
+import { HistoricoAlimentosView } from "./HistoricoAlimentosView";
+import { EditarAlimentoModal } from "./EditarAlimentoModal";
+import { ControleSaudeView } from "./ControleSaudeView";
+import { RegistroSaudeModal } from "./RegistroSaudeModal";
 
 interface Props {
   consultas: ConsultaMedica[];
   receitas: ReceitaMedica[];
   infracoes: Infracao[];
+  registrosSaude?: RegistroSaude[];
   veiculos?: Veiculo[];
   onSaveConsulta: (consulta: ConsultaMedica) => Promise<void>;
   onSaveReceita: (receita: ReceitaMedica) => Promise<void>;
   onSaveInfracao: (infracao: Infracao) => Promise<void>;
+  onSaveRegistroSaude?: (registro: RegistroSaude) => Promise<void>;
   onDeleteConsulta: (id: string) => Promise<void>;
   onDeleteReceita: (id: string) => Promise<void>;
   onDeleteInfracao: (id: string) => Promise<void>;
+  onDeleteRegistroSaude?: (id: string) => Promise<void>;
 }
+
+const FOOD_STORAGE_KEY = "gaeta_alimentos_history";
 
 export const SaudeInfracoesView: React.FC<Props> = ({
   consultas,
   receitas,
   infracoes,
+  registrosSaude = [],
   veiculos = [],
   onSaveConsulta,
   onSaveReceita,
   onSaveInfracao,
+  onSaveRegistroSaude,
   onDeleteConsulta,
   onDeleteReceita,
   onDeleteInfracao,
+  onDeleteRegistroSaude,
 }) => {
-  const [activeTab, setActiveTab] = useState<"consultas" | "receitas" | "infracoes">("consultas");
+  const [activeTab, setActiveTab] = useState<"consultas" | "receitas" | "infracoes" | "alimentos" | "controle_saude">("consultas");
 
   // Delete Confirmation State
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
-    type: "consulta" | "receita" | "infracao";
+    type: "consulta" | "receita" | "infracao" | "alimento" | "saude";
     id: string;
     title: string;
     subtitle?: string;
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Food Analysis Modal State
+  // Health Biometrics State (20_Controle_Saude)
+  const [isRegistroSaudeModalOpen, setIsRegistroSaudeModalOpen] = useState(false);
+  const [editingRegistroSaude, setEditingRegistroSaude] = useState<RegistroSaude | null>(null);
+  const [defaultTipoRegistro, setDefaultTipoRegistro] = useState<"PESO" | "PRESSAO" | "GLICEMIA">("PESO");
+
+  // Food Analysis Modal & History State
   const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
+  const [alimentosHistory, setAlimentosHistory] = useState<AlimentoAnaliseResult[]>([]);
+  const [editingAlimento, setEditingAlimento] = useState<AlimentoAnaliseResult | null>(null);
+  const [isEditAlimentoModalOpen, setIsEditAlimentoModalOpen] = useState(false);
+
+  // Load food history from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(FOOD_STORAGE_KEY);
+      if (saved) {
+        setAlimentosHistory(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error("Erro ao carregar histórico de alimentos:", e);
+    }
+  }, []);
+
+  const handleSaveAlimentoItem = (alimento: AlimentoAnaliseResult) => {
+    try {
+      const existingIndex = alimentosHistory.findIndex((a) => a.id === alimento.id);
+      let updated: AlimentoAnaliseResult[];
+      if (existingIndex >= 0) {
+        updated = [...alimentosHistory];
+        updated[existingIndex] = alimento;
+      } else {
+        updated = [alimento, ...alimentosHistory];
+      }
+      setAlimentosHistory(updated);
+      localStorage.setItem(FOOD_STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.error("Erro ao salvar alimento no histórico:", e);
+    }
+  };
+
+  const handleDeleteAlimentoItem = (id: string) => {
+    const item = alimentosHistory.find((a) => a.id === id);
+    setDeleteConfirm({
+      isOpen: true,
+      type: "alimento",
+      id,
+      title: item?.nomePrato || "Análise de Alimento",
+      subtitle: `Calorias: ${item?.caloriasEstimadas || 0} kcal • Proteínas: ${item?.proteinasEstimadas || 0}g • Data: ${item?.dataHora || item?.data || "—"}`,
+    });
+  };
+
+  const handleConfirmDeleteAlimento = () => {
+    if (!deleteConfirm || deleteConfirm.type !== "alimento") return;
+    const updated = alimentosHistory.filter((a) => a.id !== deleteConfirm.id);
+    setAlimentosHistory(updated);
+    localStorage.setItem(FOOD_STORAGE_KEY, JSON.stringify(updated));
+    setDeleteConfirm(null);
+  };
+
+  const handleOpenEditAlimento = (alimento: AlimentoAnaliseResult) => {
+    setEditingAlimento(alimento);
+    setIsEditAlimentoModalOpen(true);
+  };
+
+  // Health Biometrics Handlers (20_Controle_Saude)
+  const handleOpenNovoRegistroSaude = (tipo?: "PESO" | "PRESSAO" | "GLICEMIA") => {
+    setEditingRegistroSaude(null);
+    setDefaultTipoRegistro(tipo || "PESO");
+    setIsRegistroSaudeModalOpen(true);
+  };
+
+  const handleOpenEditRegistroSaude = (reg: RegistroSaude) => {
+    setEditingRegistroSaude(reg);
+    setDefaultTipoRegistro(
+      reg.Tipo_Registro === "PRESSAO" || reg.Tipo_Registro === "Pressão"
+        ? "PRESSAO"
+        : reg.Tipo_Registro === "GLICEMIA" || reg.Tipo_Registro === "Glicemia"
+        ? "GLICEMIA"
+        : "PESO"
+    );
+    setIsRegistroSaudeModalOpen(true);
+  };
+
+  const handleDeleteRegistroSaudeItem = (id: string) => {
+    const item = registrosSaude.find((r) => r.Id === id);
+    const tipoLabel =
+      item?.Tipo_Registro === "PRESSAO"
+        ? `Pressão Arterial: ${item.Valor_Principal}/${item.Valor_Secundario || 0} mmHg`
+        : item?.Tipo_Registro === "GLICEMIA"
+        ? `Glicemia: ${item.Valor_Principal} mg/dL (${item.Contexto || "Jejum"})`
+        : `Peso: ${item?.Valor_Principal || 0} kg`;
+
+    setDeleteConfirm({
+      isOpen: true,
+      type: "saude",
+      id,
+      title: `Registro de ${item?.Tipo_Registro || "Saúde"}`,
+      subtitle: `${tipoLabel} • Data: ${item?.Data_Hora || "—"}`,
+    });
+  };
+
+  const handleSaveRegistroSaudeSubmit = async (reg: RegistroSaude) => {
+    if (onSaveRegistroSaude) {
+      await onSaveRegistroSaude(reg);
+    }
+  };
 
   // Consulta Modal State
   const [isConsultaModalOpen, setIsConsultaModalOpen] = useState(false);
@@ -315,6 +432,28 @@ export const SaudeInfracoesView: React.FC<Props> = ({
               }`}
             >
               Infrações ({infracoes.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("alimentos")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === "alimentos"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Utensils className="w-3.5 h-3.5" />
+              <span>Alimentos IA ({alimentosHistory.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("controle_saude")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === "controle_saude"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>Controle de Saúde ({registrosSaude.length})</span>
             </button>
           </div>
         </div>
@@ -676,6 +815,29 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         </div>
       )}
 
+      {/* 4. ALIMENTOS & NUTRIÇÃO (HISTÓRICO IA) */}
+      {activeTab === "alimentos" && (
+        <HistoricoAlimentosView
+          alimentos={alimentosHistory}
+          onOpenAnalysisModal={() => setIsFoodModalOpen(true)}
+          onSelectAlimento={(item) => {
+            setEditingAlimento(item);
+          }}
+          onEditAlimento={handleOpenEditAlimento}
+          onDeleteAlimento={handleDeleteAlimentoItem}
+        />
+      )}
+
+      {/* 5. CONTROLE DE SAÚDE (BIOMETRIA - ABA 20) */}
+      {activeTab === "controle_saude" && (
+        <ControleSaudeView
+          registros={registrosSaude}
+          onOpenNovoRegistro={handleOpenNovoRegistroSaude}
+          onEditRegistro={handleOpenEditRegistroSaude}
+          onDeleteRegistro={handleDeleteRegistroSaudeItem}
+        />
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteConfirm && deleteConfirm.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
@@ -693,7 +855,11 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                     ? "Excluir Consulta Médica"
                     : deleteConfirm.type === "receita"
                     ? "Excluir Receita Médica"
-                    : "Excluir Infração de Trânsito"}
+                    : deleteConfirm.type === "infracao"
+                    ? "Excluir Infração de Trânsito"
+                    : deleteConfirm.type === "saude"
+                    ? "Excluir Registro de Saúde"
+                    : "Excluir Análise de Alimento"}
                 </p>
               </div>
             </div>
@@ -710,7 +876,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
             </div>
 
             <p className="text-xs text-slate-300">
-              Tem certeza que deseja excluir este registro? Esta ação marcará o registro como excluído na planilha.
+              Tem certeza que deseja excluir este registro do sistema?
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -734,6 +900,12 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                       await onDeleteReceita(deleteConfirm.id);
                     } else if (deleteConfirm.type === "infracao") {
                       await onDeleteInfracao(deleteConfirm.id);
+                    } else if (deleteConfirm.type === "alimento") {
+                      handleConfirmDeleteAlimento();
+                    } else if (deleteConfirm.type === "saude") {
+                      if (onDeleteRegistroSaude) {
+                        await onDeleteRegistroSaude(deleteConfirm.id);
+                      }
                     }
                     setDeleteConfirm(null);
                   } catch (err) {
@@ -1018,6 +1190,30 @@ export const SaudeInfracoesView: React.FC<Props> = ({
       <AnalisarAlimentoModal
         isOpen={isFoodModalOpen}
         onClose={() => setIsFoodModalOpen(false)}
+        onSaveAlimento={handleSaveAlimentoItem}
+      />
+
+      {/* Edit Food Analysis Modal */}
+      <EditarAlimentoModal
+        isOpen={isEditAlimentoModalOpen}
+        alimento={editingAlimento}
+        onClose={() => {
+          setIsEditAlimentoModalOpen(false);
+          setEditingAlimento(null);
+        }}
+        onSave={handleSaveAlimentoItem}
+      />
+
+      {/* Biometric Health Modal (20_Controle_Saude) */}
+      <RegistroSaudeModal
+        isOpen={isRegistroSaudeModalOpen}
+        onClose={() => {
+          setIsRegistroSaudeModalOpen(false);
+          setEditingRegistroSaude(null);
+        }}
+        onSave={handleSaveRegistroSaudeSubmit}
+        initialData={editingRegistroSaude}
+        defaultTipo={defaultTipoRegistro}
       />
     </div>
   );

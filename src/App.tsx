@@ -41,6 +41,7 @@ import {
   PerfilUsuario,
   SyncState,
   AppNotification,
+  RegistroSaude,
   SHEET_NAMES,
 } from "./types";
 
@@ -133,6 +134,66 @@ export default function App() {
   const [agenda, setAgenda] = useState<CompromissoAgenda[]>(() =>
     getCachedSheetData<CompromissoAgenda>(SHEET_NAMES.AGENDA)
   );
+  const [registrosSaude, setRegistrosSaude] = useState<RegistroSaude[]>(() => {
+    const cached = getCachedSheetData<RegistroSaude>(SHEET_NAMES.CONTROLE_SAUDE);
+    if (cached.length > 0) return cached;
+    // Initial sample measurements for fresh UX
+    return [
+      {
+        Id: "SAUDE_PESO_1",
+        Tipo_Registro: "PESO",
+        Data_Hora: "2026-08-10",
+        Valor_Principal: 78.5,
+        Observacoes: "Pesagem matinal em jejum",
+      },
+      {
+        Id: "SAUDE_PESO_2",
+        Tipo_Registro: "PESO",
+        Data_Hora: "2026-08-17",
+        Valor_Principal: 77.8,
+        Observacoes: "Após treino aeróbico",
+      },
+      {
+        Id: "SAUDE_PESO_3",
+        Tipo_Registro: "PESO",
+        Data_Hora: "2026-08-23",
+        Valor_Principal: 77.2,
+        Observacoes: "Meta de peso em progresso",
+      },
+      {
+        Id: "SAUDE_PRESSAO_1",
+        Tipo_Registro: "PRESSAO",
+        Data_Hora: "2026-08-12 08:30",
+        Valor_Principal: 120,
+        Valor_Secundario: 80,
+        Observacoes: "Pressão arterial ideal em repouso",
+      },
+      {
+        Id: "SAUDE_PRESSAO_2",
+        Tipo_Registro: "PRESSAO",
+        Data_Hora: "2026-08-20 19:15",
+        Valor_Principal: 125,
+        Valor_Secundario: 82,
+        Observacoes: "Aferição noturna pós expediente",
+      },
+      {
+        Id: "SAUDE_GLICEMIA_1",
+        Tipo_Registro: "GLICEMIA",
+        Data_Hora: "2026-08-15 07:45",
+        Valor_Principal: 92,
+        Contexto: "JEJUM",
+        Observacoes: "Glicemia matinal em jejum",
+      },
+      {
+        Id: "SAUDE_GLICEMIA_2",
+        Tipo_Registro: "GLICEMIA",
+        Data_Hora: "2026-08-21 14:00",
+        Valor_Principal: 118,
+        Contexto: "POS_REFEICAO",
+        Observacoes: "2 horas após o almoço",
+      },
+    ];
+  });
   const [metas, setMetas] = useState<MetaCategoria[]>(() =>
     getCachedSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
   );
@@ -297,6 +358,9 @@ export default function App() {
         .catch(() => {});
       fetchSheetData<CompromissoAgenda>(SHEET_NAMES.AGENDA)
         .then((data) => data && setAgenda(data))
+        .catch(() => {});
+      fetchSheetData<RegistroSaude>(SHEET_NAMES.CONTROLE_SAUDE)
+        .then((data) => data && setRegistrosSaude(data))
         .catch(() => {});
       fetchSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
         .then((data) => data && setMetas(data))
@@ -561,13 +625,16 @@ export default function App() {
             consultas={consultas}
             receitas={receitas}
             infracoes={infracoes}
+            registrosSaude={registrosSaude}
             veiculos={veiculos}
             onSaveConsulta={(c) => handleSaveGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, c, setConsultas)}
             onSaveReceita={(r) => handleSaveGeneric(SHEET_NAMES.RECEITAS_MEDICAS, r, setReceitas)}
             onSaveInfracao={(inf) => handleSaveGeneric(SHEET_NAMES.INFRACOES, inf, setInfracoes)}
+            onSaveRegistroSaude={(reg) => handleSaveGeneric(SHEET_NAMES.CONTROLE_SAUDE, reg, setRegistrosSaude)}
             onDeleteConsulta={(id) => handleDeleteGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, id, setConsultas)}
             onDeleteReceita={(id) => handleDeleteGeneric(SHEET_NAMES.RECEITAS_MEDICAS, id, setReceitas)}
             onDeleteInfracao={(id) => handleDeleteGeneric(SHEET_NAMES.INFRACOES, id, setInfracoes)}
+            onDeleteRegistroSaude={(id) => handleDeleteGeneric(SHEET_NAMES.CONTROLE_SAUDE, id, setRegistrosSaude)}
           />
         )}
 

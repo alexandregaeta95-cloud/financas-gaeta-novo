@@ -20,6 +20,7 @@ import {
   ItemMercado,
   ZonaDeRisco,
   CompromissoAgenda,
+  RegistroSaude,
 } from "../types";
 
 /**
@@ -1199,6 +1200,37 @@ export function calculateCardBalance(
     availableLimit,
     expensesTotal,
     paymentsTotal,
+  };
+}
+
+/**
+ * 20. Normalize RegistroSaude (20_Controle_Saude: Id, Tipo_Registro, Data_Hora, Valor_Principal, Valor_Secundario, Contexto, Observacoes, Data_Criacao)
+ */
+export function normalizeRegistroSaude(raw: any): RegistroSaude {
+  if (!raw || typeof raw !== "object") return raw;
+  const tipo = String(raw.Tipo_Registro ?? raw.tipo_registro ?? raw.Tipo ?? raw.tipo ?? "PESO").trim().toUpperCase();
+  const valorPrincipal = parseCurrency(
+    raw.Valor_Principal ?? raw.valor_principal ?? raw.Valor ?? raw.valor ?? raw.Peso ?? raw.Sistolica ?? raw.Glicemia ?? 0
+  );
+  const valorSecundario = raw.Valor_Secundario !== undefined || raw.valor_secundario !== undefined || raw.Diastolica !== undefined
+    ? parseCurrency(raw.Valor_Secundario ?? raw.valor_secundario ?? raw.Diastolica ?? 0)
+    : undefined;
+  const dataHora = String(
+    raw.Data_Hora ?? raw.data_hora ?? raw.Data ?? raw.data ?? new Date().toISOString().split("T")[0]
+  ).trim();
+  const contexto = raw.Contexto ?? raw.contexto ? String(raw.Contexto ?? raw.contexto).trim().toUpperCase() : undefined;
+  const obs = raw.Observacoes ?? raw.observacoes ?? raw.Observação ?? raw.observacao ?? "";
+
+  return {
+    ...raw,
+    Id: String(raw.Id || raw.id || ""),
+    Tipo_Registro: tipo,
+    Data_Hora: dataHora,
+    Valor_Principal: valorPrincipal,
+    Valor_Secundario: valorSecundario,
+    Contexto: contexto,
+    Observacoes: String(obs).trim(),
+    Data_Criacao: raw.Data_Criacao ?? raw.data_criacao ?? new Date().toISOString(),
   };
 }
 

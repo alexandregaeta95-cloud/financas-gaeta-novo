@@ -1,0 +1,416 @@
+import React, { useState, useEffect } from "react";
+import { X, Activity, Scale, Heart, Droplets, Calendar, Clock, AlertCircle } from "lucide-react";
+import { RegistroSaude } from "../types";
+import { generateNewId } from "../services/api";
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (registro: RegistroSaude) => Promise<void>;
+  initialData?: RegistroSaude | null;
+  defaultTipo?: "PESO" | "PRESSAO" | "GLICEMIA";
+}
+
+export const RegistroSaudeModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  onSave,
+  initialData,
+  defaultTipo = "PESO",
+}) => {
+  const [tipo, setTipo] = useState<"PESO" | "PRESSAO" | "GLICEMIA">(defaultTipo);
+  const [data, setData] = useState("");
+  const [hora, setHora] = useState("");
+  const [valorPrincipal, setValorPrincipal] = useState<string>("");
+  const [valorSecundario, setValorSecundario] = useState<string>("");
+  const [contexto, setContexto] = useState<string>("JEJUM");
+  const [observacoes, setObservacoes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setErrorMsg("");
+      if (initialData) {
+        setTipo(
+          initialData.Tipo_Registro === "PRESSAO" || initialData.Tipo_Registro === "Pressão"
+            ? "PRESSAO"
+            : initialData.Tipo_Registro === "GLICEMIA" || initialData.Tipo_Registro === "Glicemia"
+            ? "GLICEMIA"
+            : "PESO"
+        );
+
+        // Split data and time if concatenated
+        const dtStr = initialData.Data_Hora || "";
+        if (dtStr.includes("T") || dtStr.includes(" ")) {
+          const parts = dtStr.includes("T") ? dtStr.split("T") : dtStr.split(" ");
+          setData(parts[0] || "");
+          setHora(parts[1]?.substring(0, 5) || "");
+        } else {
+          setData(dtStr);
+          setHora("");
+        }
+
+        setValorPrincipal(initialData.Valor_Principal ? String(initialData.Valor_Principal) : "");
+        setValorSecundario(initialData.Valor_Secundario ? String(initialData.Valor_Secundario) : "");
+        setContexto(initialData.Contexto || "JEJUM");
+        setObservacoes(initialData.Observacoes || "");
+      } else {
+        setTipo(defaultTipo);
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const hh = String(now.getHours()).padStart(2, "0");
+        const min = String(now.getMinutes()).padStart(2, "0");
+        setData(`${yyyy}-${mm}-${dd}`);
+        setHora(`${hh}:${min}`);
+        setValorPrincipal("");
+        setValorSecundario("");
+        setContexto("JEJUM");
+        setObservacoes("");
+      }
+    }
+  }, [isOpen, initialData, defaultTipo]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    const valP = parseFloat(valorPrincipal.replace(",", "."));
+    if (isNaN(valP) || valP <= 0) {
+      setErrorMsg("Informe um valor principal válido e maior que zero.");
+      return;
+    }
+
+    let valS: number | undefined = undefined;
+    if (tipo === "PRESSAO") {
+      valS = parseFloat(valorSecundario.replace(",", "."));
+      if (isNaN(valS) || valS <= 0) {
+        setErrorMsg("Para pressão arterial, informe a pressão diastólica (mínima).");
+        return;
+      }
+    }
+
+    if (!data) {
+      setErrorMsg("A data do registro é obrigatória.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const dataHoraFinal = hora ? `${data} ${hora}` : data;
+
+      const record: RegistroSaude = {
+        Id: initialData?.Id || generateNewId("SAUDE"),
+        Tipo_Registro: tipo,
+        Data_Hora: dataHoraFinal,
+        Valor_Principal: valP,
+        Valor_Secundario: valS,
+        Contexto: tipo === "GLICEMIA" ? contexto : undefined,
+        Observacoes: observacoes.trim(),
+        Data_Criacao: initialData?.Data_Criacao || new Date().toISOString(),
+      };
+
+      await onSave(record);
+      onClose();
+    } catch (err: any) {
+      setErrorMsg(err.message || "Erro ao salvar registro de saúde.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-850">
+          <div className="flex items-center gap-3">
+            <div
+              className={`p-2.5 rounded-xl ${
+                tipo === "PESO"
+                  ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+                  : tipo === "PRESSAO"
+                  ? "bg-rose-500/15 text-rose-400 border border-rose-500/20"
+                  : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+              }`}
+            >
+              {tipo === "PESO" ? (
+                <Scale className="w-5 h-5" />
+              ) : tipo === "PRESSAO" ? (
+                <Heart className="w-5 h-5" />
+              ) : (
+                <Droplets className="w-5 h-5" />
+              )}
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">
+                {initialData ? "Editar Registro de Saúde" : "Novo Registro de Saúde"}
+              </h2>
+              <p className="text-xs text-slate-400">
+                Aba 20_Controle_Saude • Acompanhamento Biométrico
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {errorMsg && (
+            <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center gap-2.5 text-xs text-rose-400">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {/* Tipo de Métrica Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-2">
+              Tipo de Medição
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setTipo("PESO")}
+                className={`py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all ${
+                  tipo === "PESO"
+                    ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-xs"
+                    : "bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Scale className="w-4 h-4" />
+                <span>Peso (kg)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTipo("PRESSAO")}
+                className={`py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all ${
+                  tipo === "PRESSAO"
+                    ? "bg-rose-500/20 border-rose-500/50 text-rose-300 shadow-xs"
+                    : "bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Heart className="w-4 h-4" />
+                <span>Pressão</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTipo("GLICEMIA")}
+                className={`py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all ${
+                  tipo === "GLICEMIA"
+                    ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-xs"
+                    : "bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Droplets className="w-4 h-4" />
+                <span>Glicemia</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Data e Hora */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Data *
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  required
+                  value={data}
+                  onChange={(e) => setData(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Horário
+              </label>
+              <div className="relative">
+                <input
+                  type="time"
+                  value={hora}
+                  onChange={(e) => setHora(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Dynamic Value Fields Based on Tipo */}
+          {tipo === "PESO" && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Peso Corporal (kg) *
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="20"
+                  max="350"
+                  required
+                  placeholder="Ex: 78.5"
+                  value={valorPrincipal}
+                  onChange={(e) => setValorPrincipal(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-amber-400 focus:outline-none focus:border-amber-500 pr-12"
+                />
+                <span className="absolute right-3.5 top-2.5 text-sm font-semibold text-slate-400">
+                  kg
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Dica: Pese-se preferencialmente pela manhã em jejum e após urinar.
+              </p>
+            </div>
+          )}
+
+          {tipo === "PRESSAO" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Sistólica (Máxima) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="1"
+                    min="50"
+                    max="280"
+                    required
+                    placeholder="Ex: 120"
+                    value={valorPrincipal}
+                    onChange={(e) => setValorPrincipal(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-rose-400 focus:outline-none focus:border-rose-500 pr-14"
+                  />
+                  <span className="absolute right-3 top-3 text-xs text-slate-400 font-medium">
+                    mmHg
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Diastólica (Mínima) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="1"
+                    min="30"
+                    max="180"
+                    required
+                    placeholder="Ex: 80"
+                    value={valorSecundario}
+                    onChange={(e) => setValorSecundario(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-rose-300 focus:outline-none focus:border-rose-500 pr-14"
+                  />
+                  <span className="absolute right-3 top-3 text-xs text-slate-400 font-medium">
+                    mmHg
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tipo === "GLICEMIA" && (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Glicemia Capilar *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="1"
+                    min="20"
+                    max="600"
+                    required
+                    placeholder="Ex: 95"
+                    value={valorPrincipal}
+                    onChange={(e) => setValorPrincipal(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-emerald-400 focus:outline-none focus:border-emerald-500 pr-16"
+                  />
+                  <span className="absolute right-3.5 top-3 text-xs font-semibold text-slate-400">
+                    mg/dL
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Contexto da Medição
+                </label>
+                <select
+                  value={contexto}
+                  onChange={(e) => setContexto(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="JEJUM">Jejum (8h+ sem ingestão)</option>
+                  <option value="POS_REFEICAO">Pós-Refeição (2h após comer)</option>
+                  <option value="PRE_REFEICAO">Pré-Refeição / Antes de Comer</option>
+                  <option value="AO_DEITAR">Antes de Dormir / Ao Deitar</option>
+                  <option value="ALEATORIO">Casual / Aleatório</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Observações */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Observações / Sintomas / Contexto
+            </label>
+            <textarea
+              rows={2}
+              placeholder="Ex: Aferido em repouso de 5 minutos; treino leve pela manhã; pós almoço..."
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-4 py-2.5 text-xs font-semibold text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-900/30 transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Salvando...</span>
+                </>
+              ) : (
+                <span>Salvar Registro</span>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};

@@ -23,11 +23,12 @@ import { AlimentoAnaliseResult } from "../types";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  onSaveAlimento?: (alimento: AlimentoAnaliseResult) => void;
 }
 
 const STORAGE_KEY = "gaeta_alimentos_history";
 
-export const AnalisarAlimentoModal: React.FC<Props> = ({ isOpen, onClose }) => {
+export const AnalisarAlimentoModal: React.FC<Props> = ({ isOpen, onClose, onSaveAlimento }) => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>("image/jpeg");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -55,22 +56,28 @@ export const AnalisarAlimentoModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const saveToHistory = (result: AlimentoAnaliseResult, preview?: string) => {
     try {
+      const now = new Date();
       const itemWithMeta: AlimentoAnaliseResult = {
         ...result,
-        id: `alim_${Date.now()}`,
-        dataHora: new Date().toLocaleString("pt-BR", {
+        id: result.id || `alim_${Date.now()}`,
+        data: result.data || now.toISOString().split("T")[0],
+        dataHora: result.dataHora || now.toLocaleString("pt-BR", {
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
           hour: "2-digit",
           minute: "2-digit",
         }),
-        imagemPreview: preview || undefined,
+        imagemPreview: preview || result.imagemPreview || undefined,
       };
 
-      const updated = [itemWithMeta, ...history.slice(0, 19)]; // Keep up to 20 items
+      const updated = [itemWithMeta, ...history.filter((h) => h.id !== itemWithMeta.id).slice(0, 49)];
       setHistory(updated);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+      if (onSaveAlimento) {
+        onSaveAlimento(itemWithMeta);
+      }
     } catch (e) {
       console.error("Erro ao salvar histórico:", e);
     }
