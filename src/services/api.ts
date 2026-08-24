@@ -323,6 +323,19 @@ export function sanitizeValueToUppercase(key: string, value: any): any {
 }
 
 /**
+ * Sanitizes an entire record object so all string properties are safely UPPERCASED
+ * while preserving URLs, coordinates, dates, numbers, and JSON objects.
+ */
+export function sanitizeRecordToUppercase<T = any>(item: T): T {
+  if (!item || typeof item !== "object") return item;
+  const sanitized: any = Array.isArray(item) ? [] : {};
+  for (const [key, value] of Object.entries(item)) {
+    sanitized[key] = sanitizeValueToUppercase(key, value);
+  }
+  return sanitized as T;
+}
+
+/**
  * Core POST method to save/upsert sheet records.
  */
 export async function saveSheetRecords<T = any>(

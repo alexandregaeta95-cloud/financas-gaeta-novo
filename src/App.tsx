@@ -54,6 +54,7 @@ import {
   getCachedSheetData,
   getSavedAppsScriptUrl,
   testAppsScriptConnection,
+  sanitizeRecordToUppercase,
 } from "./services/api";
 
 import { calculateAccountCurrentBalance } from "./utils/formatters";
@@ -537,8 +538,11 @@ export default function App() {
 
   // Handler: Save Lancamento (with automatic bank account dynamic balance recalculation)
   const handleSaveLancamento = async (itemOrItems: Lancamento | Lancamento[]) => {
-    const itemsArray = Array.isArray(itemOrItems) ? itemOrItems : [itemOrItems];
-    if (itemsArray.length === 0) return;
+    const rawItemsArray = Array.isArray(itemOrItems) ? itemOrItems : [itemOrItems];
+    if (rawItemsArray.length === 0) return;
+
+    // Apply uppercase sanitization to all saved items (both on create and edit)
+    const itemsArray: Lancamento[] = rawItemsArray.map((it) => sanitizeRecordToUppercase(it));
 
     let nextLancamentos = [...lancamentos];
     itemsArray.forEach((item) => {
@@ -613,11 +617,13 @@ export default function App() {
     setStateFn: React.Dispatch<React.SetStateAction<any[]>>
   ) => {
     const targetId = String(item.Id || item.id || item.ID || `ID_${Date.now()}`);
-    const normalizedItem = {
+    const rawNormalized = {
       ...item,
       Id: targetId,
       id: targetId,
     };
+    // Sanitize both creates and updates with UPPERCASE
+    const normalizedItem = sanitizeRecordToUppercase(rawNormalized);
 
     setStateFn((prev) => {
       const idx = prev.findIndex((i) => String(i.Id || i.id).trim() === targetId.trim());
