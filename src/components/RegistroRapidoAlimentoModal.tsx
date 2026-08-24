@@ -67,7 +67,7 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedNome = nomePrato.trim();
+    const trimmedNome = nomePrato.trim().toUpperCase();
     if (!trimmedNome) {
       setError("Por favor, digite o que você comeu ou beliscou.");
       return;
@@ -116,7 +116,7 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
             proteinas: protNum > 0 ? protNum : undefined,
           },
         ],
-        observacoes: observacoes.trim() || undefined,
+        observacoes: observacoes.trim().toUpperCase() || undefined,
       };
 
       await onSaveAlimento(itemToSave);
@@ -176,9 +176,9 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
               type="text"
               required
               autoFocus
-              placeholder="Ex: 2 bolachas, 1 fatia de bolo, maçã com canela..."
+              placeholder="Ex: 2 BOLACHAS, 1 FATIA DE BOLO, MAÇÃ COM CANELA..."
               value={nomePrato}
-              onChange={(e) => setNomePrato(e.target.value)}
+              onChange={(e) => setNomePrato(e.target.value.toUpperCase())}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
             />
           </div>
@@ -237,9 +237,9 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
             </label>
             <input
               type="text"
-              placeholder="Ex: Lanche da tarde, belisco no trabalho..."
+              placeholder="Ex: LANCHE DA TARDE, BELISCO NO TRABALHO..."
               value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
+              onChange={(e) => setObservacoes(e.target.value.toUpperCase())}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
             />
           </div>
