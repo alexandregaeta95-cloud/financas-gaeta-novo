@@ -27,6 +27,7 @@ import { formatDateBR } from "../utils/formatters";
 interface Props {
   alimentos: AlimentoAnaliseResult[];
   onOpenAnalysisModal: () => void;
+  onOpenRegistroRapidoModal?: () => void;
   onSelectAlimento: (alimento: AlimentoAnaliseResult) => void;
   onEditAlimento: (alimento: AlimentoAnaliseResult) => void;
   onDeleteAlimento: (id: string) => void;
@@ -35,6 +36,7 @@ interface Props {
 export const HistoricoAlimentosView: React.FC<Props> = ({
   alimentos,
   onOpenAnalysisModal,
+  onOpenRegistroRapidoModal,
   onSelectAlimento,
   onEditAlimento,
   onDeleteAlimento,
@@ -187,17 +189,30 @@ export const HistoricoAlimentosView: React.FC<Props> = ({
             )}
           </div>
 
-          {/* New Photo Analysis Button */}
-          <button
-            onClick={onOpenAnalysisModal}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-950/40 shrink-0"
-          >
-            <Camera className="w-4 h-4" />
-            <span>Nova Análise com Foto</span>
-            <span className="px-1.5 py-0.2 bg-emerald-400/20 text-emerald-200 text-[10px] rounded-md font-mono">
-              IA
-            </span>
-          </button>
+          {/* Action Buttons: Registro Rápido & Nova Análise com Foto */}
+          <div className="flex items-center gap-2 shrink-0">
+            {onOpenRegistroRapidoModal && (
+              <button
+                onClick={onOpenRegistroRapidoModal}
+                className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-500/40 text-slate-200 hover:text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0"
+                title="Registrar alimento ou lanche manualmente sem usar foto ou IA"
+              >
+                <Plus className="w-4 h-4 text-amber-400" />
+                <span>Registro Rápido</span>
+              </button>
+            )}
+
+            <button
+              onClick={onOpenAnalysisModal}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-950/40 shrink-0"
+            >
+              <Camera className="w-4 h-4" />
+              <span>Nova Análise com Foto</span>
+              <span className="px-1.5 py-0.2 bg-emerald-400/20 text-emerald-200 text-[10px] rounded-md font-mono">
+                IA
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Period Filter Buttons */}
@@ -287,13 +302,24 @@ export const HistoricoAlimentosView: React.FC<Props> = ({
                 : "Fotografe suas refeições para salvar o histórico com estimativa de calorias, proteínas e composição dos alimentos."}
             </p>
           </div>
-          <button
-            onClick={onOpenAnalysisModal}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-emerald-950/40"
-          >
-            <Camera className="w-4 h-4" />
-            <span>Fazer Primeira Análise</span>
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
+            {onOpenRegistroRapidoModal && (
+              <button
+                onClick={onOpenRegistroRapidoModal}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-500/40 text-slate-200 hover:text-white text-xs font-bold rounded-xl transition-all shadow-md"
+              >
+                <Plus className="w-4 h-4 text-amber-400" />
+                <span>+ Registro Rápido</span>
+              </button>
+            )}
+            <button
+              onClick={onOpenAnalysisModal}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-emerald-950/40"
+            >
+              <Camera className="w-4 h-4" />
+              <span>Análise com Foto (IA)</span>
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">

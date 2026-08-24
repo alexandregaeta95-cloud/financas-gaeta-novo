@@ -26,6 +26,7 @@ import { HistoricoAlimentosView } from "./HistoricoAlimentosView";
 import { EditarAlimentoModal } from "./EditarAlimentoModal";
 import { ControleSaudeView } from "./ControleSaudeView";
 import { RegistroSaudeModal } from "./RegistroSaudeModal";
+import { RegistroRapidoAlimentoModal } from "./RegistroRapidoAlimentoModal";
 
 interface Props {
   consultas: ConsultaMedica[];
@@ -91,6 +92,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
 
   // Food Analysis Modal & History State (21_Analise_Alimentos)
   const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
+  const [isRegistroRapidoModalOpen, setIsRegistroRapidoModalOpen] = useState(false);
   const [editingAlimento, setEditingAlimento] = useState<AlimentoAnaliseResult | null>(null);
   const [isEditAlimentoModalOpen, setIsEditAlimentoModalOpen] = useState(false);
 
@@ -821,6 +823,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         <HistoricoAlimentosView
           alimentos={alimentos}
           onOpenAnalysisModal={() => setIsFoodModalOpen(true)}
+          onOpenRegistroRapidoModal={() => setIsRegistroRapidoModalOpen(true)}
           onSelectAlimento={(item) => {
             setEditingAlimento(item);
           }}
@@ -1192,6 +1195,13 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           </div>
         </div>
       )}
+
+      {/* Quick Manual Food / Meal Modal */}
+      <RegistroRapidoAlimentoModal
+        isOpen={isRegistroRapidoModalOpen}
+        onClose={() => setIsRegistroRapidoModalOpen(false)}
+        onSaveAlimento={handleSaveAlimentoItem}
+      />
 
       {/* AI Food / Meal Analysis Modal */}
       <AnalisarAlimentoModal
