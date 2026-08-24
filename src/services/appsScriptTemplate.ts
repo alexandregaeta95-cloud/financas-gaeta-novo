@@ -38,7 +38,8 @@ var SHEET_NAMES = [
   "18_Cartões_De_Crédito",
   "19_Agenda_E_Compromissos",
   "20_Controle_Saude",
-  "21_Analise_Alimentos"
+  "21_Analise_Alimentos",
+  "22_Config_Lembretes_Saude"
 ];
 
 // Mapeamento de cabeçalhos por aba
@@ -87,7 +88,8 @@ var HEADERS_BY_SHEET = {
   "18_Cartões_De_Crédito": ["Id", "Nome", "Bandeira", "Limite_Total", "Dia_Fechamento", "Dia_Vencimento", "Cor_Hex", "Ativo"],
   "19_Agenda_E_Compromissos": ["Id", "Titulo", "Data", "Hora", "Descrição", "Cor_De_Identificação", "Efeito_Alerta_(Piscando)", "Lembrete_Ativo", "Dias_De_Antecedência", "Concluído", "Categoria"],
   "20_Controle_Saude": ["Id", "Tipo_Registro", "Data_Hora", "Valor_Principal", "Valor_Secundario", "Batimentos_Bpm", "Contexto", "Observacoes", "Data_Criacao"],
-  "21_Analise_Alimentos": ["Id", "Data", "Data_Hora", "Nome_Prato", "Calorias_Estimadas", "Proteinas_Estimadas", "Carboidratos_Estimados", "Gorduras_Estimadas", "Classificacao_Geral", "Itens_Identificados", "Dicas_Nutricionais", "Observacoes", "Data_Criacao"]
+  "21_Analise_Alimentos": ["Id", "Data", "Data_Hora", "Nome_Prato", "Calorias_Estimadas", "Proteinas_Estimadas", "Carboidratos_Estimados", "Gorduras_Estimadas", "Classificacao_Geral", "Itens_Identificados", "Dicas_Nutricionais", "Observacoes", "Data_Criacao"],
+  "22_Config_Lembretes_Saude": ["Id", "Tipo", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Dias_Semana", "Ultima_Atualizacao"]
 };
 
 /**
@@ -194,9 +196,30 @@ function setupSpreadsheet() {
       cleanDuplicateColumnsInSheet(sheet);
     }
     var headers = HEADERS_BY_SHEET[sheetName];
-    if (sheet.getLastRow() === 0 && headers) {
+    if (!headers) return;
+
+    if (sheet.getLastRow() === 0) {
       sheet.appendRow(headers);
       sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+    } else {
+      // Garantir que colunas oficiais faltantes sejam adicionadas ao final da planilha existente
+      var lastCol = sheet.getLastColumn();
+      if (lastCol >= 1) {
+        var existingRow1 = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+        var clean = function(s) {
+          return String(s || "").toLowerCase().replace(/[áàãâä]/g, "a").replace(/[éèêë]/g, "e").replace(/[íìîï]/g, "i").replace(/[óòõôö]/g, "o").replace(/[úùûü]/g, "u").replace(/[ç]/g, "c").replace(/[^a-z0-9]/g, "");
+        };
+        var existingClean = existingRow1.map(clean);
+        headers.forEach(function(h) {
+          var hClean = clean(h);
+          if (hClean && existingClean.indexOf(hClean) === -1) {
+            var nextCol = sheet.getLastColumn() + 1;
+            sheet.getRange(1, nextCol).setValue(h);
+            sheet.getRange(1, nextCol).setFontWeight("bold");
+            existingClean.push(hClean);
+          }
+        });
+      }
     }
   });
 }
@@ -409,8 +432,36 @@ function writeSheetRecords(ss, sheetName, items, action) {
     { key: "Raio_(M)", label: "Raio_(M)" },
     { key: "Ativo", label: "Ativo" },
     { key: "Mensagem_De_Alerta", label: "Mensagem_De_Alerta" },
-    { key: "Data_Registro", label: "Data_Registro" }
+    { key: "Data_Registro", label: "Data_Registro" },
+    { key: "Batimentos_Bpm", label: "Batimentos_Bpm" },
+    { key: "Batimentos", label: "Batimentos_Bpm" },
+    { key: "bpm", label: "Batimentos_Bpm" },
+    { key: "Bpm", label: "Batimentos_Bpm" },
+    { key: "BPM", label: "Batimentos_Bpm" }
   ];
+
+  // Garantir também que qualquer cabeçalho oficial da aba seja adicionado se enviado nos itens
+  var officialSheetHeaders = HEADERS_BY_SHEET[sheetName] || [];
+  officialSheetHeaders.forEach(function(officialH) {
+    var cleanOfficial = cleanStr(officialH);
+    var exists = headers.some(function(h) { return cleanStr(h) === cleanOfficial; });
+    if (!exists) {
+      var itemHasVal = items.some(function(it) {
+        for (var k in it) {
+          if (cleanStr(k) === cleanOfficial && it[k] !== undefined && it[k] !== null && String(it[k]).trim() !== "") {
+            return true;
+          }
+        }
+        return false;
+      });
+      if (itemHasVal) {
+        var newCol = headers.length + 1;
+        sheet.getRange(1, newCol).setValue(officialH);
+        sheet.getRange(1, newCol).setFontWeight("bold");
+        headers.push(officialH);
+      }
+    }
+  });
 
   items.forEach(function(item) {
     potentialCols.forEach(function(pCol) {

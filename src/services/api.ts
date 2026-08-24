@@ -407,13 +407,16 @@ export async function saveSheetRecords<T = any>(
         enriched["Valor Secundario"] = item.Valor_Secundario;
         enriched["Valor_secundario"] = item.Valor_Secundario;
       }
-      if (item.Batimentos_Bpm !== undefined) {
-        enriched["Batimentos_Bpm"] = item.Batimentos_Bpm;
-        enriched["Batimentos Bpm"] = item.Batimentos_Bpm;
-        enriched["Batimentos_bpm"] = item.Batimentos_Bpm;
-        enriched["Batimentos"] = item.Batimentos_Bpm;
-        enriched["BPM"] = item.Batimentos_Bpm;
-        enriched["Bpm"] = item.Batimentos_Bpm;
+      if (item.Batimentos_Bpm !== undefined && item.Batimentos_Bpm !== null && item.Batimentos_Bpm !== "") {
+        const parsedBpm = typeof item.Batimentos_Bpm === "number" ? item.Batimentos_Bpm : parseInt(String(item.Batimentos_Bpm), 10);
+        if (!isNaN(parsedBpm) && parsedBpm > 0) {
+          enriched["Batimentos_Bpm"] = parsedBpm;
+          enriched["Batimentos Bpm"] = parsedBpm;
+          enriched["Batimentos_bpm"] = parsedBpm;
+          enriched["Batimentos"] = parsedBpm;
+          enriched["BPM"] = parsedBpm;
+          enriched["Bpm"] = parsedBpm;
+        }
       }
       if (item.Contexto !== undefined) {
         enriched["Contexto"] = item.Contexto;
