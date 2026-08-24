@@ -17,13 +17,15 @@ import {
   Utensils,
   ChevronRight,
   Info,
+  Save,
+  Check,
 } from "lucide-react";
 import { AlimentoAnaliseResult } from "../types";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSaveAlimento?: (alimento: AlimentoAnaliseResult) => void;
+  onSaveAlimento?: (alimento: AlimentoAnaliseResult) => Promise<void> | void;
 }
 
 const STORAGE_KEY = "gaeta_alimentos_history";
@@ -32,6 +34,8 @@ export const AnalisarAlimentoModal: React.FC<Props> = ({ isOpen, onClose, onSave
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>("image/jpeg");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AlimentoAnaliseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<AlimentoAnaliseResult[]>([]);
@@ -54,32 +58,50 @@ export const AnalisarAlimentoModal: React.FC<Props> = ({ isOpen, onClose, onSave
 
   if (!isOpen) return null;
 
-  const saveToHistory = (result: AlimentoAnaliseResult, preview?: string) => {
-    try {
-      const now = new Date();
-      const itemWithMeta: AlimentoAnaliseResult = {
-        ...result,
-        id: result.id || `alim_${Date.now()}`,
-        data: result.data || now.toISOString().split("T")[0],
-        dataHora: result.dataHora || now.toLocaleString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        imagemPreview: preview || result.imagemPreview || undefined,
-      };
+  const prepareItemToSave = (result: AlimentoAnaliseResult, preview?: string): AlimentoAnaliseResult => {
+    const now = new Date();
+    return {
+      ...result,
+      id: result.id || `ALIM_${Date.now()}`,
+      data: result.data || now.toISOString().split("T")[0],
+      dataHora: result.dataHora || now.toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      imagemPreview: preview || result.imagemPreview || undefined,
+    };
+  };
 
-      const updated = [itemWithMeta, ...history.filter((h) => h.id !== itemWithMeta.id).slice(0, 49)];
+  const handleManualSave = async () => {
+    if (!analysisResult) return;
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const itemToSave = prepareItemToSave(analysisResult, imagePreview || undefined);
+
+      // Save to local storage history
+      const updated = [itemToSave, ...history.filter((h) => h.id !== itemToSave.id).slice(0, 49)];
       setHistory(updated);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
+      // Save to Google Sheets via onSaveAlimento
       if (onSaveAlimento) {
-        onSaveAlimento(itemWithMeta);
+        await onSaveAlimento(itemToSave);
       }
-    } catch (e) {
-      console.error("Erro ao salvar histórico:", e);
+
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 4000);
+    } catch (e: any) {
+      console.error("Erro ao salvar alimento no histórico:", e);
+      setError(e.message || "Erro ao salvar na planilha. Tente novamente.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -107,6 +129,7 @@ export const AnalisarAlimentoModal: React.FC<Props> = ({ isOpen, onClose, onSave
     }
 
     setError(null);
+    setSaveSuccess(false);
     setMimeType(file.type || "image/jpeg");
 
     const reader = new FileReader();
@@ -126,6 +149,7 @@ export const AnalisarAlimentoModal: React.FC<Props> = ({ isOpen, onClose, onSave
 
     setIsAnalyzing(true);
     setError(null);
+    setSaveSuccess(false);
 
     try {
       const response = await fetch("/api/analyze-food", {
@@ -146,8 +170,17 @@ export const AnalisarAlimentoModal: React.FC<Props> = ({ isOpen, onClose, onSave
       }
 
       const result: AlimentoAnaliseResult = json.data;
-      setAnalysisResult(result);
-      saveToHistory(result, imagePreview);
+      const itemWithMeta = prepareItemToSave(result, imagePreview);
+      setAnalysisResult(itemWithMeta);
+
+      // Save automatically in background as fallback
+      const updated = [itemWithMeta, ...history.filter((h) => h.id !== itemWithMeta.id).slice(0, 49)];
+      setHistory(updated);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+      if (onSaveAlimento) {
+        onSaveAlimento(itemWithMeta);
+      }
     } catch (err: any) {
       console.error("Erro na análise de alimento:", err);
       setError(
@@ -163,6 +196,7 @@ export const AnalisarAlimentoModal: React.FC<Props> = ({ isOpen, onClose, onSave
     setImagePreview(null);
     setAnalysisResult(null);
     setError(null);
+    setSaveSuccess(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (cameraInputRef.current) cameraInputRef.current.value = "";
   };
@@ -573,14 +607,42 @@ export const AnalisarAlimentoModal: React.FC<Props> = ({ isOpen, onClose, onSave
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex gap-3 pt-2">
+                      <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleManualSave}
+                          disabled={isSaving}
+                          className={`flex-1 py-3 px-4 text-xs font-bold rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg ${
+                            saveSuccess
+                              ? "bg-emerald-600 text-white shadow-emerald-900/30"
+                              : "bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black shadow-emerald-500/20 active:scale-[0.98]"
+                          } disabled:opacity-60 disabled:cursor-not-allowed`}
+                        >
+                          {isSaving ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                              <span>Salvando na Planilha...</span>
+                            </>
+                          ) : saveSuccess ? (
+                            <>
+                              <Check className="w-4 h-4 text-white" />
+                              <span>Salvo no Histórico e Planilha!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-4 h-4" />
+                              <span>Salvar no Histórico</span>
+                            </>
+                          )}
+                        </button>
+
                         <button
                           type="button"
                           onClick={resetAnalysis}
-                          className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
+                          className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
                         >
                           <Camera className="w-4 h-4" />
-                          Analisar Outro Alimento
+                          <span>Analisar Outro Alimento</span>
                         </button>
                       </div>
                     </div>
