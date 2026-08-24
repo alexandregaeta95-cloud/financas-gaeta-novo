@@ -318,6 +318,13 @@ export function evaluateAllNotifications({
   const todayLocalStr = getLocalTodayDateStr(nowDate);
   const currentDayOfWeek = nowDate.getDay(); // 0 = Domingo, 1 = Segunda, ...
 
+  // DEBUG LOG TEMPORÁRIO
+  console.groupCollapsed(
+    `[Lembretes Saúde] Checagem às ${String(currentHour).padStart(2, "0")}:${String(currentMin).padStart(2, "0")} (${todayLocalStr})`
+  );
+  console.log("Lembretes carregados (lembretesSaude):", lembretesSaude);
+  console.log("Total de registros de saúde:", registrosSaude.length);
+
   const dayOfWeekNames: Record<number, string[]> = {
     0: ["DOM", "DOMINGO"],
     1: ["SEG", "SEGUNDA"],
@@ -347,7 +354,10 @@ export function evaluateAllNotifications({
       String(rawAtivo).trim().toUpperCase() === "TRUE" ||
       String(rawAtivo).trim().toUpperCase() === "ATIVO";
 
-    if (!isAtivo) return;
+    if (!isAtivo) {
+      console.log(`[Lembretes Saúde] Item ignorado (inativo):`, cfg);
+      return;
+    }
 
     // 2. Identificação do Tipo (Pressão vs Glicemia) e ignora configuração de perfil biométrico
     const id = String(cfg.id || cfg.Id || cfg.ID || "");
@@ -385,7 +395,10 @@ export function evaluateAllNotifications({
     if (rawDiasSemana && rawDiasSemana !== "TODOS") {
       const todayTokens = dayOfWeekNames[currentDayOfWeek] || [];
       const matchesDay = todayTokens.some((tok) => rawDiasSemana.includes(tok));
-      if (!matchesDay) return;
+      if (!matchesDay) {
+        console.log(`[Lembretes Saúde] ${tipoLabel} ignorado hoje: dia da semana ${rawDiasSemana} não corresponde a hoje.`);
+        return;
+      }
     }
 
     // 4. Extração robusta de todos os horários configurados (suporta todas as variações de nomes de colunas)
@@ -435,6 +448,10 @@ export function evaluateAllNotifications({
 
     const rawHorarios = Array.from(rawHorariosSet);
 
+    if (rawHorarios.length === 0) {
+      console.warn(`[Lembretes Saúde] Nenhum horário encontrado para a configuração:`, cfg);
+    }
+
     // 5. Avaliação independente por horário/slot
     rawHorarios.forEach((timeStr, idx) => {
       const parts = timeStr.split(":");
@@ -445,13 +462,15 @@ export function evaluateAllNotifications({
 
       const targetTotalMins = h * 60 + m;
       const diffMins = currentTotalMins - targetTotalMins;
+      const isDentroJanela = diffMins >= 0 && diffMins <= 45;
+
+      console.log(
+        `[Lembretes Saúde] ${tipoLabel} -> Slot: ${timeStr} | Atual: ${String(currentHour).padStart(2, "0")}:${String(currentMin).padStart(2, "0")} | Dif: ${diffMins} min | Dentro da janela (0-45m)? ${isDentroJanela ? "✅ SIM" : "❌ NÃO"}`
+      );
 
       // Janela ativa do lembrete: a partir do minuto exato até 45 minutos depois
-      if (diffMins >= 0 && diffMins <= 45) {
+      if (isDentroJanela) {
         // Verifica se já existe uma medição realizada ESPECIFICAMENTE para este horário/slot
-        // Regra: Uma medição cumpre este lembrete se foi realizada hoje, dentro de uma janela
-        // de até 90 minutos ANTES do horário agendado até o fim da janela ativa (+45 min).
-        // Assim, medições anteriores da manhã NÃO bloqueiam lembretes posteriores do mesmo dia!
         const jaRegistrouNesteSlot = registrosSaude.some((reg) => {
           const anyReg = reg as any;
           const regTipo = String(reg.Tipo_Registro || anyReg.tipo || "").toUpperCase();
@@ -472,14 +491,21 @@ export function evaluateAllNotifications({
           if (parsed.totalMinutes !== null) {
             const minAllowed = targetTotalMins - 90; // Até 1h30 antes do horário
             const maxAllowed = targetTotalMins + 45; // Até o encerramento da janela do lembrete
-            return parsed.totalMinutes >= minAllowed && parsed.totalMinutes <= maxAllowed;
+            const matchSlot = parsed.totalMinutes >= minAllowed && parsed.totalMinutes <= maxAllowed;
+            if (matchSlot) {
+              console.log(
+                `[Lembretes Saúde] Medição recente encontrada para o slot ${timeStr}:`,
+                reg
+              );
+            }
+            return matchSlot;
           }
 
-          // Se o registro não tiver horário (apenas data), não bloqueia slots específicos
           return false;
         });
 
         if (!jaRegistrouNesteSlot) {
+          console.log(`[Lembretes Saúde] 🔔 DISPARANDO NOTIFICAÇÃO para ${tipoLabel} (${timeStr})!`);
           const slotClean = timeStr.replace(":", "");
           list.push({
             id: `lembrete_saude_${tipoKey.toLowerCase()}_${slotClean}_${todayLocalStr}`,
@@ -490,10 +516,15 @@ export function evaluateAllNotifications({
             severity: diffMins <= 15 ? "urgent" : "warning",
             timestamp: now,
           });
+        } else {
+          console.log(
+            `[Lembretes Saúde] Notificação para ${tipoLabel} (${timeStr}) dispensada pois já foi medida recentemente.`
+          );
         }
       }
     });
   });
+  console.groupEnd();
 
   // 3. VEÍCULOS & OFICINA
   // A. Manutenções Agendadas
