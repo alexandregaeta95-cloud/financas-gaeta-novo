@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   BellRing,
+  Ruler,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -41,6 +42,8 @@ import {
 import { RegistroSaude, LembreteSaudeConfig } from "../types";
 import { formatDateBR } from "../utils/formatters";
 import { ConfigLembretesSaudeModal } from "./ConfigLembretesSaudeModal";
+import { EditarAlturaModal } from "./EditarAlturaModal";
+import { calcularImc } from "../utils/imc";
 
 interface Props {
   registros: RegistroSaude[];
@@ -49,6 +52,8 @@ interface Props {
   onDeleteRegistro: (id: string) => void;
   lembretesConfigs?: LembreteSaudeConfig[];
   onSaveLembretesConfigs?: (configs: LembreteSaudeConfig[]) => Promise<void> | void;
+  alturaUsuario?: number;
+  onSaveAltura?: (alturaCm: number) => Promise<void> | void;
 }
 
 type PeriodFilter = "all" | "this_month" | "last_month" | "custom";
@@ -60,6 +65,8 @@ export const ControleSaudeView: React.FC<Props> = ({
   onDeleteRegistro,
   lembretesConfigs = [],
   onSaveLembretesConfigs,
+  alturaUsuario,
+  onSaveAltura,
 }) => {
   const [activeTab, setActiveTab] = useState<"peso" | "pressao" | "glicemia" | "dicas">("peso");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
@@ -67,6 +74,31 @@ export const ControleSaudeView: React.FC<Props> = ({
   const [customEndDate, setCustomEndDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isLembretesModalOpen, setIsLembretesModalOpen] = useState(false);
+  const [isAlturaModalOpen, setIsAlturaModalOpen] = useState(false);
+
+  // Extract altura from lembretesConfigs if not explicitly passed
+  const effectiveAltura = useMemo(() => {
+    if (alturaUsuario && alturaUsuario > 0) return alturaUsuario;
+    const configRow = lembretesConfigs.find(
+      (c) =>
+        c.id === "CONFIG_PERFIL_ALTURA" ||
+        c.Id === "CONFIG_PERFIL_ALTURA" ||
+        c.tipo === "Perfil_Altura" ||
+        c.Tipo === "Perfil_Altura"
+    );
+    if (configRow) {
+      const val = parseInt(
+        configRow.horario1 ||
+          configRow.Horario_1 ||
+          configRow.altura ||
+          configRow.Valor_Principal ||
+          "175",
+        10
+      );
+      if (!isNaN(val) && val >= 100 && val <= 250) return val;
+    }
+    return 175;
+  }, [alturaUsuario, lembretesConfigs]);
 
   // Filter records by Active Tab (or all for tips) and Period
   const filteredRegistros = useMemo(() => {
@@ -171,6 +203,7 @@ export const ControleSaudeView: React.FC<Props> = ({
     const min = Math.min(...values);
     const max = Math.max(...values);
     const avg = values.reduce((acc, curr) => acc + curr, 0) / values.length;
+    const imc = calcularImc(latest, effectiveAltura);
 
     return {
       latest,
@@ -179,8 +212,18 @@ export const ControleSaudeView: React.FC<Props> = ({
       max,
       avg: avg.toFixed(1),
       count: list.length,
+      imc,
     };
-  }, [filteredRegistros]);
+  }, [filteredRegistros, effectiveAltura]);
+
+  // Faixa de peso saudável recomendada pela OMS (IMC 18.5 a 24.9)
+  const faixaSaudavel = useMemo(() => {
+    if (!effectiveAltura || effectiveAltura <= 0) return null;
+    const m = effectiveAltura / 100;
+    const min = Math.round(18.5 * m * m * 10) / 10;
+    const max = Math.round(24.9 * m * m * 10) / 10;
+    return { min, max };
+  }, [effectiveAltura]);
 
   const pressaoStats = useMemo(() => {
     const list = filteredRegistros.filter(
@@ -466,9 +509,70 @@ export const ControleSaudeView: React.FC<Props> = ({
       {/* ------------------------------------------------------------- */}
       {activeTab === "peso" && (
         <div className="space-y-6">
+          {/* Perfil Biométrico & Configuração de Altura */}
+          <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-700/70 p-4 sm:p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg shadow-black/20">
+            <div className="flex items-center gap-3.5">
+              <div className="p-3 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-2xl shrink-0">
+                <Ruler className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Perfil Biométrico
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    Sincronizado na Planilha
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-xl font-black text-white">
+                    {effectiveAltura} <span className="text-sm font-semibold text-slate-400">cm</span>
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    ({(effectiveAltura / 100).toFixed(2).replace(".", ",")} m)
+                  </span>
+                </div>
+                {faixaSaudavel && (
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Faixa ideal OMS para esta altura:{" "}
+                    <strong className="text-emerald-400">
+                      {faixaSaudavel.min} kg – {faixaSaudavel.max} kg
+                    </strong>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 self-start md:self-center">
+              {pesoStats?.imc && (
+                <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700/80 px-3.5 py-2 rounded-xl">
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 uppercase block font-semibold">
+                      IMC Atual
+                    </span>
+                    <span className="text-base font-black text-white">{pesoStats.imc.imc}</span>
+                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${pesoStats.imc.corBadge}`}
+                  >
+                    {pesoStats.imc.classificacao}
+                  </span>
+                </div>
+              )}
+
+              <button
+                onClick={() => setIsAlturaModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-750 text-amber-300 hover:text-amber-200 border border-amber-500/30 hover:border-amber-500/50 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                <span>Alterar Altura</span>
+              </button>
+            </div>
+          </div>
+
           {/* KPI Cards */}
           {pesoStats && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="bg-slate-800/70 border border-slate-700/60 p-4 rounded-xl">
                 <div className="text-xs text-slate-400 font-medium">Último Peso</div>
                 <div className="text-2xl font-black text-amber-400 mt-1">
@@ -492,6 +596,27 @@ export const ControleSaudeView: React.FC<Props> = ({
                 </div>
               </div>
 
+              {/* IMC KPI Card */}
+              <div className="bg-slate-800/70 border border-slate-700/60 p-4 rounded-xl">
+                <div className="text-xs text-slate-400 font-medium">IMC Atual (OMS)</div>
+                {pesoStats.imc ? (
+                  <>
+                    <div className="text-2xl font-black text-white mt-1">
+                      {pesoStats.imc.imc}
+                    </div>
+                    <div className="mt-1.5">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border ${pesoStats.imc.corBadge}`}
+                      >
+                        {pesoStats.imc.classificacao}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-sm text-slate-400 mt-2 italic">—</div>
+                )}
+              </div>
+
               <div className="bg-slate-800/70 border border-slate-700/60 p-4 rounded-xl">
                 <div className="text-xs text-slate-400 font-medium">Média do Período</div>
                 <div className="text-2xl font-black text-white mt-1">
@@ -499,7 +624,7 @@ export const ControleSaudeView: React.FC<Props> = ({
                   <span className="text-sm font-semibold text-slate-400">kg</span>
                 </div>
                 <div className="text-xs text-slate-400 mt-1.5">
-                  {pesoStats.count} medições registradas
+                  {pesoStats.count} medições
                 </div>
               </div>
 
@@ -529,9 +654,11 @@ export const ControleSaudeView: React.FC<Props> = ({
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Activity className="w-4 h-4 text-amber-400" />
-                  Evolução do Peso Corporal (kg)
+                  Evolução do Peso Corporal & IMC
                 </h3>
-                <p className="text-xs text-slate-400">Acompanhe a curva de variação do peso ao longo do tempo</p>
+                <p className="text-xs text-slate-400">
+                  Acompanhe a curva de variação do peso ao longo do tempo
+                </p>
               </div>
             </div>
 
@@ -561,7 +688,17 @@ export const ControleSaudeView: React.FC<Props> = ({
                         color: "#fff",
                         fontSize: "12px",
                       }}
-                      formatter={(val: any) => [`${val} kg`, "Peso"]}
+                      formatter={(val: any) => {
+                        const num = parseFloat(val);
+                        const imcInfo = calcularImc(num, effectiveAltura);
+                        if (imcInfo) {
+                          return [
+                            `${num} kg (IMC ${imcInfo.imc} • ${imcInfo.classificacao})`,
+                            "Peso Corporal",
+                          ];
+                        }
+                        return [`${val} kg`, "Peso"];
+                      }}
                       labelFormatter={(label, payload) => {
                         const it = payload?.[0]?.payload;
                         return it?.fullDate ? `Data: ${it.fullDate}` : `Data: ${label}`;
@@ -606,12 +743,14 @@ export const ControleSaudeView: React.FC<Props> = ({
                     <tr>
                       <th className="py-3 px-4">Data & Horário</th>
                       <th className="py-3 px-4">Peso</th>
+                      <th className="py-3 px-4">IMC & Classificação (OMS)</th>
                       <th className="py-3 px-4">Observações</th>
                       <th className="py-3 px-4 text-right">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
                     {tableRegistros.map((reg, idx) => {
+                      const imcInfo = calcularImc(reg.Valor_Principal, effectiveAltura);
                       return (
                         <tr key={reg.Id || idx} className="hover:bg-slate-800/40 transition-colors">
                           <td className="py-3 px-4 text-slate-200 font-medium whitespace-nowrap">
@@ -624,6 +763,20 @@ export const ControleSaudeView: React.FC<Props> = ({
                             <span className="text-sm font-black text-amber-400">
                               {reg.Valor_Principal} kg
                             </span>
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            {imcInfo ? (
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-white text-xs">{imcInfo.imc}</span>
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${imcInfo.corBadge}`}
+                                >
+                                  {imcInfo.classificacao}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-500 italic">—</span>
+                            )}
                           </td>
                           <td className="py-3 px-4 text-slate-300">
                             {reg.Observacoes || <span className="text-slate-500 italic">—</span>}
@@ -1361,6 +1514,16 @@ export const ControleSaudeView: React.FC<Props> = ({
           onClose={() => setIsLembretesModalOpen(false)}
           configs={lembretesConfigs}
           onSaveConfigs={onSaveLembretesConfigs}
+        />
+      )}
+
+      {/* Modal de Configuração de Altura */}
+      {isAlturaModalOpen && (
+        <EditarAlturaModal
+          isOpen={isAlturaModalOpen}
+          onClose={() => setIsAlturaModalOpen(false)}
+          currentAlturaCm={effectiveAltura}
+          onSaveAltura={onSaveAltura || (() => {})}
         />
       )}
     </div>

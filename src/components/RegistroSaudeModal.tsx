@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { X, Activity, Scale, Heart, Droplets, Calendar, Clock, AlertCircle } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { X, Activity, Scale, Heart, Droplets, Calendar, Clock, AlertCircle, Info } from "lucide-react";
 import { RegistroSaude } from "../types";
 import { generateNewId } from "../services/api";
+import { calcularImc } from "../utils/imc";
 
 interface Props {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface Props {
   onSave: (registro: RegistroSaude) => Promise<void>;
   initialData?: RegistroSaude | null;
   defaultTipo?: "PESO" | "PRESSAO" | "GLICEMIA";
+  alturaUsuario?: number;
 }
 
 // Helper to parse date and time reliably from any format (ISO, YYYY-MM-DD HH:mm, DD/MM/YYYY HH:mm)
@@ -60,6 +62,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
   onSave,
   initialData,
   defaultTipo = "PESO",
+  alturaUsuario = 175,
 }) => {
   const [tipo, setTipo] = useState<"PESO" | "PRESSAO" | "GLICEMIA">(defaultTipo);
   const [data, setData] = useState("");
@@ -68,6 +71,14 @@ export const RegistroSaudeModal: React.FC<Props> = ({
   // Sub-aba 1: Peso
   const [pesoValor, setPesoValor] = useState<string>("");
   const [pesoObs, setPesoObs] = useState("");
+
+  // Live IMC calculation preview for Peso
+  const imcLivePreview = useMemo(() => {
+    if (tipo !== "PESO") return null;
+    const num = parseFloat(pesoValor.replace(",", "."));
+    if (isNaN(num) || num <= 0) return null;
+    return calcularImc(num, alturaUsuario);
+  }, [tipo, pesoValor, alturaUsuario]);
 
   // Sub-aba 2: Pressão Arterial
   const [pressaoSistolica, setPressaoSistolica] = useState<string>("");
@@ -389,6 +400,35 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                   Dica: Pese-se preferencialmente pela manhã em jejum e após urinar.
                 </p>
               </div>
+
+              {/* Live IMC Preview Box */}
+              {imcLivePreview && (
+                <div className="bg-slate-850 border border-slate-700/80 rounded-xl p-3.5 space-y-2 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                      <Scale className="w-3.5 h-3.5 text-amber-400" />
+                      <span>IMC Calculado:</span>
+                      <span className="text-sm font-black text-white ml-0.5">
+                        {imcLivePreview.imc}
+                      </span>
+                    </div>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${imcLivePreview.corBadge}`}
+                    >
+                      {imcLivePreview.classificacao}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
+                    <span>
+                      Altura base: <strong className="text-slate-300">{alturaUsuario} cm</strong>
+                    </span>
+                    <span>
+                      Faixa ideal OMS: <strong className="text-emerald-400">{imcLivePreview.faixaIdealMinKg} – {imcLivePreview.faixaIdealMaxKg} kg</strong>
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">

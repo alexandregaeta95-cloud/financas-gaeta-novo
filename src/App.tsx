@@ -251,6 +251,46 @@ export default function App() {
   );
   const [perfil, setPerfil] = useState<PerfilUsuario | null>(null);
 
+  // Perfil Biométrico: Altura (cm) do Usuário - Sincronizado na Planilha
+  const [alturaUsuario, setAlturaUsuario] = useState<number>(() => {
+    const local = localStorage.getItem("financas_gaeta_altura_usuario");
+    if (local) {
+      const parsed = parseInt(local, 10);
+      if (!isNaN(parsed) && parsed >= 100 && parsed <= 250) return parsed;
+    }
+    const cachedLembretes = getCachedSheetData<LembreteSaudeConfig>(SHEET_NAMES.CONFIG_LEMBRETES_SAUDE);
+    const found = cachedLembretes.find(
+      (c) =>
+        c.id === "CONFIG_PERFIL_ALTURA" ||
+        c.Id === "CONFIG_PERFIL_ALTURA" ||
+        c.tipo === "Perfil_Altura" ||
+        c.Tipo === "Perfil_Altura"
+    );
+    if (found) {
+      const val = parseInt(found.horario1 || found.Horario_1 || found.altura || "175", 10);
+      if (!isNaN(val) && val >= 100 && val <= 250) return val;
+    }
+    return 175;
+  });
+
+  // Keep alturaUsuario in sync when lembretesSaude updates from cloud
+  useEffect(() => {
+    const found = lembretesSaude.find(
+      (c) =>
+        c.id === "CONFIG_PERFIL_ALTURA" ||
+        c.Id === "CONFIG_PERFIL_ALTURA" ||
+        c.tipo === "Perfil_Altura" ||
+        c.Tipo === "Perfil_Altura"
+    );
+    if (found) {
+      const val = parseInt(found.horario1 || found.Horario_1 || found.altura || "", 10);
+      if (!isNaN(val) && val >= 100 && val <= 250) {
+        setAlturaUsuario(val);
+        localStorage.setItem("financas_gaeta_altura_usuario", String(val));
+      }
+    }
+  }, [lembretesSaude]);
+
   // Sync State
   const [syncState, setSyncState] = useState<SyncState>({
     isConnected: false,
@@ -577,6 +617,53 @@ export default function App() {
     }
   };
 
+  const handleSaveAltura = async (novaAlturaCm: number) => {
+    setAlturaUsuario(novaAlturaCm);
+    localStorage.setItem("financas_gaeta_altura_usuario", String(novaAlturaCm));
+
+    const configRecord: LembreteSaudeConfig = {
+      id: "CONFIG_PERFIL_ALTURA",
+      Id: "CONFIG_PERFIL_ALTURA",
+      tipo: "Perfil_Altura",
+      Tipo: "Perfil_Altura",
+      ativo: "SIM",
+      Ativo: "SIM",
+      horario1: String(novaAlturaCm),
+      Horario_1: String(novaAlturaCm),
+      horario2: "",
+      Horario_2: "",
+      horario3: "",
+      Horario_3: "",
+      diasSemana: "TODOS",
+      Dias_Semana: "TODOS",
+      ultimaAtualizacao: new Date().toLocaleString("pt-BR"),
+      Ultima_Atualizacao: new Date().toLocaleString("pt-BR"),
+    };
+
+    setLembretesSaude((prev) => {
+      const idx = prev.findIndex(
+        (p) =>
+          p.id === "CONFIG_PERFIL_ALTURA" ||
+          p.Id === "CONFIG_PERFIL_ALTURA" ||
+          p.tipo === "Perfil_Altura" ||
+          p.Tipo === "Perfil_Altura"
+      );
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = configRecord;
+        return next;
+      }
+      return [...prev, configRecord];
+    });
+
+    try {
+      await saveSheetRecords(SHEET_NAMES.CONFIG_LEMBRETES_SAUDE, [configRecord], "UPSERT");
+    } catch (err: any) {
+      console.error("Erro ao salvar altura na planilha:", err);
+      alert(`Erro ao salvar altura na planilha: ${err.message || err}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col">
       {/* Top Sync Status Bar */}
@@ -706,6 +793,8 @@ export default function App() {
             lembretesConfigs={lembretesSaude}
             alimentos={alimentos}
             veiculos={veiculos}
+            alturaUsuario={alturaUsuario}
+            onSaveAltura={handleSaveAltura}
             onSaveConsulta={(c) => handleSaveGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, c, setConsultas)}
             onSaveReceita={(r) => handleSaveGeneric(SHEET_NAMES.RECEITAS_MEDICAS, r, setReceitas)}
             onSaveInfracao={(inf) => handleSaveGeneric(SHEET_NAMES.INFRACOES, inf, setInfracoes)}

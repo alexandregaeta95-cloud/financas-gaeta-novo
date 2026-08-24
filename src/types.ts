@@ -392,10 +392,10 @@ export interface AlimentoAnaliseResult {
   observacoes?: string;
 }
 
-// 22. Configuração de Lembretes Diários de Saúde
+// 22. Configuração de Lembretes Diários de Saúde e Perfil Biométrico
 export interface LembreteSaudeConfig {
-  id: string; // 'LEMBRETE_PRESSAO' | 'LEMBRETE_GLICEMIA'
-  tipo: "Pressao_Arterial" | "Glicemia";
+  id: string; // 'LEMBRETE_PRESSAO' | 'LEMBRETE_GLICEMIA' | 'CONFIG_PERFIL_ALTURA'
+  tipo: "Pressao_Arterial" | "Glicemia" | "Perfil_Altura" | string;
   ativo: boolean | string;
   horario1?: string;
   horario2?: string;
@@ -403,4 +403,9 @@ export interface LembreteSaudeConfig {
   diasSemana?: string;
   ultimaAtualizacao?: string;
   [key: string]: any;
+}
+
+export interface PerfilBiometricoConfig {
+  alturaCm: number;
+  ultimaAtualizacao?: string;
 }

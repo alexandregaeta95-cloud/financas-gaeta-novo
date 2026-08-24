@@ -35,6 +35,8 @@ interface Props {
   lembretesConfigs?: LembreteSaudeConfig[];
   alimentos?: AlimentoAnaliseResult[];
   veiculos?: Veiculo[];
+  alturaUsuario?: number;
+  onSaveAltura?: (alturaCm: number) => Promise<void> | void;
   onSaveConsulta: (consulta: ConsultaMedica) => Promise<void>;
   onSaveReceita: (receita: ReceitaMedica) => Promise<void>;
   onSaveInfracao: (infracao: Infracao) => Promise<void>;
@@ -56,6 +58,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   lembretesConfigs = [],
   alimentos = [],
   veiculos = [],
+  alturaUsuario,
+  onSaveAltura,
   onSaveConsulta,
   onSaveReceita,
   onSaveInfracao,
@@ -834,6 +838,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           onDeleteRegistro={handleDeleteRegistroSaudeItem}
           lembretesConfigs={lembretesConfigs}
           onSaveLembretesConfigs={onSaveLembretesConfigs}
+          alturaUsuario={alturaUsuario}
+          onSaveAltura={onSaveAltura}
         />
       )}
 
@@ -1215,6 +1221,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         onSave={handleSaveRegistroSaudeSubmit}
         initialData={editingRegistroSaude}
         defaultTipo={defaultTipoRegistro}
+        alturaUsuario={alturaUsuario}
       />
     </div>
   );
