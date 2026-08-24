@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   BellRing,
   Ruler,
+  FileText,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -54,6 +55,7 @@ interface Props {
   onSaveLembretesConfigs?: (configs: LembreteSaudeConfig[]) => Promise<void> | void;
   alturaUsuario?: number;
   onSaveAltura?: (alturaCm: number) => Promise<void> | void;
+  onOpenRelatorio?: () => void;
 }
 
 type PeriodFilter = "all" | "this_month" | "last_month" | "custom";
@@ -67,6 +69,7 @@ export const ControleSaudeView: React.FC<Props> = ({
   onSaveLembretesConfigs,
   alturaUsuario,
   onSaveAltura,
+  onOpenRelatorio,
 }) => {
   const [activeTab, setActiveTab] = useState<"peso" | "pressao" | "glicemia" | "dicas">("peso");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
@@ -332,7 +335,17 @@ export const ControleSaudeView: React.FC<Props> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {onOpenRelatorio && (
+            <button
+              onClick={onOpenRelatorio}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-750 text-emerald-400 border border-slate-700/80 hover:border-emerald-500/40 transition-all shadow-sm group cursor-pointer"
+              title="Abrir Relatório Consolidado de Saúde em PDF"
+            >
+              <FileText className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <span>Relatório Geral (PDF)</span>
+            </button>
+          )}
           {onSaveLembretesConfigs && (
             <button
               onClick={() => setIsLembretesModalOpen(true)}

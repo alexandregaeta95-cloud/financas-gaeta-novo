@@ -39,6 +39,7 @@ import { RegistroSaudeModal } from "./RegistroSaudeModal";
 import { RegistroRapidoAlimentoModal } from "./RegistroRapidoAlimentoModal";
 import { ExerciciosView } from "./ExerciciosView";
 import { RegistroExercicioModal } from "./RegistroExercicioModal";
+import { SaudeRelatorioModal } from "./SaudeRelatorioModal";
 
 interface Props {
   consultas: ConsultaMedica[];
@@ -119,6 +120,9 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   // Exercise & Workout State (23_Exercicios)
   const [isExercicioModalOpen, setIsExercicioModalOpen] = useState(false);
   const [editingExercicio, setEditingExercicio] = useState<ExercicioRegistro | null>(null);
+
+  // Consolidated Health Report Modal State
+  const [isRelatorioModalOpen, setIsRelatorioModalOpen] = useState(false);
 
   const handleSaveExercicioSubmit = async (item: ExercicioRegistro) => {
     if (onSaveExercicio) {
@@ -423,6 +427,16 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Consolidated Health Report Button */}
+          <button
+            onClick={() => setIsRelatorioModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 text-xs font-bold rounded-xl transition-all border border-slate-800 hover:border-emerald-500/40 shadow-sm cursor-pointer"
+            title="Abrir Relatório Consolidado de Saúde (PDF)"
+          >
+            <FileText className="w-4 h-4 text-emerald-400" />
+            <span>📄 Relatório de Saúde (PDF)</span>
+          </button>
+
           {/* AI Food Analysis Action Button */}
           <button
             onClick={() => setIsFoodModalOpen(true)}
@@ -895,6 +909,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           onSaveLembretesConfigs={onSaveLembretesConfigs}
           alturaUsuario={alturaUsuario}
           onSaveAltura={onSaveAltura}
+          onOpenRelatorio={() => setIsRelatorioModalOpen(true)}
         />
       )}
 
@@ -1308,6 +1323,18 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         }}
         onSave={handleSaveExercicioSubmit}
         initialData={editingExercicio}
+      />
+
+      {/* Consolidated Health Report Modal */}
+      <SaudeRelatorioModal
+        isOpen={isRelatorioModalOpen}
+        onClose={() => setIsRelatorioModalOpen(false)}
+        registrosSaude={registrosSaude}
+        exercicios={exercicios}
+        alturaUsuario={alturaUsuario}
+        lembretesConfigs={lembretesConfigs}
+        consultas={consultas}
+        receitas={receitas}
       />
     </div>
   );
