@@ -249,6 +249,80 @@ export async function fetchSheetData<T = any>(
 }
 
 /**
+ * Safe uppercase sanitizer for saving records to Google Sheets.
+ * Converts free text strings to UPPERCASE while strictly preserving:
+ * - URLs (http, https, data:, blob:)
+ * - Image/Proof fields (Comprovante_Url, etc.)
+ * - Location/GPS coordinates
+ * - Numbers, booleans, dates/timestamps
+ * - Serialized JSON strings
+ */
+export function sanitizeValueToUppercase(key: string, value: any): any {
+  if (value === null || value === undefined) return value;
+  if (typeof value !== "string") return value;
+
+  const trimmed = value.trim();
+  if (trimmed === "") return "";
+
+  const lowerKey = key.toLowerCase();
+
+  // 1. Keys that must NEVER be converted to uppercase
+  if (
+    lowerKey.includes("url") ||
+    lowerKey.includes("link") ||
+    lowerKey.includes("comprovante") ||
+    lowerKey.includes("foto") ||
+    lowerKey.includes("imagem") ||
+    lowerKey.includes("webhook") ||
+    lowerKey.includes("token") ||
+    lowerKey.includes("localizacao") ||
+    lowerKey.includes("localização") ||
+    lowerKey.includes("latitude") ||
+    lowerKey.includes("longitude") ||
+    lowerKey.includes("maps") ||
+    lowerKey === "targeturl"
+  ) {
+    return value;
+  }
+
+  // 2. Protocols and Web URLs
+  if (
+    /^(https?:\/\/|data:|blob:|mailto:|geo:|tel:)/i.test(trimmed) ||
+    trimmed.startsWith("www.")
+  ) {
+    return value;
+  }
+
+  // 3. Geographic coordinates (e.g., "-23.550520, -46.633308" or "-23.550520;-46.633308")
+  if (/^-?\d+(\.\d+)?\s*[,;]\s*-?\d+(\.\d+)?$/.test(trimmed)) {
+    return value;
+  }
+
+  // 4. ISO Date / Datetime strings (e.g., "2026-08-24T13:42:00.000Z" or "2026-08-24")
+  if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/i.test(trimmed)) {
+    return value;
+  }
+
+  // 5. Plain Time strings (e.g., "14:30" or "08:15:00")
+  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+    return value;
+  }
+
+  // 6. JSON Object / Array string payloads
+  if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+    try {
+      JSON.parse(trimmed);
+      return value; // It's valid JSON, preserve structure
+    } catch {
+      // Not valid JSON, continue to uppercase
+    }
+  }
+
+  // 7. General text: Convert to UPPERCASE
+  return value.toUpperCase();
+}
+
+/**
  * Core POST method to save/upsert sheet records.
  */
 export async function saveSheetRecords<T = any>(
@@ -738,7 +812,14 @@ export async function saveSheetRecords<T = any>(
       }
     }
 
-    return enriched;
+    // Apply global UPPERCASE sanitation to all free-text fields
+    // while strictly protecting URLs, coords, dates, numbers, and JSON objects
+    const sanitizedEnriched: any = {};
+    for (const [key, value] of Object.entries(enriched)) {
+      sanitizedEnriched[key] = sanitizeValueToUppercase(key, value);
+    }
+
+    return sanitizedEnriched;
   });
 
   try {
