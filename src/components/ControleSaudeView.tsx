@@ -23,6 +23,7 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
+  BellRing,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -37,14 +38,17 @@ import {
   Area,
   AreaChart,
 } from "recharts";
-import { RegistroSaude } from "../types";
+import { RegistroSaude, LembreteSaudeConfig } from "../types";
 import { formatDateBR } from "../utils/formatters";
+import { ConfigLembretesSaudeModal } from "./ConfigLembretesSaudeModal";
 
 interface Props {
   registros: RegistroSaude[];
   onOpenNovoRegistro: (tipo?: "PESO" | "PRESSAO" | "GLICEMIA") => void;
   onEditRegistro: (registro: RegistroSaude) => void;
   onDeleteRegistro: (id: string) => void;
+  lembretesConfigs?: LembreteSaudeConfig[];
+  onSaveLembretesConfigs?: (configs: LembreteSaudeConfig[]) => Promise<void> | void;
 }
 
 type PeriodFilter = "all" | "this_month" | "last_month" | "custom";
@@ -54,12 +58,15 @@ export const ControleSaudeView: React.FC<Props> = ({
   onOpenNovoRegistro,
   onEditRegistro,
   onDeleteRegistro,
+  lembretesConfigs = [],
+  onSaveLembretesConfigs,
 }) => {
   const [activeTab, setActiveTab] = useState<"peso" | "pressao" | "glicemia" | "dicas">("peso");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isLembretesModalOpen, setIsLembretesModalOpen] = useState(false);
 
   // Filter records by Active Tab (or all for tips) and Period
   const filteredRegistros = useMemo(() => {
@@ -283,6 +290,16 @@ export const ControleSaudeView: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
+          {onSaveLembretesConfigs && (
+            <button
+              onClick={() => setIsLembretesModalOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700/80 hover:border-emerald-500/40 transition-all shadow-sm group cursor-pointer"
+              title="Configurar horários de lembretes diários para Pressão e Glicemia"
+            >
+              <BellRing className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <span>Lembretes Diários</span>
+            </button>
+          )}
           <button
             onClick={() =>
               onOpenNovoRegistro(
@@ -1335,6 +1352,16 @@ export const ControleSaudeView: React.FC<Props> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Configuração de Lembretes Diários */}
+      {isLembretesModalOpen && onSaveLembretesConfigs && (
+        <ConfigLembretesSaudeModal
+          isOpen={isLembretesModalOpen}
+          onClose={() => setIsLembretesModalOpen(false)}
+          configs={lembretesConfigs}
+          onSaveConfigs={onSaveLembretesConfigs}
+        />
       )}
     </div>
   );

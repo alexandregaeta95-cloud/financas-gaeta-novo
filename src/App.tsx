@@ -43,6 +43,7 @@ import {
   AppNotification,
   RegistroSaude,
   AlimentoAnaliseResult,
+  LembreteSaudeConfig,
   SHEET_NAMES,
 } from "./types";
 
@@ -200,6 +201,48 @@ export default function App() {
   const [alimentos, setAlimentos] = useState<AlimentoAnaliseResult[]>(() =>
     getCachedSheetData<AlimentoAnaliseResult>(SHEET_NAMES.ANALISE_ALIMENTOS)
   );
+  const [lembretesSaude, setLembretesSaude] = useState<LembreteSaudeConfig[]>(() => {
+    const cached = getCachedSheetData<LembreteSaudeConfig>(SHEET_NAMES.CONFIG_LEMBRETES_SAUDE);
+    if (cached.length > 0) return cached;
+    return [
+      {
+        id: "LEMBRETE_PRESSAO",
+        Id: "LEMBRETE_PRESSAO",
+        tipo: "Pressao_Arterial",
+        Tipo: "Pressao_Arterial",
+        ativo: "SIM",
+        Ativo: "SIM",
+        horario1: "07:30",
+        Horario_1: "07:30",
+        horario2: "13:30",
+        Horario_2: "13:30",
+        horario3: "19:30",
+        Horario_3: "19:30",
+        diasSemana: "TODOS",
+        Dias_Semana: "TODOS",
+        ultimaAtualizacao: new Date().toLocaleString("pt-BR"),
+        Ultima_Atualizacao: new Date().toLocaleString("pt-BR"),
+      },
+      {
+        id: "LEMBRETE_GLICEMIA",
+        Id: "LEMBRETE_GLICEMIA",
+        tipo: "Glicemia",
+        Tipo: "Glicemia",
+        ativo: "SIM",
+        Ativo: "SIM",
+        horario1: "07:00",
+        Horario_1: "07:00",
+        horario2: "14:00",
+        Horario_2: "14:00",
+        horario3: "21:30",
+        Horario_3: "21:30",
+        diasSemana: "TODOS",
+        Dias_Semana: "TODOS",
+        ultimaAtualizacao: new Date().toLocaleString("pt-BR"),
+        Ultima_Atualizacao: new Date().toLocaleString("pt-BR"),
+      },
+    ];
+  });
   const [metas, setMetas] = useState<MetaCategoria[]>(() =>
     getCachedSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
   );
@@ -239,6 +282,8 @@ export default function App() {
       servicos,
       veiculos,
       itensMercado,
+      lembretesSaude,
+      registrosSaude,
     });
 
     setNotifications((prev) => {
@@ -269,6 +314,8 @@ export default function App() {
     servicos,
     veiculos,
     itensMercado,
+    lembretesSaude,
+    registrosSaude,
   ]);
 
   // Run notification check on data changes and periodically every 60 seconds
@@ -367,6 +414,9 @@ export default function App() {
         .catch(() => {});
       fetchSheetData<RegistroSaude>(SHEET_NAMES.CONTROLE_SAUDE)
         .then((data) => data && setRegistrosSaude(data))
+        .catch(() => {});
+      fetchSheetData<LembreteSaudeConfig>(SHEET_NAMES.CONFIG_LEMBRETES_SAUDE)
+        .then((data) => data && data.length > 0 && setLembretesSaude(data))
         .catch(() => {});
       fetchSheetData<AlimentoAnaliseResult>(SHEET_NAMES.ANALISE_ALIMENTOS)
         .then((data) => data && setAlimentos(data))
@@ -517,6 +567,16 @@ export default function App() {
     }
   };
 
+  const handleSaveLembretesConfigs = async (configs: LembreteSaudeConfig[]) => {
+    setLembretesSaude(configs);
+    try {
+      await saveSheetRecords(SHEET_NAMES.CONFIG_LEMBRETES_SAUDE, configs, "UPSERT");
+    } catch (err: any) {
+      console.error("Erro ao salvar configurações de lembretes:", err);
+      alert(`Erro ao salvar configurações de lembretes na planilha: ${err.message || err}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col">
       {/* Top Sync Status Bar */}
@@ -643,12 +703,14 @@ export default function App() {
             receitas={receitas}
             infracoes={infracoes}
             registrosSaude={registrosSaude}
+            lembretesConfigs={lembretesSaude}
             alimentos={alimentos}
             veiculos={veiculos}
             onSaveConsulta={(c) => handleSaveGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, c, setConsultas)}
             onSaveReceita={(r) => handleSaveGeneric(SHEET_NAMES.RECEITAS_MEDICAS, r, setReceitas)}
             onSaveInfracao={(inf) => handleSaveGeneric(SHEET_NAMES.INFRACOES, inf, setInfracoes)}
             onSaveRegistroSaude={(reg) => handleSaveGeneric(SHEET_NAMES.CONTROLE_SAUDE, reg, setRegistrosSaude)}
+            onSaveLembretesConfigs={handleSaveLembretesConfigs}
             onSaveAlimento={(alim) => handleSaveGeneric(SHEET_NAMES.ANALISE_ALIMENTOS, alim, setAlimentos)}
             onDeleteConsulta={(id) => handleDeleteGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, id, setConsultas)}
             onDeleteReceita={(id) => handleDeleteGeneric(SHEET_NAMES.RECEITAS_MEDICAS, id, setReceitas)}

@@ -497,6 +497,50 @@ export async function saveSheetRecords<T = any>(
       enriched["dataCriacao"] = criacaoVal;
     }
 
+    // 22_Config_Lembretes_Saude mapping
+    if (
+      sheetName === SHEET_NAMES.CONFIG_LEMBRETES_SAUDE ||
+      sheetName === "22_Config_Lembretes_Saude" ||
+      sheetName.includes("Lembretes") ||
+      item.id === "LEMBRETE_PRESSAO" ||
+      item.id === "LEMBRETE_GLICEMIA" ||
+      item.Id === "LEMBRETE_PRESSAO" ||
+      item.Id === "LEMBRETE_GLICEMIA"
+    ) {
+      const lembreteId = String(item.id || item.Id || `LEMBRETE_${Date.now()}`);
+      const tipoVal = String(item.tipo || item.Tipo || "");
+      const ativoVal =
+        item.ativo === true || item.ativo === "SIM" || item.Ativo === "SIM" || item.Ativo === true
+          ? "SIM"
+          : "NAO";
+      const h1 = String(item.horario1 || item.Horario_1 || item.Horario1 || "");
+      const h2 = String(item.horario2 || item.Horario_2 || item.Horario2 || "");
+      const h3 = String(item.horario3 || item.Horario_3 || item.Horario3 || "");
+      const diasVal = String(item.diasSemana || item.Dias_Semana || item.dias_semana || "TODOS");
+      const atualizacaoVal = String(
+        item.ultimaAtualizacao || item.Ultima_Atualizacao || new Date().toLocaleString("pt-BR")
+      );
+
+      enriched["Id"] = lembreteId;
+      enriched["Tipo"] = tipoVal;
+      enriched["Ativo"] = ativoVal;
+      enriched["Horario_1"] = h1;
+      enriched["Horario_2"] = h2;
+      enriched["Horario_3"] = h3;
+      enriched["Dias_Semana"] = diasVal;
+      enriched["Ultima_Atualizacao"] = atualizacaoVal;
+
+      // camelCase aliases
+      enriched["id"] = lembreteId;
+      enriched["tipo"] = tipoVal;
+      enriched["ativo"] = ativoVal;
+      enriched["horario1"] = h1;
+      enriched["horario2"] = h2;
+      enriched["horario3"] = h3;
+      enriched["diasSemana"] = diasVal;
+      enriched["ultimaAtualizacao"] = atualizacaoVal;
+    }
+
     // Saldo_Inicial and Saldo_Atual mapping with Brazilian currency format support (5_Contas_Bancarias)
     if (
       item.Saldo_Inicial !== undefined ||

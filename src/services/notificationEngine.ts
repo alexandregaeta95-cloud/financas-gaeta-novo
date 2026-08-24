@@ -10,6 +10,8 @@ import {
   Lancamento,
   CartaoCredito,
   ItemMercado,
+  LembreteSaudeConfig,
+  RegistroSaude,
 } from "../types";
 import { formatCurrency } from "../utils/formatters";
 
@@ -117,6 +119,8 @@ export function evaluateAllNotifications({
   lancamentos = [],
   cartoes = [],
   itensMercado = [],
+  lembretesSaude = [],
+  registrosSaude = [],
 }: {
   agenda?: CompromissoAgenda[];
   consultas?: ConsultaMedica[];
@@ -128,6 +132,8 @@ export function evaluateAllNotifications({
   lancamentos?: Lancamento[];
   cartoes?: CartaoCredito[];
   itensMercado?: ItemMercado[];
+  lembretesSaude?: LembreteSaudeConfig[];
+  registrosSaude?: RegistroSaude[];
 }): AppNotification[] {
   const list: AppNotification[] = [];
   const now = Date.now();
@@ -255,6 +261,79 @@ export function evaluateAllNotifications({
       targetView: "saude",
       severity: "warning",
       timestamp: now,
+    });
+  });
+
+  // D. Lembretes Diários de Saúde (Pressão Arterial e Glicemia - Aba 22)
+  const nowDate = new Date();
+  const currentHour = nowDate.getHours();
+  const currentMin = nowDate.getMinutes();
+  const currentTotalMins = currentHour * 60 + currentMin;
+  const todayStr = nowDate.toISOString().substring(0, 10);
+
+  lembretesSaude.forEach((cfg) => {
+    const isAtivo =
+      cfg.ativo === true ||
+      cfg.Ativo === true ||
+      cfg.ativo === "SIM" ||
+      cfg.Ativo === "SIM";
+    if (!isAtivo) return;
+
+    const id = String(cfg.id || cfg.Id || "");
+    const tipo = String(cfg.tipo || cfg.Tipo || "");
+    const isPressao =
+      id.includes("PRESSAO") ||
+      tipo.toLowerCase().includes("pressao") ||
+      tipo.toLowerCase().includes("arterial");
+    const tipoKey = isPressao ? "PRESSAO" : "GLICEMIA";
+    const tipoLabel = isPressao ? "Pressão Arterial" : "Glicemia";
+    const icon = isPressao ? "🩺" : "🩸";
+
+    const rawHorarios = [
+      cfg.horario1 || cfg.Horario_1 || "",
+      cfg.horario2 || cfg.Horario_2 || "",
+      cfg.horario3 || cfg.Horario_3 || "",
+    ].filter(Boolean);
+
+    rawHorarios.forEach((timeStr, idx) => {
+      const parts = timeStr.split(":");
+      if (parts.length < 2) return;
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) return;
+
+      const targetTotalMins = h * 60 + m;
+      const diffMins = currentTotalMins - targetTotalMins;
+
+      // Dispara se estiver na janela atual (do minuto exato até 45 minutos depois)
+      if (diffMins >= 0 && diffMins <= 45) {
+        // Verifica se já registrou uma medição correspondente hoje
+        const jaRegistrouHoje = registrosSaude.some((reg) => {
+          const regTipo = String(reg.Tipo_Registro || "").toUpperCase();
+          const matchTipo =
+            tipoKey === "PRESSAO"
+              ? regTipo === "PRESSAO" || regTipo === "PRESSÃO"
+              : regTipo === "GLICEMIA";
+          if (!matchTipo) return false;
+          return (
+            reg.Data_Hora &&
+            (reg.Data_Hora.startsWith(todayStr) ||
+              reg.Data_Hora.substring(0, 10) === todayStr)
+          );
+        });
+
+        if (!jaRegistrouHoje) {
+          list.push({
+            id: `lembrete_saude_${id}_slot_${idx}_${todayStr}`,
+            type: "saude",
+            title: `${icon} Hora de Medir ${tipoLabel}`,
+            message: `Lembrete agendado (${timeStr}). Faça a medição e mantenha seu acompanhamento em dia!`,
+            targetView: "saude",
+            severity: diffMins <= 15 ? "urgent" : "warning",
+            timestamp: now,
+          });
+        }
+      }
     });
   });
 

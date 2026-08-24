@@ -18,7 +18,7 @@ import {
   Zap,
   Activity,
 } from "lucide-react";
-import { ConsultaMedica, ReceitaMedica, Infracao, Veiculo, AlimentoAnaliseResult, RegistroSaude } from "../types";
+import { ConsultaMedica, ReceitaMedica, Infracao, Veiculo, AlimentoAnaliseResult, RegistroSaude, LembreteSaudeConfig } from "../types";
 import { generateNewId } from "../services/api";
 import { formatarHora, formatDateBR, parseCurrency, formatCurrency } from "../utils/formatters";
 import { AnalisarAlimentoModal } from "./AnalisarAlimentoModal";
@@ -32,12 +32,14 @@ interface Props {
   receitas: ReceitaMedica[];
   infracoes: Infracao[];
   registrosSaude?: RegistroSaude[];
+  lembretesConfigs?: LembreteSaudeConfig[];
   alimentos?: AlimentoAnaliseResult[];
   veiculos?: Veiculo[];
   onSaveConsulta: (consulta: ConsultaMedica) => Promise<void>;
   onSaveReceita: (receita: ReceitaMedica) => Promise<void>;
   onSaveInfracao: (infracao: Infracao) => Promise<void>;
   onSaveRegistroSaude?: (registro: RegistroSaude) => Promise<void>;
+  onSaveLembretesConfigs?: (configs: LembreteSaudeConfig[]) => Promise<void> | void;
   onSaveAlimento?: (alimento: AlimentoAnaliseResult) => Promise<void>;
   onDeleteConsulta: (id: string) => Promise<void>;
   onDeleteReceita: (id: string) => Promise<void>;
@@ -51,12 +53,14 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   receitas,
   infracoes,
   registrosSaude = [],
+  lembretesConfigs = [],
   alimentos = [],
   veiculos = [],
   onSaveConsulta,
   onSaveReceita,
   onSaveInfracao,
   onSaveRegistroSaude,
+  onSaveLembretesConfigs,
   onSaveAlimento,
   onDeleteConsulta,
   onDeleteReceita,
@@ -828,6 +832,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           onOpenNovoRegistro={handleOpenNovoRegistroSaude}
           onEditRegistro={handleOpenEditRegistroSaude}
           onDeleteRegistro={handleDeleteRegistroSaudeItem}
+          lembretesConfigs={lembretesConfigs}
+          onSaveLembretesConfigs={onSaveLembretesConfigs}
         />
       )}
 

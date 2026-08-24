@@ -320,6 +320,7 @@ export const SHEET_NAMES = {
   AGENDA: "19_Agenda_E_Compromissos",
   CONTROLE_SAUDE: "20_Controle_Saude",
   ANALISE_ALIMENTOS: "21_Analise_Alimentos",
+  CONFIG_LEMBRETES_SAUDE: "22_Config_Lembretes_Saude",
 } as const;
 
 export interface RegistroSaude {
@@ -389,4 +390,17 @@ export interface AlimentoAnaliseResult {
   dicasNutricionais?: string;
   imagemPreview?: string;
   observacoes?: string;
+}
+
+// 22. Configuração de Lembretes Diários de Saúde
+export interface LembreteSaudeConfig {
+  id: string; // 'LEMBRETE_PRESSAO' | 'LEMBRETE_GLICEMIA'
+  tipo: "Pressao_Arterial" | "Glicemia";
+  ativo: boolean | string;
+  horario1?: string;
+  horario2?: string;
+  horario3?: string;
+  diasSemana?: string;
+  ultimaAtualizacao?: string;
+  [key: string]: any;
 }
