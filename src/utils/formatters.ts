@@ -23,6 +23,7 @@ import {
   RegistroSaude,
   AlimentoAnaliseResult,
   AlimentoItem,
+  ExercicioRegistro,
 } from "../types";
 
 /**
@@ -1339,6 +1340,83 @@ export function normalizeAlimentoAnalise(raw: any): AlimentoAnaliseResult {
     dicasNutricionais: dicasNutricionais || undefined,
     observacoes: observacoes || undefined,
     imagemPreview,
+  };
+}
+
+/**
+  * 23_Exercicios normalizer
+  */
+export function normalizeExercicio(raw: any, index = 0): ExercicioRegistro {
+  const id = String(
+    raw.Id || raw.id || raw.ID || `EXE_${Date.now()}_${index}`
+  );
+  const data = String(
+    raw.Data ||
+    raw.data ||
+    raw.Data_Treino ||
+    raw.data_treino ||
+    new Date().toISOString().split("T")[0]
+  ).trim();
+  const hora = String(raw.Hora || raw.hora || raw.Horario || raw.horario || "").trim();
+  const tipoExercicio = String(
+    raw.Tipo_Exercicio ||
+    raw.tipo_exercicio ||
+    raw.tipoExercicio ||
+    raw.Tipo ||
+    raw.tipo ||
+    raw.Exercicio ||
+    raw.exercicio ||
+    "MUSCULAÇÃO"
+  ).trim().toUpperCase();
+
+  const duracaoMinutos = Math.max(
+    0,
+    Math.round(
+      Number(
+        parseCurrency(
+          raw.Duracao_Minutos ??
+          raw.duracao_minutos ??
+          raw.duracaoMinutos ??
+          raw.Duracao ??
+          raw.duracao ??
+          0
+        )
+      )
+    )
+  );
+
+  const rawCal = raw.Calorias_Queimadas ?? raw.calorias_queimadas ?? raw.caloriasQueimadas ?? raw.Calorias ?? raw.calorias;
+  const caloriasQueimadas = rawCal !== undefined && rawCal !== null && rawCal !== "" ? Math.round(Number(parseCurrency(rawCal))) : undefined;
+
+  const rawIntensidade = String(raw.Intensidade || raw.intensidade || "").trim().toUpperCase();
+  const intensidade = rawIntensidade ? (rawIntensidade as "LEVE" | "MODERADO" | "INTENSO") : undefined;
+
+  const observacoes = String(
+    raw.Observacoes ||
+    raw.observacoes ||
+    raw["Observações"] ||
+    raw.observações ||
+    raw.OBS ||
+    raw.obs ||
+    raw.Observacao ||
+    raw.observacao ||
+    ""
+  ).trim().toUpperCase();
+
+  const dataCriacao = String(
+    raw.Data_Criacao || raw.data_criacao || raw.DataCriacao || raw.dataCriacao || new Date().toISOString()
+  );
+
+  return {
+    id,
+    data,
+    hora: hora || undefined,
+    tipoExercicio,
+    duracaoMinutos,
+    caloriasQueimadas: caloriasQueimadas && caloriasQueimadas > 0 ? caloriasQueimadas : undefined,
+    intensidade,
+    observacoes: observacoes || undefined,
+    dataCriacao,
   };
 }
 

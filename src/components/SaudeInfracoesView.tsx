@@ -17,8 +17,18 @@ import {
   Flame,
   Zap,
   Activity,
+  Dumbbell,
 } from "lucide-react";
-import { ConsultaMedica, ReceitaMedica, Infracao, Veiculo, AlimentoAnaliseResult, RegistroSaude, LembreteSaudeConfig } from "../types";
+import {
+  ConsultaMedica,
+  ReceitaMedica,
+  Infracao,
+  Veiculo,
+  AlimentoAnaliseResult,
+  RegistroSaude,
+  LembreteSaudeConfig,
+  ExercicioRegistro,
+} from "../types";
 import { generateNewId } from "../services/api";
 import { formatarHora, formatDateBR, parseCurrency, formatCurrency } from "../utils/formatters";
 import { AnalisarAlimentoModal } from "./AnalisarAlimentoModal";
@@ -27,6 +37,8 @@ import { EditarAlimentoModal } from "./EditarAlimentoModal";
 import { ControleSaudeView } from "./ControleSaudeView";
 import { RegistroSaudeModal } from "./RegistroSaudeModal";
 import { RegistroRapidoAlimentoModal } from "./RegistroRapidoAlimentoModal";
+import { ExerciciosView } from "./ExerciciosView";
+import { RegistroExercicioModal } from "./RegistroExercicioModal";
 
 interface Props {
   consultas: ConsultaMedica[];
@@ -35,6 +47,7 @@ interface Props {
   registrosSaude?: RegistroSaude[];
   lembretesConfigs?: LembreteSaudeConfig[];
   alimentos?: AlimentoAnaliseResult[];
+  exercicios?: ExercicioRegistro[];
   veiculos?: Veiculo[];
   alturaUsuario?: number;
   onSaveAltura?: (alturaCm: number) => Promise<void> | void;
@@ -44,11 +57,13 @@ interface Props {
   onSaveRegistroSaude?: (registro: RegistroSaude) => Promise<void>;
   onSaveLembretesConfigs?: (configs: LembreteSaudeConfig[]) => Promise<void> | void;
   onSaveAlimento?: (alimento: AlimentoAnaliseResult) => Promise<void>;
+  onSaveExercicio?: (exercicio: ExercicioRegistro) => Promise<void> | void;
   onDeleteConsulta: (id: string) => Promise<void>;
   onDeleteReceita: (id: string) => Promise<void>;
   onDeleteInfracao: (id: string) => Promise<void>;
   onDeleteRegistroSaude?: (id: string) => Promise<void>;
   onDeleteAlimento?: (id: string) => Promise<void>;
+  onDeleteExercicio?: (id: string) => Promise<void> | void;
 }
 
 export const SaudeInfracoesView: React.FC<Props> = ({
@@ -58,6 +73,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   registrosSaude = [],
   lembretesConfigs = [],
   alimentos = [],
+  exercicios = [],
   veiculos = [],
   alturaUsuario,
   onSaveAltura,
@@ -67,18 +83,22 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   onSaveRegistroSaude,
   onSaveLembretesConfigs,
   onSaveAlimento,
+  onSaveExercicio,
   onDeleteConsulta,
   onDeleteReceita,
   onDeleteInfracao,
   onDeleteRegistroSaude,
   onDeleteAlimento,
+  onDeleteExercicio,
 }) => {
-  const [activeTab, setActiveTab] = useState<"consultas" | "receitas" | "infracoes" | "alimentos" | "controle_saude">("consultas");
+  const [activeTab, setActiveTab] = useState<
+    "consultas" | "receitas" | "infracoes" | "alimentos" | "controle_saude" | "exercicios"
+  >("consultas");
 
   // Delete Confirmation State
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
-    type: "consulta" | "receita" | "infracao" | "alimento" | "saude";
+    type: "consulta" | "receita" | "infracao" | "alimento" | "saude" | "exercicio";
     id: string;
     title: string;
     subtitle?: string;
@@ -95,6 +115,27 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   const [isRegistroRapidoModalOpen, setIsRegistroRapidoModalOpen] = useState(false);
   const [editingAlimento, setEditingAlimento] = useState<AlimentoAnaliseResult | null>(null);
   const [isEditAlimentoModalOpen, setIsEditAlimentoModalOpen] = useState(false);
+
+  // Exercise & Workout State (23_Exercicios)
+  const [isExercicioModalOpen, setIsExercicioModalOpen] = useState(false);
+  const [editingExercicio, setEditingExercicio] = useState<ExercicioRegistro | null>(null);
+
+  const handleSaveExercicioSubmit = async (item: ExercicioRegistro) => {
+    if (onSaveExercicio) {
+      await onSaveExercicio(item);
+    }
+  };
+
+  const handleOpenEditExercicio = (item: ExercicioRegistro) => {
+    setEditingExercicio(item);
+    setIsExercicioModalOpen(true);
+  };
+
+  const handleDeleteExercicioItem = (id: string) => {
+    if (onDeleteExercicio) {
+      onDeleteExercicio(id);
+    }
+  };
 
   const handleSaveAlimentoItem = async (alimento: AlimentoAnaliseResult) => {
     try {
@@ -457,6 +498,17 @@ export const SaudeInfracoesView: React.FC<Props> = ({
             >
               <Activity className="w-3.5 h-3.5" />
               <span>Controle de Saúde ({registrosSaude.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("exercicios")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === "exercicios"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Dumbbell className="w-3.5 h-3.5" />
+              <span>Exercícios ({exercicios.length})</span>
             </button>
           </div>
         </div>
@@ -846,6 +898,19 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         />
       )}
 
+      {/* 6. EXERCÍCIOS & TREINOS (ABA 23) */}
+      {activeTab === "exercicios" && (
+        <ExerciciosView
+          exercicios={exercicios}
+          onOpenRegistroModal={() => {
+            setEditingExercicio(null);
+            setIsExercicioModalOpen(true);
+          }}
+          onEditExercicio={handleOpenEditExercicio}
+          onDeleteExercicio={handleDeleteExercicioItem}
+        />
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteConfirm && deleteConfirm.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
@@ -1232,6 +1297,17 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         initialData={editingRegistroSaude}
         defaultTipo={defaultTipoRegistro}
         alturaUsuario={alturaUsuario}
+      />
+
+      {/* Exercise & Workout Modal (23_Exercicios) */}
+      <RegistroExercicioModal
+        isOpen={isExercicioModalOpen}
+        onClose={() => {
+          setIsExercicioModalOpen(false);
+          setEditingExercicio(null);
+        }}
+        onSave={handleSaveExercicioSubmit}
+        initialData={editingExercicio}
       />
     </div>
   );

@@ -27,6 +27,7 @@ import {
   normalizeCompromissoAgenda,
   normalizeRegistroSaude,
   normalizeAlimentoAnalise,
+  normalizeExercicio,
 } from "../utils/formatters";
 
 const LOCAL_STORAGE_KEY_PREFIX = "financas_gaeta_cache_";
@@ -130,6 +131,9 @@ export function normalizeRecordBySheet(sheetName: string, item: any): any {
   }
   if (s.includes("alimento") || s.includes("nutri") || sheetName === SHEET_NAMES.ANALISE_ALIMENTOS) {
     return normalizeAlimentoAnalise(item);
+  }
+  if (s.includes("exercicio") || s.includes("treino") || sheetName === SHEET_NAMES.EXERCICIOS || sheetName === "23_Exercicios") {
+    return normalizeExercicio(item);
   }
   return item;
 }
@@ -542,6 +546,80 @@ export async function saveSheetRecords<T = any>(
       enriched["horario3"] = h3;
       enriched["diasSemana"] = diasVal;
       enriched["ultimaAtualizacao"] = atualizacaoVal;
+    }
+
+    // 23_Exercicios mapping
+    if (
+      sheetName === SHEET_NAMES.EXERCICIOS ||
+      sheetName === "23_Exercicios" ||
+      sheetName.includes("Exercicio") ||
+      sheetName.includes("Treino") ||
+      item.tipoExercicio !== undefined ||
+      item.Tipo_Exercicio !== undefined ||
+      item.duracaoMinutos !== undefined ||
+      item.Duracao_Minutos !== undefined
+    ) {
+      const exeId = String(item.id || item.Id || `EXE_${Date.now()}`);
+      const dataVal = String(item.data || item.Data || new Date().toISOString().split("T")[0]);
+      const horaVal = String(item.hora || item.Hora || item.horario || item.Horario || "");
+      const tipoVal = String(
+        item.tipoExercicio ||
+        item.Tipo_Exercicio ||
+        item.Tipo ||
+        item.tipo ||
+        item.Exercicio ||
+        item.exercicio ||
+        "MUSCULAÇÃO"
+      ).trim().toUpperCase();
+      const duracaoVal = Math.max(
+        0,
+        Math.round(
+          Number(
+            parseCurrency(
+              item.duracaoMinutos ??
+              item.Duracao_Minutos ??
+              item.duracao ??
+              item.Duracao ??
+              0
+            )
+          )
+        )
+      );
+      const rawCal = item.caloriasQueimadas ?? item.Calorias_Queimadas ?? item.Calorias ?? item.calorias;
+      const calVal = rawCal !== undefined && rawCal !== null && rawCal !== "" ? Math.round(Number(parseCurrency(rawCal))) : 0;
+      const rawInt = String(item.intensidade || item.Intensidade || "").trim().toUpperCase();
+      const obsVal = String(
+        item.observacoes ||
+        item.Observacoes ||
+        item.observações ||
+        item["Observações"] ||
+        item.obs ||
+        item.OBS ||
+        ""
+      ).trim().toUpperCase();
+      const criacaoVal = String(item.dataCriacao || item.Data_Criacao || item.data_criacao || new Date().toISOString());
+
+      // Canonical columns (Uppercase snake_case)
+      enriched["Id"] = exeId;
+      enriched["Data"] = dataVal;
+      enriched["Hora"] = horaVal;
+      enriched["Tipo_Exercicio"] = tipoVal;
+      enriched["Duracao_Minutos"] = duracaoVal;
+      enriched["Calorias_Queimadas"] = calVal > 0 ? calVal : "";
+      enriched["Intensidade"] = rawInt;
+      enriched["Observacoes"] = obsVal;
+      enriched["Data_Criacao"] = criacaoVal;
+
+      // camelCase aliases
+      enriched["id"] = exeId;
+      enriched["data"] = dataVal;
+      enriched["hora"] = horaVal;
+      enriched["tipoExercicio"] = tipoVal;
+      enriched["duracaoMinutos"] = duracaoVal;
+      enriched["caloriasQueimadas"] = calVal > 0 ? calVal : undefined;
+      enriched["intensidade"] = rawInt || undefined;
+      enriched["observacoes"] = obsVal || undefined;
+      enriched["dataCriacao"] = criacaoVal;
     }
 
     // Saldo_Inicial and Saldo_Atual mapping with Brazilian currency format support (5_Contas_Bancarias)

@@ -321,6 +321,7 @@ export const SHEET_NAMES = {
   CONTROLE_SAUDE: "20_Controle_Saude",
   ANALISE_ALIMENTOS: "21_Analise_Alimentos",
   CONFIG_LEMBRETES_SAUDE: "22_Config_Lembretes_Saude",
+  EXERCICIOS: "23_Exercicios",
 } as const;
 
 export interface RegistroSaude {
@@ -408,4 +409,18 @@ export interface LembreteSaudeConfig {
 export interface PerfilBiometricoConfig {
   alturaCm: number;
   ultimaAtualizacao?: string;
+}
+
+// 23. Módulo de Exercícios & Treinos (23_Exercicios)
+export interface ExercicioRegistro {
+  id: string;
+  data: string; // YYYY-MM-DD
+  hora?: string; // HH:mm
+  tipoExercicio: string; // MUSCULAÇÃO, CORRIDA, CAMINHADA, etc.
+  duracaoMinutos: number; // Ex: 45
+  caloriasQueimadas?: number; // Ex: 300
+  intensidade?: "LEVE" | "MODERADO" | "INTENSO" | string;
+  observacoes?: string;
+  dataCriacao?: string;
+  [key: string]: any;
 }

@@ -44,6 +44,7 @@ import {
   RegistroSaude,
   AlimentoAnaliseResult,
   LembreteSaudeConfig,
+  ExercicioRegistro,
   SHEET_NAMES,
 } from "./types";
 
@@ -201,6 +202,45 @@ export default function App() {
   const [alimentos, setAlimentos] = useState<AlimentoAnaliseResult[]>(() =>
     getCachedSheetData<AlimentoAnaliseResult>(SHEET_NAMES.ANALISE_ALIMENTOS)
   );
+  const [exercicios, setExercicios] = useState<ExercicioRegistro[]>(() => {
+    const cached = getCachedSheetData<ExercicioRegistro>(SHEET_NAMES.EXERCICIOS);
+    if (cached.length > 0) return cached;
+    return [
+      {
+        id: "EXE_1",
+        Id: "EXE_1",
+        data: "2026-08-22",
+        hora: "07:00",
+        tipoExercicio: "MUSCULAÇÃO",
+        duracaoMinutos: 50,
+        intensidade: "INTENSO",
+        caloriasQueimadas: 340,
+        observacoes: "TREINO DE PEITO E TRÍCEPS",
+      },
+      {
+        id: "EXE_2",
+        Id: "EXE_2",
+        data: "2026-08-23",
+        hora: "08:15",
+        tipoExercicio: "CORRIDA",
+        duracaoMinutos: 35,
+        intensidade: "MODERADO",
+        caloriasQueimadas: 280,
+        observacoes: "ESTEIRA 5KM RITMO CONSTANTE",
+      },
+      {
+        id: "EXE_3",
+        Id: "EXE_3",
+        data: "2026-08-24",
+        hora: "07:30",
+        tipoExercicio: "MUSCULAÇÃO",
+        duracaoMinutos: 60,
+        intensidade: "INTENSO",
+        caloriasQueimadas: 410,
+        observacoes: "TREINO DE PERNAS E OMBROS",
+      },
+    ];
+  });
   const [lembretesSaude, setLembretesSaude] = useState<LembreteSaudeConfig[]>(() => {
     const cached = getCachedSheetData<LembreteSaudeConfig>(SHEET_NAMES.CONFIG_LEMBRETES_SAUDE);
     if (cached.length > 0) return cached;
@@ -462,6 +502,9 @@ export default function App() {
         .catch(() => {});
       fetchSheetData<AlimentoAnaliseResult>(SHEET_NAMES.ANALISE_ALIMENTOS)
         .then((data) => data && setAlimentos(data))
+        .catch(() => {});
+      fetchSheetData<ExercicioRegistro>(SHEET_NAMES.EXERCICIOS)
+        .then((data) => data && setExercicios(data))
         .catch(() => {});
       fetchSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
         .then((data) => data && setMetas(data))
@@ -794,6 +837,7 @@ export default function App() {
             registrosSaude={registrosSaude}
             lembretesConfigs={lembretesSaude}
             alimentos={alimentos}
+            exercicios={exercicios}
             veiculos={veiculos}
             alturaUsuario={alturaUsuario}
             onSaveAltura={handleSaveAltura}
@@ -803,11 +847,13 @@ export default function App() {
             onSaveRegistroSaude={(reg) => handleSaveGeneric(SHEET_NAMES.CONTROLE_SAUDE, reg, setRegistrosSaude)}
             onSaveLembretesConfigs={handleSaveLembretesConfigs}
             onSaveAlimento={(alim) => handleSaveGeneric(SHEET_NAMES.ANALISE_ALIMENTOS, alim, setAlimentos)}
+            onSaveExercicio={(exe) => handleSaveGeneric(SHEET_NAMES.EXERCICIOS, exe, setExercicios)}
             onDeleteConsulta={(id) => handleDeleteGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, id, setConsultas)}
             onDeleteReceita={(id) => handleDeleteGeneric(SHEET_NAMES.RECEITAS_MEDICAS, id, setReceitas)}
             onDeleteInfracao={(id) => handleDeleteGeneric(SHEET_NAMES.INFRACOES, id, setInfracoes)}
             onDeleteRegistroSaude={(id) => handleDeleteGeneric(SHEET_NAMES.CONTROLE_SAUDE, id, setRegistrosSaude)}
             onDeleteAlimento={(id) => handleDeleteGeneric(SHEET_NAMES.ANALISE_ALIMENTOS, id, setAlimentos)}
+            onDeleteExercicio={(id) => handleDeleteGeneric(SHEET_NAMES.EXERCICIOS, id, setExercicios)}
           />
         )}
 
