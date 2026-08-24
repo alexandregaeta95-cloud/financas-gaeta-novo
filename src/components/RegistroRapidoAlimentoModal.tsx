@@ -104,7 +104,7 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
         data: data || new Date().toISOString().split("T")[0],
         dataHora: dataHoraStr,
         nomePrato: trimmedNome,
-        descricao: "Registro Manual",
+        descricao: "REGISTRO MANUAL",
         caloriasEstimadas: calNum,
         proteinasEstimadas: protNum,
         carboidratosEstimados: carbNum,
@@ -179,7 +179,7 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
               placeholder="Ex: 2 BOLACHAS, 1 FATIA DE BOLO, MAÇÃ COM CANELA..."
               value={nomePrato}
               onChange={(e) => setNomePrato(e.target.value.toUpperCase())}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors uppercase"
             />
           </div>
 
@@ -240,7 +240,7 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
               placeholder="Ex: LANCHE DA TARDE, BELISCO NO TRABALHO..."
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value.toUpperCase())}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors uppercase"
             />
           </div>
 
