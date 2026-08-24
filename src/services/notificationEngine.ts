@@ -15,6 +15,52 @@ import {
 } from "../types";
 import { formatCurrency } from "../utils/formatters";
 
+// Helper: Get local date string YYYY-MM-DD (e.g. Brasilia timezone UTC-3)
+export function getLocalTodayDateStr(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// Helper: Parse date and time from any health record format
+export function parseRegistroDataHora(
+  dataHoraStr?: string
+): { dateStr: string; totalMinutes: number | null } | null {
+  if (!dataHoraStr || typeof dataHoraStr !== "string") return null;
+  const str = dataHoraStr.trim();
+
+  // Pattern 1: YYYY-MM-DD or YYYY-MM-DDTHH:mm(:ss) or YYYY-MM-DD HH:mm(:ss)
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{1,2}):(\d{2}))?/);
+  if (isoMatch) {
+    const y = isoMatch[1];
+    const m = isoMatch[2];
+    const d = isoMatch[3];
+    const hh = isoMatch[4] !== undefined ? parseInt(isoMatch[4], 10) : null;
+    const mm = isoMatch[5] !== undefined ? parseInt(isoMatch[5], 10) : null;
+    return {
+      dateStr: `${y}-${m}-${d}`,
+      totalMinutes: hh !== null && mm !== null && !isNaN(hh) && !isNaN(mm) ? hh * 60 + mm : null,
+    };
+  }
+
+  // Pattern 2: DD/MM/YYYY or DD/MM/YYYY HH:mm(:ss) or DD/MM/YYYYTHH:mm
+  const brMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[T\s](\d{1,2}):(\d{2}))?/);
+  if (brMatch) {
+    const d = brMatch[1].padStart(2, "0");
+    const m = brMatch[2].padStart(2, "0");
+    const y = brMatch[3];
+    const hh = brMatch[4] !== undefined ? parseInt(brMatch[4], 10) : null;
+    const mm = brMatch[5] !== undefined ? parseInt(brMatch[5], 10) : null;
+    return {
+      dateStr: `${y}-${m}-${d}`,
+      totalMinutes: hh !== null && mm !== null && !isNaN(hh) && !isNaN(mm) ? hh * 60 + mm : null,
+    };
+  }
+
+  return null;
+}
+
 // Helper: Calculate diff in days between today and target date YYYY-MM-DD
 export function getDiffInDaysFromToday(dateStr: string): number | null {
   if (!dateStr || typeof dateStr !== "string") return null;
@@ -64,7 +110,7 @@ export function dispatchBrowserNotification(notif: AppNotification): void {
     return;
   }
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getLocalTodayDateStr();
   const storageKey = `gaeta_notif_sent_${notif.id}_${todayStr}`;
 
   // If already sent today to OS notification, skip to avoid spamming
@@ -269,32 +315,127 @@ export function evaluateAllNotifications({
   const currentHour = nowDate.getHours();
   const currentMin = nowDate.getMinutes();
   const currentTotalMins = currentHour * 60 + currentMin;
-  const todayStr = nowDate.toISOString().substring(0, 10);
+  const todayLocalStr = getLocalTodayDateStr(nowDate);
+  const currentDayOfWeek = nowDate.getDay(); // 0 = Domingo, 1 = Segunda, ...
 
-  lembretesSaude.forEach((cfg) => {
+  const dayOfWeekNames: Record<number, string[]> = {
+    0: ["DOM", "DOMINGO"],
+    1: ["SEG", "SEGUNDA"],
+    2: ["TER", "TERCA", "TERÇA"],
+    3: ["QUA", "QUARTA"],
+    4: ["QUI", "QUINTA"],
+    5: ["SEX", "SEXTA"],
+    6: ["SAB", "SABADO", "SÁBADO"],
+  };
+
+  lembretesSaude.forEach((cfg: any) => {
+    // 1. Extração robusta de Ativo/Status (suporta "SIM", "sim", "TRUE", true, 1, "Ativo", etc.)
+    const rawAtivo =
+      cfg.ativo ??
+      cfg.Ativo ??
+      cfg.ATIVO ??
+      cfg.status ??
+      cfg.Status ??
+      cfg["Ativo?"] ??
+      cfg["Ativo"] ??
+      true;
+
     const isAtivo =
-      cfg.ativo === true ||
-      cfg.Ativo === true ||
-      cfg.ativo === "SIM" ||
-      cfg.Ativo === "SIM";
+      rawAtivo === true ||
+      rawAtivo === 1 ||
+      String(rawAtivo).trim().toUpperCase() === "SIM" ||
+      String(rawAtivo).trim().toUpperCase() === "TRUE" ||
+      String(rawAtivo).trim().toUpperCase() === "ATIVO";
+
     if (!isAtivo) return;
 
-    const id = String(cfg.id || cfg.Id || "");
-    const tipo = String(cfg.tipo || cfg.Tipo || "");
+    // 2. Identificação do Tipo (Pressão vs Glicemia) e ignora configuração de perfil biométrico
+    const id = String(cfg.id || cfg.Id || cfg.ID || "");
+    const tipo = String(cfg.tipo || cfg.Tipo || cfg.TIPO || cfg.Tipo_Registro || "");
+
+    if (
+      id === "CONFIG_PERFIL_ALTURA" ||
+      tipo.toLowerCase().includes("altura") ||
+      tipo.toLowerCase().includes("perfil")
+    ) {
+      return;
+    }
+
     const isPressao =
-      id.includes("PRESSAO") ||
+      id.toUpperCase().includes("PRESSAO") ||
       tipo.toLowerCase().includes("pressao") ||
+      tipo.toLowerCase().includes("pressão") ||
       tipo.toLowerCase().includes("arterial");
     const tipoKey = isPressao ? "PRESSAO" : "GLICEMIA";
     const tipoLabel = isPressao ? "Pressão Arterial" : "Glicemia";
     const icon = isPressao ? "🩺" : "🩸";
 
-    const rawHorarios = [
-      cfg.horario1 || cfg.Horario_1 || "",
-      cfg.horario2 || cfg.Horario_2 || "",
-      cfg.horario3 || cfg.Horario_3 || "",
-    ].filter(Boolean);
+    // 3. Validação dos Dias da Semana
+    const rawDiasSemana = String(
+      cfg.diasSemana ||
+        cfg.Dias_Semana ||
+        cfg["Dias da Semana"] ||
+        cfg["Dias Semana"] ||
+        cfg.dias ||
+        "TODOS"
+    )
+      .trim()
+      .toUpperCase();
 
+    if (rawDiasSemana && rawDiasSemana !== "TODOS") {
+      const todayTokens = dayOfWeekNames[currentDayOfWeek] || [];
+      const matchesDay = todayTokens.some((tok) => rawDiasSemana.includes(tok));
+      if (!matchesDay) return;
+    }
+
+    // 4. Extração robusta de todos os horários configurados (suporta todas as variações de nomes de colunas)
+    const rawHorariosSet = new Set<string>();
+    const explicitCandidates = [
+      cfg.horario1,
+      cfg.Horario_1,
+      cfg["Horário 1"],
+      cfg["Horario 1"],
+      cfg.horario_1,
+      cfg["Horário_1"],
+      cfg.horario2,
+      cfg.Horario_2,
+      cfg["Horário 2"],
+      cfg["Horario 2"],
+      cfg.horario_2,
+      cfg["Horário_2"],
+      cfg.horario3,
+      cfg.Horario_3,
+      cfg["Horário 3"],
+      cfg["Horario 3"],
+      cfg.horario_3,
+      cfg["Horário_3"],
+      cfg.horario4,
+      cfg.Horario_4,
+      cfg.horario5,
+      cfg.Horario_5,
+    ];
+
+    explicitCandidates.forEach((val) => {
+      if (typeof val === "string" && val.trim()) {
+        rawHorariosSet.add(val.trim());
+      }
+    });
+
+    // Fallback dinâmico: busca em qualquer chave do objeto que contenha "horario" ou "horário"
+    if (rawHorariosSet.size === 0) {
+      Object.keys(cfg).forEach((key) => {
+        if (/hor[aá]rio/i.test(key)) {
+          const val = String(cfg[key] || "").trim();
+          if (/^\d{1,2}:\d{2}$/.test(val)) {
+            rawHorariosSet.add(val);
+          }
+        }
+      });
+    }
+
+    const rawHorarios = Array.from(rawHorariosSet);
+
+    // 5. Avaliação independente por horário/slot
     rawHorarios.forEach((timeStr, idx) => {
       const parts = timeStr.split(":");
       if (parts.length < 2) return;
@@ -305,26 +446,43 @@ export function evaluateAllNotifications({
       const targetTotalMins = h * 60 + m;
       const diffMins = currentTotalMins - targetTotalMins;
 
-      // Dispara se estiver na janela atual (do minuto exato até 45 minutos depois)
+      // Janela ativa do lembrete: a partir do minuto exato até 45 minutos depois
       if (diffMins >= 0 && diffMins <= 45) {
-        // Verifica se já registrou uma medição correspondente hoje
-        const jaRegistrouHoje = registrosSaude.some((reg) => {
-          const regTipo = String(reg.Tipo_Registro || "").toUpperCase();
+        // Verifica se já existe uma medição realizada ESPECIFICAMENTE para este horário/slot
+        // Regra: Uma medição cumpre este lembrete se foi realizada hoje, dentro de uma janela
+        // de até 90 minutos ANTES do horário agendado até o fim da janela ativa (+45 min).
+        // Assim, medições anteriores da manhã NÃO bloqueiam lembretes posteriores do mesmo dia!
+        const jaRegistrouNesteSlot = registrosSaude.some((reg) => {
+          const anyReg = reg as any;
+          const regTipo = String(reg.Tipo_Registro || anyReg.tipo || "").toUpperCase();
           const matchTipo =
             tipoKey === "PRESSAO"
-              ? regTipo === "PRESSAO" || regTipo === "PRESSÃO"
-              : regTipo === "GLICEMIA";
+              ? regTipo.includes("PRESS") || regTipo === "PRESSAO" || regTipo === "PRESSÃO"
+              : regTipo.includes("GLIC") || regTipo === "GLICEMIA";
+
           if (!matchTipo) return false;
-          return (
-            reg.Data_Hora &&
-            (reg.Data_Hora.startsWith(todayStr) ||
-              reg.Data_Hora.substring(0, 10) === todayStr)
-          );
+
+          const parsed = parseRegistroDataHora(reg.Data_Hora || anyReg.data_hora);
+          if (!parsed) return false;
+
+          // Deve ser do dia de hoje (no fuso local)
+          if (parsed.dateStr !== todayLocalStr) return false;
+
+          // Se tiver horário na medição, verifica proximidade com o slot
+          if (parsed.totalMinutes !== null) {
+            const minAllowed = targetTotalMins - 90; // Até 1h30 antes do horário
+            const maxAllowed = targetTotalMins + 45; // Até o encerramento da janela do lembrete
+            return parsed.totalMinutes >= minAllowed && parsed.totalMinutes <= maxAllowed;
+          }
+
+          // Se o registro não tiver horário (apenas data), não bloqueia slots específicos
+          return false;
         });
 
-        if (!jaRegistrouHoje) {
+        if (!jaRegistrouNesteSlot) {
+          const slotClean = timeStr.replace(":", "");
           list.push({
-            id: `lembrete_saude_${id}_slot_${idx}_${todayStr}`,
+            id: `lembrete_saude_${tipoKey.toLowerCase()}_${slotClean}_${todayLocalStr}`,
             type: "saude",
             title: `${icon} Hora de Medir ${tipoLabel}`,
             message: `Lembrete agendado (${timeStr}). Faça a medição e mantenha seu acompanhamento em dia!`,

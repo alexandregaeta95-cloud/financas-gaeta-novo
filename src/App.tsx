@@ -56,7 +56,7 @@ import {
 } from "./services/api";
 
 import { calculateAccountCurrentBalance } from "./utils/formatters";
-import { evaluateAllNotifications } from "./services/notificationEngine";
+import { evaluateAllNotifications, dispatchBrowserNotification } from "./services/notificationEngine";
 
 export default function App() {
   const [activeView, setActiveView] = useState<ModuleView>("dashboard");
@@ -341,6 +341,8 @@ export default function App() {
       );
       if (newlyAdded.length > 0) {
         setActiveToast(newlyAdded[0]);
+        // Dispara notificação nativa do navegador/SO se permitido
+        newlyAdded.forEach((n) => dispatchBrowserNotification(n));
       }
 
       return updated;
