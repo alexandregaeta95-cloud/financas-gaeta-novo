@@ -255,10 +255,25 @@ export async function fetchSheetData<T = any>(
  * - Image/Proof fields (Comprovante_Url, etc.)
  * - Location/GPS coordinates
  * - Numbers, booleans, dates/timestamps
- * - Serialized JSON strings
+ * - JSON structures (while sanitizing string values inside JSON)
  */
 export function sanitizeValueToUppercase(key: string, value: any): any {
   if (value === null || value === undefined) return value;
+
+  // Handle arrays recursively
+  if (Array.isArray(value)) {
+    return value.map((elem) =>
+      typeof elem === "object" && elem !== null
+        ? sanitizeRecordToUppercase(elem)
+        : sanitizeValueToUppercase(key, elem)
+    );
+  }
+
+  // Handle objects recursively
+  if (typeof value === "object") {
+    return sanitizeRecordToUppercase(value);
+  }
+
   if (typeof value !== "string") return value;
 
   const trimmed = value.trim();
@@ -308,11 +323,14 @@ export function sanitizeValueToUppercase(key: string, value: any): any {
     return value;
   }
 
-  // 6. JSON Object / Array string payloads
+  // 6. JSON Object / Array string payloads - parse and sanitize string values inside JSON
   if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
     try {
-      JSON.parse(trimmed);
-      return value; // It's valid JSON, preserve structure
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === "object") {
+        const sanitizedParsed = sanitizeRecordToUppercase(parsed);
+        return JSON.stringify(sanitizedParsed);
+      }
     } catch {
       // Not valid JSON, continue to uppercase
     }
@@ -324,11 +342,18 @@ export function sanitizeValueToUppercase(key: string, value: any): any {
 
 /**
  * Sanitizes an entire record object so all string properties are safely UPPERCASED
- * while preserving URLs, coordinates, dates, numbers, and JSON objects.
+ * while preserving URLs, coordinates, dates, numbers, and JSON structures.
  */
 export function sanitizeRecordToUppercase<T = any>(item: T): T {
   if (!item || typeof item !== "object") return item;
-  const sanitized: any = Array.isArray(item) ? [] : {};
+  if (Array.isArray(item)) {
+    return item.map((elem) =>
+      typeof elem === "object" && elem !== null
+        ? sanitizeRecordToUppercase(elem)
+        : sanitizeValueToUppercase("", elem)
+    ) as any;
+  }
+  const sanitized: any = {};
   for (const [key, value] of Object.entries(item)) {
     sanitized[key] = sanitizeValueToUppercase(key, value);
   }
@@ -540,22 +565,36 @@ export async function saveSheetRecords<T = any>(
       const foodId = String(item.id || item.Id || item.ID || `ALIM_${Date.now()}`);
       const dataVal = String(item.data || item.Data || new Date().toISOString().split("T")[0]);
       const dataHoraVal = String(item.dataHora || item.Data_Hora || item.DataHora || dataVal);
-      const pratoVal = String(item.nomePrato || item.Nome_Prato || item.Nome || item.Prato || "Refeição");
+      const pratoVal = sanitizeValueToUppercase(
+        "Nome_Prato",
+        String(item.nomePrato || item.Nome_Prato || item.Nome || item.Prato || "REFEIÇÃO")
+      );
       const calVal = Math.round(Number(item.caloriasEstimadas ?? item.Calorias_Estimadas ?? item.Calorias ?? item.calorias ?? 0));
       const protVal = Math.round(Number(item.proteinasEstimadas ?? item.Proteinas_Estimadas ?? item.Proteinas ?? item.proteinas ?? 0));
       const carbVal = Math.round(Number(item.carboidratosEstimados ?? item.Carboidratos_Estimados ?? item.Carboidratos ?? item.carboidratos ?? 0));
       const gordVal = Math.round(Number(item.gordurasEstimadas ?? item.Gorduras_Estimadas ?? item.Gorduras ?? item.gorduras ?? 0));
-      const descVal = String(item.descricao || item.Descricao || item.Classificacao_Geral || item.classificacao_geral || "");
+      const descVal = sanitizeValueToUppercase(
+        "Classificacao_Geral",
+        String(item.descricao || item.Descricao || item.Classificacao_Geral || item.classificacao_geral || "")
+      );
       
       let itensVal = "";
       if (typeof item.itensIdentificados === "object" && item.itensIdentificados !== null) {
-        itensVal = JSON.stringify(item.itensIdentificados);
+        const sanitizedItens = sanitizeRecordToUppercase(item.itensIdentificados);
+        itensVal = JSON.stringify(sanitizedItens);
       } else {
-        itensVal = String(item.Itens_Identificados || item.itens_identificados || item.itensIdentificados || item.Itens || "");
+        const rawItensStr = String(item.Itens_Identificados || item.itens_identificados || item.itensIdentificados || item.Itens || "");
+        itensVal = sanitizeValueToUppercase("Itens_Identificados", rawItensStr);
       }
 
-      const dicasVal = String(item.dicasNutricionais || item.Dicas_Nutricionais || item.dicas_nutricionais || item.dicas || item.Dicas || "");
-      const obsVal = String(item.observacoes || item.Observacoes || item.observações || item["Observações"] || item.obs || item.OBS || "");
+      const dicasVal = sanitizeValueToUppercase(
+        "Dicas_Nutricionais",
+        String(item.dicasNutricionais || item.Dicas_Nutricionais || item.dicas_nutricionais || item.dicas || item.Dicas || "")
+      );
+      const obsVal = sanitizeValueToUppercase(
+        "Observacoes",
+        String(item.observacoes || item.Observacoes || item.observações || item["Observações"] || item.obs || item.OBS || "")
+      );
       const criacaoVal = String(item.Data_Criacao || item.data_criacao || item.dataCriacao || new Date().toISOString());
 
       // Canonical columns (Uppercase snake_case)
