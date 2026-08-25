@@ -23,6 +23,7 @@ import {
   RegistroSaude,
   AlimentoAnaliseResult,
   AlimentoItem,
+  LembreteSaudeConfig,
   ExercicioRegistro,
 } from "../types";
 
@@ -138,23 +139,39 @@ export function formatarHora(val: any): string {
     return "";
   }
 
+  // If Date object passed
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return "";
+    const hours = String(val.getHours()).padStart(2, "0");
+    const minutes = String(val.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  }
+
   const str = String(val).trim();
   if (!str) return "";
 
-  // If contains ISO date (e.g. 1899-12-30T14:30:00.000Z)
+  // If contains ISO date (e.g. 1899-12-30T14:30:00.000Z or 1899-12-30T11:36:28.000Z)
   if (str.includes("T")) {
     const timeMatch = str.match(/T(\d{1,2}:\d{2})/i);
     if (timeMatch) {
       const parts = timeMatch[1].split(":");
-      return `${parts[0].padStart(2, "0")}:${parts[1]}`;
+      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
     }
+  }
+
+  // If contains date prefix (e.g. "1899-12-30 14:30:00" or "30/12/1899 14:30")
+  const dateTimeMatch = str.match(/\d{2,4}[-/]\d{1,2}[-/]\d{1,4}[ T](\d{1,2}):(\d{2})/);
+  if (dateTimeMatch) {
+    const hours = dateTimeMatch[1].padStart(2, "0");
+    const minutes = dateTimeMatch[2].padStart(2, "0");
+    return `${hours}:${minutes}`;
   }
 
   // If contains time formatted with colons (e.g. "14:30:00", "09:15", "9:15")
   const colonMatch = str.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
   if (colonMatch) {
     const hours = colonMatch[1].padStart(2, "0");
-    const minutes = colonMatch[2];
+    const minutes = colonMatch[2].padStart(2, "0");
     return `${hours}:${minutes}`;
   }
 
@@ -1442,6 +1459,67 @@ export function normalizeExercicio(raw: any, index = 0): ExercicioRegistro {
     intensidade,
     observacoes: observacoes || undefined,
     dataCriacao,
+  };
+}
+
+/**
+ * 22. Normalize Config Lembretes Saude & Perfil (22_Config_Lembretes_Saude)
+ * Robustly parses and extracts clean "HH:mm" strings for reminder times,
+ * handling Google Sheets 1899 epoch date-time formats, ISO strings, and custom formats.
+ */
+export function normalizeConfigLembreteSaude(raw: any): LembreteSaudeConfig {
+  if (!raw || typeof raw !== "object") return raw;
+
+  const id = String(raw.Id || raw.id || raw.ID || `LEMBRETE_${Date.now()}`).trim();
+  const tipo = String(raw.Tipo || raw.tipo || "").trim();
+  const rawAtivo = raw.Ativo ?? raw.ativo;
+  const ativo =
+    rawAtivo === true ||
+    rawAtivo === "SIM" ||
+    rawAtivo === "sim" ||
+    rawAtivo === "TRUE" ||
+    rawAtivo === "true" ||
+    rawAtivo === 1 ||
+    rawAtivo === "1";
+
+  // For height config (CONFIG_PERFIL_ALTURA), horario1 is an integer/number string, don't format as time
+  const isPerfilAltura =
+    id === "CONFIG_PERFIL_ALTURA" ||
+    tipo.toLowerCase().includes("altura") ||
+    tipo.toLowerCase().includes("perfil");
+
+  let h1 = String(raw.Horario_1 ?? raw.horario1 ?? raw.Horario1 ?? raw["Horário 1"] ?? raw["Horario 1"] ?? "").trim();
+  let h2 = String(raw.Horario_2 ?? raw.horario2 ?? raw.Horario2 ?? raw["Horário 2"] ?? raw["Horario 2"] ?? "").trim();
+  let h3 = String(raw.Horario_3 ?? raw.horario3 ?? raw.Horario3 ?? raw["Horário 3"] ?? raw["Horario 3"] ?? "").trim();
+
+  if (!isPerfilAltura) {
+    h1 = formatarHora(h1);
+    h2 = formatarHora(h2);
+    h3 = formatarHora(h3);
+  }
+
+  const diasSemana = String(raw.Dias_Semana ?? raw.diasSemana ?? raw.dias_semana ?? "TODOS").trim().toUpperCase() || "TODOS";
+  const ultimaAtualizacao = String(
+    raw.Ultima_Atualizacao ?? raw.ultimaAtualizacao ?? raw.ultima_atualizacao ?? ""
+  ).trim();
+
+  return {
+    id,
+    Id: id,
+    tipo,
+    Tipo: tipo,
+    ativo: ativo ? "SIM" : "NAO",
+    Ativo: ativo ? "SIM" : "NAO",
+    horario1: h1,
+    Horario_1: h1,
+    horario2: h2,
+    Horario_2: h2,
+    horario3: h3,
+    Horario_3: h3,
+    diasSemana,
+    Dias_Semana: diasSemana,
+    ultimaAtualizacao,
+    Ultima_Atualizacao: ultimaAtualizacao,
   };
 }
 

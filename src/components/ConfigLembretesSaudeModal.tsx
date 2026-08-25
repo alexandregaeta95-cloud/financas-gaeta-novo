@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { LembreteSaudeConfig } from "../types";
+import { formatarHora } from "../utils/formatters";
 
 interface ConfigLembretesSaudeModalProps {
   isOpen: boolean;
@@ -58,9 +59,9 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
           pressaoCfg.ativo === true ||
           pressaoCfg.Ativo === true;
         setPressaoAtivo(ativo);
-        setPressaoH1(pressaoCfg.horario1 || pressaoCfg.Horario_1 || "07:30");
-        setPressaoH2(pressaoCfg.horario2 || pressaoCfg.Horario_2 || "13:30");
-        setPressaoH3(pressaoCfg.horario3 || pressaoCfg.Horario_3 || "19:30");
+        setPressaoH1(formatarHora(pressaoCfg.horario1 || pressaoCfg.Horario_1) || "07:30");
+        setPressaoH2(formatarHora(pressaoCfg.horario2 || pressaoCfg.Horario_2) || "13:30");
+        setPressaoH3(formatarHora(pressaoCfg.horario3 || pressaoCfg.Horario_3) || "19:30");
       }
 
       const glicemiaCfg = configs.find(
@@ -76,9 +77,9 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
           glicemiaCfg.ativo === true ||
           glicemiaCfg.Ativo === true;
         setGlicemiaAtivo(ativo);
-        setGlicemiaH1(glicemiaCfg.horario1 || glicemiaCfg.Horario_1 || "07:00");
-        setGlicemiaH2(glicemiaCfg.horario2 || glicemiaCfg.Horario_2 || "14:00");
-        setGlicemiaH3(glicemiaCfg.horario3 || glicemiaCfg.Horario_3 || "21:30");
+        setGlicemiaH1(formatarHora(glicemiaCfg.horario1 || glicemiaCfg.Horario_1) || "07:00");
+        setGlicemiaH2(formatarHora(glicemiaCfg.horario2 || glicemiaCfg.Horario_2) || "14:00");
+        setGlicemiaH3(formatarHora(glicemiaCfg.horario3 || glicemiaCfg.Horario_3) || "21:30");
       }
     }
   }, [configs, isOpen]);

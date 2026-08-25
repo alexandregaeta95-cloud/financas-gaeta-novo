@@ -13,7 +13,7 @@ import {
   LembreteSaudeConfig,
   RegistroSaude,
 } from "../types";
-import { formatCurrency } from "../utils/formatters";
+import { formatCurrency, formatarHora } from "../utils/formatters";
 
 // Helper: Get local date string YYYY-MM-DD (e.g. Brasilia timezone UTC-3)
 export function getLocalTodayDateStr(date: Date = new Date()): string {
@@ -429,8 +429,14 @@ export function evaluateAllNotifications({
     ];
 
     explicitCandidates.forEach((val) => {
-      if (typeof val === "string" && val.trim()) {
-        rawHorariosSet.add(val.trim());
+      if (val !== undefined && val !== null) {
+        const strVal = String(val).trim();
+        if (strVal) {
+          const formatted = formatarHora(strVal);
+          if (formatted && /^\d{1,2}:\d{2}$/.test(formatted)) {
+            rawHorariosSet.add(formatted);
+          }
+        }
       }
     });
 
@@ -438,9 +444,12 @@ export function evaluateAllNotifications({
     if (rawHorariosSet.size === 0) {
       Object.keys(cfg).forEach((key) => {
         if (/hor[aá]rio/i.test(key)) {
-          const val = String(cfg[key] || "").trim();
-          if (/^\d{1,2}:\d{2}$/.test(val)) {
-            rawHorariosSet.add(val);
+          const val = cfg[key];
+          if (val !== undefined && val !== null) {
+            const formatted = formatarHora(val);
+            if (formatted && /^\d{1,2}:\d{2}$/.test(formatted)) {
+              rawHorariosSet.add(formatted);
+            }
           }
         }
       });

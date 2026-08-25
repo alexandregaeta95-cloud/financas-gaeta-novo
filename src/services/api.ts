@@ -28,6 +28,8 @@ import {
   normalizeRegistroSaude,
   normalizeAlimentoAnalise,
   normalizeExercicio,
+  normalizeConfigLembreteSaude,
+  formatarHora,
 } from "../utils/formatters";
 
 const LOCAL_STORAGE_KEY_PREFIX = "financas_gaeta_cache_";
@@ -134,6 +136,14 @@ export function normalizeRecordBySheet(sheetName: string, item: any): any {
   }
   if (s.includes("exercicio") || s.includes("treino") || sheetName === SHEET_NAMES.EXERCICIOS || sheetName === "23_Exercicios") {
     return normalizeExercicio(item);
+  }
+  if (
+    s.includes("lembrete") ||
+    s.includes("22_config") ||
+    sheetName === SHEET_NAMES.CONFIG_LEMBRETES_SAUDE ||
+    sheetName === "22_Config_Lembretes_Saude"
+  ) {
+    return normalizeConfigLembreteSaude(item);
   }
   return item;
 }
@@ -646,9 +656,16 @@ export async function saveSheetRecords<T = any>(
         item.ativo === true || item.ativo === "SIM" || item.Ativo === "SIM" || item.Ativo === true
           ? "SIM"
           : "NAO";
-      const h1 = String(item.horario1 || item.Horario_1 || item.Horario1 || "");
-      const h2 = String(item.horario2 || item.Horario_2 || item.Horario2 || "");
-      const h3 = String(item.horario3 || item.Horario_3 || item.Horario3 || "");
+      const isAltura = lembreteId === "CONFIG_PERFIL_ALTURA" || tipoVal.toLowerCase().includes("altura") || tipoVal.toLowerCase().includes("perfil");
+      const h1 = isAltura
+        ? String(item.horario1 || item.Horario_1 || item.Horario1 || item.altura || "")
+        : formatarHora(item.horario1 || item.Horario_1 || item.Horario1 || "");
+      const h2 = isAltura
+        ? ""
+        : formatarHora(item.horario2 || item.Horario_2 || item.Horario2 || "");
+      const h3 = isAltura
+        ? ""
+        : formatarHora(item.horario3 || item.Horario_3 || item.Horario3 || "");
       const diasVal = String(item.diasSemana || item.Dias_Semana || item.dias_semana || "TODOS");
       const atualizacaoVal = String(
         item.ultimaAtualizacao || item.Ultima_Atualizacao || new Date().toLocaleString("pt-BR")
