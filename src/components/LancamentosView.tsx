@@ -23,6 +23,7 @@ import {
 import { Lancamento, Veiculo, ContaBancaria, CartaoCredito, CategoriaCustomizada } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency, formatCurrencyInput, isLancamentoExcluded } from "../utils/formatters";
+import { ComboBox } from "./ComboBox";
 
 interface Props {
   lancamentos: Lancamento[];
@@ -402,6 +403,18 @@ export const LancamentosView: React.FC<Props> = ({
 
     return Array.from(new Set([...defaults, ...fromCustom, ...fromLancamentos]));
   }, [formData.Tipo, formData.Categoria, categoriasCustom, lancamentos]);
+
+  // Lista dinâmica de postos únicos
+  const postosDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    lancamentos.forEach((l) => {
+      const p = l.Posto || l.Nome_Posto;
+      if (p && String(p).trim()) {
+        set.add(String(p).trim().toUpperCase());
+      }
+    });
+    return Array.from(set);
+  }, [lancamentos]);
 
   // Sync state when modal opens
   useEffect(() => {
@@ -1404,20 +1417,13 @@ export const LancamentosView: React.FC<Props> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-400 text-xs mb-1">Categoria</label>
-                  <input
-                    type="text"
-                    list="categorias-lancamentos-list"
-                    placeholder="Selecione ou digite..."
+                  <ComboBox
                     value={formData.Categoria || ""}
-                    onChange={(e) => setFormData({ ...formData, Categoria: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-emerald-500"
+                    onChange={(val) => setFormData({ ...formData, Categoria: val })}
+                    options={categoriasDisponiveis}
+                    placeholder="Selecione ou digite..."
                     required
                   />
-                  <datalist id="categorias-lancamentos-list">
-                    {categoriasDisponiveis.map((cat) => (
-                      <option key={cat} value={cat} />
-                    ))}
-                  </datalist>
                 </div>
 
                 <div>
@@ -1706,19 +1712,12 @@ export const LancamentosView: React.FC<Props> = ({
                       <label className="block text-slate-300 text-[11px] font-medium mb-1">
                         Motorista
                       </label>
-                      <input
-                        type="text"
-                        list="motoristas-cadastrados"
-                        placeholder="Ex: Carlos / Alexandre"
+                      <ComboBox
                         value={formData.Motorista || ""}
-                        onChange={(e) => setFormData({ ...formData, Motorista: e.target.value.toUpperCase() })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-amber-500"
+                        onChange={(val) => setFormData({ ...formData, Motorista: val })}
+                        options={motoristasDisponiveis}
+                        placeholder="Ex: Carlos / Alexandre"
                       />
-                      <datalist id="motoristas-cadastrados">
-                        {motoristasDisponiveis.map((m) => (
-                          <option key={m} value={m} />
-                        ))}
-                      </datalist>
                     </div>
                   </div>
 
@@ -1841,12 +1840,11 @@ export const LancamentosView: React.FC<Props> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="min-w-0">
                       <label className="block text-slate-300 text-[11px] font-medium mb-1">Posto de Combustível</label>
-                      <input
-                        type="text"
-                        placeholder="Ex: Posto Ipiranga"
+                      <ComboBox
                         value={formData.Posto || ""}
-                        onChange={(e) => setFormData({ ...formData, Posto: e.target.value.toUpperCase() })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-amber-500"
+                        onChange={(val) => setFormData({ ...formData, Posto: val })}
+                        options={postosDisponiveis}
+                        placeholder="Ex: Posto Ipiranga"
                       />
                     </div>
                     <div className="min-w-0">

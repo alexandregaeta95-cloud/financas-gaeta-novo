@@ -17,6 +17,7 @@ import {
 import { ItemMercado, ContaBancaria, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { ComboBox } from "./ComboBox";
 
 interface Props {
   itens: ItemMercado[];
@@ -676,37 +677,23 @@ export const ListaMercadoView: React.FC<Props> = ({
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="text-slate-400 block mb-1">Nome do Item</label>
-                <input
-                  type="text"
+                <ComboBox
                   required
-                  list="itens-mercado"
                   placeholder="Ex: Leite, Café, Pão"
-                  value={form.Item}
-                  onChange={(e) => setForm({ ...form, Item: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  value={form.Item || ""}
+                  onChange={(val) => setForm({ ...form, Item: val })}
+                  options={itensSugeridos}
                 />
-                <datalist id="itens-mercado">
-                  {itensSugeridos.map((itemNome) => (
-                    <option key={itemNome} value={itemNome} />
-                  ))}
-                </datalist>
               </div>
 
               <div>
                 <label className="text-slate-400 block mb-1">Categoria</label>
-                <input
-                  type="text"
-                  list="categorias-mercado"
+                <ComboBox
                   placeholder="Ex: MERCADO, HORTIFRUTI, LIMPEZA, BEBIDAS..."
                   value={form.Categoria || ""}
-                  onChange={(e) => setForm({ ...form, Categoria: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  onChange={(val) => setForm({ ...form, Categoria: val })}
+                  options={categoriasSugeridas}
                 />
-                <datalist id="categorias-mercado">
-                  {categoriasSugeridas.map((cat) => (
-                    <option key={cat} value={cat} />
-                  ))}
-                </datalist>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

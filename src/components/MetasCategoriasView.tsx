@@ -11,6 +11,7 @@ import {
   getSpentForMeta,
 } from "../utils/metasCalculations";
 import { MetasRelatorioModal } from "./MetasRelatorioModal";
+import { ComboBox } from "./ComboBox";
 
 interface Props {
   metas: MetaCategoria[];
@@ -49,6 +50,33 @@ export const MetasCategoriasView: React.FC<Props> = ({
   onDeleteCategoria,
 }) => {
   const [activeTab, setActiveTab] = useState<"metas" | "categorias">("metas");
+
+  const categoriasDisponiveis = React.useMemo(() => {
+    const defaults = [
+      "ALIMENTAÇÃO",
+      "SUPERMERCADO",
+      "TRANSPORTE",
+      "MORADIA",
+      "CONTAS",
+      "SAÚDE",
+      "LAZER",
+      "EDUCAÇÃO",
+      "VESTUÁRIO",
+      "SERVIÇOS",
+      "IMPOSTOS",
+      "VEÍCULO",
+      "ABASTECIMENTO",
+      "PET",
+      "OUTROS",
+    ];
+    const fromCustom = (categoriasCustom || [])
+      .map((c) => String(c.Nome || "").trim().toUpperCase())
+      .filter((n) => n.length > 0);
+    const fromLancamentos = (lancamentos || [])
+      .map((l) => String(l.Categoria || "").trim().toUpperCase())
+      .filter((c) => c.length > 0);
+    return Array.from(new Set([...defaults, ...fromCustom, ...fromLancamentos]));
+  }, [categoriasCustom, lancamentos]);
 
   // Delete Confirmation State
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -485,13 +513,12 @@ export const MetasCategoriasView: React.FC<Props> = ({
             <form onSubmit={handleSaveMetaSubmit} className="space-y-3">
               <div>
                 <label className="text-slate-400 block mb-1">Categoria</label>
-                <input
-                  type="text"
+                <ComboBox
                   required
                   placeholder="Ex: MERCADO, SAÚDE, ABASTECIMENTO"
-                  value={metaForm.Categoria}
-                  onChange={(e) => setMetaForm({ ...metaForm, Categoria: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  value={metaForm.Categoria || ""}
+                  onChange={(val) => setMetaForm({ ...metaForm, Categoria: val })}
+                  options={categoriasDisponiveis}
                 />
               </div>
 

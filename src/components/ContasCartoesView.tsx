@@ -10,6 +10,36 @@ import {
 import { ContaBancaria, CartaoCredito, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency, formatCurrencyInput, calculateCardBalance } from "../utils/formatters";
+import { ComboBox } from "./ComboBox";
+
+const BANCOS_SUGESTOES = [
+  "ITAÚ",
+  "BRADESCO",
+  "NUBANK",
+  "BANCO DO BRASIL",
+  "SANTANDER",
+  "CAIXA ECONÔMICA",
+  "INTER",
+  "C6 BANK",
+  "BTG PACTUAL",
+  "SICOOB",
+  "SICREDI",
+  "XP INVESTIMENTOS",
+  "MERCADO PAGO",
+  "PAGBANK",
+  "PICPAY",
+];
+
+const BANDEIRAS_SUGESTOES = [
+  "MASTERCARD",
+  "VISA",
+  "ELO",
+  "AMEX",
+  "HIPERCARD",
+  "ALELO",
+  "TICKET",
+  "SODEXO",
+];
 
 interface Props {
   contas: ContaBancaria[];
@@ -575,13 +605,12 @@ export const ContasCartoesView: React.FC<Props> = ({
             <form onSubmit={handleSaveContaSubmit} className="space-y-3">
               <div>
                 <label className="text-slate-400 block mb-1">Nome da Conta / Banco</label>
-                <input
-                  type="text"
+                <ComboBox
                   required
                   placeholder="Ex: Itaú Corrente Principal"
                   value={contaForm.Nome}
-                  onChange={(e) => setContaForm({ ...contaForm, Nome: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  onChange={(val) => setContaForm({ ...contaForm, Nome: val })}
+                  options={BANCOS_SUGESTOES}
                 />
               </div>
 
@@ -694,18 +723,12 @@ export const ContasCartoesView: React.FC<Props> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Bandeira</label>
-                  <select
+                  <ComboBox
                     value={cartaoForm.Bandeira || "MASTERCARD"}
-                    onChange={(e) => setCartaoForm({ ...cartaoForm, Bandeira: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
-                  >
-                    <option value="MASTERCARD">MASTERCARD</option>
-                    <option value="VISA">VISA</option>
-                    <option value="ELO">ELO</option>
-                    <option value="AMEX">AMEX</option>
-                    <option value="HIPERCARD">HIPERCARD</option>
-                    <option value="OUTRA">OUTRA</option>
-                  </select>
+                    onChange={(val) => setCartaoForm({ ...cartaoForm, Bandeira: val })}
+                    options={BANDEIRAS_SUGESTOES}
+                    placeholder="Selecione ou digite..."
+                  />
                 </div>
 
                 <div>

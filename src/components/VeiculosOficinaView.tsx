@@ -14,6 +14,7 @@ import {
 import { Veiculo, ServicoOficina, ManutencaoAgendada } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { ComboBox } from "./ComboBox";
 
 type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
 
@@ -245,6 +246,38 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         );
       });
   }, [manutencoes, periodFilter, startDate, endDate, searchTerm]);
+
+  // Lista dinâmica de sugestões de serviços e oficinas
+  const servicosDisponiveis = useMemo(() => {
+    const defaults = [
+      "TROCA DE ÓLEO E FILTRO",
+      "ALINHAMENTO E BALANCEAMENTO",
+      "PASTILHAS DE FREIO",
+      "DISCOS DE FREIO",
+      "TROCA DE CORREIA DENTADA",
+      "TROCA DE BATERIA",
+      "SUSPENSÃO E AMORTECEDORES",
+      "VELAS E CABOS DE IGNIÇÃO",
+      "FILTRO DE AR E CABINE",
+      "REVISÃO PREVENTIVA GERAL",
+      "TROCA DE PNEUS",
+      "EMBREAGEM",
+    ];
+    const fromExisting = servicos
+      .map((s) => s.Descrição?.trim().toUpperCase())
+      .filter(Boolean) as string[];
+    const fromManut = manutencoes
+      .map((m) => m.Descrição?.trim().toUpperCase())
+      .filter(Boolean) as string[];
+    return Array.from(new Set([...defaults, ...fromExisting, ...fromManut]));
+  }, [servicos, manutencoes]);
+
+  const oficinasDisponiveis = useMemo(() => {
+    const fromExisting = servicos
+      .map((s) => s.Oficina_Nome?.trim().toUpperCase())
+      .filter(Boolean) as string[];
+    return Array.from(new Set(fromExisting));
+  }, [servicos]);
 
   // Open Veículo Modal
   const handleOpenVeiculo = (v?: Veiculo) => {
@@ -1076,13 +1109,12 @@ export const VeiculosOficinaView: React.FC<Props> = ({
 
               <div>
                 <label className="text-slate-400 block mb-1">Descrição do Serviço</label>
-                <input
-                  type="text"
+                <ComboBox
                   required
                   placeholder="Ex: Troca de pastilhas de freio e alinhamento"
                   value={servicoForm.Descrição}
-                  onChange={(e) => setServicoForm({ ...servicoForm, Descrição: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                  onChange={(val) => setServicoForm({ ...servicoForm, Descrição: val })}
+                  options={servicosDisponiveis}
                 />
               </div>
 
@@ -1108,12 +1140,11 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Oficina Nome</label>
-                  <input
-                    type="text"
+                  <ComboBox
                     placeholder="Oficina Bosch"
                     value={servicoForm.Oficina_Nome}
-                    onChange={(e) => setServicoForm({ ...servicoForm, Oficina_Nome: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                    onChange={(val) => setServicoForm({ ...servicoForm, Oficina_Nome: val })}
+                    options={oficinasDisponiveis}
                   />
                 </div>
               </div>
@@ -1168,13 +1199,12 @@ export const VeiculosOficinaView: React.FC<Props> = ({
 
                 <div>
                   <label className="text-slate-400 block mb-1">Descrição</label>
-                  <input
-                    type="text"
+                  <ComboBox
                     required
                     placeholder="Ex: Troca de Correia Dentada"
                     value={manutencaoForm.Descrição}
-                    onChange={(e) => setManutencaoForm({ ...manutencaoForm, Descrição: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                    onChange={(val) => setManutencaoForm({ ...manutencaoForm, Descrição: val })}
+                    options={servicosDisponiveis}
                   />
                 </div>
               </div>
