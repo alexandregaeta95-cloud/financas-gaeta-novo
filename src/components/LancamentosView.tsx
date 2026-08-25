@@ -126,6 +126,45 @@ function isExcludedItem(l: any): boolean {
   return isLancamentoExcluded(l);
 }
 
+export function extractValorOriginal(item: any): number {
+  if (!item || typeof item !== "object") return 0;
+  return parseCurrency(
+    item.Valor ??
+    item["Valor"] ??
+    item["VALOR"] ??
+    item.valor ??
+    item["Valor_Total"] ??
+    item["Valor Total"] ??
+    item["VALOR_TOTAL"] ??
+    item["VALOR TOTAL"] ??
+    item.Valor_Total ??
+    item.valor_total ??
+    item.Valor_Original ??
+    item["Valor_Original"] ??
+    item["Valor Original"] ??
+    0
+  );
+}
+
+export function extractValorPago(item: any): number {
+  if (!item || typeof item !== "object") return 0;
+  return parseCurrency(
+    item.Valor_Pago ??
+    item["Valor_Pago"] ??
+    item["Valor Pago"] ??
+    item["VALOR PAGO"] ??
+    item["VALOR_PAGO"] ??
+    item["Valor pago"] ??
+    item.valor_pago ??
+    item.valorPago ??
+    item["valor_pago"] ??
+    item["valor pago"] ??
+    item.ValorPago ??
+    item["ValorPago"] ??
+    0
+  );
+}
+
 export const LancamentosView: React.FC<Props> = ({
   lancamentos,
   veiculos,
@@ -884,8 +923,8 @@ export const LancamentosView: React.FC<Props> = ({
       // Applies only to Despesa and Abastecimento (not Receita)
       if (isReceitaItem(item)) return;
 
-      const valorOriginal = parseCurrency(item.Valor);
-      const valorPago = parseCurrency(item.Valor_Pago);
+      const valorOriginal = extractValorOriginal(item);
+      const valorPago = extractValorPago(item);
 
       // Both values must be positive and present to compute a comparison
       if (valorOriginal > 0 && valorPago > 0) {
@@ -1138,8 +1177,8 @@ export const LancamentosView: React.FC<Props> = ({
               const isFuel = isFuelItem(item);
 
               // Comparison logic between Valor and Valor_Pago (Expenses and Fuelings only)
-              const valorOriginal = parseCurrency(item.Valor);
-              const valorPago = parseCurrency(item.Valor_Pago);
+              const valorOriginal = extractValorOriginal(item);
+              const valorPago = extractValorPago(item);
               let diffTag: { type: "ECONOMY" | "EXTRA"; amount: number } | null = null;
 
               if (!isReceita && valorOriginal > 0 && valorPago > 0) {

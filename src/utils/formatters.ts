@@ -210,11 +210,36 @@ export function normalizeLancamento(raw: any): Lancamento {
     "";
 
   const valor = parseCurrency(
-    raw.Valor ?? raw.valor ?? raw.Valor_Total ?? raw["Valor_Total"] ?? 0
+    raw.Valor ??
+    raw["Valor"] ??
+    raw["VALOR"] ??
+    raw.valor ??
+    raw["Valor_Total"] ??
+    raw["Valor Total"] ??
+    raw["VALOR_TOTAL"] ??
+    raw["VALOR TOTAL"] ??
+    raw.Valor_Total ??
+    raw.valor_total ??
+    raw.Valor_Original ??
+    raw["Valor_Original"] ??
+    raw["Valor Original"] ??
+    0
   );
 
   const valorPago = parseCurrency(
-    raw.Valor_Pago ?? raw["Valor_Pago"] ?? raw.valor_pago ?? raw.valorPago ?? 0
+    raw.Valor_Pago ??
+    raw["Valor_Pago"] ??
+    raw["Valor Pago"] ??
+    raw["VALOR PAGO"] ??
+    raw["VALOR_PAGO"] ??
+    raw["Valor pago"] ??
+    raw.valor_pago ??
+    raw.valorPago ??
+    raw["valor_pago"] ??
+    raw["valor pago"] ??
+    raw.ValorPago ??
+    raw["ValorPago"] ??
+    0
   );
 
   const rawTipo = raw.Tipo ?? raw.tipo;
