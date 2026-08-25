@@ -17,6 +17,8 @@ import {
   Loader2,
   Calendar,
   CreditCard,
+  PiggyBank,
+  BadgeAlert,
 } from "lucide-react";
 import { Lancamento, Veiculo, ContaBancaria, CartaoCredito, CategoriaCustomizada } from "../types";
 import { generateNewId } from "../services/api";
@@ -871,6 +873,57 @@ export const LancamentosView: React.FC<Props> = ({
       return dateB - dateA;
     });
 
+  // Calculate Aggregated Savings / Extra Spent for current filtered period (Expenses & Fuelings only)
+  const economyStats = useMemo(() => {
+    let totalEconomia = 0;
+    let totalGastoAMais = 0;
+    let countEconomia = 0;
+    let countGastoAMais = 0;
+
+    filteredList.forEach((item) => {
+      // Applies only to Despesa and Abastecimento (not Receita)
+      if (isReceitaItem(item)) return;
+
+      const valorOriginal = parseCurrency(item.Valor);
+      const valorPago = parseCurrency(item.Valor_Pago);
+
+      // Both values must be positive and present to compute a comparison
+      if (valorOriginal > 0 && valorPago > 0) {
+        const diff = Number((valorOriginal - valorPago).toFixed(2));
+        if (diff > 0.009) {
+          totalEconomia += diff;
+          countEconomia += 1;
+        } else if (diff < -0.009) {
+          const extra = Math.abs(diff);
+          totalGastoAMais += extra;
+          countGastoAMais += 1;
+        }
+      }
+    });
+
+    const netSavings = Number((totalEconomia - totalGastoAMais).toFixed(2));
+
+    // Dynamic Period Text
+    let periodText = "até o momento";
+    if (periodFilter === "CURRENT_MONTH") {
+      periodText = "neste mês";
+    } else if (periodFilter === "LAST_MONTH") {
+      periodText = "no mês passado";
+    } else if (periodFilter === "CUSTOM") {
+      periodText = "no período selecionado";
+    }
+
+    return {
+      totalEconomia,
+      totalGastoAMais,
+      countEconomia,
+      countGastoAMais,
+      netSavings,
+      periodText,
+      hasAnyDiff: countEconomia > 0 || countGastoAMais > 0,
+    };
+  }, [filteredList, periodFilter]);
+
   return (
     <div className="space-y-6 pb-20 md:pb-8">
       {/* Module Header */}
@@ -999,6 +1052,79 @@ export const LancamentosView: React.FC<Props> = ({
         )}
       </div>
 
+      {/* Aggregated Savings / Extra Spent Summary Card */}
+      {economyStats.hasAnyDiff && (
+        <div
+          className={`p-4 rounded-2xl border transition-all ${
+            economyStats.netSavings > 0
+              ? "bg-emerald-950/20 border-emerald-500/30 text-emerald-100"
+              : economyStats.netSavings < 0
+              ? "bg-rose-950/20 border-rose-500/30 text-rose-100"
+              : "bg-slate-900 border-slate-800 text-slate-300"
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2.5 rounded-xl shrink-0 ${
+                  economyStats.netSavings > 0
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    : economyStats.netSavings < 0
+                    ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                    : "bg-slate-800 text-slate-400"
+                }`}
+              >
+                {economyStats.netSavings > 0 ? (
+                  <PiggyBank className="w-5 h-5" />
+                ) : economyStats.netSavings < 0 ? (
+                  <BadgeAlert className="w-5 h-5" />
+                ) : (
+                  <TrendingDown className="w-5 h-5" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold tracking-tight">
+                  {economyStats.netSavings > 0 ? (
+                    <>
+                      💰 Você economizou{" "}
+                      <span className="font-bold text-emerald-400">
+                        R$ {formatCurrency(economyStats.netSavings)}
+                      </span>{" "}
+                      {economyStats.periodText}
+                    </>
+                  ) : economyStats.netSavings < 0 ? (
+                    <>
+                      ⚠️ Você pagou{" "}
+                      <span className="font-bold text-rose-400">
+                        R$ {formatCurrency(Math.abs(economyStats.netSavings))}
+                      </span>{" "}
+                      a mais {economyStats.periodText}
+                    </>
+                  ) : (
+                    <>
+                      Comparativo de valores empatado {economyStats.periodText}
+                    </>
+                  )}
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {economyStats.countEconomia > 0 && (
+                    <span className="text-emerald-400/90 font-medium">
+                      Economias ({economyStats.countEconomia}): R$ {formatCurrency(economyStats.totalEconomia)}
+                    </span>
+                  )}
+                  {economyStats.countEconomia > 0 && economyStats.countGastoAMais > 0 && " • "}
+                  {economyStats.countGastoAMais > 0 && (
+                    <span className="text-rose-400/90 font-medium">
+                      Valores a mais ({economyStats.countGastoAMais}): R$ {formatCurrency(economyStats.totalGastoAMais)}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Transactions Table / List */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
         {filteredList.length === 0 ? (
@@ -1010,6 +1136,20 @@ export const LancamentosView: React.FC<Props> = ({
             {filteredList.map((item, idx) => {
               const isReceita = isReceitaItem(item);
               const isFuel = isFuelItem(item);
+
+              // Comparison logic between Valor and Valor_Pago (Expenses and Fuelings only)
+              const valorOriginal = parseCurrency(item.Valor);
+              const valorPago = parseCurrency(item.Valor_Pago);
+              let diffTag: { type: "ECONOMY" | "EXTRA"; amount: number } | null = null;
+
+              if (!isReceita && valorOriginal > 0 && valorPago > 0) {
+                const diff = Number((valorOriginal - valorPago).toFixed(2));
+                if (diff > 0.009) {
+                  diffTag = { type: "ECONOMY", amount: diff };
+                } else if (diff < -0.009) {
+                  diffTag = { type: "EXTRA", amount: Math.abs(diff) };
+                }
+              }
 
               return (
                 <div
@@ -1050,6 +1190,16 @@ export const LancamentosView: React.FC<Props> = ({
                         {getSeriesId(item) && (
                           <span className="px-2 py-0.5 rounded bg-indigo-950/50 text-[10px] text-indigo-300 border border-indigo-500/30">
                             {item.Parcela_Info ? `Parcela ${item.Parcela_Info}` : "Recorrente"}
+                          </span>
+                        )}
+                        {diffTag && diffTag.type === "ECONOMY" && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
+                            💰 Economia de R$ {formatCurrency(diffTag.amount)}
+                          </span>
+                        )}
+                        {diffTag && diffTag.type === "EXTRA" && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-semibold">
+                            ⚠️ Pago R$ {formatCurrency(diffTag.amount)} a mais
                           </span>
                         )}
                         {isFuel && (item.Localizacao_Do_Posto || item.Posto) && (
