@@ -132,11 +132,11 @@ export const AppsScriptSetupModal: React.FC<Props> = ({ isOpen, onClose, onConne
             </span>
             <div className="flex flex-col sm:flex-row gap-2">
               <input
-                type="text"
+                type="url"
                 placeholder="https://script.google.com/macros/s/.../exec"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors normal-case font-mono"
               />
               <button
                 onClick={handleTestAndSave}

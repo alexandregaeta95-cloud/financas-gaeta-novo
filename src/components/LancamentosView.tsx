@@ -1891,7 +1891,7 @@ export const LancamentosView: React.FC<Props> = ({
                       placeholder="Ex: https://..."
                       value={formData.Comprovante_Url || ""}
                       onChange={(e) => setFormData({ ...formData, Comprovante_Url: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500 normal-case font-mono"
                     />
                   </div>
 

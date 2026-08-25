@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+/* 
+ * Conversão visual em tempo real para MAIÚSCULO em todos os campos de texto do sistema.
+ * Aplica-se a inputs de texto e textareas automaticamente enquanto o usuário digita.
+ * Exclui campos que não devem ser maiúsculos (senhas, emails, urls, datas, horas, números, arquivos, etc.)
+ * e permite exceções explícitas com as classes .normal-case ou .lowercase.
+ */
+input:not([type]):not(.normal-case):not(.lowercase),
+input[type="text"]:not(.normal-case):not(.lowercase),
+input[type="search"]:not(.normal-case):not(.lowercase),
+textarea:not(.normal-case):not(.lowercase) {
+  text-transform: uppercase;
+}
+
+/* Mantém os textos de placeholder legíveis na caixa original ou estilização padrão */
+input::placeholder,
+textarea::placeholder {
+  text-transform: none;
+}
