@@ -48,38 +48,42 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
     if (configs && configs.length > 0) {
       const pressaoCfg = configs.find(
         (c) =>
-          c.id === "LEMBRETE_PRESSAO" ||
           c.Id === "LEMBRETE_PRESSAO" ||
-          String(c.tipo || c.Tipo).toLowerCase().includes("pressao")
+          c.id === "LEMBRETE_PRESSAO" ||
+          String(c.Tipo || c.tipo || "").toLowerCase().includes("pressao")
       );
       if (pressaoCfg) {
+        const rawAtivo = pressaoCfg.Ativo ?? pressaoCfg.ativo;
         const ativo =
-          pressaoCfg.ativo === "SIM" ||
-          pressaoCfg.Ativo === "SIM" ||
-          pressaoCfg.ativo === true ||
-          pressaoCfg.Ativo === true;
+          rawAtivo === "SIM" ||
+          rawAtivo === "sim" ||
+          rawAtivo === true ||
+          rawAtivo === "TRUE" ||
+          rawAtivo === "true";
         setPressaoAtivo(ativo);
-        setPressaoH1(formatarHora(pressaoCfg.horario1 || pressaoCfg.Horario_1) || "07:30");
-        setPressaoH2(formatarHora(pressaoCfg.horario2 || pressaoCfg.Horario_2) || "13:30");
-        setPressaoH3(formatarHora(pressaoCfg.horario3 || pressaoCfg.Horario_3) || "19:30");
+        setPressaoH1(formatarHora(pressaoCfg.Horario_1 || pressaoCfg.horario1) || "07:30");
+        setPressaoH2(formatarHora(pressaoCfg.Horario_2 || pressaoCfg.horario2) || "13:30");
+        setPressaoH3(formatarHora(pressaoCfg.Horario_3 || pressaoCfg.horario3) || "19:30");
       }
 
       const glicemiaCfg = configs.find(
         (c) =>
-          c.id === "LEMBRETE_GLICEMIA" ||
           c.Id === "LEMBRETE_GLICEMIA" ||
-          String(c.tipo || c.Tipo).toLowerCase().includes("glicemia")
+          c.id === "LEMBRETE_GLICEMIA" ||
+          String(c.Tipo || c.tipo || "").toLowerCase().includes("glicemia")
       );
       if (glicemiaCfg) {
+        const rawAtivo = glicemiaCfg.Ativo ?? glicemiaCfg.ativo;
         const ativo =
-          glicemiaCfg.ativo === "SIM" ||
-          glicemiaCfg.Ativo === "SIM" ||
-          glicemiaCfg.ativo === true ||
-          glicemiaCfg.Ativo === true;
+          rawAtivo === "SIM" ||
+          rawAtivo === "sim" ||
+          rawAtivo === true ||
+          rawAtivo === "TRUE" ||
+          rawAtivo === "true";
         setGlicemiaAtivo(ativo);
-        setGlicemiaH1(formatarHora(glicemiaCfg.horario1 || glicemiaCfg.Horario_1) || "07:00");
-        setGlicemiaH2(formatarHora(glicemiaCfg.horario2 || glicemiaCfg.Horario_2) || "14:00");
-        setGlicemiaH3(formatarHora(glicemiaCfg.horario3 || glicemiaCfg.Horario_3) || "21:30");
+        setGlicemiaH1(formatarHora(glicemiaCfg.Horario_1 || glicemiaCfg.horario1) || "07:00");
+        setGlicemiaH2(formatarHora(glicemiaCfg.Horario_2 || glicemiaCfg.horario2) || "14:00");
+        setGlicemiaH3(formatarHora(glicemiaCfg.Horario_3 || glicemiaCfg.horario3) || "21:30");
       }
     }
   }, [configs, isOpen]);
@@ -95,39 +99,23 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
 
       const payload: LembreteSaudeConfig[] = [
         {
-          id: "LEMBRETE_PRESSAO",
           Id: "LEMBRETE_PRESSAO",
-          tipo: "Pressao_Arterial",
           Tipo: "Pressao_Arterial",
-          ativo: pressaoAtivo ? "SIM" : "NAO",
           Ativo: pressaoAtivo ? "SIM" : "NAO",
-          horario1: pressaoH1,
           Horario_1: pressaoH1,
-          horario2: pressaoH2,
           Horario_2: pressaoH2,
-          horario3: pressaoH3,
           Horario_3: pressaoH3,
-          diasSemana: "TODOS",
           Dias_Semana: "TODOS",
-          ultimaAtualizacao: nowStr,
           Ultima_Atualizacao: nowStr,
         },
         {
-          id: "LEMBRETE_GLICEMIA",
           Id: "LEMBRETE_GLICEMIA",
-          tipo: "Glicemia",
           Tipo: "Glicemia",
-          ativo: glicemiaAtivo ? "SIM" : "NAO",
           Ativo: glicemiaAtivo ? "SIM" : "NAO",
-          horario1: glicemiaH1,
           Horario_1: glicemiaH1,
-          horario2: glicemiaH2,
           Horario_2: glicemiaH2,
-          horario3: glicemiaH3,
           Horario_3: glicemiaH3,
-          diasSemana: "TODOS",
           Dias_Semana: "TODOS",
-          ultimaAtualizacao: nowStr,
           Ultima_Atualizacao: nowStr,
         },
       ];

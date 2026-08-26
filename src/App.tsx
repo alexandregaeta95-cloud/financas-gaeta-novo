@@ -313,39 +313,23 @@ export default function App() {
     if (cached.length > 0) return cached;
     return [
       {
-        id: "LEMBRETE_PRESSAO",
         Id: "LEMBRETE_PRESSAO",
-        tipo: "Pressao_Arterial",
         Tipo: "Pressao_Arterial",
-        ativo: "SIM",
         Ativo: "SIM",
-        horario1: "07:30",
         Horario_1: "07:30",
-        horario2: "13:30",
         Horario_2: "13:30",
-        horario3: "19:30",
         Horario_3: "19:30",
-        diasSemana: "TODOS",
         Dias_Semana: "TODOS",
-        ultimaAtualizacao: new Date().toLocaleString("pt-BR"),
         Ultima_Atualizacao: new Date().toLocaleString("pt-BR"),
       },
       {
-        id: "LEMBRETE_GLICEMIA",
         Id: "LEMBRETE_GLICEMIA",
-        tipo: "Glicemia",
         Tipo: "Glicemia",
-        ativo: "SIM",
         Ativo: "SIM",
-        horario1: "07:00",
         Horario_1: "07:00",
-        horario2: "14:00",
         Horario_2: "14:00",
-        horario3: "21:30",
         Horario_3: "21:30",
-        diasSemana: "TODOS",
         Dias_Semana: "TODOS",
-        ultimaAtualizacao: new Date().toLocaleString("pt-BR"),
         Ultima_Atualizacao: new Date().toLocaleString("pt-BR"),
       },
     ];
@@ -759,31 +743,23 @@ export default function App() {
     localStorage.setItem("financas_gaeta_altura_usuario", String(novaAlturaCm));
 
     const configRecord: LembreteSaudeConfig = {
-      id: "CONFIG_PERFIL_ALTURA",
       Id: "CONFIG_PERFIL_ALTURA",
-      tipo: "Perfil_Altura",
       Tipo: "Perfil_Altura",
-      ativo: "SIM",
       Ativo: "SIM",
-      horario1: String(novaAlturaCm),
       Horario_1: String(novaAlturaCm),
-      horario2: "",
       Horario_2: "",
-      horario3: "",
       Horario_3: "",
-      diasSemana: "TODOS",
       Dias_Semana: "TODOS",
-      ultimaAtualizacao: new Date().toLocaleString("pt-BR"),
       Ultima_Atualizacao: new Date().toLocaleString("pt-BR"),
     };
 
     setLembretesSaude((prev) => {
       const idx = prev.findIndex(
         (p) =>
-          p.id === "CONFIG_PERFIL_ALTURA" ||
           p.Id === "CONFIG_PERFIL_ALTURA" ||
-          p.tipo === "Perfil_Altura" ||
-          p.Tipo === "Perfil_Altura"
+          p.id === "CONFIG_PERFIL_ALTURA" ||
+          p.Tipo === "Perfil_Altura" ||
+          p.tipo === "Perfil_Altura"
       );
       if (idx !== -1) {
         const next = [...prev];

@@ -658,37 +658,41 @@ export async function saveSheetRecords<T = any>(
       enriched["dataCriacao"] = criacaoVal;
     }
 
-    // 22_Config_Lembretes_Saude mapping
+    // 22_Config_Lembretes_Saude mapping (Canonical Title_Case ONLY)
     if (
       sheetName === SHEET_NAMES.CONFIG_LEMBRETES_SAUDE ||
       sheetName === "22_Config_Lembretes_Saude" ||
       sheetName.includes("Lembretes") ||
+      item.Id === "LEMBRETE_PRESSAO" ||
+      item.Id === "LEMBRETE_GLICEMIA" ||
+      item.Id === "CONFIG_PERFIL_ALTURA" ||
       item.id === "LEMBRETE_PRESSAO" ||
       item.id === "LEMBRETE_GLICEMIA" ||
-      item.Id === "LEMBRETE_PRESSAO" ||
-      item.Id === "LEMBRETE_GLICEMIA"
+      item.id === "CONFIG_PERFIL_ALTURA"
     ) {
-      const lembreteId = String(item.id || item.Id || `LEMBRETE_${Date.now()}`);
-      const tipoVal = String(item.tipo || item.Tipo || "");
+      const lembreteId = String(item.Id || item.id || `LEMBRETE_${Date.now()}`).trim();
+      const tipoVal = String(item.Tipo || item.tipo || "").trim();
+      const rawAtivo = item.Ativo ?? item.ativo;
       const ativoVal =
-        item.ativo === true || item.ativo === "SIM" || item.Ativo === "SIM" || item.Ativo === true
+        rawAtivo === true || rawAtivo === "SIM" || rawAtivo === "sim" || rawAtivo === "TRUE" || rawAtivo === "true" || rawAtivo === 1
           ? "SIM"
           : "NAO";
       const isAltura = lembreteId === "CONFIG_PERFIL_ALTURA" || tipoVal.toLowerCase().includes("altura") || tipoVal.toLowerCase().includes("perfil");
       const h1 = isAltura
-        ? String(item.horario1 || item.Horario_1 || item.Horario1 || item.altura || "")
-        : formatarHora(item.horario1 || item.Horario_1 || item.Horario1 || "");
+        ? String(item.Horario_1 || item.horario1 || item.Horario1 || item.altura || "").trim()
+        : formatarHora(item.Horario_1 || item.horario1 || item.Horario1 || "");
       const h2 = isAltura
         ? ""
-        : formatarHora(item.horario2 || item.Horario_2 || item.Horario2 || "");
+        : formatarHora(item.Horario_2 || item.horario2 || item.Horario2 || "");
       const h3 = isAltura
         ? ""
-        : formatarHora(item.horario3 || item.Horario_3 || item.Horario3 || "");
-      const diasVal = String(item.diasSemana || item.Dias_Semana || item.dias_semana || "TODOS");
+        : formatarHora(item.Horario_3 || item.horario3 || item.Horario3 || "");
+      const diasVal = String(item.Dias_Semana || item.diasSemana || item.dias_semana || "TODOS").trim().toUpperCase() || "TODOS";
       const atualizacaoVal = String(
-        item.ultimaAtualizacao || item.Ultima_Atualizacao || new Date().toLocaleString("pt-BR")
-      );
+        item.Ultima_Atualizacao || item.ultimaAtualizacao || new Date().toLocaleString("pt-BR")
+      ).trim();
 
+      // Canonical Title_Case columns ONLY (matching sheet schema exactly)
       enriched["Id"] = lembreteId;
       enriched["Tipo"] = tipoVal;
       enriched["Ativo"] = ativoVal;
@@ -698,15 +702,21 @@ export async function saveSheetRecords<T = any>(
       enriched["Dias_Semana"] = diasVal;
       enriched["Ultima_Atualizacao"] = atualizacaoVal;
 
-      // camelCase aliases
-      enriched["id"] = lembreteId;
-      enriched["tipo"] = tipoVal;
-      enriched["ativo"] = ativoVal;
-      enriched["horario1"] = h1;
-      enriched["horario2"] = h2;
-      enriched["horario3"] = h3;
-      enriched["diasSemana"] = diasVal;
-      enriched["ultimaAtualizacao"] = atualizacaoVal;
+      // Strictly remove duplicate camelCase and alternate keys to prevent duplicated columns in Google Sheets
+      delete enriched.id;
+      delete enriched.tipo;
+      delete enriched.ativo;
+      delete enriched.horario1;
+      delete enriched.horario2;
+      delete enriched.horario3;
+      delete enriched.Horario1;
+      delete enriched.Horario2;
+      delete enriched.Horario3;
+      delete enriched.diasSemana;
+      delete enriched.dias_semana;
+      delete enriched.ultimaAtualizacao;
+      delete enriched.ultima_atualizacao;
+      delete enriched.altura;
     }
 
     // 23_Exercicios mapping

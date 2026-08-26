@@ -336,10 +336,10 @@ export function evaluateAllNotifications({
   };
 
   lembretesSaude.forEach((cfg: any) => {
-    // 1. Extração robusta de Ativo/Status (suporta "SIM", "sim", "TRUE", true, 1, "Ativo", etc.)
+    // 1. Extração de Ativo/Status (Prioriza formato canônico Title_Case Ativo)
     const rawAtivo =
-      cfg.ativo ??
       cfg.Ativo ??
+      cfg.ativo ??
       cfg.ATIVO ??
       cfg.status ??
       cfg.Status ??
@@ -360,8 +360,8 @@ export function evaluateAllNotifications({
     }
 
     // 2. Identificação do Tipo (Pressão vs Glicemia) e ignora configuração de perfil biométrico
-    const id = String(cfg.id || cfg.Id || cfg.ID || "");
-    const tipo = String(cfg.tipo || cfg.Tipo || cfg.TIPO || cfg.Tipo_Registro || "");
+    const id = String(cfg.Id || cfg.id || cfg.ID || "");
+    const tipo = String(cfg.Tipo || cfg.tipo || cfg.TIPO || cfg.Tipo_Registro || "");
 
     if (
       id === "CONFIG_PERFIL_ALTURA" ||
@@ -380,10 +380,10 @@ export function evaluateAllNotifications({
     const tipoLabel = isPressao ? "Pressão Arterial" : "Glicemia";
     const icon = isPressao ? "🩺" : "🩸";
 
-    // 3. Validação dos Dias da Semana
+    // 3. Validação dos Dias da Semana (Prioriza formato canônico Title_Case Dias_Semana)
     const rawDiasSemana = String(
-      cfg.diasSemana ||
-        cfg.Dias_Semana ||
+      cfg.Dias_Semana ||
+        cfg.diasSemana ||
         cfg["Dias da Semana"] ||
         cfg["Dias Semana"] ||
         cfg.dias ||
@@ -401,31 +401,31 @@ export function evaluateAllNotifications({
       }
     }
 
-    // 4. Extração robusta de todos os horários configurados (suporta todas as variações de nomes de colunas)
+    // 4. Extração dos horários configurados (Prioriza formato canônico Title_Case Horario_1, Horario_2, Horario_3)
     const rawHorariosSet = new Set<string>();
     const explicitCandidates = [
-      cfg.horario1,
       cfg.Horario_1,
+      cfg.Horario_2,
+      cfg.Horario_3,
+      cfg.Horario_4,
+      cfg.Horario_5,
+      cfg.horario1,
+      cfg.horario2,
+      cfg.horario3,
+      cfg.horario4,
+      cfg.horario5,
       cfg["Horário 1"],
       cfg["Horario 1"],
       cfg.horario_1,
       cfg["Horário_1"],
-      cfg.horario2,
-      cfg.Horario_2,
       cfg["Horário 2"],
       cfg["Horario 2"],
       cfg.horario_2,
       cfg["Horário_2"],
-      cfg.horario3,
-      cfg.Horario_3,
       cfg["Horário 3"],
       cfg["Horario 3"],
       cfg.horario_3,
       cfg["Horário_3"],
-      cfg.horario4,
-      cfg.Horario_4,
-      cfg.horario5,
-      cfg.Horario_5,
     ];
 
     explicitCandidates.forEach((val) => {
