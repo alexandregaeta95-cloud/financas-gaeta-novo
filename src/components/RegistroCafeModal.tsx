@@ -71,13 +71,30 @@ export const RegistroCafeModal: React.FC<Props> = ({
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
+        const itemQtd = initialData.quantidade && initialData.quantidade > 0 ? initialData.quantidade : 1;
         setData(initialData.data || new Date().toISOString().split("T")[0]);
         setHora(initialData.hora || "");
-        setQuantidade(initialData.quantidade || 1);
-        setCalorias(initialData.calorias ? String(initialData.calorias) : "");
-        setProteinas(initialData.proteinas ? String(initialData.proteinas) : "");
-        setCarboidratos(initialData.carboidratos ? String(initialData.carboidratos) : "");
-        setGorduras(initialData.gorduras ? String(initialData.gorduras) : "");
+        setQuantidade(itemQtd);
+        setCalorias(
+          initialData.calorias !== undefined && initialData.calorias !== null && initialData.calorias > 0
+            ? String(Math.round(initialData.calorias / itemQtd))
+            : ""
+        );
+        setProteinas(
+          initialData.proteinas !== undefined && initialData.proteinas !== null && initialData.proteinas > 0
+            ? String(Number((initialData.proteinas / itemQtd).toFixed(1)))
+            : ""
+        );
+        setCarboidratos(
+          initialData.carboidratos !== undefined && initialData.carboidratos !== null && initialData.carboidratos > 0
+            ? String(Number((initialData.carboidratos / itemQtd).toFixed(1)))
+            : ""
+        );
+        setGorduras(
+          initialData.gorduras !== undefined && initialData.gorduras !== null && initialData.gorduras > 0
+            ? String(Number((initialData.gorduras / itemQtd).toFixed(1)))
+            : ""
+        );
         setObservacoes(initialData.observacoes || "");
         setShowMacros(
           Boolean(
@@ -144,10 +161,16 @@ export const RegistroCafeModal: React.FC<Props> = ({
       const currentMinutes = String(now.getMinutes()).padStart(2, "0");
       const finalHora = hora.trim() || `${currentHours}:${currentMinutes}`;
 
+      const qtd = quantidade && quantidade > 0 ? quantidade : 1;
       const parsedCal = calorias.trim() !== "" ? Math.round(Number(calorias.replace(",", "."))) : undefined;
       const parsedProt = proteinas.trim() !== "" ? Number(Number(proteinas.replace(",", ".")).toFixed(1)) : undefined;
       const parsedCarb = carboidratos.trim() !== "" ? Number(Number(carboidratos.replace(",", ".")).toFixed(1)) : undefined;
       const parsedGord = gorduras.trim() !== "" ? Number(Number(gorduras.replace(",", ".")).toFixed(1)) : undefined;
+
+      const totalCal = parsedCal !== undefined && parsedCal > 0 ? Math.round(parsedCal * qtd) : undefined;
+      const totalProt = parsedProt !== undefined && parsedProt > 0 ? Number((parsedProt * qtd).toFixed(1)) : undefined;
+      const totalCarb = parsedCarb !== undefined && parsedCarb > 0 ? Number((parsedCarb * qtd).toFixed(1)) : undefined;
+      const totalGord = parsedGord !== undefined && parsedGord > 0 ? Number((parsedGord * qtd).toFixed(1)) : undefined;
 
       const itemToSave: ConsumoCafe = {
         id: initialData?.id || `CAFE_${Date.now()}`,
@@ -156,16 +179,16 @@ export const RegistroCafeModal: React.FC<Props> = ({
         Data: data,
         hora: finalHora,
         Hora: finalHora,
-        quantidade,
-        Quantidade: quantidade,
-        calorias: parsedCal !== undefined && parsedCal > 0 ? parsedCal : undefined,
-        Calorias: parsedCal !== undefined && parsedCal > 0 ? parsedCal : undefined,
-        proteinas: parsedProt !== undefined && parsedProt > 0 ? parsedProt : undefined,
-        Proteinas: parsedProt !== undefined && parsedProt > 0 ? parsedProt : undefined,
-        carboidratos: parsedCarb !== undefined && parsedCarb > 0 ? parsedCarb : undefined,
-        Carboidratos: parsedCarb !== undefined && parsedCarb > 0 ? parsedCarb : undefined,
-        gorduras: parsedGord !== undefined && parsedGord > 0 ? parsedGord : undefined,
-        Gorduras: parsedGord !== undefined && parsedGord > 0 ? parsedGord : undefined,
+        quantidade: qtd,
+        Quantidade: qtd,
+        calorias: totalCal,
+        Calorias: totalCal,
+        proteinas: totalProt,
+        Proteinas: totalProt,
+        carboidratos: totalCarb,
+        Carboidratos: totalCarb,
+        gorduras: totalGord,
+        Gorduras: totalGord,
         observacoes: observacoes.trim().toUpperCase() || undefined,
         Observacoes: observacoes.trim().toUpperCase() || undefined,
         dataCriacao: initialData?.dataCriacao || new Date().toISOString(),
@@ -343,82 +366,107 @@ export const RegistroCafeModal: React.FC<Props> = ({
             </div>
 
             {showMacros && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 animate-in fade-in duration-150">
-                {/* Calorias */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
-                    <Flame className="w-3 h-3 text-orange-400" />
-                    Calorias (kcal)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="1000"
-                    step="1"
-                    placeholder="0"
-                    value={calorias}
-                    onFocus={(e) => e.target.select()}
-                    onChange={(e) => setCalorias(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-orange-400 font-bold text-center focus:outline-none focus:border-orange-500"
-                  />
+              <div className="space-y-2 pt-1 animate-in fade-in duration-150">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {/* Calorias */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+                      <Flame className="w-3 h-3 text-orange-400" />
+                      Calorias / un (kcal)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="1000"
+                      step="1"
+                      placeholder="0"
+                      value={calorias}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setCalorias(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-orange-400 font-bold text-center focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  {/* Proteínas */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+                      <Dumbbell className="w-3 h-3 text-blue-400" />
+                      Proteínas / un (g)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      placeholder="0"
+                      value={proteinas}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setProteinas(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-blue-400 font-bold text-center focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* Carbos */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+                      <Wheat className="w-3 h-3 text-amber-400" />
+                      Carbos / un (g)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      placeholder="0"
+                      value={carboidratos}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setCarboidratos(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-amber-400 font-bold text-center focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  {/* Gorduras */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+                      <Droplet className="w-3 h-3 text-rose-400" />
+                      Gorduras / un (g)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      placeholder="0"
+                      value={gorduras}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setGorduras(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-rose-400 font-bold text-center focus:outline-none focus:border-rose-500"
+                    />
+                  </div>
                 </div>
 
-                {/* Proteínas */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
-                    <Dumbbell className="w-3 h-3 text-blue-400" />
-                    Proteínas (g)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    placeholder="0"
-                    value={proteinas}
-                    onFocus={(e) => e.target.select()}
-                    onChange={(e) => setProteinas(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-blue-400 font-bold text-center focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                {/* Carbos */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
-                    <Wheat className="w-3 h-3 text-amber-400" />
-                    Carbos (g)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    placeholder="0"
-                    value={carboidratos}
-                    onFocus={(e) => e.target.select()}
-                    onChange={(e) => setCarboidratos(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-amber-400 font-bold text-center focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                {/* Gorduras */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
-                    <Droplet className="w-3 h-3 text-rose-400" />
-                    Gorduras (g)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    placeholder="0"
-                    value={gorduras}
-                    onFocus={(e) => e.target.select()}
-                    onChange={(e) => setGorduras(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-rose-400 font-bold text-center focus:outline-none focus:border-rose-500"
-                  />
-                </div>
+                {/* Total preview when quantidade > 1 */}
+                {quantidade > 1 && (calorias || proteinas || carboidratos || gorduras) && (
+                  <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[11px] text-amber-300 flex items-center justify-between flex-wrap gap-1">
+                    <span className="text-slate-300">
+                      Total ({quantidade} cafés):
+                    </span>
+                    <div className="font-bold flex items-center gap-1.5">
+                      {calorias.trim() !== "" && Number(calorias) > 0 && (
+                        <span className="text-orange-400">
+                          🔥 {Math.round(Number(calorias) * quantidade)} kcal
+                        </span>
+                      )}
+                      {(Number(proteinas) > 0 || Number(carboidratos) > 0 || Number(gorduras) > 0) && (
+                        <span className="text-slate-300 font-mono text-[10px]">
+                          ({Number(proteinas) > 0 ? `P: ${(Number(proteinas) * quantidade).toFixed(1)}g ` : ""}
+                          {Number(carboidratos) > 0 ? `C: ${(Number(carboidratos) * quantidade).toFixed(1)}g ` : ""}
+                          {Number(gorduras) > 0 ? `G: ${(Number(gorduras) * quantidade).toFixed(1)}g` : ""})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
