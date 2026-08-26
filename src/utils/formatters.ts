@@ -1557,6 +1557,18 @@ export function normalizeConsumoCafe(raw: any, index = 0): ConsumoCafe {
     ""
   ).trim().toUpperCase();
 
+  const rawCal = raw.Calorias ?? raw.calorias ?? raw.Calorias_Estimadas ?? raw.caloriasEstimadas;
+  const calorias = rawCal !== undefined && rawCal !== null && rawCal !== "" ? Math.round(Number(parseCurrency(rawCal))) : undefined;
+
+  const rawProt = raw.Proteinas ?? raw.proteinas ?? raw.Proteínas ?? raw.proteínas ?? raw.Proteinas_Estimadas ?? raw.proteinasEstimadas;
+  const proteinas = rawProt !== undefined && rawProt !== null && rawProt !== "" ? Number(Number(parseCurrency(rawProt)).toFixed(1)) : undefined;
+
+  const rawCarb = raw.Carboidratos ?? raw.carboidratos ?? raw.Carbos ?? raw.carbos ?? raw.Carboidratos_Estimados ?? raw.carboidratosEstimados;
+  const carboidratos = rawCarb !== undefined && rawCarb !== null && rawCarb !== "" ? Number(Number(parseCurrency(rawCarb)).toFixed(1)) : undefined;
+
+  const rawGord = raw.Gorduras ?? raw.gorduras ?? raw.Gorduras_Estimadas ?? raw.gordurasEstimadas;
+  const gorduras = rawGord !== undefined && rawGord !== null && rawGord !== "" ? Number(Number(parseCurrency(rawGord)).toFixed(1)) : undefined;
+
   const dataCriacao = String(
     raw.Data_Criacao || raw.data_criacao || raw.DataCriacao || raw.dataCriacao || new Date().toISOString()
   );
@@ -1570,6 +1582,14 @@ export function normalizeConsumoCafe(raw: any, index = 0): ConsumoCafe {
     Hora: hora,
     quantidade: parsedQtd,
     Quantidade: parsedQtd,
+    calorias: calorias !== undefined && calorias > 0 ? calorias : undefined,
+    Calorias: calorias !== undefined && calorias > 0 ? calorias : undefined,
+    proteinas: proteinas !== undefined && proteinas > 0 ? proteinas : undefined,
+    Proteinas: proteinas !== undefined && proteinas > 0 ? proteinas : undefined,
+    carboidratos: carboidratos !== undefined && carboidratos > 0 ? carboidratos : undefined,
+    Carboidratos: carboidratos !== undefined && carboidratos > 0 ? carboidratos : undefined,
+    gorduras: gorduras !== undefined && gorduras > 0 ? gorduras : undefined,
+    Gorduras: gorduras !== undefined && gorduras > 0 ? gorduras : undefined,
     observacoes: observacoes || undefined,
     Observacoes: observacoes || undefined,
     dataCriacao,

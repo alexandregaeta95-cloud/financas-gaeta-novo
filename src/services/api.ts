@@ -806,6 +806,14 @@ export async function saveSheetRecords<T = any>(
         item.OBS ||
         ""
       ).trim().toUpperCase();
+      const rawCal = item.calorias ?? item.Calorias ?? item.caloriasEstimadas ?? item.Calorias_Estimadas;
+      const calVal = rawCal !== undefined && rawCal !== null && rawCal !== "" ? Math.round(Number(parseCurrency(rawCal))) : 0;
+      const rawProt = item.proteinas ?? item.Proteinas ?? item.proteínas ?? item.Proteínas ?? item.proteinasEstimadas ?? item.Proteinas_Estimadas;
+      const protVal = rawProt !== undefined && rawProt !== null && rawProt !== "" ? Number(Number(parseCurrency(rawProt)).toFixed(1)) : 0;
+      const rawCarb = item.carboidratos ?? item.Carboidratos ?? item.carbos ?? item.Carbos ?? item.carboidratosEstimados ?? item.Carboidratos_Estimados;
+      const carbVal = rawCarb !== undefined && rawCarb !== null && rawCarb !== "" ? Number(Number(parseCurrency(rawCarb)).toFixed(1)) : 0;
+      const rawGord = item.gorduras ?? item.Gorduras ?? item.gordurasEstimadas ?? item.Gorduras_Estimadas;
+      const gordVal = rawGord !== undefined && rawGord !== null && rawGord !== "" ? Number(Number(parseCurrency(rawGord)).toFixed(1)) : 0;
       const criacaoVal = String(item.dataCriacao || item.Data_Criacao || item.data_criacao || new Date().toISOString());
 
       // Canonical columns (Uppercase snake_case)
@@ -813,6 +821,10 @@ export async function saveSheetRecords<T = any>(
       enriched["Data"] = dataVal;
       enriched["Hora"] = horaVal;
       enriched["Quantidade"] = qtdVal;
+      enriched["Calorias"] = calVal > 0 ? calVal : "";
+      enriched["Proteinas"] = protVal > 0 ? protVal : "";
+      enriched["Carboidratos"] = carbVal > 0 ? carbVal : "";
+      enriched["Gorduras"] = gordVal > 0 ? gordVal : "";
       enriched["Observacoes"] = obsVal;
       enriched["Data_Criacao"] = criacaoVal;
 
@@ -821,6 +833,10 @@ export async function saveSheetRecords<T = any>(
       enriched["data"] = dataVal;
       enriched["hora"] = horaVal;
       enriched["quantidade"] = qtdVal;
+      enriched["calorias"] = calVal > 0 ? calVal : undefined;
+      enriched["proteinas"] = protVal > 0 ? protVal : undefined;
+      enriched["carboidratos"] = carbVal > 0 ? carbVal : undefined;
+      enriched["gorduras"] = gordVal > 0 ? gordVal : undefined;
       enriched["observacoes"] = obsVal || undefined;
       enriched["dataCriacao"] = criacaoVal;
     }

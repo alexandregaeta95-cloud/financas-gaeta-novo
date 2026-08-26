@@ -46,11 +46,17 @@ export const ContadorCafeWidget: React.FC<Props> = ({
     return `${y}-${m}-${d}`;
   }, []);
 
-  // Today count
+  // Today count & calories
   const cafesHoje = useMemo(() => {
     return consumosCafe
       .filter((c) => (c.data || "").startsWith(todayStr))
       .reduce((acc, curr) => acc + (curr.quantidade || 1), 0);
+  }, [consumosCafe, todayStr]);
+
+  const caloriasCafeHoje = useMemo(() => {
+    return consumosCafe
+      .filter((c) => (c.data || "").startsWith(todayStr))
+      .reduce((acc, curr) => acc + (curr.calorias || 0), 0);
   }, [consumosCafe, todayStr]);
 
   // Filtered list based on selected period
@@ -162,6 +168,7 @@ export const ContadorCafeWidget: React.FC<Props> = ({
               </span>
               <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
                 ☕ {cafesHoje} {cafesHoje === 1 ? "xícara hoje" : "xícaras hoje"}
+                {caloriasCafeHoje > 0 && ` • 🔥 ${caloriasCafeHoje} kcal`}
               </span>
             </div>
 
@@ -303,8 +310,13 @@ export const ContadorCafeWidget: React.FC<Props> = ({
                           <span className="text-[11px] font-mono text-amber-400 font-medium">
                             {item.hora || "--:--"}
                           </span>
+                          {item.calorias && item.calorias > 0 && (
+                            <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-orange-500/15 text-orange-400 border border-orange-500/30">
+                              🔥 {item.calorias} kcal
+                            </span>
+                          )}
                         </div>
-                        <div className="text-[10px] text-slate-400 truncate flex items-center gap-1">
+                        <div className="text-[10px] text-slate-400 truncate flex items-center gap-1 flex-wrap">
                           <span>{isToday ? "Hoje" : formatDateBR(item.data)}</span>
                           {item.observacoes && (
                             <>
@@ -313,6 +325,15 @@ export const ContadorCafeWidget: React.FC<Props> = ({
                                 {item.observacoes}
                               </span>
                             </>
+                          )}
+                          {(item.proteinas || item.carboidratos || item.gorduras) && (
+                            <span className="text-[9px] text-slate-400">
+                              (
+                              {item.proteinas ? `P:${item.proteinas}g ` : ""}
+                              {item.carboidratos ? `C:${item.carboidratos}g ` : ""}
+                              {item.gorduras ? `G:${item.gorduras}g` : ""}
+                              )
+                            </span>
                           )}
                         </div>
                       </div>

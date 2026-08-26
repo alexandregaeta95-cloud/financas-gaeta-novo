@@ -94,7 +94,7 @@ var HEADERS_BY_SHEET = {
   "21_Analise_Alimentos": ["Id", "Data", "Data_Hora", "Nome_Prato", "Calorias_Estimadas", "Proteinas_Estimadas", "Carboidratos_Estimados", "Gorduras_Estimadas", "Classificacao_Geral", "Itens_Identificados", "Dicas_Nutricionais", "Observacoes", "Data_Criacao"],
   "22_Config_Lembretes_Saude": ["Id", "Tipo", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Dias_Semana", "Ultima_Atualizacao"],
   "23_Exercicios": ["Id", "Data", "Hora", "Tipo_Exercicio", "Duracao_Minutos", "Calorias_Queimadas", "Intensidade", "Observacoes", "Data_Criacao"],
-  "24_Consumo_Cafe": ["Id", "Data", "Hora", "Quantidade", "Observacoes", "Data_Criacao"],
+  "24_Consumo_Cafe": ["Id", "Data", "Hora", "Quantidade", "Calorias", "Proteinas", "Carboidratos", "Gorduras", "Observacoes", "Data_Criacao"],
   "25_Consumo_Agua": ["Id", "Data", "Hora", "Quantidade_Ml", "Meta_Diaria_Ml", "Tamanho_Copo_Ml", "Observacoes", "Data_Criacao"]
 };
 

@@ -433,6 +433,10 @@ export interface ConsumoCafe {
   data: string; // YYYY-MM-DD
   hora: string; // HH:mm
   quantidade: number; // Ex: 1, 2 xícaras
+  calorias?: number; // Opcional (kcal) para quando adiciona açúcar, leite, etc.
+  proteinas?: number; // Opcional (g)
+  carboidratos?: number; // Opcional (g)
+  gorduras?: number; // Opcional (g)
   observacoes?: string;
   dataCriacao?: string;
   [key: string]: any;
