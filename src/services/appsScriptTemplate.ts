@@ -39,7 +39,9 @@ var SHEET_NAMES = [
   "19_Agenda_E_Compromissos",
   "20_Controle_Saude",
   "21_Analise_Alimentos",
-  "22_Config_Lembretes_Saude"
+  "22_Config_Lembretes_Saude",
+  "23_Exercicios",
+  "24_Consumo_Cafe"
 ];
 
 // Mapeamento de cabeçalhos por aba
@@ -89,7 +91,9 @@ var HEADERS_BY_SHEET = {
   "19_Agenda_E_Compromissos": ["Id", "Titulo", "Data", "Hora", "Descrição", "Cor_De_Identificação", "Efeito_Alerta_(Piscando)", "Lembrete_Ativo", "Dias_De_Antecedência", "Concluído", "Categoria"],
   "20_Controle_Saude": ["Id", "Tipo_Registro", "Data_Hora", "Valor_Principal", "Valor_Secundario", "Batimentos_Bpm", "Contexto", "Observacoes", "Data_Criacao"],
   "21_Analise_Alimentos": ["Id", "Data", "Data_Hora", "Nome_Prato", "Calorias_Estimadas", "Proteinas_Estimadas", "Carboidratos_Estimados", "Gorduras_Estimadas", "Classificacao_Geral", "Itens_Identificados", "Dicas_Nutricionais", "Observacoes", "Data_Criacao"],
-  "22_Config_Lembretes_Saude": ["Id", "Tipo", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Dias_Semana", "Ultima_Atualizacao"]
+  "22_Config_Lembretes_Saude": ["Id", "Tipo", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Dias_Semana", "Ultima_Atualizacao"],
+  "23_Exercicios": ["Id", "Data", "Hora", "Tipo_Exercicio", "Duracao_Minutos", "Calorias_Queimadas", "Intensidade", "Observacoes", "Data_Criacao"],
+  "24_Consumo_Cafe": ["Id", "Data", "Hora", "Quantidade", "Observacoes", "Data_Criacao"]
 };
 
 /**

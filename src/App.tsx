@@ -45,6 +45,7 @@ import {
   AlimentoAnaliseResult,
   LembreteSaudeConfig,
   ExercicioRegistro,
+  ConsumoCafe,
   SHEET_NAMES,
 } from "./types";
 
@@ -239,6 +240,28 @@ export default function App() {
         intensidade: "INTENSO",
         caloriasQueimadas: 410,
         observacoes: "TREINO DE PERNAS E OMBROS",
+      },
+    ];
+  });
+  const [consumosCafe, setConsumosCafe] = useState<ConsumoCafe[]>(() => {
+    const cached = getCachedSheetData<ConsumoCafe>(SHEET_NAMES.CONSUMO_CAFE);
+    if (cached.length > 0) return cached;
+    return [
+      {
+        id: "CAFE_1",
+        Id: "CAFE_1",
+        data: "2026-08-26",
+        hora: "07:45",
+        quantidade: 1,
+        observacoes: "EXPRESSO",
+      },
+      {
+        id: "CAFE_2",
+        Id: "CAFE_2",
+        data: "2026-08-26",
+        hora: "13:30",
+        quantidade: 1,
+        observacoes: "COM LEITE",
       },
     ];
   });
@@ -506,6 +529,9 @@ export default function App() {
         .catch(() => {});
       fetchSheetData<ExercicioRegistro>(SHEET_NAMES.EXERCICIOS)
         .then((data) => data && setExercicios(data))
+        .catch(() => {});
+      fetchSheetData<ConsumoCafe>(SHEET_NAMES.CONSUMO_CAFE)
+        .then((data) => data && setConsumosCafe(data))
         .catch(() => {});
       fetchSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
         .then((data) => data && setMetas(data))
@@ -844,6 +870,7 @@ export default function App() {
             lembretesConfigs={lembretesSaude}
             alimentos={alimentos}
             exercicios={exercicios}
+            consumosCafe={consumosCafe}
             veiculos={veiculos}
             alturaUsuario={alturaUsuario}
             onSaveAltura={handleSaveAltura}
@@ -854,12 +881,14 @@ export default function App() {
             onSaveLembretesConfigs={handleSaveLembretesConfigs}
             onSaveAlimento={(alim) => handleSaveGeneric(SHEET_NAMES.ANALISE_ALIMENTOS, alim, setAlimentos)}
             onSaveExercicio={(exe) => handleSaveGeneric(SHEET_NAMES.EXERCICIOS, exe, setExercicios)}
+            onSaveCafe={(cafe) => handleSaveGeneric(SHEET_NAMES.CONSUMO_CAFE, cafe, setConsumosCafe)}
             onDeleteConsulta={(id) => handleDeleteGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, id, setConsultas)}
             onDeleteReceita={(id) => handleDeleteGeneric(SHEET_NAMES.RECEITAS_MEDICAS, id, setReceitas)}
             onDeleteInfracao={(id) => handleDeleteGeneric(SHEET_NAMES.INFRACOES, id, setInfracoes)}
             onDeleteRegistroSaude={(id) => handleDeleteGeneric(SHEET_NAMES.CONTROLE_SAUDE, id, setRegistrosSaude)}
             onDeleteAlimento={(id) => handleDeleteGeneric(SHEET_NAMES.ANALISE_ALIMENTOS, id, setAlimentos)}
             onDeleteExercicio={(id) => handleDeleteGeneric(SHEET_NAMES.EXERCICIOS, id, setExercicios)}
+            onDeleteCafe={(id) => handleDeleteGeneric(SHEET_NAMES.CONSUMO_CAFE, id, setConsumosCafe)}
           />
         )}
 

@@ -21,11 +21,15 @@ import {
   FileText,
   CheckCircle2,
 } from "lucide-react";
-import { AlimentoAnaliseResult } from "../types";
+import { AlimentoAnaliseResult, ConsumoCafe } from "../types";
 import { formatDateBR } from "../utils/formatters";
+import { ContadorCafeWidget } from "./ContadorCafeWidget";
 
 interface Props {
   alimentos: AlimentoAnaliseResult[];
+  consumosCafe?: ConsumoCafe[];
+  onSaveCafe?: (cafe: ConsumoCafe) => Promise<void> | void;
+  onDeleteCafe?: (id: string) => Promise<void> | void;
   onOpenAnalysisModal: () => void;
   onOpenRegistroRapidoModal?: () => void;
   onSelectAlimento: (alimento: AlimentoAnaliseResult) => void;
@@ -35,6 +39,9 @@ interface Props {
 
 export const HistoricoAlimentosView: React.FC<Props> = ({
   alimentos,
+  consumosCafe = [],
+  onSaveCafe = () => {},
+  onDeleteCafe = () => {},
   onOpenAnalysisModal,
   onOpenRegistroRapidoModal,
   onSelectAlimento,
@@ -116,6 +123,13 @@ export const HistoricoAlimentosView: React.FC<Props> = ({
 
   return (
     <div className="space-y-6">
+      {/* 1. Contador de Café Diário & Ação Rápida */}
+      <ContadorCafeWidget
+        consumosCafe={consumosCafe}
+        onSaveCafe={onSaveCafe}
+        onDeleteCafe={onDeleteCafe}
+      />
+
       {/* Top Banner / Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between">

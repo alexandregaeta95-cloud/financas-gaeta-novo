@@ -28,6 +28,7 @@ import {
   RegistroSaude,
   LembreteSaudeConfig,
   ExercicioRegistro,
+  ConsumoCafe,
 } from "../types";
 import { generateNewId } from "../services/api";
 import { formatarHora, formatDateBR, parseCurrency, formatCurrency } from "../utils/formatters";
@@ -49,6 +50,7 @@ interface Props {
   lembretesConfigs?: LembreteSaudeConfig[];
   alimentos?: AlimentoAnaliseResult[];
   exercicios?: ExercicioRegistro[];
+  consumosCafe?: ConsumoCafe[];
   veiculos?: Veiculo[];
   alturaUsuario?: number;
   onSaveAltura?: (alturaCm: number) => Promise<void> | void;
@@ -59,12 +61,14 @@ interface Props {
   onSaveLembretesConfigs?: (configs: LembreteSaudeConfig[]) => Promise<void> | void;
   onSaveAlimento?: (alimento: AlimentoAnaliseResult) => Promise<void>;
   onSaveExercicio?: (exercicio: ExercicioRegistro) => Promise<void> | void;
+  onSaveCafe?: (cafe: ConsumoCafe) => Promise<void> | void;
   onDeleteConsulta: (id: string) => Promise<void>;
   onDeleteReceita: (id: string) => Promise<void>;
   onDeleteInfracao: (id: string) => Promise<void>;
   onDeleteRegistroSaude?: (id: string) => Promise<void>;
   onDeleteAlimento?: (id: string) => Promise<void>;
   onDeleteExercicio?: (id: string) => Promise<void> | void;
+  onDeleteCafe?: (id: string) => Promise<void> | void;
 }
 
 export const SaudeInfracoesView: React.FC<Props> = ({
@@ -75,6 +79,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   lembretesConfigs = [],
   alimentos = [],
   exercicios = [],
+  consumosCafe = [],
   veiculos = [],
   alturaUsuario,
   onSaveAltura,
@@ -85,12 +90,14 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   onSaveLembretesConfigs,
   onSaveAlimento,
   onSaveExercicio,
+  onSaveCafe,
   onDeleteConsulta,
   onDeleteReceita,
   onDeleteInfracao,
   onDeleteRegistroSaude,
   onDeleteAlimento,
   onDeleteExercicio,
+  onDeleteCafe,
 }) => {
   const [activeTab, setActiveTab] = useState<
     "consultas" | "receitas" | "infracoes" | "alimentos" | "controle_saude" | "exercicios"
@@ -888,6 +895,9 @@ export const SaudeInfracoesView: React.FC<Props> = ({
       {activeTab === "alimentos" && (
         <HistoricoAlimentosView
           alimentos={alimentos}
+          consumosCafe={consumosCafe}
+          onSaveCafe={onSaveCafe}
+          onDeleteCafe={onDeleteCafe}
           onOpenAnalysisModal={() => setIsFoodModalOpen(true)}
           onOpenRegistroRapidoModal={() => setIsRegistroRapidoModalOpen(true)}
           onSelectAlimento={(item) => {

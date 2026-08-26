@@ -322,6 +322,7 @@ export const SHEET_NAMES = {
   ANALISE_ALIMENTOS: "21_Analise_Alimentos",
   CONFIG_LEMBRETES_SAUDE: "22_Config_Lembretes_Saude",
   EXERCICIOS: "23_Exercicios",
+  CONSUMO_CAFE: "24_Consumo_Cafe",
 } as const;
 
 export interface RegistroSaude {
@@ -420,6 +421,17 @@ export interface ExercicioRegistro {
   duracaoMinutos: number; // Ex: 45
   caloriasQueimadas?: number; // Ex: 300
   intensidade?: "LEVE" | "MODERADO" | "INTENSO" | string;
+  observacoes?: string;
+  dataCriacao?: string;
+  [key: string]: any;
+}
+
+// 24. Contador de Consumo de Café (24_Consumo_Cafe)
+export interface ConsumoCafe {
+  id: string;
+  data: string; // YYYY-MM-DD
+  hora: string; // HH:mm
+  quantidade: number; // Ex: 1, 2 xícaras
   observacoes?: string;
   dataCriacao?: string;
   [key: string]: any;

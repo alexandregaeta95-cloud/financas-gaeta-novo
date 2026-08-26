@@ -29,6 +29,7 @@ import {
   normalizeAlimentoAnalise,
   normalizeExercicio,
   normalizeConfigLembreteSaude,
+  normalizeConsumoCafe,
   formatarHora,
 } from "../utils/formatters";
 
@@ -144,6 +145,14 @@ export function normalizeRecordBySheet(sheetName: string, item: any): any {
     sheetName === "22_Config_Lembretes_Saude"
   ) {
     return normalizeConfigLembreteSaude(item);
+  }
+  if (
+    s.includes("cafe") ||
+    s.includes("café") ||
+    sheetName === SHEET_NAMES.CONSUMO_CAFE ||
+    sheetName === "24_Consumo_Cafe"
+  ) {
+    return normalizeConsumoCafe(item);
   }
   return item;
 }
@@ -761,6 +770,48 @@ export async function saveSheetRecords<T = any>(
       enriched["duracaoMinutos"] = duracaoVal;
       enriched["caloriasQueimadas"] = calVal > 0 ? calVal : undefined;
       enriched["intensidade"] = rawInt || undefined;
+      enriched["observacoes"] = obsVal || undefined;
+      enriched["dataCriacao"] = criacaoVal;
+    }
+
+    // 24_Consumo_Cafe mapping
+    if (
+      sheetName === SHEET_NAMES.CONSUMO_CAFE ||
+      sheetName === "24_Consumo_Cafe" ||
+      sheetName.toLowerCase().includes("cafe") ||
+      sheetName.toLowerCase().includes("café") ||
+      (item.quantidade !== undefined && (item.hora !== undefined || item.Hora !== undefined) && item.tipoExercicio === undefined && item.Tipo_Exercicio === undefined && item.Tipo_Registro === undefined)
+    ) {
+      const cafeId = String(item.id || item.Id || `CAFE_${Date.now()}`);
+      const dataVal = String(item.data || item.Data || new Date().toISOString().split("T")[0]);
+      const rawHora = item.hora || item.Hora || item.horario || item.Horario || "";
+      const horaVal = formatarHora(rawHora) || (typeof rawHora === "string" ? rawHora.trim() : "");
+      const rawQtd = item.quantidade ?? item.Quantidade ?? item.qtd ?? item.Qtd ?? 1;
+      const qtdVal = Math.max(1, Math.round(Number(parseCurrency(rawQtd)) || 1));
+      const obsVal = String(
+        item.observacoes ||
+        item.Observacoes ||
+        item.observações ||
+        item["Observações"] ||
+        item.obs ||
+        item.OBS ||
+        ""
+      ).trim().toUpperCase();
+      const criacaoVal = String(item.dataCriacao || item.Data_Criacao || item.data_criacao || new Date().toISOString());
+
+      // Canonical columns (Uppercase snake_case)
+      enriched["Id"] = cafeId;
+      enriched["Data"] = dataVal;
+      enriched["Hora"] = horaVal;
+      enriched["Quantidade"] = qtdVal;
+      enriched["Observacoes"] = obsVal;
+      enriched["Data_Criacao"] = criacaoVal;
+
+      // camelCase aliases
+      enriched["id"] = cafeId;
+      enriched["data"] = dataVal;
+      enriched["hora"] = horaVal;
+      enriched["quantidade"] = qtdVal;
       enriched["observacoes"] = obsVal || undefined;
       enriched["dataCriacao"] = criacaoVal;
     }

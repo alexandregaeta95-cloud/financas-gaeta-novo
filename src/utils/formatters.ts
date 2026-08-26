@@ -25,6 +25,7 @@ import {
   AlimentoItem,
   LembreteSaudeConfig,
   ExercicioRegistro,
+  ConsumoCafe,
 } from "../types";
 
 /**
@@ -1520,6 +1521,57 @@ export function normalizeConfigLembreteSaude(raw: any): LembreteSaudeConfig {
     Dias_Semana: diasSemana,
     ultimaAtualizacao,
     Ultima_Atualizacao: ultimaAtualizacao,
+  };
+}
+
+/**
+ * 24. Normalize Consumo de Café (24_Consumo_Cafe)
+ */
+export function normalizeConsumoCafe(raw: any, index = 0): ConsumoCafe {
+  if (!raw || typeof raw !== "object") return raw;
+
+  const id = String(raw.Id || raw.id || raw.ID || `CAFE_${Date.now()}_${index}`).trim();
+  const data = String(
+    raw.Data ||
+    raw.data ||
+    new Date().toISOString().split("T")[0]
+  ).trim();
+
+  const rawHora = raw.Hora || raw.hora || raw.Horario || raw.horario || "";
+  const hora = formatarHora(rawHora) || (typeof rawHora === "string" ? rawHora.trim() : "");
+
+  const rawQtd = raw.Quantidade ?? raw.quantidade ?? raw.Qtd ?? raw.qtd ?? 1;
+  const parsedQtd = Math.max(1, Math.round(Number(parseCurrency(rawQtd)) || 1));
+
+  const observacoes = String(
+    raw.Observacoes ||
+    raw.observacoes ||
+    raw["Observações"] ||
+    raw.observações ||
+    raw.OBS ||
+    raw.obs ||
+    raw.Observacao ||
+    raw.observacao ||
+    ""
+  ).trim().toUpperCase();
+
+  const dataCriacao = String(
+    raw.Data_Criacao || raw.data_criacao || raw.DataCriacao || raw.dataCriacao || new Date().toISOString()
+  );
+
+  return {
+    id,
+    Id: id,
+    data,
+    Data: data,
+    hora,
+    Hora: hora,
+    quantidade: parsedQtd,
+    Quantidade: parsedQtd,
+    observacoes: observacoes || undefined,
+    Observacoes: observacoes || undefined,
+    dataCriacao,
+    Data_Criacao: dataCriacao,
   };
 }
 
