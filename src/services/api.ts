@@ -30,6 +30,7 @@ import {
   normalizeExercicio,
   normalizeConfigLembreteSaude,
   normalizeConsumoCafe,
+  normalizeConsumoAgua,
   formatarHora,
 } from "../utils/formatters";
 
@@ -153,6 +154,14 @@ export function normalizeRecordBySheet(sheetName: string, item: any): any {
     sheetName === "24_Consumo_Cafe"
   ) {
     return normalizeConsumoCafe(item);
+  }
+  if (
+    s.includes("agua") ||
+    s.includes("água") ||
+    sheetName === SHEET_NAMES.CONSUMO_AGUA ||
+    sheetName === "25_Consumo_Agua"
+  ) {
+    return normalizeConsumoAgua(item);
   }
   return item;
 }
@@ -814,6 +823,77 @@ export async function saveSheetRecords<T = any>(
       enriched["quantidade"] = qtdVal;
       enriched["observacoes"] = obsVal || undefined;
       enriched["dataCriacao"] = criacaoVal;
+    }
+
+    // 25_Consumo_Agua mapping (Consumption & Config)
+    if (
+      sheetName === SHEET_NAMES.CONSUMO_AGUA ||
+      sheetName === "25_Consumo_Agua" ||
+      sheetName.toLowerCase().includes("agua") ||
+      sheetName.toLowerCase().includes("água") ||
+      item.quantidadeMl !== undefined ||
+      item.Quantidade_Ml !== undefined ||
+      item.metaDiariaMl !== undefined ||
+      item.Meta_Diaria_Ml !== undefined
+    ) {
+      const rawId = String(item.id || item.Id || (item.metaDiariaMl !== undefined || item.Meta_Diaria_Ml !== undefined ? "CONFIG_AGUA" : `AGUA_${Date.now()}`));
+
+      if (rawId === "CONFIG_AGUA" || item.metaDiariaMl !== undefined || item.Meta_Diaria_Ml !== undefined) {
+        const rawMeta = item.metaDiariaMl ?? item.Meta_Diaria_Ml ?? 3000;
+        const rawCopo = item.tamanhoCopoMl ?? item.Tamanho_Copo_Ml ?? 500;
+        const metaVal = Math.max(500, Math.round(Number(parseCurrency(rawMeta)) || 3000));
+        const copoVal = Math.max(50, Math.round(Number(parseCurrency(rawCopo)) || 500));
+        const criacaoVal = String(item.dataCriacao || item.Data_Criacao || item.data_criacao || new Date().toISOString());
+
+        enriched["Id"] = "CONFIG_AGUA";
+        enriched["Data"] = "";
+        enriched["Hora"] = "";
+        enriched["Quantidade_Ml"] = "";
+        enriched["Meta_Diaria_Ml"] = metaVal;
+        enriched["Tamanho_Copo_Ml"] = copoVal;
+        enriched["Observacoes"] = "CONFIG_USUARIO";
+        enriched["Data_Criacao"] = criacaoVal;
+
+        enriched["id"] = "CONFIG_AGUA";
+        enriched["metaDiariaMl"] = metaVal;
+        enriched["tamanhoCopoMl"] = copoVal;
+        enriched["dataCriacao"] = criacaoVal;
+      } else {
+        const aguaId = rawId;
+        const dataVal = String(item.data || item.Data || new Date().toISOString().split("T")[0]);
+        const rawHora = item.hora || item.Hora || item.horario || item.Horario || "";
+        const horaVal = formatarHora(rawHora) || (typeof rawHora === "string" ? rawHora.trim() : "");
+        const rawQtd = item.quantidadeMl ?? item.Quantidade_Ml ?? item.ml ?? item.Ml ?? item.quantidade ?? item.Quantidade ?? 500;
+        const qtdVal = Math.max(10, Math.round(Number(parseCurrency(rawQtd)) || 500));
+        const obsVal = String(
+          item.observacoes ||
+          item.Observacoes ||
+          item.observações ||
+          item["Observações"] ||
+          item.obs ||
+          item.OBS ||
+          ""
+        ).trim().toUpperCase();
+        const criacaoVal = String(item.dataCriacao || item.Data_Criacao || item.data_criacao || new Date().toISOString());
+
+        // Canonical columns
+        enriched["Id"] = aguaId;
+        enriched["Data"] = dataVal;
+        enriched["Hora"] = horaVal;
+        enriched["Quantidade_Ml"] = qtdVal;
+        enriched["Meta_Diaria_Ml"] = "";
+        enriched["Tamanho_Copo_Ml"] = "";
+        enriched["Observacoes"] = obsVal;
+        enriched["Data_Criacao"] = criacaoVal;
+
+        // camelCase aliases
+        enriched["id"] = aguaId;
+        enriched["data"] = dataVal;
+        enriched["hora"] = horaVal;
+        enriched["quantidadeMl"] = qtdVal;
+        enriched["observacoes"] = obsVal || undefined;
+        enriched["dataCriacao"] = criacaoVal;
+      }
     }
 
     // Saldo_Inicial and Saldo_Atual mapping with Brazilian currency format support (5_Contas_Bancarias)

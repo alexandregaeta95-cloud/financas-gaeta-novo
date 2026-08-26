@@ -29,6 +29,8 @@ import {
   LembreteSaudeConfig,
   ExercicioRegistro,
   ConsumoCafe,
+  ConsumoAgua,
+  ConfigAgua,
 } from "../types";
 import { generateNewId } from "../services/api";
 import { formatarHora, formatDateBR, parseCurrency, formatCurrency } from "../utils/formatters";
@@ -51,6 +53,8 @@ interface Props {
   alimentos?: AlimentoAnaliseResult[];
   exercicios?: ExercicioRegistro[];
   consumosCafe?: ConsumoCafe[];
+  consumosAgua?: ConsumoAgua[];
+  configAgua?: ConfigAgua;
   veiculos?: Veiculo[];
   alturaUsuario?: number;
   onSaveAltura?: (alturaCm: number) => Promise<void> | void;
@@ -62,6 +66,9 @@ interface Props {
   onSaveAlimento?: (alimento: AlimentoAnaliseResult) => Promise<void>;
   onSaveExercicio?: (exercicio: ExercicioRegistro) => Promise<void> | void;
   onSaveCafe?: (cafe: ConsumoCafe) => Promise<void> | void;
+  onSaveAgua?: (agua: ConsumoAgua) => Promise<void> | void;
+  onDeleteAgua?: (id: string) => Promise<void> | void;
+  onSaveConfigAgua?: (config: ConfigAgua) => Promise<void> | void;
   onDeleteConsulta: (id: string) => Promise<void>;
   onDeleteReceita: (id: string) => Promise<void>;
   onDeleteInfracao: (id: string) => Promise<void>;
@@ -80,6 +87,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   alimentos = [],
   exercicios = [],
   consumosCafe = [],
+  consumosAgua = [],
+  configAgua,
   veiculos = [],
   alturaUsuario,
   onSaveAltura,
@@ -91,6 +100,9 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   onSaveAlimento,
   onSaveExercicio,
   onSaveCafe,
+  onSaveAgua,
+  onDeleteAgua,
+  onSaveConfigAgua,
   onDeleteConsulta,
   onDeleteReceita,
   onDeleteInfracao,
@@ -891,13 +903,18 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 4. ALIMENTOS & NUTRIÇÃO (HISTÓRICO IA - ABA 21) */}
+      {/* 4. ALIMENTOS & NUTRIÇÃO (HISTÓRICO IA - ABA 21, 24, 25) */}
       {activeTab === "alimentos" && (
         <HistoricoAlimentosView
           alimentos={alimentos}
           consumosCafe={consumosCafe}
+          consumosAgua={consumosAgua}
+          configAgua={configAgua}
           onSaveCafe={onSaveCafe}
           onDeleteCafe={onDeleteCafe}
+          onSaveAgua={onSaveAgua}
+          onDeleteAgua={onDeleteAgua}
+          onSaveConfigAgua={onSaveConfigAgua}
           onOpenAnalysisModal={() => setIsFoodModalOpen(true)}
           onOpenRegistroRapidoModal={() => setIsRegistroRapidoModalOpen(true)}
           onSelectAlimento={(item) => {

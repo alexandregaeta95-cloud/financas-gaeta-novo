@@ -26,6 +26,8 @@ import {
   LembreteSaudeConfig,
   ExercicioRegistro,
   ConsumoCafe,
+  ConsumoAgua,
+  ConfigAgua,
 } from "../types";
 
 /**
@@ -1574,4 +1576,82 @@ export function normalizeConsumoCafe(raw: any, index = 0): ConsumoCafe {
     Data_Criacao: dataCriacao,
   };
 }
+
+/**
+ * 25. Normalize Consumo de Água & Configuração (25_Consumo_Agua)
+ */
+export function normalizeConsumoAgua(raw: any, index = 0): ConsumoAgua | ConfigAgua | any {
+  if (!raw || typeof raw !== "object") return raw;
+
+  const rawId = String(raw.Id || raw.id || raw.ID || `AGUA_${Date.now()}_${index}`).trim();
+
+  // If this is the configuration row (CONFIG_AGUA)
+  if (rawId === "CONFIG_AGUA" || String(raw.Tipo || raw.tipo || "").toUpperCase() === "CONFIG") {
+    const rawMeta = raw.Meta_Diaria_Ml ?? raw.metaDiariaMl ?? raw.Meta ?? raw.meta ?? 3000;
+    const rawCopo = raw.Tamanho_Copo_Ml ?? raw.tamanhoCopoMl ?? raw.Copo ?? raw.copo ?? 500;
+
+    const metaDiariaMl = Math.max(500, Math.round(Number(parseCurrency(rawMeta)) || 3000));
+    const tamanhoCopoMl = Math.max(50, Math.round(Number(parseCurrency(rawCopo)) || 500));
+    const dataCriacao = String(
+      raw.Data_Criacao || raw.data_criacao || raw.DataCriacao || raw.dataCriacao || new Date().toISOString()
+    );
+
+    return {
+      id: "CONFIG_AGUA" as const,
+      Id: "CONFIG_AGUA",
+      metaDiariaMl,
+      Meta_Diaria_Ml: metaDiariaMl,
+      tamanhoCopoMl,
+      Tamanho_Copo_Ml: tamanhoCopoMl,
+      dataCriacao,
+      Data_Criacao: dataCriacao,
+    };
+  }
+
+  // Regular consumption record
+  const id = rawId;
+  const data = String(
+    raw.Data ||
+    raw.data ||
+    new Date().toISOString().split("T")[0]
+  ).trim();
+
+  const rawHora = raw.Hora || raw.hora || raw.Horario || raw.horario || "";
+  const hora = formatarHora(rawHora) || (typeof rawHora === "string" ? rawHora.trim() : "");
+
+  const rawQtd = raw.Quantidade_Ml ?? raw.quantidadeMl ?? raw.Quantidade ?? raw.quantidade ?? raw.Qtd_Ml ?? raw.qtdMl ?? raw.ml ?? raw.Ml ?? 500;
+  const quantidadeMl = Math.max(10, Math.round(Number(parseCurrency(rawQtd)) || 500));
+
+  const observacoes = String(
+    raw.Observacoes ||
+    raw.observacoes ||
+    raw["Observações"] ||
+    raw.observações ||
+    raw.OBS ||
+    raw.obs ||
+    raw.Observacao ||
+    raw.observacao ||
+    ""
+  ).trim().toUpperCase();
+
+  const dataCriacao = String(
+    raw.Data_Criacao || raw.data_criacao || raw.DataCriacao || raw.dataCriacao || new Date().toISOString()
+  );
+
+  return {
+    id,
+    Id: id,
+    data,
+    Data: data,
+    hora,
+    Hora: hora,
+    quantidadeMl,
+    Quantidade_Ml: quantidadeMl,
+    observacoes: observacoes || undefined,
+    Observacoes: observacoes || undefined,
+    dataCriacao,
+    Data_Criacao: dataCriacao,
+  };
+}
+
 

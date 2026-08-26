@@ -46,6 +46,8 @@ import {
   LembreteSaudeConfig,
   ExercicioRegistro,
   ConsumoCafe,
+  ConsumoAgua,
+  ConfigAgua,
   SHEET_NAMES,
 } from "./types";
 
@@ -262,6 +264,47 @@ export default function App() {
         hora: "13:30",
         quantidade: 1,
         observacoes: "COM LEITE",
+      },
+    ];
+  });
+  const [configAgua, setConfigAgua] = useState<ConfigAgua>(() => {
+    const cached = getCachedSheetData<any>(SHEET_NAMES.CONSUMO_AGUA);
+    const cfg = cached.find((item) => item.id === "CONFIG_AGUA" || item.Id === "CONFIG_AGUA");
+    if (cfg) {
+      return {
+        id: "CONFIG_AGUA",
+        Id: "CONFIG_AGUA",
+        metaDiariaMl: Number(cfg.metaDiariaMl || cfg.Meta_Diaria_Ml || 2500),
+        tamanhoCopoMl: Number(cfg.tamanhoCopoMl || cfg.Tamanho_Copo_Ml || 500),
+      };
+    }
+    return {
+      id: "CONFIG_AGUA",
+      Id: "CONFIG_AGUA",
+      metaDiariaMl: 2500,
+      tamanhoCopoMl: 500,
+    };
+  });
+  const [consumosAgua, setConsumosAgua] = useState<ConsumoAgua[]>(() => {
+    const cached = getCachedSheetData<ConsumoAgua>(SHEET_NAMES.CONSUMO_AGUA);
+    const filtered = cached.filter((item) => item.id !== "CONFIG_AGUA" && item.Id !== "CONFIG_AGUA");
+    if (filtered.length > 0) return filtered;
+    return [
+      {
+        id: "AGUA_1",
+        Id: "AGUA_1",
+        data: "2026-08-26",
+        hora: "08:15",
+        quantidadeMl: 500,
+        observacoes: "GARRAFA TÉRMICA",
+      },
+      {
+        id: "AGUA_2",
+        Id: "AGUA_2",
+        data: "2026-08-26",
+        hora: "11:30",
+        quantidadeMl: 500,
+        observacoes: "GARRAFA TÉRMICA",
       },
     ];
   });
@@ -533,6 +576,23 @@ export default function App() {
       fetchSheetData<ConsumoCafe>(SHEET_NAMES.CONSUMO_CAFE)
         .then((data) => data && setConsumosCafe(data))
         .catch(() => {});
+      fetchSheetData<any>(SHEET_NAMES.CONSUMO_AGUA)
+        .then((data) => {
+          if (data && Array.isArray(data)) {
+            const cfg = data.find((item) => item.id === "CONFIG_AGUA" || item.Id === "CONFIG_AGUA");
+            if (cfg) {
+              setConfigAgua({
+                id: "CONFIG_AGUA",
+                Id: "CONFIG_AGUA",
+                metaDiariaMl: Number(cfg.metaDiariaMl || cfg.Meta_Diaria_Ml || 2500),
+                tamanhoCopoMl: Number(cfg.tamanhoCopoMl || cfg.Tamanho_Copo_Ml || 500),
+              });
+            }
+            const logs = data.filter((item) => item.id !== "CONFIG_AGUA" && item.Id !== "CONFIG_AGUA");
+            setConsumosAgua(logs);
+          }
+        })
+        .catch(() => {});
       fetchSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
         .then((data) => data && setMetas(data))
         .catch(() => {});
@@ -741,6 +801,27 @@ export default function App() {
     }
   };
 
+  const handleSaveConfigAgua = async (config: ConfigAgua) => {
+    setConfigAgua(config);
+    try {
+      const configItem = {
+        Id: "CONFIG_AGUA",
+        id: "CONFIG_AGUA",
+        Meta_Diaria_Ml: config.metaDiariaMl,
+        metaDiariaMl: config.metaDiariaMl,
+        Tamanho_Copo_Ml: config.tamanhoCopoMl,
+        tamanhoCopoMl: config.tamanhoCopoMl,
+        Data_Criacao: config.dataCriacao || new Date().toISOString(),
+        dataCriacao: config.dataCriacao || new Date().toISOString(),
+        Observacoes: "CONFIG_USUARIO",
+      };
+      await saveSheetRecords(SHEET_NAMES.CONSUMO_AGUA, [configItem], "UPSERT");
+    } catch (err: any) {
+      console.error("Erro ao salvar configurações de água na planilha:", err);
+      alert(`Erro ao salvar configurações de água na planilha: ${err.message || err}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col">
       {/* Top Sync Status Bar */}
@@ -871,6 +952,8 @@ export default function App() {
             alimentos={alimentos}
             exercicios={exercicios}
             consumosCafe={consumosCafe}
+            consumosAgua={consumosAgua}
+            configAgua={configAgua}
             veiculos={veiculos}
             alturaUsuario={alturaUsuario}
             onSaveAltura={handleSaveAltura}
@@ -882,6 +965,9 @@ export default function App() {
             onSaveAlimento={(alim) => handleSaveGeneric(SHEET_NAMES.ANALISE_ALIMENTOS, alim, setAlimentos)}
             onSaveExercicio={(exe) => handleSaveGeneric(SHEET_NAMES.EXERCICIOS, exe, setExercicios)}
             onSaveCafe={(cafe) => handleSaveGeneric(SHEET_NAMES.CONSUMO_CAFE, cafe, setConsumosCafe)}
+            onSaveAgua={(agua) => handleSaveGeneric(SHEET_NAMES.CONSUMO_AGUA, agua, setConsumosAgua)}
+            onDeleteAgua={(id) => handleDeleteGeneric(SHEET_NAMES.CONSUMO_AGUA, id, setConsumosAgua)}
+            onSaveConfigAgua={handleSaveConfigAgua}
             onDeleteConsulta={(id) => handleDeleteGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, id, setConsultas)}
             onDeleteReceita={(id) => handleDeleteGeneric(SHEET_NAMES.RECEITAS_MEDICAS, id, setReceitas)}
             onDeleteInfracao={(id) => handleDeleteGeneric(SHEET_NAMES.INFRACOES, id, setInfracoes)}

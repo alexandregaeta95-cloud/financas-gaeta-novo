@@ -21,15 +21,21 @@ import {
   FileText,
   CheckCircle2,
 } from "lucide-react";
-import { AlimentoAnaliseResult, ConsumoCafe } from "../types";
+import { AlimentoAnaliseResult, ConsumoCafe, ConsumoAgua, ConfigAgua } from "../types";
 import { formatDateBR } from "../utils/formatters";
 import { ContadorCafeWidget } from "./ContadorCafeWidget";
+import { ContadorAguaWidget } from "./ContadorAguaWidget";
 
 interface Props {
   alimentos: AlimentoAnaliseResult[];
   consumosCafe?: ConsumoCafe[];
+  consumosAgua?: ConsumoAgua[];
+  configAgua?: ConfigAgua;
   onSaveCafe?: (cafe: ConsumoCafe) => Promise<void> | void;
   onDeleteCafe?: (id: string) => Promise<void> | void;
+  onSaveAgua?: (agua: ConsumoAgua) => Promise<void> | void;
+  onDeleteAgua?: (id: string) => Promise<void> | void;
+  onSaveConfigAgua?: (config: ConfigAgua) => Promise<void> | void;
   onOpenAnalysisModal: () => void;
   onOpenRegistroRapidoModal?: () => void;
   onSelectAlimento: (alimento: AlimentoAnaliseResult) => void;
@@ -40,8 +46,13 @@ interface Props {
 export const HistoricoAlimentosView: React.FC<Props> = ({
   alimentos,
   consumosCafe = [],
+  consumosAgua = [],
+  configAgua,
   onSaveCafe = () => {},
   onDeleteCafe = () => {},
+  onSaveAgua = () => {},
+  onDeleteAgua = () => {},
+  onSaveConfigAgua = () => {},
   onOpenAnalysisModal,
   onOpenRegistroRapidoModal,
   onSelectAlimento,
@@ -123,7 +134,16 @@ export const HistoricoAlimentosView: React.FC<Props> = ({
 
   return (
     <div className="space-y-6">
-      {/* 1. Contador de Café Diário & Ação Rápida */}
+      {/* 1. Contador de Água & Hidratação Diária */}
+      <ContadorAguaWidget
+        consumosAgua={consumosAgua}
+        configAgua={configAgua}
+        onSaveAgua={onSaveAgua}
+        onDeleteAgua={onDeleteAgua}
+        onSaveConfigAgua={onSaveConfigAgua}
+      />
+
+      {/* 2. Contador de Café Diário & Ação Rápida */}
       <ContadorCafeWidget
         consumosCafe={consumosCafe}
         onSaveCafe={onSaveCafe}

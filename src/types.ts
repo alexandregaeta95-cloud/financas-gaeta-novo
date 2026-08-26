@@ -323,6 +323,7 @@ export const SHEET_NAMES = {
   CONFIG_LEMBRETES_SAUDE: "22_Config_Lembretes_Saude",
   EXERCICIOS: "23_Exercicios",
   CONSUMO_CAFE: "24_Consumo_Cafe",
+  CONSUMO_AGUA: "25_Consumo_Agua",
 } as const;
 
 export interface RegistroSaude {
@@ -436,3 +437,23 @@ export interface ConsumoCafe {
   dataCriacao?: string;
   [key: string]: any;
 }
+
+// 25. Contador de Consumo de Água & Configuração (25_Consumo_Agua)
+export interface ConsumoAgua {
+  id: string;
+  data: string; // YYYY-MM-DD
+  hora: string; // HH:mm
+  quantidadeMl: number; // Ex: 250, 500, 750 (ml)
+  observacoes?: string;
+  dataCriacao?: string;
+  [key: string]: any;
+}
+
+export interface ConfigAgua {
+  id: "CONFIG_AGUA";
+  metaDiariaMl: number; // Ex: 3000
+  tamanhoCopoMl: number; // Ex: 500 ou 750
+  dataCriacao?: string;
+  [key: string]: any;
+}
+
