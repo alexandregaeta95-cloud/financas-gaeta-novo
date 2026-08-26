@@ -498,30 +498,30 @@ export async function saveSheetRecords<T = any>(
       enriched["Preço_Unitário"] = formattedUnit;
     }
 
-    // Observações / Observacoes / OBS mapping
+    // Observações / Observacoes mapping (Canonical Observacoes)
     if (
       item.Observacoes !== undefined ||
       item["Observações"] !== undefined ||
       item.OBS !== undefined ||
       item["Observacao"] !== undefined ||
-      item["Observação"] !== undefined
+      item["Observação"] !== undefined ||
+      item.observacoes !== undefined ||
+      item.observações !== undefined
     ) {
       const val =
         item.Observacoes ??
         item["Observações"] ??
         item.OBS ??
         item["Observacao"] ??
-        item["Observação"];
+        item["Observação"] ??
+        item.observacoes ??
+        item.observações;
 
       const upperVal = typeof val === "string" ? val.toUpperCase() : val !== undefined && val !== null ? String(val).toUpperCase() : "";
       enriched["Observacoes"] = upperVal;
-      enriched["Observações"] = upperVal;
-      enriched["OBS"] = upperVal;
-      enriched["Observação"] = upperVal;
-      enriched["Observacao"] = upperVal;
     }
 
-    // 20_Controle_Saude biometric mappings
+    // 20_Controle_Saude biometric mappings (Canonical Title_Case ONLY)
     if (
       sheetName === SHEET_NAMES.CONTROLE_SAUDE ||
       sheetName === "20_Controle_Saude" ||
@@ -529,51 +529,79 @@ export async function saveSheetRecords<T = any>(
       item.Tipo_Registro !== undefined ||
       item.Valor_Principal !== undefined
     ) {
-      if (item.Tipo_Registro !== undefined) {
-        enriched["Tipo_Registro"] = item.Tipo_Registro;
-        enriched["Tipo Registro"] = item.Tipo_Registro;
-        enriched["Tipo_registro"] = item.Tipo_Registro;
-        enriched["Tipo"] = item.Tipo_Registro;
-      }
-      if (item.Data_Hora !== undefined) {
-        enriched["Data_Hora"] = item.Data_Hora;
-        enriched["Data Hora"] = item.Data_Hora;
-        enriched["Data_hora"] = item.Data_Hora;
-        enriched["Data"] = item.Data_Hora;
-      }
-      if (item.Valor_Principal !== undefined) {
-        enriched["Valor_Principal"] = item.Valor_Principal;
-        enriched["Valor Principal"] = item.Valor_Principal;
-        enriched["Valor_principal"] = item.Valor_Principal;
-      }
-      if (item.Valor_Secundario !== undefined) {
-        enriched["Valor_Secundario"] = item.Valor_Secundario;
-        enriched["Valor Secundario"] = item.Valor_Secundario;
-        enriched["Valor_secundario"] = item.Valor_Secundario;
-      }
-      if (item.Batimentos_Bpm !== undefined && item.Batimentos_Bpm !== null && item.Batimentos_Bpm !== "") {
-        const parsedBpm = typeof item.Batimentos_Bpm === "number" ? item.Batimentos_Bpm : parseInt(String(item.Batimentos_Bpm), 10);
+      const regId = String(item.Id || item.id || `SAUDE_${Date.now()}`).trim();
+      const tipoVal = String(item.Tipo_Registro || item["Tipo Registro"] || item.Tipo_registro || item.tipo_registro || item.Tipo || item.tipo || "").trim().toUpperCase();
+      const dataHoraVal = String(item.Data_Hora || item["Data Hora"] || item.Data_hora || item.data_hora || item.Data || item.data || new Date().toISOString()).trim();
+      const valPrinc = item.Valor_Principal ?? item["Valor Principal"] ?? item.Valor_principal ?? item.valor_principal ?? item.Valor ?? item.valor ?? "";
+      const valSec = item.Valor_Secundario ?? item["Valor Secundario"] ?? item.Valor_secundario ?? item.valor_secundario ?? "";
+      
+      let bpmVal: any = "";
+      const rawBpm = item.Batimentos_Bpm ?? item["Batimentos Bpm"] ?? item.Batimentos_bpm ?? item.Batimentos ?? item.batimentos ?? item.BPM ?? item.Bpm ?? item.bpm;
+      if (rawBpm !== undefined && rawBpm !== null && rawBpm !== "") {
+        const parsedBpm = typeof rawBpm === "number" ? rawBpm : parseInt(String(rawBpm), 10);
         if (!isNaN(parsedBpm) && parsedBpm > 0) {
-          enriched["Batimentos_Bpm"] = parsedBpm;
-          enriched["Batimentos Bpm"] = parsedBpm;
-          enriched["Batimentos_bpm"] = parsedBpm;
-          enriched["Batimentos"] = parsedBpm;
-          enriched["BPM"] = parsedBpm;
-          enriched["Bpm"] = parsedBpm;
+          bpmVal = parsedBpm;
         }
       }
-      if (item.Contexto !== undefined) {
-        enriched["Contexto"] = item.Contexto;
-        enriched["contexto"] = item.Contexto;
-      }
-      if (item.Data_Criacao !== undefined) {
-        enriched["Data_Criacao"] = item.Data_Criacao;
-        enriched["Data Criacao"] = item.Data_Criacao;
-        enriched["Data_criacao"] = item.Data_Criacao;
-      }
+
+      const contextoVal = String(item.Contexto || item.contexto || "").trim().toUpperCase();
+      const obsVal = String(item.Observacoes || item["Observações"] || item.observacoes || item.observações || item.OBS || item.obs || "").trim().toUpperCase();
+      const criacaoVal = String(item.Data_Criacao || item["Data Criacao"] || item.Data_criacao || item.data_criacao || item.dataCriacao || new Date().toISOString()).trim();
+
+      // Canonical Title_Case columns ONLY
+      enriched["Id"] = regId;
+      enriched["Tipo_Registro"] = tipoVal;
+      enriched["Data_Hora"] = dataHoraVal;
+      enriched["Valor_Principal"] = valPrinc;
+      enriched["Valor_Secundario"] = valSec;
+      enriched["Batimentos_Bpm"] = bpmVal;
+      enriched["Contexto"] = contextoVal;
+      enriched["Observacoes"] = obsVal;
+      enriched["Data_Criacao"] = criacaoVal;
+
+      // Delete all alternate keys
+      delete enriched.id;
+      delete enriched["Tipo Registro"];
+      delete enriched.Tipo_registro;
+      delete enriched.tipo_registro;
+      delete enriched.Tipo;
+      delete enriched.tipo;
+      delete enriched["Data Hora"];
+      delete enriched.Data_hora;
+      delete enriched.data_hora;
+      delete enriched.Data;
+      delete enriched.data;
+      delete enriched["Valor Principal"];
+      delete enriched.Valor_principal;
+      delete enriched.valor_principal;
+      delete enriched.Valor;
+      delete enriched.valor;
+      delete enriched["Valor Secundario"];
+      delete enriched.Valor_secundario;
+      delete enriched.valor_secundario;
+      delete enriched["Batimentos Bpm"];
+      delete enriched.Batimentos_bpm;
+      delete enriched.batimentos_bpm;
+      delete enriched.Batimentos;
+      delete enriched.batimentos;
+      delete enriched.BPM;
+      delete enriched.Bpm;
+      delete enriched.bpm;
+      delete enriched.contexto;
+      delete enriched["Data Criacao"];
+      delete enriched.Data_criacao;
+      delete enriched.data_criacao;
+      delete enriched.dataCriacao;
+      delete enriched["Observações"];
+      delete enriched.observações;
+      delete enriched.observacoes;
+      delete enriched.OBS;
+      delete enriched.obs;
+      delete enriched["Observação"];
+      delete enriched.observacao;
     }
 
-    // 21_Analise_Alimentos mappings
+    // 21_Analise_Alimentos mappings (Canonical Title_Case ONLY)
     if (
       sheetName === SHEET_NAMES.ANALISE_ALIMENTOS ||
       sheetName === "21_Analise_Alimentos" ||
@@ -590,20 +618,20 @@ export async function saveSheetRecords<T = any>(
       delete enriched.Imagem;
       delete enriched.imagem;
 
-      const foodId = String(item.id || item.Id || item.ID || `ALIM_${Date.now()}`);
-      const dataVal = String(item.data || item.Data || new Date().toISOString().split("T")[0]);
-      const dataHoraVal = String(item.dataHora || item.Data_Hora || item.DataHora || dataVal);
+      const foodId = String(item.Id || item.id || item.ID || `ALIM_${Date.now()}`).trim();
+      const dataVal = String(item.Data || item.data || new Date().toISOString().split("T")[0]).trim();
+      const dataHoraVal = String(item.Data_Hora || item.dataHora || item.DataHora || dataVal).trim();
       const pratoVal = sanitizeValueToUppercase(
         "Nome_Prato",
-        String(item.nomePrato || item.Nome_Prato || item.Nome || item.Prato || "REFEIÇÃO")
+        String(item.Nome_Prato || item.nomePrato || item.Nome || item.Prato || "REFEIÇÃO")
       );
-      const calVal = Math.round(Number(item.caloriasEstimadas ?? item.Calorias_Estimadas ?? item.Calorias ?? item.calorias ?? 0));
-      const protVal = Math.round(Number(item.proteinasEstimadas ?? item.Proteinas_Estimadas ?? item.Proteinas ?? item.proteinas ?? 0));
-      const carbVal = Math.round(Number(item.carboidratosEstimados ?? item.Carboidratos_Estimados ?? item.Carboidratos ?? item.carboidratos ?? 0));
-      const gordVal = Math.round(Number(item.gordurasEstimadas ?? item.Gorduras_Estimadas ?? item.Gorduras ?? item.gorduras ?? 0));
+      const calVal = Math.round(Number(item.Calorias_Estimadas ?? item.caloriasEstimadas ?? item.Calorias ?? item.calorias ?? 0));
+      const protVal = Math.round(Number(item.Proteinas_Estimadas ?? item.proteinasEstimadas ?? item.Proteinas ?? item.proteinas ?? 0));
+      const carbVal = Math.round(Number(item.Carboidratos_Estimados ?? item.carboidratosEstimados ?? item.Carboidratos ?? item.carboidratos ?? 0));
+      const gordVal = Math.round(Number(item.Gorduras_Estimadas ?? item.gordurasEstimadas ?? item.Gorduras ?? item.gorduras ?? 0));
       const descVal = sanitizeValueToUppercase(
         "Classificacao_Geral",
-        String(item.descricao || item.Descricao || item.Classificacao_Geral || item.classificacao_geral || "")
+        String(item.Classificacao_Geral || item.classificacao_geral || item.descricao || item.Descricao || "")
       );
       
       let itensVal = "";
@@ -617,15 +645,15 @@ export async function saveSheetRecords<T = any>(
 
       const dicasVal = sanitizeValueToUppercase(
         "Dicas_Nutricionais",
-        String(item.dicasNutricionais || item.Dicas_Nutricionais || item.dicas_nutricionais || item.dicas || item.Dicas || "")
+        String(item.Dicas_Nutricionais || item.dicasNutricionais || item.dicas_nutricionais || item.dicas || item.Dicas || "")
       );
       const obsVal = sanitizeValueToUppercase(
         "Observacoes",
-        String(item.observacoes || item.Observacoes || item.observações || item["Observações"] || item.obs || item.OBS || "")
+        String(item.Observacoes || item.observacoes || item.observações || item["Observações"] || item.obs || item.OBS || "")
       );
-      const criacaoVal = String(item.Data_Criacao || item.data_criacao || item.dataCriacao || new Date().toISOString());
+      const criacaoVal = String(item.Data_Criacao || item.data_criacao || item.dataCriacao || new Date().toISOString()).trim();
 
-      // Canonical columns (Uppercase snake_case)
+      // Canonical columns (Title_Case)
       enriched["Id"] = foodId;
       enriched["Data"] = dataVal;
       enriched["Data_Hora"] = dataHoraVal;
@@ -640,22 +668,54 @@ export async function saveSheetRecords<T = any>(
       enriched["Observacoes"] = obsVal;
       enriched["Data_Criacao"] = criacaoVal;
 
-      // Aliases (camelCase & lowercase) to ensure existing sheets match seamlessly
-      enriched["id"] = foodId;
-      enriched["data"] = dataVal;
-      enriched["dataHora"] = dataHoraVal;
-      enriched["nomePrato"] = pratoVal;
-      enriched["caloriasEstimadas"] = calVal;
-      enriched["proteinasEstimadas"] = protVal;
-      enriched["carboidratosEstimados"] = carbVal;
-      enriched["gordurasEstimadas"] = gordVal;
-      enriched["descricao"] = descVal;
-      enriched["Descricao"] = descVal;
-      enriched["classificacaoGeral"] = descVal;
-      enriched["itensIdentificados"] = itensVal;
-      enriched["dicasNutricionais"] = dicasVal;
-      enriched["observacoes"] = obsVal;
-      enriched["dataCriacao"] = criacaoVal;
+      // Delete all camelCase and alternate duplicate keys
+      delete enriched.id;
+      delete enriched.data;
+      delete enriched.dataHora;
+      delete enriched.data_hora;
+      delete enriched.nomePrato;
+      delete enriched.nome_prato;
+      delete enriched.Nome;
+      delete enriched.Prato;
+      delete enriched.prato;
+      delete enriched.caloriasEstimadas;
+      delete enriched.calorias_estimadas;
+      delete enriched.Calorias;
+      delete enriched.calorias;
+      delete enriched.proteinasEstimadas;
+      delete enriched.proteinas_estimadas;
+      delete enriched.Proteinas;
+      delete enriched.proteinas;
+      delete enriched.carboidratosEstimados;
+      delete enriched.carboidratos_estimados;
+      delete enriched.Carboidratos;
+      delete enriched.carboidratos;
+      delete enriched.gordurasEstimadas;
+      delete enriched.gorduras_estimadas;
+      delete enriched.Gorduras;
+      delete enriched.gorduras;
+      delete enriched.descricao;
+      delete enriched.Descricao;
+      delete enriched.classificacaoGeral;
+      delete enriched.classificacao_geral;
+      delete enriched.itensIdentificados;
+      delete enriched.itens_identificados;
+      delete enriched.Itens;
+      delete enriched.itens;
+      delete enriched.dicasNutricionais;
+      delete enriched.dicas_nutricionais;
+      delete enriched.Dicas;
+      delete enriched.dicas;
+      delete enriched.observacoes;
+      delete enriched["Observações"];
+      delete enriched.observações;
+      delete enriched.OBS;
+      delete enriched.obs;
+      delete enriched["Observação"];
+      delete enriched.observacao;
+      delete enriched.dataCriacao;
+      delete enriched.data_criacao;
+      delete enriched.DataCriacao;
     }
 
     // 22_Config_Lembretes_Saude mapping (Canonical Title_Case ONLY)
@@ -719,7 +779,7 @@ export async function saveSheetRecords<T = any>(
       delete enriched.altura;
     }
 
-    // 23_Exercicios mapping
+    // 23_Exercicios mapping (Canonical Title_Case ONLY)
     if (
       sheetName === SHEET_NAMES.EXERCICIOS ||
       sheetName === "23_Exercicios" ||
@@ -730,12 +790,13 @@ export async function saveSheetRecords<T = any>(
       item.duracaoMinutos !== undefined ||
       item.Duracao_Minutos !== undefined
     ) {
-      const exeId = String(item.id || item.Id || `EXE_${Date.now()}`);
-      const dataVal = String(item.data || item.Data || new Date().toISOString().split("T")[0]);
-      const horaVal = String(item.hora || item.Hora || item.horario || item.Horario || "");
+      const exeId = String(item.Id || item.id || `EXE_${Date.now()}`).trim();
+      const dataVal = String(item.Data || item.data || new Date().toISOString().split("T")[0]).trim();
+      const rawHora = item.Hora || item.hora || item.Horario || item.horario || "";
+      const horaVal = formatarHora(rawHora) || (typeof rawHora === "string" ? rawHora.trim() : "");
       const tipoVal = String(
-        item.tipoExercicio ||
         item.Tipo_Exercicio ||
+        item.tipoExercicio ||
         item.Tipo ||
         item.tipo ||
         item.Exercicio ||
@@ -747,30 +808,30 @@ export async function saveSheetRecords<T = any>(
         Math.round(
           Number(
             parseCurrency(
-              item.duracaoMinutos ??
               item.Duracao_Minutos ??
-              item.duracao ??
+              item.duracaoMinutos ??
               item.Duracao ??
+              item.duracao ??
               0
             )
           )
         )
       );
-      const rawCal = item.caloriasQueimadas ?? item.Calorias_Queimadas ?? item.Calorias ?? item.calorias;
+      const rawCal = item.Calorias_Queimadas ?? item.caloriasQueimadas ?? item.Calorias ?? item.calorias;
       const calVal = rawCal !== undefined && rawCal !== null && rawCal !== "" ? Math.round(Number(parseCurrency(rawCal))) : 0;
-      const rawInt = String(item.intensidade || item.Intensidade || "").trim().toUpperCase();
+      const rawInt = String(item.Intensidade || item.intensidade || "").trim().toUpperCase();
       const obsVal = String(
-        item.observacoes ||
         item.Observacoes ||
+        item.observacoes ||
         item.observações ||
         item["Observações"] ||
         item.obs ||
         item.OBS ||
         ""
       ).trim().toUpperCase();
-      const criacaoVal = String(item.dataCriacao || item.Data_Criacao || item.data_criacao || new Date().toISOString());
+      const criacaoVal = String(item.Data_Criacao || item.data_criacao || item.dataCriacao || new Date().toISOString()).trim();
 
-      // Canonical columns (Uppercase snake_case)
+      // Canonical columns (Title_Case)
       enriched["Id"] = exeId;
       enriched["Data"] = dataVal;
       enriched["Hora"] = horaVal;
@@ -781,19 +842,40 @@ export async function saveSheetRecords<T = any>(
       enriched["Observacoes"] = obsVal;
       enriched["Data_Criacao"] = criacaoVal;
 
-      // camelCase aliases
-      enriched["id"] = exeId;
-      enriched["data"] = dataVal;
-      enriched["hora"] = horaVal;
-      enriched["tipoExercicio"] = tipoVal;
-      enriched["duracaoMinutos"] = duracaoVal;
-      enriched["caloriasQueimadas"] = calVal > 0 ? calVal : undefined;
-      enriched["intensidade"] = rawInt || undefined;
-      enriched["observacoes"] = obsVal || undefined;
-      enriched["dataCriacao"] = criacaoVal;
+      // Delete all camelCase and alternate duplicate keys
+      delete enriched.id;
+      delete enriched.data;
+      delete enriched.hora;
+      delete enriched.horario;
+      delete enriched.Horario;
+      delete enriched.tipoExercicio;
+      delete enriched.tipo_exercicio;
+      delete enriched.tipo;
+      delete enriched.Tipo;
+      delete enriched.exercicio;
+      delete enriched.Exercicio;
+      delete enriched.duracaoMinutos;
+      delete enriched.duracao_minutos;
+      delete enriched.duracao;
+      delete enriched.Duracao;
+      delete enriched.caloriasQueimadas;
+      delete enriched.calorias_queimadas;
+      delete enriched.calorias;
+      delete enriched.Calorias;
+      delete enriched.intensidade;
+      delete enriched.observacoes;
+      delete enriched["Observações"];
+      delete enriched.observações;
+      delete enriched.OBS;
+      delete enriched.obs;
+      delete enriched["Observação"];
+      delete enriched.observacao;
+      delete enriched.dataCriacao;
+      delete enriched.data_criacao;
+      delete enriched.DataCriacao;
     }
 
-    // 24_Consumo_Cafe mapping
+    // 24_Consumo_Cafe mapping (Canonical Title_Case ONLY)
     if (
       sheetName === SHEET_NAMES.CONSUMO_CAFE ||
       sheetName === "24_Consumo_Cafe" ||
@@ -801,32 +883,32 @@ export async function saveSheetRecords<T = any>(
       sheetName.toLowerCase().includes("café") ||
       (item.quantidade !== undefined && (item.hora !== undefined || item.Hora !== undefined) && item.tipoExercicio === undefined && item.Tipo_Exercicio === undefined && item.Tipo_Registro === undefined)
     ) {
-      const cafeId = String(item.id || item.Id || `CAFE_${Date.now()}`);
-      const dataVal = String(item.data || item.Data || new Date().toISOString().split("T")[0]);
-      const rawHora = item.hora || item.Hora || item.horario || item.Horario || "";
+      const cafeId = String(item.Id || item.id || `CAFE_${Date.now()}`).trim();
+      const dataVal = String(item.Data || item.data || new Date().toISOString().split("T")[0]).trim();
+      const rawHora = item.Hora || item.hora || item.Horario || item.horario || "";
       const horaVal = formatarHora(rawHora) || (typeof rawHora === "string" ? rawHora.trim() : "");
-      const rawQtd = item.quantidade ?? item.Quantidade ?? item.qtd ?? item.Qtd ?? 1;
+      const rawQtd = item.Quantidade ?? item.quantidade ?? item.Qtd ?? item.qtd ?? 1;
       const qtdVal = Math.max(1, Math.round(Number(parseCurrency(rawQtd)) || 1));
       const obsVal = String(
-        item.observacoes ||
         item.Observacoes ||
+        item.observacoes ||
         item.observações ||
         item["Observações"] ||
         item.obs ||
         item.OBS ||
         ""
       ).trim().toUpperCase();
-      const rawCal = item.calorias ?? item.Calorias ?? item.caloriasEstimadas ?? item.Calorias_Estimadas;
+      const rawCal = item.Calorias ?? item.calorias ?? item.Calorias_Estimadas ?? item.caloriasEstimadas;
       const calVal = rawCal !== undefined && rawCal !== null && rawCal !== "" ? Math.round(Number(parseCurrency(rawCal))) : 0;
-      const rawProt = item.proteinas ?? item.Proteinas ?? item.proteínas ?? item.Proteínas ?? item.proteinasEstimadas ?? item.Proteinas_Estimadas;
+      const rawProt = item.Proteinas ?? item.proteinas ?? item.Proteínas ?? item.proteínas ?? item.Proteinas_Estimadas ?? item.proteinasEstimadas;
       const protVal = rawProt !== undefined && rawProt !== null && rawProt !== "" ? Number(Number(parseCurrency(rawProt)).toFixed(1)) : 0;
-      const rawCarb = item.carboidratos ?? item.Carboidratos ?? item.carbos ?? item.Carbos ?? item.carboidratosEstimados ?? item.Carboidratos_Estimados;
+      const rawCarb = item.Carboidratos ?? item.carboidratos ?? item.Carbos ?? item.carbos ?? item.Carboidratos_Estimados ?? item.carboidratosEstimados;
       const carbVal = rawCarb !== undefined && rawCarb !== null && rawCarb !== "" ? Number(Number(parseCurrency(rawCarb)).toFixed(1)) : 0;
-      const rawGord = item.gorduras ?? item.Gorduras ?? item.gordurasEstimadas ?? item.Gorduras_Estimadas;
+      const rawGord = item.Gorduras ?? item.gorduras ?? item.Gorduras_Estimadas ?? item.gordurasEstimadas;
       const gordVal = rawGord !== undefined && rawGord !== null && rawGord !== "" ? Number(Number(parseCurrency(rawGord)).toFixed(1)) : 0;
-      const criacaoVal = String(item.dataCriacao || item.Data_Criacao || item.data_criacao || new Date().toISOString());
+      const criacaoVal = String(item.Data_Criacao || item.data_criacao || item.dataCriacao || new Date().toISOString()).trim();
 
-      // Canonical columns (Uppercase snake_case)
+      // Canonical columns (Title_Case)
       enriched["Id"] = cafeId;
       enriched["Data"] = dataVal;
       enriched["Hora"] = horaVal;
@@ -838,20 +920,44 @@ export async function saveSheetRecords<T = any>(
       enriched["Observacoes"] = obsVal;
       enriched["Data_Criacao"] = criacaoVal;
 
-      // camelCase aliases
-      enriched["id"] = cafeId;
-      enriched["data"] = dataVal;
-      enriched["hora"] = horaVal;
-      enriched["quantidade"] = qtdVal;
-      enriched["calorias"] = calVal > 0 ? calVal : undefined;
-      enriched["proteinas"] = protVal > 0 ? protVal : undefined;
-      enriched["carboidratos"] = carbVal > 0 ? carbVal : undefined;
-      enriched["gorduras"] = gordVal > 0 ? gordVal : undefined;
-      enriched["observacoes"] = obsVal || undefined;
-      enriched["dataCriacao"] = criacaoVal;
+      // Delete all camelCase and alternate duplicate keys
+      delete enriched.id;
+      delete enriched.data;
+      delete enriched.hora;
+      delete enriched.horario;
+      delete enriched.Horario;
+      delete enriched.quantidade;
+      delete enriched.qtd;
+      delete enriched.Qtd;
+      delete enriched.calorias;
+      delete enriched.Calorias_Estimadas;
+      delete enriched.caloriasEstimadas;
+      delete enriched.proteinas;
+      delete enriched.proteínas;
+      delete enriched.Proteínas;
+      delete enriched.Proteinas_Estimadas;
+      delete enriched.proteinasEstimadas;
+      delete enriched.carboidratos;
+      delete enriched.carbos;
+      delete enriched.Carbos;
+      delete enriched.Carboidratos_Estimados;
+      delete enriched.carboidratosEstimados;
+      delete enriched.gorduras;
+      delete enriched.Gorduras_Estimadas;
+      delete enriched.gordurasEstimadas;
+      delete enriched.observacoes;
+      delete enriched["Observações"];
+      delete enriched.observações;
+      delete enriched.OBS;
+      delete enriched.obs;
+      delete enriched["Observação"];
+      delete enriched.observacao;
+      delete enriched.dataCriacao;
+      delete enriched.data_criacao;
+      delete enriched.DataCriacao;
     }
 
-    // 25_Consumo_Agua mapping (Consumption & Config)
+    // 25_Consumo_Agua mapping (Canonical Title_Case ONLY)
     if (
       sheetName === SHEET_NAMES.CONSUMO_AGUA ||
       sheetName === "25_Consumo_Agua" ||
@@ -862,15 +968,16 @@ export async function saveSheetRecords<T = any>(
       item.metaDiariaMl !== undefined ||
       item.Meta_Diaria_Ml !== undefined
     ) {
-      const rawId = String(item.id || item.Id || (item.metaDiariaMl !== undefined || item.Meta_Diaria_Ml !== undefined ? "CONFIG_AGUA" : `AGUA_${Date.now()}`));
+      const rawId = String(item.Id || item.id || (item.Meta_Diaria_Ml !== undefined || item.metaDiariaMl !== undefined ? "CONFIG_AGUA" : `AGUA_${Date.now()}`)).trim();
 
-      if (rawId === "CONFIG_AGUA" || item.metaDiariaMl !== undefined || item.Meta_Diaria_Ml !== undefined) {
-        const rawMeta = item.metaDiariaMl ?? item.Meta_Diaria_Ml ?? 3000;
-        const rawCopo = item.tamanhoCopoMl ?? item.Tamanho_Copo_Ml ?? 500;
+      if (rawId === "CONFIG_AGUA" || item.Meta_Diaria_Ml !== undefined || item.metaDiariaMl !== undefined) {
+        const rawMeta = item.Meta_Diaria_Ml ?? item.metaDiariaMl ?? 3000;
+        const rawCopo = item.Tamanho_Copo_Ml ?? item.tamanhoCopoMl ?? 500;
         const metaVal = Math.max(500, Math.round(Number(parseCurrency(rawMeta)) || 3000));
         const copoVal = Math.max(50, Math.round(Number(parseCurrency(rawCopo)) || 500));
-        const criacaoVal = String(item.dataCriacao || item.Data_Criacao || item.data_criacao || new Date().toISOString());
+        const criacaoVal = String(item.Data_Criacao || item.data_criacao || item.dataCriacao || new Date().toISOString()).trim();
 
+        // Canonical columns for CONFIG row
         enriched["Id"] = "CONFIG_AGUA";
         enriched["Data"] = "";
         enriched["Hora"] = "";
@@ -879,30 +986,25 @@ export async function saveSheetRecords<T = any>(
         enriched["Tamanho_Copo_Ml"] = copoVal;
         enriched["Observacoes"] = "CONFIG_USUARIO";
         enriched["Data_Criacao"] = criacaoVal;
-
-        enriched["id"] = "CONFIG_AGUA";
-        enriched["metaDiariaMl"] = metaVal;
-        enriched["tamanhoCopoMl"] = copoVal;
-        enriched["dataCriacao"] = criacaoVal;
       } else {
         const aguaId = rawId;
-        const dataVal = String(item.data || item.Data || new Date().toISOString().split("T")[0]);
-        const rawHora = item.hora || item.Hora || item.horario || item.Horario || "";
+        const dataVal = String(item.Data || item.data || new Date().toISOString().split("T")[0]).trim();
+        const rawHora = item.Hora || item.hora || item.Horario || item.horario || "";
         const horaVal = formatarHora(rawHora) || (typeof rawHora === "string" ? rawHora.trim() : "");
-        const rawQtd = item.quantidadeMl ?? item.Quantidade_Ml ?? item.ml ?? item.Ml ?? item.quantidade ?? item.Quantidade ?? 500;
+        const rawQtd = item.Quantidade_Ml ?? item.quantidadeMl ?? item.Quantidade ?? item.quantidade ?? item.Qtd_Ml ?? item.qtdMl ?? item.Ml ?? item.ml ?? 500;
         const qtdVal = Math.max(10, Math.round(Number(parseCurrency(rawQtd)) || 500));
         const obsVal = String(
-          item.observacoes ||
           item.Observacoes ||
+          item.observacoes ||
           item.observações ||
           item["Observações"] ||
           item.obs ||
           item.OBS ||
           ""
         ).trim().toUpperCase();
-        const criacaoVal = String(item.dataCriacao || item.Data_Criacao || item.data_criacao || new Date().toISOString());
+        const criacaoVal = String(item.Data_Criacao || item.data_criacao || item.dataCriacao || new Date().toISOString()).trim();
 
-        // Canonical columns
+        // Canonical columns for regular log
         enriched["Id"] = aguaId;
         enriched["Data"] = dataVal;
         enriched["Hora"] = horaVal;
@@ -911,15 +1013,40 @@ export async function saveSheetRecords<T = any>(
         enriched["Tamanho_Copo_Ml"] = "";
         enriched["Observacoes"] = obsVal;
         enriched["Data_Criacao"] = criacaoVal;
-
-        // camelCase aliases
-        enriched["id"] = aguaId;
-        enriched["data"] = dataVal;
-        enriched["hora"] = horaVal;
-        enriched["quantidadeMl"] = qtdVal;
-        enriched["observacoes"] = obsVal || undefined;
-        enriched["dataCriacao"] = criacaoVal;
       }
+
+      // Delete all camelCase and alternate duplicate keys
+      delete enriched.id;
+      delete enriched.data;
+      delete enriched.hora;
+      delete enriched.horario;
+      delete enriched.Horario;
+      delete enriched.quantidadeMl;
+      delete enriched.quantidade_ml;
+      delete enriched.quantidade;
+      delete enriched.Quantidade;
+      delete enriched.ml;
+      delete enriched.Ml;
+      delete enriched.qtdMl;
+      delete enriched.Qtd_Ml;
+      delete enriched.metaDiariaMl;
+      delete enriched.meta_diaria_ml;
+      delete enriched.meta;
+      delete enriched.Meta;
+      delete enriched.tamanhoCopoMl;
+      delete enriched.tamanho_copo_ml;
+      delete enriched.copo;
+      delete enriched.Copo;
+      delete enriched.observacoes;
+      delete enriched["Observações"];
+      delete enriched.observações;
+      delete enriched.OBS;
+      delete enriched.obs;
+      delete enriched["Observação"];
+      delete enriched.observacao;
+      delete enriched.dataCriacao;
+      delete enriched.data_criacao;
+      delete enriched.DataCriacao;
     }
 
     // Saldo_Inicial and Saldo_Atual mapping with Brazilian currency format support (5_Contas_Bancarias)
