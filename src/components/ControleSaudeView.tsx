@@ -335,25 +335,25 @@ export const ControleSaudeView: React.FC<Props> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="grid grid-cols-1 sm:grid-cols-3 md:flex md:items-center gap-2 sm:gap-2.5">
           {onOpenRelatorio && (
             <button
               onClick={onOpenRelatorio}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-750 text-emerald-400 border border-slate-700/80 hover:border-emerald-500/40 transition-all shadow-sm group cursor-pointer"
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-750 text-emerald-400 border border-slate-700/80 hover:border-emerald-500/40 transition-all shadow-sm group cursor-pointer w-full md:w-auto"
               title="Abrir Relatório Consolidado de Saúde em PDF"
             >
-              <FileText className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
-              <span>Relatório Geral (PDF)</span>
+              <FileText className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
+              <span className="truncate">Relatório Geral (PDF)</span>
             </button>
           )}
           {onSaveLembretesConfigs && (
             <button
               onClick={() => setIsLembretesModalOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700/80 hover:border-emerald-500/40 transition-all shadow-sm group cursor-pointer"
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700/80 hover:border-emerald-500/40 transition-all shadow-sm group cursor-pointer w-full md:w-auto"
               title="Configurar horários de lembretes diários para Pressão e Glicemia"
             >
-              <BellRing className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
-              <span>Lembretes Diários</span>
+              <BellRing className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
+              <span className="truncate">Lembretes Diários</span>
             </button>
           )}
           <button
@@ -368,10 +368,10 @@ export const ControleSaudeView: React.FC<Props> = ({
                   : "PESO"
               )
             }
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-lg shadow-emerald-950/40 cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-lg shadow-emerald-950/40 cursor-pointer w-full md:w-auto"
           >
-            <Plus className="w-4 h-4" />
-            <span>Novo Registro</span>
+            <Plus className="w-4 h-4 shrink-0" />
+            <span className="truncate">Novo Registro</span>
           </button>
         </div>
       </div>
@@ -738,7 +738,7 @@ export const ControleSaudeView: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Records Table */}
+          {/* Records Table & Mobile Cards */}
           <div className="bg-slate-850 border border-slate-800 rounded-2xl overflow-hidden">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <h3 className="text-sm font-bold text-white">Histórico de Pesagens</h3>
@@ -750,74 +750,134 @@ export const ControleSaudeView: React.FC<Props> = ({
                 Nenhum registro encontrado. Clique em "Novo Registro" para adicionar.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
-                    <tr>
-                      <th className="py-3 px-4">Data & Horário</th>
-                      <th className="py-3 px-4">Peso</th>
-                      <th className="py-3 px-4">IMC & Classificação (OMS)</th>
-                      <th className="py-3 px-4">Observações</th>
-                      <th className="py-3 px-4 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {tableRegistros.map((reg, idx) => {
-                      const imcInfo = calcularImc(reg.Valor_Principal, effectiveAltura);
-                      return (
-                        <tr key={reg.Id || idx} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="py-3 px-4 text-slate-200 font-medium whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                              <span>{reg.Data_Hora}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <span className="text-sm font-black text-amber-400">
-                              {reg.Valor_Principal} kg
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            {imcInfo ? (
-                              <div className="flex items-center gap-2">
+              <>
+                {/* Mobile Cards (telas < md) */}
+                <div className="block md:hidden divide-y divide-slate-800/60 p-3 space-y-3">
+                  {tableRegistros.map((reg, idx) => {
+                    const imcInfo = calcularImc(reg.Valor_Principal, effectiveAltura);
+                    return (
+                      <div key={reg.Id || idx} className="bg-slate-900/90 border border-slate-800/80 p-3.5 rounded-xl space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                            <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span>{reg.Data_Hora}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => onEditRegistro(reg)}
+                              title="Editar registro"
+                              className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition-colors"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => onDeleteRegistro(reg.Id)}
+                              title="Excluir registro"
+                              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                          <div>
+                            <span className="text-[10px] text-slate-400 uppercase block">Peso</span>
+                            <span className="text-base font-black text-amber-400">{reg.Valor_Principal} kg</span>
+                          </div>
+                          {imcInfo && (
+                            <div className="text-right">
+                              <span className="text-[10px] text-slate-400 uppercase block">IMC (OMS)</span>
+                              <div className="flex items-center gap-1.5 justify-end mt-0.5">
                                 <span className="font-bold text-white text-xs">{imcInfo.imc}</span>
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${imcInfo.corBadge}`}
-                                >
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${imcInfo.corBadge}`}>
                                   {imcInfo.classificacao}
                                 </span>
                               </div>
-                            ) : (
-                              <span className="text-slate-500 italic">—</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-slate-300">
-                            {reg.Observacoes || <span className="text-slate-500 italic">—</span>}
-                          </td>
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => onEditRegistro(reg)}
-                                title="Editar registro"
-                                className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition-colors"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => onDeleteRegistro(reg.Id)}
-                                title="Excluir registro"
-                                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          )}
+                        </div>
+
+                        {reg.Observacoes && (
+                          <div className="text-xs text-slate-400 bg-slate-950/60 p-2 rounded-lg border border-slate-800/40">
+                            {reg.Observacoes}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop Table (telas >= md) */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                      <tr>
+                        <th className="py-3 px-4">Data & Horário</th>
+                        <th className="py-3 px-4">Peso</th>
+                        <th className="py-3 px-4">IMC & Classificação (OMS)</th>
+                        <th className="py-3 px-4">Observações</th>
+                        <th className="py-3 px-4 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {tableRegistros.map((reg, idx) => {
+                        const imcInfo = calcularImc(reg.Valor_Principal, effectiveAltura);
+                        return (
+                          <tr key={reg.Id || idx} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="py-3 px-4 text-slate-200 font-medium whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                                <span>{reg.Data_Hora}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <span className="text-sm font-black text-amber-400">
+                                {reg.Valor_Principal} kg
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              {imcInfo ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-white text-xs">{imcInfo.imc}</span>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${imcInfo.corBadge}`}
+                                  >
+                                    {imcInfo.classificacao}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-slate-500 italic">—</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-slate-300">
+                              {reg.Observacoes || <span className="text-slate-500 italic">—</span>}
+                            </td>
+                            <td className="py-3 px-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => onEditRegistro(reg)}
+                                  title="Editar registro"
+                                  className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition-colors"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => onDeleteRegistro(reg.Id)}
+                                  title="Excluir registro"
+                                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -982,7 +1042,7 @@ export const ControleSaudeView: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Records Table */}
+          {/* Records Table & Mobile Cards */}
           <div className="bg-slate-850 border border-slate-800 rounded-2xl overflow-hidden">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <h3 className="text-sm font-bold text-white">Histórico de Aferições de Pressão</h3>
@@ -994,59 +1054,65 @@ export const ControleSaudeView: React.FC<Props> = ({
                 Nenhum registro de pressão encontrado.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
-                    <tr>
-                      <th className="py-3 px-4">Data & Horário</th>
-                      <th className="py-3 px-4">Aferição</th>
-                      <th className="py-3 px-4">Classificação</th>
-                      <th className="py-3 px-4">Observações</th>
-                      <th className="py-3 px-4 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {tableRegistros.map((reg, idx) => {
-                      const sis = reg.Valor_Principal;
-                      const dia = reg.Valor_Secundario || 0;
-                      let badge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-                      let label = "Ótima";
+              <>
+                {/* Mobile Cards (telas < md) */}
+                <div className="block md:hidden divide-y divide-slate-800/60 p-3 space-y-3">
+                  {tableRegistros.map((reg, idx) => {
+                    const sis = reg.Valor_Principal;
+                    const dia = reg.Valor_Secundario || 0;
+                    let badge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                    let label = "Ótima";
 
-                      if (sis < 120 && dia < 80) {
-                        label = "Ótima";
-                        badge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-                      } else if (sis <= 129 && dia <= 84) {
-                        label = "Normal";
-                        badge = "bg-teal-500/15 text-teal-300 border-teal-500/30";
-                      } else if (sis <= 139 || dia <= 89) {
-                        label = "Pré-Hipertensão";
-                        badge = "bg-amber-500/15 text-amber-300 border-amber-500/30";
-                      } else if (sis <= 159 || dia <= 99) {
-                        label = "Estágio 1";
-                        badge = "bg-orange-500/15 text-orange-300 border-orange-500/30";
-                      } else {
-                        label = "Estágio 2";
-                        badge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
-                      }
+                    if (sis < 120 && dia < 80) {
+                      label = "Ótima";
+                      badge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                    } else if (sis <= 129 && dia <= 84) {
+                      label = "Normal";
+                      badge = "bg-teal-500/15 text-teal-300 border-teal-500/30";
+                    } else if (sis <= 139 || dia <= 89) {
+                      label = "Pré-Hipertensão";
+                      badge = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+                    } else if (sis <= 159 || dia <= 99) {
+                      label = "Estágio 1";
+                      badge = "bg-orange-500/15 text-orange-300 border-orange-500/30";
+                    } else {
+                      label = "Estágio 2";
+                      badge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
+                    }
 
-                      return (
-                        <tr key={reg.Id || idx} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="py-3 px-4 text-slate-200 font-medium whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5 text-rose-400" />
-                              <span>{reg.Data_Hora}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <span className="text-sm font-black text-rose-400">
-                                {reg.Valor_Principal}
-                              </span>
-                              <span className="text-slate-500 mx-1">/</span>
-                              <span className="text-sm font-black text-indigo-400">
-                                {reg.Valor_Secundario || 0}
-                              </span>
-                              <span className="text-[11px] text-slate-400 ml-1">mmHg</span>
+                    return (
+                      <div key={reg.Id || idx} className="bg-slate-900/90 border border-slate-800/80 p-3.5 rounded-xl space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                            <Calendar className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                            <span>{reg.Data_Hora}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => onEditRegistro(reg)}
+                              title="Editar registro"
+                              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => onDeleteRegistro(reg.Id)}
+                              title="Excluir registro"
+                              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                          <div>
+                            <span className="text-[10px] text-slate-400 uppercase block">Aferição</span>
+                            <div className="flex items-baseline gap-1 mt-0.5">
+                              <span className="text-base font-black text-rose-400">{reg.Valor_Principal}</span>
+                              <span className="text-slate-500">/</span>
+                              <span className="text-base font-black text-indigo-400">{reg.Valor_Secundario || 0}</span>
+                              <span className="text-[10px] text-slate-400 ml-0.5">mmHg</span>
                             </div>
                             {reg.Batimentos_Bpm ? (
                               <div className="text-[11px] text-rose-300 font-medium flex items-center gap-1 mt-0.5">
@@ -1054,41 +1120,123 @@ export const ControleSaudeView: React.FC<Props> = ({
                                 <span>{reg.Batimentos_Bpm} bpm</span>
                               </div>
                             ) : null}
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <span
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${badge}`}
-                            >
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-400 uppercase block mb-1">Status</span>
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${badge}`}>
                               {label}
                             </span>
-                          </td>
-                          <td className="py-3 px-4 text-slate-300">
-                            {reg.Observacoes || <span className="text-slate-500 italic">—</span>}
-                          </td>
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => onEditRegistro(reg)}
-                                title="Editar registro"
-                                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                          </div>
+                        </div>
+
+                        {reg.Observacoes && (
+                          <div className="text-xs text-slate-400 bg-slate-950/60 p-2 rounded-lg border border-slate-800/40">
+                            {reg.Observacoes}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop Table (telas >= md) */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                      <tr>
+                        <th className="py-3 px-4">Data & Horário</th>
+                        <th className="py-3 px-4">Aferição</th>
+                        <th className="py-3 px-4">Classificação</th>
+                        <th className="py-3 px-4">Observações</th>
+                        <th className="py-3 px-4 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {tableRegistros.map((reg, idx) => {
+                        const sis = reg.Valor_Principal;
+                        const dia = reg.Valor_Secundario || 0;
+                        let badge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                        let label = "Ótima";
+
+                        if (sis < 120 && dia < 80) {
+                          label = "Ótima";
+                          badge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                        } else if (sis <= 129 && dia <= 84) {
+                          label = "Normal";
+                          badge = "bg-teal-500/15 text-teal-300 border-teal-500/30";
+                        } else if (sis <= 139 || dia <= 89) {
+                          label = "Pré-Hipertensão";
+                          badge = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+                        } else if (sis <= 159 || dia <= 99) {
+                          label = "Estágio 1";
+                          badge = "bg-orange-500/15 text-orange-300 border-orange-500/30";
+                        } else {
+                          label = "Estágio 2";
+                          badge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
+                        }
+
+                        return (
+                          <tr key={reg.Id || idx} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="py-3 px-4 text-slate-200 font-medium whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-3.5 h-3.5 text-rose-400" />
+                                <span>{reg.Data_Hora}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <span className="text-sm font-black text-rose-400">
+                                  {reg.Valor_Principal}
+                                </span>
+                                <span className="text-slate-500 mx-1">/</span>
+                                <span className="text-sm font-black text-indigo-400">
+                                  {reg.Valor_Secundario || 0}
+                                </span>
+                                <span className="text-[11px] text-slate-400 ml-1">mmHg</span>
+                              </div>
+                              {reg.Batimentos_Bpm ? (
+                                <div className="text-[11px] text-rose-300 font-medium flex items-center gap-1 mt-0.5">
+                                  <Activity className="w-3 h-3 text-rose-400 inline" />
+                                  <span>{reg.Batimentos_Bpm} bpm</span>
+                                </div>
+                              ) : null}
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <span
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${badge}`}
                               >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => onDeleteRegistro(reg.Id)}
-                                title="Excluir registro"
-                                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                                {label}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-slate-300">
+                              {reg.Observacoes || <span className="text-slate-500 italic">—</span>}
+                            </td>
+                            <td className="py-3 px-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => onEditRegistro(reg)}
+                                  title="Editar registro"
+                                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => onDeleteRegistro(reg.Id)}
+                                  title="Excluir registro"
+                                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -1241,7 +1389,7 @@ export const ControleSaudeView: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Records Table */}
+          {/* Records Table & Mobile Cards */}
           <div className="bg-slate-850 border border-slate-800 rounded-2xl overflow-hidden">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <h3 className="text-sm font-bold text-white">Histórico de Glicemia</h3>
@@ -1253,68 +1401,75 @@ export const ControleSaudeView: React.FC<Props> = ({
                 Nenhum registro de glicemia encontrado.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
-                    <tr>
-                      <th className="py-3 px-4">Data & Horário</th>
-                      <th className="py-3 px-4">Glicemia</th>
-                      <th className="py-3 px-4">Contexto</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4">Observações</th>
-                      <th className="py-3 px-4 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {tableRegistros.map((reg, idx) => {
-                      const val = reg.Valor_Principal;
-                      const ctx = reg.Contexto || "JEJUM";
-                      let statusBadge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-                      let statusLabel = "Normal";
+              <>
+                {/* Mobile Cards (telas < md) */}
+                <div className="block md:hidden divide-y divide-slate-800/60 p-3 space-y-3">
+                  {tableRegistros.map((reg, idx) => {
+                    const val = reg.Valor_Principal;
+                    const ctx = reg.Contexto || "JEJUM";
+                    let statusBadge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                    let statusLabel = "Normal";
 
-                      if (ctx === "JEJUM") {
-                        if (val < 70) {
-                          statusLabel = "Hipoglicemia (<70)";
-                          statusBadge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
-                        } else if (val <= 99) {
-                          statusLabel = "Normal (70-99)";
-                          statusBadge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-                        } else if (val <= 125) {
-                          statusLabel = "Atenção (100-125)";
-                          statusBadge = "bg-amber-500/15 text-amber-300 border-amber-500/30";
-                        } else {
-                          statusLabel = "Elevada (≥126)";
-                          statusBadge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
-                        }
+                    if (ctx === "JEJUM") {
+                      if (val < 70) {
+                        statusLabel = "Hipoglicemia (<70)";
+                        statusBadge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
+                      } else if (val <= 99) {
+                        statusLabel = "Normal (70-99)";
+                        statusBadge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                      } else if (val <= 125) {
+                        statusLabel = "Atenção (100-125)";
+                        statusBadge = "bg-amber-500/15 text-amber-300 border-amber-500/30";
                       } else {
-                        if (val <= 140) {
-                          statusLabel = "Normal Pós-Refeição";
-                          statusBadge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-                        } else if (val <= 199) {
-                          statusLabel = "Atenção (140-199)";
-                          statusBadge = "bg-amber-500/15 text-amber-300 border-amber-500/30";
-                        } else {
-                          statusLabel = "Elevada (≥200)";
-                          statusBadge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
-                        }
+                        statusLabel = "Elevada (≥126)";
+                        statusBadge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
                       }
+                    } else {
+                      if (val <= 140) {
+                        statusLabel = "Normal Pós-Refeição";
+                        statusBadge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                      } else if (val <= 199) {
+                        statusLabel = "Atenção (140-199)";
+                        statusBadge = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+                      } else {
+                        statusLabel = "Elevada (≥200)";
+                        statusBadge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
+                      }
+                    }
 
-                      return (
-                        <tr key={reg.Id || idx} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="py-3 px-4 text-slate-200 font-medium whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>{reg.Data_Hora}</span>
+                    return (
+                      <div key={reg.Id || idx} className="bg-slate-900/90 border border-slate-800/80 p-3.5 rounded-xl space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                            <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>{reg.Data_Hora}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => onEditRegistro(reg)}
+                              title="Editar registro"
+                              className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-lg transition-colors"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => onDeleteRegistro(reg.Id)}
+                              title="Excluir registro"
+                              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                          <div>
+                            <span className="text-[10px] text-slate-400 uppercase block">Glicemia</span>
+                            <div className="flex items-baseline gap-1 mt-0.5">
+                              <span className="text-base font-black text-emerald-400">{reg.Valor_Principal}</span>
+                              <span className="text-[10px] text-slate-400">mg/dL</span>
                             </div>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <span className="text-sm font-black text-emerald-400">
-                              {reg.Valor_Principal}
-                            </span>
-                            <span className="text-[11px] text-slate-400 ml-1">mg/dL</span>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                            <span className="inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
                               {ctx === "JEJUM"
                                 ? "Jejum"
                                 : ctx === "POS_REFEICAO"
@@ -1325,41 +1480,135 @@ export const ControleSaudeView: React.FC<Props> = ({
                                 ? "Ao Deitar"
                                 : ctx}
                             </span>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <span
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${statusBadge}`}
-                            >
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-400 uppercase block mb-1">Status</span>
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${statusBadge}`}>
                               {statusLabel}
                             </span>
-                          </td>
-                          <td className="py-3 px-4 text-slate-300">
-                            {reg.Observacoes || <span className="text-slate-500 italic">—</span>}
-                          </td>
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => onEditRegistro(reg)}
-                                title="Editar registro"
-                                className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-lg transition-colors"
+                          </div>
+                        </div>
+
+                        {reg.Observacoes && (
+                          <div className="text-xs text-slate-400 bg-slate-950/60 p-2 rounded-lg border border-slate-800/40">
+                            {reg.Observacoes}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop Table (telas >= md) */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                      <tr>
+                        <th className="py-3 px-4">Data & Horário</th>
+                        <th className="py-3 px-4">Glicemia</th>
+                        <th className="py-3 px-4">Contexto</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4">Observações</th>
+                        <th className="py-3 px-4 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {tableRegistros.map((reg, idx) => {
+                        const val = reg.Valor_Principal;
+                        const ctx = reg.Contexto || "JEJUM";
+                        let statusBadge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                        let statusLabel = "Normal";
+
+                        if (ctx === "JEJUM") {
+                          if (val < 70) {
+                            statusLabel = "Hipoglicemia (<70)";
+                            statusBadge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
+                          } else if (val <= 99) {
+                            statusLabel = "Normal (70-99)";
+                            statusBadge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                          } else if (val <= 125) {
+                            statusLabel = "Atenção (100-125)";
+                            statusBadge = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+                          } else {
+                            statusLabel = "Elevada (≥126)";
+                            statusBadge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
+                          }
+                        } else {
+                          if (val <= 140) {
+                            statusLabel = "Normal Pós-Refeição";
+                            statusBadge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                          } else if (val <= 199) {
+                            statusLabel = "Atenção (140-199)";
+                            statusBadge = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+                          } else {
+                            statusLabel = "Elevada (≥200)";
+                            statusBadge = "bg-rose-500/15 text-rose-300 border-rose-500/30";
+                          }
+                        }
+
+                        return (
+                          <tr key={reg.Id || idx} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="py-3 px-4 text-slate-200 font-medium whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>{reg.Data_Hora}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <span className="text-sm font-black text-emerald-400">
+                                {reg.Valor_Principal}
+                              </span>
+                              <span className="text-[11px] text-slate-400 ml-1">mg/dL</span>
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                                {ctx === "JEJUM"
+                                  ? "Jejum"
+                                  : ctx === "POS_REFEICAO"
+                                  ? "Pós-Refeição"
+                                  : ctx === "PRE_REFEICAO"
+                                  ? "Pré-Refeição"
+                                  : ctx === "AO_DEITAR"
+                                  ? "Ao Deitar"
+                                  : ctx}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <span
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${statusBadge}`}
                               >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => onDeleteRegistro(reg.Id)}
-                                title="Excluir registro"
-                                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                                {statusLabel}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-slate-300">
+                              {reg.Observacoes || <span className="text-slate-500 italic">—</span>}
+                            </td>
+                            <td className="py-3 px-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => onEditRegistro(reg)}
+                                  title="Editar registro"
+                                  className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-lg transition-colors"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => onDeleteRegistro(reg.Id)}
+                                  title="Excluir registro"
+                                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>

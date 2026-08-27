@@ -439,7 +439,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   return (
     <div className="space-y-6 pb-20 md:pb-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
             <Car className="w-5 h-5 text-emerald-400" />
@@ -453,10 +453,10 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+        <div className="grid grid-cols-3 sm:flex sm:items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
           <button
             onClick={() => setActiveTab("veiculos")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all text-center ${
               activeTab === "veiculos"
                 ? "bg-emerald-600 text-white shadow-xs"
                 : "text-slate-400 hover:text-white"
@@ -466,23 +466,23 @@ export const VeiculosOficinaView: React.FC<Props> = ({
           </button>
           <button
             onClick={() => setActiveTab("oficina")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all text-center ${
               activeTab === "oficina"
                 ? "bg-emerald-600 text-white shadow-xs"
                 : "text-slate-400 hover:text-white"
             }`}
           >
-            Histórico Oficina ({filteredServicos.length})
+            Oficina ({filteredServicos.length})
           </button>
           <button
             onClick={() => setActiveTab("agendadas")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
+            className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all text-center relative ${
               activeTab === "agendadas"
                 ? "bg-emerald-600 text-white shadow-xs"
                 : "text-slate-400 hover:text-white"
             }`}
           >
-            Manutenções Agendadas ({filteredManutencoes.length})
+            Agendadas ({filteredManutencoes.length})
             {alertManutencoes.length > 0 && (
               <span className="ml-1 px-1.5 py-0.2 bg-amber-500 text-slate-950 font-bold rounded-full text-[10px]">
                 {alertManutencoes.length}
@@ -983,7 +983,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Placa</label>
                   <input
@@ -1118,7 +1118,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">KM no Serviço</label>
                   <input
