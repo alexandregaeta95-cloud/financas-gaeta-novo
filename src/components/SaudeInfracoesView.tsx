@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Stethoscope,
   FileText,
@@ -21,6 +21,8 @@ import {
   Download,
   FileDown,
   Printer,
+  Calendar,
+  Pill,
 } from "lucide-react";
 import {
   ConsultaMedica,
@@ -46,7 +48,7 @@ import { RegistroRapidoAlimentoModal } from "./RegistroRapidoAlimentoModal";
 import { ExerciciosView } from "./ExerciciosView";
 import { RegistroExercicioModal } from "./RegistroExercicioModal";
 import { SaudeRelatorioModal } from "./SaudeRelatorioModal";
-import { exportReceitaPDF } from "../utils/receitaPdf";
+import { exportReceitaPDF, agruparReceitasPorPrescricao, GrupoReceitaMedica } from "../utils/receitaPdf";
 
 interface Props {
   consultas: ConsultaMedica[];
@@ -317,6 +319,11 @@ export const SaudeInfracoesView: React.FC<Props> = ({
     return diffDays <= 7;
   });
 
+  // Grouped Prescriptions: Doctor + Consultation / Prescription Date
+  const prescricoesAgrupadas = useMemo(() => {
+    return agruparReceitasPorPrescricao(receitas);
+  }, [receitas]);
+
   // Open Handlers
   const handleOpenConsulta = (c?: ConsultaMedica) => {
     if (c) {
@@ -355,7 +362,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
     setIsConsultaModalOpen(false);
   };
 
-  const handleOpenReceita = (r?: ReceitaMedica) => {
+  const handleOpenReceita = (r?: ReceitaMedica, defaults?: Partial<ReceitaMedica>) => {
     const parseDateForInput = (d?: string) => {
       if (!d) return "";
       const trimmed = d.trim();
@@ -392,8 +399,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         Ativa: r.Ativa !== false,
       });
     } else {
-      const today = new Date().toISOString().split("T")[0];
-      const defaultExpire = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split("T")[0];
+      const today = defaults?.Data ? parseDateForInput(defaults.Data) : new Date().toISOString().split("T")[0];
+      const defaultExpire = defaults?.Data_Vencimento ? parseDateForInput(defaults.Data_Vencimento) : new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split("T")[0];
       setEditingReceita(null);
       setReceitaForm({
         Data: today,
@@ -401,12 +408,12 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         Medicamento: "",
         Dosagem: "",
         Frequência: "",
-        Médico: "",
+        Médico: defaults?.Médico || defaults?.Medico || "",
         Data_Vencimento: defaultExpire,
         Data_Validade: defaultExpire,
         Validade: defaultExpire,
         Instruções: "",
-        Especialidade: "Clínica Geral",
+        Especialidade: defaults?.Especialidade || "Clínica Geral",
         Observação: "",
         Ativa: true,
       });
@@ -788,120 +795,206 @@ export const SaudeInfracoesView: React.FC<Props> = ({
 
       {/* 2. RECEITAS MÉDICAS */}
       {activeTab === "receitas" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-slate-400">
-              Controle de medicamentos, posologias e validades (Aba 7_Receitas_Médicas)
-            </span>
+        <div className="space-y-5">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <FileText className="w-4 h-4 text-emerald-400" />
+                <span>Prescrições & Receitas Médicas</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Medicamentos agrupados por consulta médica (Médico + Data da Prescrição). Clique em "Gerar PDF" para exportar o documento oficial da receita com todos os medicamentos prescritos juntos.
+              </p>
+            </div>
             <button
               onClick={() => handleOpenReceita()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition-colors shadow-xs shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>Cadastrar Receita</span>
+              <span>Nova Receita / Medicamento</span>
             </button>
           </div>
 
-          {receitas.length === 0 ? (
-            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
-              Nenhuma receita médica cadastrada ainda.
+          {prescricoesAgrupadas.length === 0 ? (
+            <div className="p-12 text-center bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800/80 flex items-center justify-center mx-auto text-slate-500">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-300 text-sm">Nenhuma receita médica cadastrada ainda</p>
+                <p className="text-xs text-slate-500 mt-1">Cadastre seus medicamentos para organizar suas prescrições por consulta e gerar PDFs completos.</p>
+              </div>
+              <button
+                onClick={() => handleOpenReceita()}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Cadastrar Primeira Receita</span>
+              </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {receitas.map((r, idx) => (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {prescricoesAgrupadas.map((prescricao, pIdx) => (
                 <div
-                  key={`${r.Id || 'rec'}-${idx}`}
-                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
+                  key={`presc-${prescricao.chave}-${pIdx}`}
+                  className="bg-slate-900 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-5 space-y-4 transition-all shadow-xs flex flex-col justify-between"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
-                        <FileText className="w-6 h-6" />
+                  <div className="space-y-4">
+                    {/* Header da Prescrição */}
+                    <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-bold text-white text-base leading-tight">
+                              {prescricao.medico}
+                            </h4>
+                            {prescricao.especialidade && (
+                              <span className="text-[10px] font-medium bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md">
+                                {prescricao.especialidade}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                              <span>Prescrita em: <strong className="text-slate-300 font-semibold">{prescricao.dataFormatada}</strong></span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                            prescricao.ativa
+                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                              : "bg-slate-800 text-slate-400 border border-slate-700"
+                          }`}
+                        >
+                          {prescricao.ativa ? "Ativa" : "Inativa"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Resumo da Receita (Validade & Contagem de Itens) */}
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80">
+                      <div>
+                        <span className="text-[10px] text-slate-500 block">Validade Geral</span>
+                        <span className="font-bold text-rose-400">{prescricao.validade || "Não informada"}</span>
                       </div>
                       <div>
-                        <h3 className="font-bold text-white text-base leading-tight">
-                          {r.Medicamento}
-                        </h3>
-                        <p className="text-xs text-slate-400">
-                          {r.Dosagem} • {r.Frequência}
-                        </p>
+                        <span className="text-[10px] text-slate-500 block">Medicamentos Prescritos</span>
+                        <span className="font-bold text-emerald-400">
+                          {prescricao.medicamentos.length} medicamento{prescricao.medicamentos.length > 1 ? "s" : ""}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    {/* Lista de Medicamentos da Prescrição */}
+                    <div className="space-y-2.5">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Medicamentos Prescritos nesta Consulta:
+                      </span>
+                      {prescricao.medicamentos.map((med, mIdx) => (
+                        <div
+                          key={`med-${med.Id || mIdx}`}
+                          className="p-3 bg-slate-950 rounded-xl border border-slate-800/90 space-y-1.5 hover:border-slate-700 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-400 font-bold text-[10px] flex items-center justify-center shrink-0">
+                                  {mIdx + 1}
+                                </span>
+                                <h5 className="font-bold text-slate-100 text-sm truncate">
+                                  {med.Medicamento}
+                                </h5>
+                              </div>
+                              <div className="text-xs text-slate-300 mt-1 pl-7">
+                                <span className="font-semibold text-emerald-400/90">Posologia:</span>{" "}
+                                {[med.Dosagem || med.Posologia, med.Frequência || med.Frequencia].filter(Boolean).join(" • ") || "Conforme orientação médica"}
+                              </div>
+                              {(med.Instruções || med.Instrucoes || med.Observação || med.Observacao) && (
+                                <div className="text-[11px] text-slate-400 mt-1 pl-7 italic">
+                                  "{med.Instruções || med.Instrucoes || med.Observação || med.Observacao}"
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => exportReceitaPDF(med)}
+                                className="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-emerald-500/10 transition-colors"
+                                title="Baixar PDF apenas deste medicamento"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenReceita(med)}
+                                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                                title="Editar Medicamento"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDeleteConfirm({
+                                    isOpen: true,
+                                    type: "receita",
+                                    id: med.Id,
+                                    title: med.Medicamento,
+                                    subtitle: `Prescrito por: ${prescricao.medico} • Data: ${prescricao.dataFormatada}`,
+                                  })
+                                }
+                                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                title="Excluir Medicamento"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
                       <button
                         type="button"
-                        onClick={() => exportReceitaPDF(r)}
-                        className="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-emerald-500/10 transition-colors"
-                        title="Gerar e baixar PDF da Receita"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenReceita(r)}
-                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-                        title="Editar Receita"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
                         onClick={() =>
-                          setDeleteConfirm({
-                            isOpen: true,
-                            type: "receita",
-                            id: r.Id,
-                            title: r.Medicamento,
-                            subtitle: `Dosagem: ${r.Dosagem || "—"} • Vencimento: ${r.Data_Vencimento || r.Data_Validade || "—"} • Médico: ${r.Médico || "—"}`,
+                          handleOpenReceita(undefined, {
+                            Médico: prescricao.medico,
+                            Data: prescricao.data,
+                            Especialidade: prescricao.especialidade,
+                            Data_Vencimento: prescricao.validade,
                           })
                         }
-                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        title="Excluir Receita"
+                        className="w-full py-2 px-3 border border-dashed border-slate-700 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-slate-400 hover:text-emerald-400 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>+ Adicionar Medicamento nesta Receita</span>
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Data da Prescrição</span>
-                      <span className="font-semibold text-slate-200">{r.Data || r.Data_Emissão || "—"}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Validade / Vencimento</span>
-                      <span className="font-bold text-rose-400">{r.Data_Vencimento || r.Data_Validade || r.Validade || "—"}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Médico Prescritor</span>
-                      <span className="font-semibold text-slate-200">{r.Médico || r.Medico || "—"}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Status</span>
-                      <span className={`font-bold ${r.Ativa !== false ? "text-emerald-400" : "text-slate-500"}`}>
-                        {r.Ativa !== false ? "Ativa" : "Inativa"}
-                      </span>
-                    </div>
-                    {(r.Instruções || r.Instrucoes) && (
-                      <div className="col-span-2">
-                        <span className="text-slate-500 text-[10px] block">Instruções de Uso</span>
-                        <span className="text-slate-300">{r.Instruções || r.Instrucoes}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Card Footer Actions */}
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
-                    <span className="text-[11px] text-slate-500 font-mono">
-                      {r.Id ? `#${r.Id}` : ""}
+                  {/* Card Footer: Botão Principal de Gerar PDF */}
+                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
+                    <span className="text-[11px] text-slate-500">
+                      Documento da consulta ({prescricao.dataFormatada})
                     </span>
                     <button
                       type="button"
-                      onClick={() => exportReceitaPDF(r)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl transition-all shadow-xs"
-                      title="Gerar e baixar PDF da Receita Médica"
+                      onClick={() => {
+                        exportReceitaPDF(prescricao);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white rounded-xl transition-all shadow-md hover:shadow-emerald-900/20 cursor-pointer"
+                      title="Gerar e baixar o PDF completo desta Receita Médica"
                     >
-                      <FileDown className="w-3.5 h-3.5" />
-                      <span>Gerar PDF</span>
+                      <FileDown className="w-4 h-4" />
+                      <span>Gerar PDF da Receita ({prescricao.medicamentos.length})</span>
                     </button>
                   </div>
                 </div>
