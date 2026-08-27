@@ -14,7 +14,6 @@ import {
   ShieldAlert,
   ShoppingBag,
   Bell,
-  Fingerprint,
 } from "lucide-react";
 
 export type ModuleView =
@@ -36,8 +35,6 @@ interface Props {
   onSelectView: (view: ModuleView) => void;
   notificationCount?: number;
   onOpenNotifications?: () => void;
-  onOpenSecurity?: () => void;
-  isBiometricsActive?: boolean;
 }
 
 export const Navigation: React.FC<Props> = ({
@@ -45,8 +42,6 @@ export const Navigation: React.FC<Props> = ({
   onSelectView,
   notificationCount = 0,
   onOpenNotifications,
-  onOpenSecurity,
-  isBiometricsActive = false,
 }) => {
   const navItems: { id: ModuleView; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: "dashboard", label: "Início", icon: LayoutDashboard },
@@ -101,20 +96,6 @@ export const Navigation: React.FC<Props> = ({
             })}
           </nav>
 
-          {onOpenSecurity && (
-            <button
-              onClick={onOpenSecurity}
-              className={`p-2 rounded-xl border transition-all shadow-xs ${
-                isBiometricsActive
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                  : "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200"
-              }`}
-              title={isBiometricsActive ? "Segurança: Biometria Ativa" : "Configurar Biometria & PIN"}
-            >
-              <Fingerprint className="w-4 h-4" />
-            </button>
-          )}
-
           {onOpenNotifications && (
             <button
               onClick={onOpenNotifications}
@@ -141,36 +122,20 @@ export const Navigation: React.FC<Props> = ({
           <span className="font-bold text-sm text-white">Finanças Gaeta</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          {onOpenSecurity && (
-            <button
-              onClick={onOpenSecurity}
-              className={`p-2 rounded-xl border transition-all ${
-                isBiometricsActive
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                  : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white"
-              }`}
-              title="Segurança & Biometria"
-            >
-              <Fingerprint className="w-4 h-4" />
-            </button>
-          )}
-
-          {onOpenNotifications && (
-            <button
-              onClick={onOpenNotifications}
-              className="relative p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition-all"
-              title="Central de Notificações"
-            >
-              <Bell className="w-4 h-4" />
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-500 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center animate-pulse">
-                  {notificationCount > 9 ? "9+" : notificationCount}
-                </span>
-              )}
-            </button>
-          )}
-        </div>
+        {onOpenNotifications && (
+          <button
+            onClick={onOpenNotifications}
+            className="relative p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition-all"
+            title="Central de Notificações"
+          >
+            <Bell className="w-4 h-4" />
+            {notificationCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-500 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center animate-pulse">
+                {notificationCount > 9 ? "9+" : notificationCount}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Mobile Bottom Scrollable Navigation Bar */}

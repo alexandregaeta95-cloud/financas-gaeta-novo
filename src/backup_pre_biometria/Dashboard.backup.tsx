@@ -10,12 +10,10 @@ import {
   AlertCircle,
   ArrowUpRight,
   ArrowDownRight,
-  ChevronRight,
-  Fingerprint,
-  ShieldCheck,
+  ChevronRight
 } from "lucide-react";
 import { Lancamento, Abastecimento, Veiculo, SyncState } from "../types";
-import { ModuleView } from "./Navigation";
+import { ModuleView } from "../components/Navigation";
 import { parseCurrency, formatCurrency, formatDateBR } from "../utils/formatters";
 
 interface Props {
@@ -27,8 +25,6 @@ interface Props {
   onOpenNewLancamentoModal: () => void;
   onOpenNewAbastecimentoModal: () => void;
   onOpenSetup: () => void;
-  onOpenSecurity?: () => void;
-  isBiometricsActive?: boolean;
 }
 
 // Helpers for resilient property resolution
@@ -111,8 +107,6 @@ export const Dashboard: React.FC<Props> = ({
   onOpenNewLancamentoModal,
   onOpenNewAbastecimentoModal,
   onOpenSetup,
-  onOpenSecurity,
-  isBiometricsActive = false,
 }) => {
   // Calculate Totals using robust currency parsing
   const activeLancamentos = lancamentos.filter((l) => !isExcludedItem(l));
@@ -260,20 +254,6 @@ export const Dashboard: React.FC<Props> = ({
           <Car className="w-4 h-4" />
           <span>Gerenciar Veículo</span>
         </button>
-
-        {onOpenSecurity && (
-          <button
-            onClick={onOpenSecurity}
-            className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 p-3.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
-              isBiometricsActive
-                ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
-            }`}
-          >
-            <Fingerprint className="w-4 h-4" />
-            <span>{isBiometricsActive ? "Biometria Ativa" : "Segurança & PIN"}</span>
-          </button>
-        )}
       </div>
 
       {/* Vehicle Overview Section */}

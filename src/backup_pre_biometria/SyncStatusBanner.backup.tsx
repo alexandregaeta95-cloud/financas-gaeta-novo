@@ -1,22 +1,14 @@
 import React from "react";
-import { RefreshCw, CheckCircle2, AlertTriangle, Settings, Cloud, Database, Fingerprint, ShieldCheck } from "lucide-react";
+import { RefreshCw, CheckCircle2, AlertTriangle, Settings, Cloud, Database } from "lucide-react";
 import { SyncState } from "../types";
 
 interface Props {
   syncState: SyncState;
   onSyncNow: () => void;
   onOpenSetup: () => void;
-  onOpenSecurity?: () => void;
-  isBiometricsActive?: boolean;
 }
 
-export const SyncStatusBanner: React.FC<Props> = ({
-  syncState,
-  onSyncNow,
-  onOpenSetup,
-  onOpenSecurity,
-  isBiometricsActive = false,
-}) => {
+export const SyncStatusBanner: React.FC<Props> = ({ syncState, onSyncNow, onOpenSetup }) => {
   return (
     <div className="bg-slate-900/90 border-b border-slate-800 px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-3">
@@ -46,21 +38,6 @@ export const SyncStatusBanner: React.FC<Props> = ({
       </div>
 
       <div className="flex items-center gap-2">
-        {onOpenSecurity && (
-          <button
-            onClick={onOpenSecurity}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors text-xs font-medium border ${
-              isBiometricsActive
-                ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
-            }`}
-            title="Configurações de Segurança e Biometria"
-          >
-            <Fingerprint className="w-3.5 h-3.5" />
-            <span>{isBiometricsActive ? "Biometria Ativa" : "Segurança"}</span>
-          </button>
-        )}
-
         <button
           onClick={onSyncNow}
           disabled={syncState.isSyncing}

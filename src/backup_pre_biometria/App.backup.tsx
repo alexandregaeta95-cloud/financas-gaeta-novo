@@ -4,26 +4,23 @@
  */
 
 import React, { useEffect, useState, useCallback } from "react";
-import { Navigation, ModuleView } from "./components/Navigation";
-import { SyncStatusBanner } from "./components/SyncStatusBanner";
-import { AppsScriptSetupModal } from "./components/AppsScriptSetupModal";
-import { Dashboard } from "./components/Dashboard";
-import { LancamentosView } from "./components/LancamentosView";
-import { AbastecimentosView } from "./components/AbastecimentosView";
-import { VeiculosOficinaView } from "./components/VeiculosOficinaView";
-import { ContasCartoesView } from "./components/ContasCartoesView";
-import { SaudeInfracoesView } from "./components/SaudeInfracoesView";
-import { MetasCategoriasView } from "./components/MetasCategoriasView";
-import { AgendaCompromissosView } from "./components/AgendaCompromissosView";
-import { ZonasDeRiscoView } from "./components/ZonasDeRiscoView";
-import { ListaMercadoView } from "./components/ListaMercadoView";
-import { IndicacoesPostosView } from "./components/IndicacoesPostosView";
-import { PainelContasView } from "./components/PainelContasView";
-import { NotificationCenterModal } from "./components/NotificationCenterModal";
-import { NotificationToast } from "./components/NotificationToast";
-import { BiometricLockScreen } from "./components/BiometricLockScreen";
-import { SegurancaModal } from "./components/SegurancaModal";
-import { isBiometricEnabled, isSessionAuthenticated } from "./services/biometricAuth";
+import { Navigation, ModuleView } from "../components/Navigation";
+import { SyncStatusBanner } from "../components/SyncStatusBanner";
+import { AppsScriptSetupModal } from "../components/AppsScriptSetupModal";
+import { Dashboard } from "../components/Dashboard";
+import { LancamentosView } from "../components/LancamentosView";
+import { AbastecimentosView } from "../components/AbastecimentosView";
+import { VeiculosOficinaView } from "../components/VeiculosOficinaView";
+import { ContasCartoesView } from "../components/ContasCartoesView";
+import { SaudeInfracoesView } from "../components/SaudeInfracoesView";
+import { MetasCategoriasView } from "../components/MetasCategoriasView";
+import { AgendaCompromissosView } from "../components/AgendaCompromissosView";
+import { ZonasDeRiscoView } from "../components/ZonasDeRiscoView";
+import { ListaMercadoView } from "../components/ListaMercadoView";
+import { IndicacoesPostosView } from "../components/IndicacoesPostosView";
+import { PainelContasView } from "../components/PainelContasView";
+import { NotificationCenterModal } from "../components/NotificationCenterModal";
+import { NotificationToast } from "../components/NotificationToast";
 
 import {
   Lancamento,
@@ -52,7 +49,7 @@ import {
   ConsumoAgua,
   ConfigAgua,
   SHEET_NAMES,
-} from "./types";
+} from "../types";
 
 import {
   fetchSheetData,
@@ -61,10 +58,10 @@ import {
   getSavedAppsScriptUrl,
   testAppsScriptConnection,
   sanitizeRecordToUppercase,
-} from "./services/api";
+} from "../services/api";
 
-import { calculateAccountCurrentBalance } from "./utils/formatters";
-import { evaluateAllNotifications, dispatchBrowserNotification } from "./services/notificationEngine";
+import { calculateAccountCurrentBalance } from "../utils/formatters";
+import { evaluateAllNotifications, dispatchBrowserNotification } from "../services/notificationEngine";
 
 export default function App() {
   const [activeView, setActiveView] = useState<ModuleView>("dashboard");
@@ -399,11 +396,6 @@ export default function App() {
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [isLancamentoModalOpen, setIsLancamentoModalOpen] = useState(false);
   const [isFuelingModeModal, setIsFuelingModeModal] = useState(false);
-  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
-
-  // Biometric Session Lock State
-  const [isBiometricsActive, setIsBiometricsActive] = useState<boolean>(() => isBiometricEnabled());
-  const [isSessionUnlocked, setIsSessionUnlocked] = useState<boolean>(() => isSessionAuthenticated());
 
   // In-App Notification System States
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -813,8 +805,6 @@ export default function App() {
         syncState={syncState}
         onSyncNow={handleSyncAll}
         onOpenSetup={() => setIsSetupModalOpen(true)}
-        onOpenSecurity={() => setIsSecurityModalOpen(true)}
-        isBiometricsActive={isBiometricsActive}
       />
 
       {/* Main Navigation */}
@@ -823,8 +813,6 @@ export default function App() {
         onSelectView={setActiveView}
         notificationCount={notifications.filter((n) => !n.read).length}
         onOpenNotifications={() => setIsNotificationCenterOpen(true)}
-        onOpenSecurity={() => setIsSecurityModalOpen(true)}
-        isBiometricsActive={isBiometricsActive}
       />
 
       {/* Main Content Area */}
@@ -845,8 +833,6 @@ export default function App() {
               setIsLancamentoModalOpen(true);
             }}
             onOpenSetup={() => setIsSetupModalOpen(true)}
-            onOpenSecurity={() => setIsSecurityModalOpen(true)}
-            isBiometricsActive={isBiometricsActive}
           />
         )}
 
@@ -1032,25 +1018,6 @@ export default function App() {
         onNavigate={handleNavigateFromNotification}
         onRefreshNotifications={checkNotifications}
       />
-
-      {/* Security & Biometrics Modal */}
-      <SegurancaModal
-        isOpen={isSecurityModalOpen}
-        onClose={() => setIsSecurityModalOpen(false)}
-        onStatusChanged={(active) => {
-          setIsBiometricsActive(active);
-          setIsSessionUnlocked(isSessionAuthenticated());
-        }}
-      />
-
-      {/* Initial Session Biometric Lock Screen Overlay */}
-      {isBiometricsActive && !isSessionUnlocked && (
-        <BiometricLockScreen
-          onUnlock={() => {
-            setIsSessionUnlocked(true);
-          }}
-        />
-      )}
     </div>
   );
 }
