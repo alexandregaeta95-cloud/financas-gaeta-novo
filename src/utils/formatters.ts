@@ -132,9 +132,8 @@ export function formatCurrencyInput(raw: string): { numeric: number; formatted: 
 /**
  * Format Time string safely.
  * Solves Google Sheets 1899-12-30 epoch issue for time-only fields:
- * - If ISO string like "1899-12-30T14:30:00.000Z" -> "14:30"
- * - If "14:30:00" -> "14:30"
- * - If already "14:30" -> "14:30"
+ * - If clean time string "08:36", "8:36", "13:36:00" -> "08:36"
+ * - If ISO string like "1899-12-30T11:42:00.000Z" (UTC from GAS) -> converts 1899 offset (+3h06m in GAS) to real local time -> "08:36"
  * - If empty/null -> ""
  */
 export function formatarHora(val: any): string {
@@ -145,24 +144,57 @@ export function formatarHora(val: any): string {
   // If Date object passed
   if (val instanceof Date) {
     if (isNaN(val.getTime())) return "";
-    const hours = String(val.getHours()).padStart(2, "0");
-    const minutes = String(val.getMinutes()).padStart(2, "0");
-    return `${hours}:${minutes}`;
+    try {
+      return val.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "America/Sao_Paulo",
+      });
+    } catch {
+      const hours = String(val.getHours()).padStart(2, "0");
+      const minutes = String(val.getMinutes()).padStart(2, "0");
+      return `${hours}:${minutes}`;
+    }
   }
 
   const str = String(val).trim();
   if (!str) return "";
 
-  // If contains ISO date (e.g. 1899-12-30T14:30:00.000Z or 1899-12-30T11:36:28.000Z)
+  // 1. Clean HH:mm or HH:mm:ss format directly from sheet or user input
+  const pureTimeMatch = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (pureTimeMatch) {
+    const hours = pureTimeMatch[1].padStart(2, "0");
+    const minutes = pureTimeMatch[2].padStart(2, "0");
+    return `${hours}:${minutes}`;
+  }
+
+  // 2. Google Sheets 1899 epoch ISO string (e.g. "1899-12-30T11:42:00.000Z", "1899-12-30T11:42:28.000Z")
+  if (str.startsWith("1899-12-30T") || str.startsWith("1899-12-31T") || str.startsWith("1900-01-01T")) {
+    const timeMatch = str.match(/T(\d{1,2}):(\d{2})/i);
+    if (timeMatch) {
+      const utcHours = parseInt(timeMatch[1], 10);
+      const utcMinutes = parseInt(timeMatch[2], 10);
+      // Google Apps Script serializing a 1899 date in Brazil adds 3h06m (186 minutes) to UTC
+      let totalMins = utcHours * 60 + utcMinutes - 186;
+      if (totalMins < 0) totalMins += 24 * 60;
+      totalMins = totalMins % (24 * 60);
+      const h = Math.floor(totalMins / 60);
+      const m = totalMins % 60;
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+  }
+
+  // 3. Regular ISO date string with T
   if (str.includes("T")) {
-    const timeMatch = str.match(/T(\d{1,2}:\d{2})/i);
+    const timeMatch = str.match(/T(\d{1,2}):(\d{2})/i);
     if (timeMatch) {
       const parts = timeMatch[1].split(":");
       return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
     }
   }
 
-  // If contains date prefix (e.g. "1899-12-30 14:30:00" or "30/12/1899 14:30")
+  // 4. DD/MM/YYYY HH:mm or YYYY-MM-DD HH:mm
   const dateTimeMatch = str.match(/\d{2,4}[-/]\d{1,2}[-/]\d{1,4}[ T](\d{1,2}):(\d{2})/);
   if (dateTimeMatch) {
     const hours = dateTimeMatch[1].padStart(2, "0");
@@ -170,24 +202,12 @@ export function formatarHora(val: any): string {
     return `${hours}:${minutes}`;
   }
 
-  // If contains time formatted with colons (e.g. "14:30:00", "09:15", "9:15")
-  const colonMatch = str.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+  // 5. Any string with colon time
+  const colonMatch = str.match(/(\d{1,2}):(\d{2})/);
   if (colonMatch) {
     const hours = colonMatch[1].padStart(2, "0");
     const minutes = colonMatch[2].padStart(2, "0");
     return `${hours}:${minutes}`;
-  }
-
-  // If it's a date string with year < 1900
-  try {
-    const d = new Date(str);
-    if (!isNaN(d.getTime())) {
-      const hours = String(d.getUTCHours()).padStart(2, "0");
-      const minutes = String(d.getUTCMinutes()).padStart(2, "0");
-      return `${hours}:${minutes}`;
-    }
-  } catch {
-    // Ignore error and return fallback
   }
 
   return str;

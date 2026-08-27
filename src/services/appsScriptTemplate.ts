@@ -300,8 +300,15 @@ function readSheetRecords(ss, sheetName) {
 
       // Preservar datas em colunas de data e números em colunas de números (como KM)
       if (value instanceof Date) {
-        if (header.indexOf("Data") !== -1 || header.indexOf("Validade") !== -1 || header.indexOf("Garantia") !== -1) {
+        var hLower = String(header || "").toLowerCase();
+        if (hLower.indexOf("data") !== -1 || hLower.indexOf("validade") !== -1 || hLower.indexOf("garantia") !== -1) {
           value = Utilities.formatDate(value, Session.getScriptTimeZone(), "yyyy-MM-dd");
+        } else if (
+          hLower.indexOf("hora") !== -1 ||
+          hLower.indexOf("horario") !== -1 ||
+          hLower.indexOf("horário") !== -1
+        ) {
+          value = Utilities.formatDate(value, Session.getScriptTimeZone(), "HH:mm");
         } else {
           value = value.toISOString();
         }

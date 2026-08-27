@@ -53,17 +53,49 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
           String(c.Tipo || c.tipo || "").toLowerCase().includes("pressao")
       );
       if (pressaoCfg) {
-        const rawAtivo = pressaoCfg.Ativo ?? pressaoCfg.ativo;
+        const rawAtivo =
+          pressaoCfg.Ativo ??
+          pressaoCfg.ativo ??
+          (pressaoCfg as any)["Ativo"] ??
+          (pressaoCfg as any)["ativo"];
         const ativo =
           rawAtivo === "SIM" ||
           rawAtivo === "sim" ||
           rawAtivo === true ||
           rawAtivo === "TRUE" ||
-          rawAtivo === "true";
+          rawAtivo === "true" ||
+          rawAtivo === 1 ||
+          rawAtivo === "1";
         setPressaoAtivo(ativo);
-        setPressaoH1(formatarHora(pressaoCfg.Horario_1 || pressaoCfg.horario1) || "07:30");
-        setPressaoH2(formatarHora(pressaoCfg.Horario_2 || pressaoCfg.horario2) || "13:30");
-        setPressaoH3(formatarHora(pressaoCfg.Horario_3 || pressaoCfg.horario3) || "19:30");
+
+        const rawH1 =
+          pressaoCfg.Horario_1 ||
+          pressaoCfg.horario1 ||
+          (pressaoCfg as any).Horario1 ||
+          (pressaoCfg as any)["Horário 1"] ||
+          (pressaoCfg as any)["Horario 1"] ||
+          (pressaoCfg as any).horario_1;
+        const rawH2 =
+          pressaoCfg.Horario_2 ||
+          pressaoCfg.horario2 ||
+          (pressaoCfg as any).Horario2 ||
+          (pressaoCfg as any)["Horário 2"] ||
+          (pressaoCfg as any)["Horario 2"] ||
+          (pressaoCfg as any).horario_2;
+        const rawH3 =
+          pressaoCfg.Horario_3 ||
+          pressaoCfg.horario3 ||
+          (pressaoCfg as any).Horario3 ||
+          (pressaoCfg as any)["Horário 3"] ||
+          (pressaoCfg as any)["Horario 3"] ||
+          (pressaoCfg as any).horario_3;
+
+        const h1 = formatarHora(rawH1);
+        const h2 = formatarHora(rawH2);
+        const h3 = formatarHora(rawH3);
+        if (h1) setPressaoH1(h1);
+        if (h2) setPressaoH2(h2);
+        if (h3) setPressaoH3(h3);
       }
 
       const glicemiaCfg = configs.find(
@@ -73,17 +105,49 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
           String(c.Tipo || c.tipo || "").toLowerCase().includes("glicemia")
       );
       if (glicemiaCfg) {
-        const rawAtivo = glicemiaCfg.Ativo ?? glicemiaCfg.ativo;
+        const rawAtivo =
+          glicemiaCfg.Ativo ??
+          glicemiaCfg.ativo ??
+          (glicemiaCfg as any)["Ativo"] ??
+          (glicemiaCfg as any)["ativo"];
         const ativo =
           rawAtivo === "SIM" ||
           rawAtivo === "sim" ||
           rawAtivo === true ||
           rawAtivo === "TRUE" ||
-          rawAtivo === "true";
+          rawAtivo === "true" ||
+          rawAtivo === 1 ||
+          rawAtivo === "1";
         setGlicemiaAtivo(ativo);
-        setGlicemiaH1(formatarHora(glicemiaCfg.Horario_1 || glicemiaCfg.horario1) || "07:00");
-        setGlicemiaH2(formatarHora(glicemiaCfg.Horario_2 || glicemiaCfg.horario2) || "14:00");
-        setGlicemiaH3(formatarHora(glicemiaCfg.Horario_3 || glicemiaCfg.horario3) || "21:30");
+
+        const rawH1 =
+          glicemiaCfg.Horario_1 ||
+          glicemiaCfg.horario1 ||
+          (glicemiaCfg as any).Horario1 ||
+          (glicemiaCfg as any)["Horário 1"] ||
+          (glicemiaCfg as any)["Horario 1"] ||
+          (glicemiaCfg as any).horario_1;
+        const rawH2 =
+          glicemiaCfg.Horario_2 ||
+          glicemiaCfg.horario2 ||
+          (glicemiaCfg as any).Horario2 ||
+          (glicemiaCfg as any)["Horário 2"] ||
+          (glicemiaCfg as any)["Horario 2"] ||
+          (glicemiaCfg as any).horario_2;
+        const rawH3 =
+          glicemiaCfg.Horario_3 ||
+          glicemiaCfg.horario3 ||
+          (glicemiaCfg as any).Horario3 ||
+          (glicemiaCfg as any)["Horário 3"] ||
+          (glicemiaCfg as any)["Horario 3"] ||
+          (glicemiaCfg as any).horario_3;
+
+        const h1 = formatarHora(rawH1);
+        const h2 = formatarHora(rawH2);
+        const h3 = formatarHora(rawH3);
+        if (h1) setGlicemiaH1(h1);
+        if (h2) setGlicemiaH2(h2);
+        if (h3) setGlicemiaH3(h3);
       }
     }
   }, [configs, isOpen]);
