@@ -252,42 +252,42 @@ export const Dashboard: React.FC<Props> = ({
       </div>
 
       {/* Quick Action Buttons */}
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
         <button
           onClick={() => onNavigate("lancamentos")}
-          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-all shadow-md active:scale-95"
+          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-all shadow-md active:scale-95 text-center"
         >
-          <PlusCircle className="w-4 h-4" />
-          <span>Novo Lançamento</span>
+          <PlusCircle className="w-4 h-4 shrink-0" />
+          <span className="truncate">Novo Lançamento</span>
         </button>
 
         <button
           onClick={() => onNavigate("lancamentos")}
-          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 p-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold rounded-xl text-xs border border-amber-500/20 transition-all active:scale-95"
+          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold rounded-xl text-xs border border-amber-500/20 transition-all active:scale-95 text-center"
         >
-          <Fuel className="w-4 h-4" />
-          <span>Registrar Abastecimento</span>
+          <Fuel className="w-4 h-4 shrink-0" />
+          <span className="truncate">Abastecimento</span>
         </button>
 
         <button
           onClick={() => onNavigate("veiculos")}
-          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 p-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 transition-all active:scale-95"
+          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 transition-all active:scale-95 text-center"
         >
-          <Car className="w-4 h-4" />
-          <span>Gerenciar Veículo</span>
+          <Car className="w-4 h-4 shrink-0" />
+          <span className="truncate">Veículos</span>
         </button>
 
         {onOpenSecurity && (
           <button
             onClick={onOpenSecurity}
-            className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 p-3.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
+            className={`w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 text-center ${
               isBiometricsActive
                 ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
                 : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
             }`}
           >
-            <Fingerprint className="w-4 h-4" />
-            <span>{isBiometricsActive ? "Biometria Ativa" : "Segurança & PIN"}</span>
+            <Fingerprint className="w-4 h-4 shrink-0" />
+            <span className="truncate">{isBiometricsActive ? "Biometria" : "Segurança"}</span>
           </button>
         )}
       </div>

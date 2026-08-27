@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Prevenção de rolagem lateral horizontal acidental no mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 /* 
  * Conversão visual em tempo real para MAIÚSCULO em todos os campos de texto do sistema.
  * Aplica-se a inputs de texto e textareas automaticamente enquanto o usuário digita.

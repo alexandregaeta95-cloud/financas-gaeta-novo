@@ -808,7 +808,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col w-full max-w-full overflow-x-hidden">
       {/* Top Sync Status Bar */}
       <SyncStatusBanner
         syncState={syncState}
@@ -829,7 +829,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {activeView === "dashboard" && (
           <Dashboard
             lancamentos={lancamentos}

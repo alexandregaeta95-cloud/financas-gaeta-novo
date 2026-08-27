@@ -1005,11 +1005,11 @@ export const LancamentosView: React.FC<Props> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+      <div className="p-3 sm:p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
         <div className="flex flex-col xl:flex-row gap-3 items-stretch xl:items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center flex-1">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-[200px] max-w-md">
+            <div className="relative flex-1 min-w-0 sm:min-w-[200px] max-w-full sm:max-w-md">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
               <input
                 type="text"
@@ -1022,12 +1022,12 @@ export const LancamentosView: React.FC<Props> = ({
 
             {/* Period Selector */}
             <div className="flex items-center gap-2">
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                 <select
                   value={periodFilter}
                   onChange={(e) => setPeriodFilter(e.target.value as PeriodFilterType)}
-                  className="bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer appearance-none"
+                  className="w-full sm:w-auto bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer appearance-none"
                 >
                   <option value="ALL">Todos os Períodos</option>
                   <option value="CURRENT_MONTH">Mês Atual</option>
@@ -1044,7 +1044,7 @@ export const LancamentosView: React.FC<Props> = ({
           </div>
 
           {/* Type Filter Tabs (Todos / Despesas / Receitas / Abastecimentos) */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 xl:pb-0 shrink-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 xl:pb-0 shrink-0 no-scrollbar">
             {[
               { id: "ALL", label: "Todos" },
               { id: "Despesa", label: "Despesas" },
@@ -1056,7 +1056,7 @@ export const LancamentosView: React.FC<Props> = ({
                 onClick={() => setFilterType(tab.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
                   filterType === tab.id
-                    ? "bg-slate-800 text-emerald-400 border border-emerald-500/30"
+                    ? "bg-slate-800 text-emerald-400 border border-emerald-500/30 font-semibold"
                     : "text-slate-400 hover:text-slate-200"
                 }`}
               >
