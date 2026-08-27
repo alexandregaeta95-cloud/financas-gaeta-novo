@@ -415,6 +415,7 @@ export default function App() {
     const freshNotifs = evaluateAllNotifications({
       agenda,
       lancamentos,
+      metas,
       consultas,
       infracoes,
       manutencoes,
@@ -832,6 +833,7 @@ export default function App() {
         {activeView === "dashboard" && (
           <Dashboard
             lancamentos={lancamentos}
+            metas={metas}
             abastecimentos={abastecimentos}
             veiculos={veiculos}
             syncState={syncState}

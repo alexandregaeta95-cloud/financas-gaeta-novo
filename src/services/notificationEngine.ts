@@ -12,8 +12,10 @@ import {
   ItemMercado,
   LembreteSaudeConfig,
   RegistroSaude,
+  MetaCategoria,
 } from "../types";
 import { formatCurrency, formatarHora } from "../utils/formatters";
+import { calcularAlertasFinanceiros, getIntervalosPeriodos } from "../utils/financeAlertEngine";
 
 // Helper: Get local date string YYYY-MM-DD (e.g. Brasilia timezone UTC-3)
 export function getLocalTodayDateStr(date: Date = new Date()): string {
@@ -139,6 +141,7 @@ export function dispatchBrowserNotification(notif: AppNotification): void {
 
 // Check days since last calibration
 export function getDaysSinceLastTireCalibration(): number {
+  if (typeof localStorage === "undefined") return 0;
   const lastDate = localStorage.getItem("gaeta_last_tire_calibration_date");
   if (!lastDate) {
     // If never registered, return 8 days to trigger reminder
@@ -149,6 +152,7 @@ export function getDaysSinceLastTireCalibration(): number {
 }
 
 export function registerTireCalibrationNow(): void {
+  if (typeof localStorage === "undefined") return;
   const todayStr = new Date().toISOString().split("T")[0];
   localStorage.setItem("gaeta_last_tire_calibration_date", todayStr);
 }
@@ -163,6 +167,7 @@ export function evaluateAllNotifications({
   manutencoes = [],
   servicos = [],
   lancamentos = [],
+  metas = [],
   cartoes = [],
   itensMercado = [],
   lembretesSaude = [],
@@ -176,6 +181,7 @@ export function evaluateAllNotifications({
   manutencoes?: ManutencaoAgendada[];
   servicos?: ServicoOficina[];
   lancamentos?: Lancamento[];
+  metas?: MetaCategoria[];
   cartoes?: CartaoCredito[];
   itensMercado?: ItemMercado[];
   lembretesSaude?: LembreteSaudeConfig[];
@@ -623,7 +629,81 @@ export function evaluateAllNotifications({
     });
   }
 
-  // 4. LANÇAMENTOS FINANCEIROS (CONTAS A PAGAR & CARTÕES)
+  // 4. LANÇAMENTOS FINANCEIROS (CONTAS A PAGAR, CARTÕES & ALERTAS DE RECEITAS VS DESPESAS)
+  
+  // 4.1. Alerta Financeiro: Despesas > Receitas (Diário, Semanal e Mensal)
+  if (lancamentos && lancamentos.length > 0) {
+    const alertasFinanceiros = calcularAlertasFinanceiros(lancamentos, metas);
+    const { hojeStr, inicioSemanaStr, mesAnoAtual } = getIntervalosPeriodos();
+
+    // Alerta Diário (se hoje despesas > receitas)
+    const resDia = alertasFinanceiros.resumos.dia;
+    if (resDia && resDia.emAlerta && resDia.estouro > 0) {
+      const msgParts = [`Hoje você está com R$ ${formatCurrency(resDia.estouro)} no vermelho (Despesas: R$ ${formatCurrency(resDia.totalDespesas)} vs Receitas: R$ ${formatCurrency(resDia.totalReceitas)}).`];
+      if (resDia.categoriaOfensora) {
+        msgParts.push(`Maior gasto: ${resDia.categoriaOfensora.categoria} (R$ ${formatCurrency(resDia.categoriaOfensora.total)}).`);
+      }
+      if (resDia.metaEstourada) {
+        msgParts.push(`Meta de ${resDia.metaEstourada.categoria} ultrapassada.`);
+      }
+
+      list.push({
+        id: `alerta_financeiro_estouro_dia_${hojeStr}`,
+        type: "financas",
+        title: `⚠️ Alerta Diário: R$ ${formatCurrency(resDia.estouro)} no Vermelho`,
+        message: msgParts.join(" "),
+        targetView: "lancamentos",
+        severity: resDia.estouro > 300 ? "urgent" : "warning",
+        timestamp: now,
+      });
+    }
+
+    // Alerta Semanal (se esta semana despesas > receitas)
+    const resSemana = alertasFinanceiros.resumos.semana;
+    if (resSemana && resSemana.emAlerta && resSemana.estouro > 0) {
+      const msgParts = [`Nesta semana o déficit acumulado é de R$ ${formatCurrency(resSemana.estouro)} (Despesas: R$ ${formatCurrency(resSemana.totalDespesas)} vs Receitas: R$ ${formatCurrency(resSemana.totalReceitas)}).`];
+      if (resSemana.categoriaOfensora) {
+        msgParts.push(`Categoria principal: ${resSemana.categoriaOfensora.categoria} (R$ ${formatCurrency(resSemana.categoriaOfensora.total)} - ${resSemana.categoriaOfensora.percentual}% do total).`);
+      }
+
+      list.push({
+        id: `alerta_financeiro_estouro_semana_${inicioSemanaStr}`,
+        type: "financas",
+        title: `⚠️ Alerta Semanal: R$ ${formatCurrency(resSemana.estouro)} no Vermelho`,
+        message: msgParts.join(" "),
+        targetView: "lancamentos",
+        severity: resSemana.estouro > 1000 ? "urgent" : "warning",
+        timestamp: now,
+      });
+    }
+
+    // Alerta Mensal (se este mês despesas > receitas)
+    const resMes = alertasFinanceiros.resumos.mes;
+    if (resMes && resMes.emAlerta && resMes.estouro > 0) {
+      const msgParts = [`Neste mês as despesas superaram as receitas em R$ ${formatCurrency(resMes.estouro)} (Despesas: R$ ${formatCurrency(resMes.totalDespesas)} vs Receitas: R$ ${formatCurrency(resMes.totalReceitas)}).`];
+      if (resMes.categoriaOfensora) {
+        msgParts.push(`"${resMes.categoriaOfensora.categoria}" responde por ${resMes.categoriaOfensora.percentual}% das despesas do mês.`);
+      }
+      if (resMes.comparativoMedia) {
+        msgParts.push(resMes.comparativoMedia.texto + ".");
+      }
+      if (resMes.metaEstourada) {
+        msgParts.push(`Meta de ${resMes.metaEstourada.categoria} excedida em R$ ${formatCurrency(resMes.metaEstourada.excesso)}.`);
+      }
+
+      list.push({
+        id: `alerta_financeiro_estouro_mes_${mesAnoAtual}`,
+        type: "financas",
+        title: `🚨 Alerta Mensal: R$ ${formatCurrency(resMes.estouro)} no Vermelho`,
+        message: msgParts.join(" "),
+        targetView: "lancamentos",
+        severity: "urgent",
+        timestamp: now,
+      });
+    }
+  }
+
+  // 4.2. Contas a Pagar Vencendo e Atrasadas
   lancamentos.forEach((l) => {
     const isDespesa =
       l.Tipo?.toUpperCase() === "DESPESA" ||
@@ -753,7 +833,7 @@ export function evaluateAllNotifications({
   });
 
   // B. Lembrete geral de compras se configurado
-  const generalMercadoReminder = localStorage.getItem("gaeta_mercado_general_date");
+  const generalMercadoReminder = typeof localStorage !== "undefined" ? localStorage.getItem("gaeta_mercado_general_date") : null;
   if (generalMercadoReminder) {
     const diff = getDiffInDaysFromToday(generalMercadoReminder);
     const unboughtCount = itensMercado.filter(

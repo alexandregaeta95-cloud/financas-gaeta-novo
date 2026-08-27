@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -14,12 +14,15 @@ import {
   Fingerprint,
   ShieldCheck,
 } from "lucide-react";
-import { Lancamento, Abastecimento, Veiculo, SyncState } from "../types";
+import { Lancamento, Abastecimento, Veiculo, SyncState, MetaCategoria } from "../types";
 import { ModuleView } from "./Navigation";
 import { parseCurrency, formatCurrency, formatDateBR } from "../utils/formatters";
+import { calcularAlertasFinanceiros } from "../utils/financeAlertEngine";
+import { AlertaFinanceiroCard } from "./AlertaFinanceiroCard";
 
 interface Props {
   lancamentos: Lancamento[];
+  metas?: MetaCategoria[];
   abastecimentos: Abastecimento[];
   veiculos: Veiculo[];
   syncState: SyncState;
@@ -104,6 +107,7 @@ function isExcludedItem(l: any): boolean {
 
 export const Dashboard: React.FC<Props> = ({
   lancamentos,
+  metas = [],
   abastecimentos,
   veiculos,
   syncState,
@@ -114,6 +118,11 @@ export const Dashboard: React.FC<Props> = ({
   onOpenSecurity,
   isBiometricsActive = false,
 }) => {
+  // Alertas Financeiros de Despesas vs Receitas (Diário, Semanal e Mensal)
+  const alertasFinanceiros = useMemo(() => {
+    return calcularAlertasFinanceiros(lancamentos, metas);
+  }, [lancamentos, metas]);
+
   // Calculate Totals using robust currency parsing
   const activeLancamentos = lancamentos.filter((l) => !isExcludedItem(l));
 
@@ -143,6 +152,13 @@ export const Dashboard: React.FC<Props> = ({
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
+      {/* Alerta Financeiro de Despesas vs Receitas (Diário/Semanal/Mensal) */}
+      <AlertaFinanceiroCard
+        alertas={alertasFinanceiros}
+        onNavigateToLancamentos={() => onNavigate("lancamentos")}
+        onNavigateToMetas={() => onNavigate("metas")}
+      />
+
       {/* Setup Warning Callout if Not Connected */}
       {!syncState.isConnected && (
         <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
