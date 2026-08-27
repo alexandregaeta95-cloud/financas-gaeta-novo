@@ -110,6 +110,7 @@ export interface ConsultaMedica {
 // 7. Receitas Médicas
 export interface ReceitaMedica {
   Id: string;
+  Data?: string;
   Medicamento: string;
   Dosagem?: string;
   Frequência?: string;
@@ -122,6 +123,15 @@ export interface ReceitaMedica {
   Observação?: string;
   Arquivo_Anexo?: string;
   Ativa?: boolean;
+  // Aliases for compatibility with various Google Sheets column variations
+  data?: string;
+  Medico?: string;
+  Instrucoes?: string;
+  Validade?: string;
+  Frequencia?: string;
+  Observacao?: string;
+  Observacoes?: string;
+  Posologia?: string;
 }
 
 // 8. Infrações (Multas)

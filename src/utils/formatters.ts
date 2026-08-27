@@ -702,21 +702,37 @@ export function normalizeConsultaMedica(raw: any): ConsultaMedica {
 export function normalizeReceitaMedica(raw: any): ReceitaMedica {
   if (!raw || typeof raw !== "object") return raw;
   const medico = raw.Médico ?? raw.Medico ?? raw.medico ?? "";
+  const rawData = raw.Data ?? raw.data ?? raw.Data_Emissão ?? raw.Data_Emissao ?? raw.data_emissao ?? "";
+  const rawValidade = raw.Validade ?? raw.validade ?? raw.Data_Validade ?? raw.data_validade ?? raw.Data_Vencimento ?? raw.data_vencimento ?? "";
+  const instrucoes = raw.Instruções ?? raw.Instrucoes ?? raw.instrucoes ?? "";
+  const dosagem = raw.Dosagem ?? raw.dosagem ?? "";
+  const frequencia = raw.Frequência ?? raw.Frequencia ?? raw.frequencia ?? "";
+  const formattedData = formatDateBR(rawData);
+  const formattedValidade = formatDateBR(rawValidade);
+
   return {
     ...raw,
-    Id: String(raw.Id || ""),
+    Id: String(raw.Id || raw.id || ""),
+    Data: formattedData || (typeof rawData === "string" ? rawData : ""),
+    data: formattedData || (typeof rawData === "string" ? rawData : ""),
     Medicamento: raw.Medicamento ?? raw.medicamento ?? "Medicamento",
-    Dosagem: raw.Dosagem ?? raw.dosagem ?? "",
-    Frequência: raw.Frequência ?? raw.Frequencia ?? raw.frequencia ?? "",
+    Dosagem: dosagem,
+    Posologia: dosagem,
+    Frequência: frequencia,
+    Frequencia: frequencia,
     Médico: medico,
-    Data_Emissão: formatDateBR(raw.Data_Emissão ?? raw.Data_Emissao ?? raw.data_emissao ?? ""),
-    Data_Validade: formatDateBR(raw.Data_Validade ?? raw.data_validade ?? ""),
-    Data_Vencimento: formatDateBR(raw.Data_Vencimento ?? raw.data_vencimento ?? ""),
-    Instruções: raw.Instruções ?? raw.Instrucoes ?? raw.instrucoes ?? "",
+    Medico: medico,
+    Data_Emissão: formattedData || (typeof rawData === "string" ? rawData : ""),
+    Data_Validade: formattedValidade || (typeof rawValidade === "string" ? rawValidade : ""),
+    Data_Vencimento: formattedValidade || (typeof rawValidade === "string" ? rawValidade : ""),
+    Validade: formattedValidade || (typeof rawValidade === "string" ? rawValidade : ""),
+    Instruções: instrucoes,
+    Instrucoes: instrucoes,
     Especialidade: raw.Especialidade ?? raw.especialidade ?? "",
-    Observação: raw.Observação ?? raw.Observacao ?? "",
+    Observação: raw.Observação ?? raw.Observacao ?? raw.Observacoes ?? raw.observacoes ?? "",
+    Observacoes: raw.Observação ?? raw.Observacao ?? raw.Observacoes ?? raw.observacoes ?? "",
     Arquivo_Anexo: raw.Arquivo_Anexo ?? raw.anexo ?? "",
-    Ativa: raw.Ativa !== false && raw.Ativa !== "NÃO",
+    Ativa: raw.Ativa !== false && raw.Ativa !== "NÃO" && raw.Ativa !== "NAO" && raw.Ativa !== "false",
   };
 }
 

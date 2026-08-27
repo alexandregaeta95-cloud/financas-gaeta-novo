@@ -1049,6 +1049,49 @@ export async function saveSheetRecords<T = any>(
       delete enriched.DataCriacao;
     }
 
+    // 7_Receitas_Médicas mapping (guarantees Data, Medicamento, Dosagem, Instrucoes, Medico, Validade, Ativa are all filled)
+    if (
+      sheetName === SHEET_NAMES.RECEITAS_MEDICAS ||
+      sheetName === "7_Receitas_Médicas" ||
+      sheetName.toLowerCase().includes("receita") ||
+      (item.Medicamento !== undefined && (item.Dosagem !== undefined || item.dosagem !== undefined || item.Médico !== undefined || item.Medico !== undefined))
+    ) {
+      const recId = String(item.Id || item.id || `REC_${Date.now()}`).trim();
+      const rawData = item.Data ?? item.data ?? item.Data_Emissão ?? item.Data_Emissao ?? item.data_emissao ?? item.dataEmissao ?? new Date().toISOString().split("T")[0];
+      const rawValidade = item.Validade ?? item.validade ?? item.Data_Validade ?? item.data_validade ?? item.Data_Vencimento ?? item.data_vencimento ?? item.dataVencimento ?? "";
+      const rawMedicamento = item.Medicamento ?? item.medicamento ?? "MEDICAMENTO";
+      const rawDosagem = item.Dosagem ?? item.dosagem ?? item.Posologia ?? item.posologia ?? "";
+      const rawFreq = item.Frequência ?? item.Frequencia ?? item.frequencia ?? "";
+      const rawMedico = item.Médico ?? item.Medico ?? item.medico ?? "";
+      const rawInstrucoes = item.Instruções ?? item.Instrucoes ?? item.instrucoes ?? "";
+      const rawEsp = item.Especialidade ?? item.especialidade ?? "";
+      const rawObs = item.Observação ?? item.Observacao ?? item.Observacoes ?? item.observacoes ?? item.observação ?? "";
+      const rawAtiva = item.Ativa ?? item.ativa;
+      const isAtiva = rawAtiva !== false && rawAtiva !== "NÃO" && rawAtiva !== "NAO" && rawAtiva !== "false" && rawAtiva !== 0;
+
+      // Set canonical and synonym columns so all spreadsheet header conventions are matched
+      enriched["Id"] = recId;
+      enriched["Data"] = rawData;
+      enriched["Data_Emissão"] = rawData;
+      enriched["Data_Emissao"] = rawData;
+      enriched["Medicamento"] = typeof rawMedicamento === "string" ? rawMedicamento.toUpperCase() : rawMedicamento;
+      enriched["Dosagem"] = typeof rawDosagem === "string" ? rawDosagem.toUpperCase() : rawDosagem;
+      enriched["Posologia"] = typeof rawDosagem === "string" ? rawDosagem.toUpperCase() : rawDosagem;
+      enriched["Frequência"] = typeof rawFreq === "string" ? rawFreq.toUpperCase() : rawFreq;
+      enriched["Frequencia"] = typeof rawFreq === "string" ? rawFreq.toUpperCase() : rawFreq;
+      enriched["Médico"] = typeof rawMedico === "string" ? rawMedico.toUpperCase() : rawMedico;
+      enriched["Medico"] = typeof rawMedico === "string" ? rawMedico.toUpperCase() : rawMedico;
+      enriched["Validade"] = rawValidade;
+      enriched["Data_Validade"] = rawValidade;
+      enriched["Data_Vencimento"] = rawValidade;
+      enriched["Instruções"] = typeof rawInstrucoes === "string" ? rawInstrucoes.toUpperCase() : rawInstrucoes;
+      enriched["Instrucoes"] = typeof rawInstrucoes === "string" ? rawInstrucoes.toUpperCase() : rawInstrucoes;
+      enriched["Especialidade"] = typeof rawEsp === "string" ? rawEsp.toUpperCase() : rawEsp;
+      enriched["Observação"] = typeof rawObs === "string" ? rawObs.toUpperCase() : rawObs;
+      enriched["Observacoes"] = typeof rawObs === "string" ? rawObs.toUpperCase() : rawObs;
+      enriched["Ativa"] = isAtiva ? "SIM" : "NÃO";
+    }
+
     // Saldo_Inicial and Saldo_Atual mapping with Brazilian currency format support (5_Contas_Bancarias)
     if (
       item.Saldo_Inicial !== undefined ||

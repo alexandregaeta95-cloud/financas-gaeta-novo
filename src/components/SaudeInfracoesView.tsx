@@ -264,15 +264,19 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   const [isReceitaModalOpen, setIsReceitaModalOpen] = useState(false);
   const [editingReceita, setEditingReceita] = useState<ReceitaMedica | null>(null);
   const [receitaForm, setReceitaForm] = useState<Partial<ReceitaMedica>>({
-    Medicamento: "Amoxicilina 500mg",
-    Dosagem: "1 comprimido",
-    Frequência: "De 8 em 8 horas",
-    Médico: "Dra. Ana Paula",
+    Data: new Date().toISOString().split("T")[0],
     Data_Emissão: new Date().toISOString().split("T")[0],
-    Data_Vencimento: new Date(Date.now() + 10 * 24 * 3600 * 1000).toISOString().split("T")[0],
-    Instruções: "Tomar após as refeições",
+    Medicamento: "",
+    Dosagem: "",
+    Frequência: "",
+    Médico: "",
+    Data_Vencimento: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split("T")[0],
+    Data_Validade: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split("T")[0],
+    Validade: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split("T")[0],
+    Instruções: "",
     Especialidade: "Clínica Geral",
     Observação: "",
+    Ativa: true,
   });
 
   // Infracao Modal State
@@ -348,21 +352,59 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   };
 
   const handleOpenReceita = (r?: ReceitaMedica) => {
+    const parseDateForInput = (d?: string) => {
+      if (!d) return "";
+      const trimmed = d.trim();
+      if (trimmed.includes("/")) {
+        const parts = trimmed.split("/");
+        if (parts.length === 3) {
+          const day = parts[0].padStart(2, "0");
+          const month = parts[1].padStart(2, "0");
+          const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+          return `${year}-${month}-${day}`;
+        }
+      }
+      return trimmed;
+    };
+
     if (r) {
       setEditingReceita(r);
-      setReceitaForm({ ...r });
+      const dataVal = parseDateForInput(r.Data || r.Data_Emissão || r.data);
+      const vencVal = parseDateForInput(r.Data_Vencimento || r.Data_Validade || r.Validade);
+      setReceitaForm({
+        ...r,
+        Data: dataVal || new Date().toISOString().split("T")[0],
+        Data_Emissão: dataVal || new Date().toISOString().split("T")[0],
+        Medicamento: r.Medicamento || "",
+        Dosagem: r.Dosagem || r.Posologia || "",
+        Frequência: r.Frequência || r.Frequencia || "",
+        Médico: r.Médico || r.Medico || "",
+        Data_Vencimento: vencVal || "",
+        Data_Validade: vencVal || "",
+        Validade: vencVal || "",
+        Instruções: r.Instruções || r.Instrucoes || "",
+        Especialidade: r.Especialidade || "Clínica Geral",
+        Observação: r.Observação || r.Observacao || r.Observacoes || "",
+        Ativa: r.Ativa !== false,
+      });
     } else {
+      const today = new Date().toISOString().split("T")[0];
+      const defaultExpire = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split("T")[0];
       setEditingReceita(null);
       setReceitaForm({
-        Medicamento: "Amoxicilina 500mg",
-        Dosagem: "1 comprimido",
-        Frequência: "De 8 em 8 horas",
-        Médico: "Dra. Ana Paula",
-        Data_Emissão: new Date().toISOString().split("T")[0],
-        Data_Vencimento: new Date(Date.now() + 10 * 24 * 3600 * 1000).toISOString().split("T")[0],
-        Instruções: "Tomar após as refeições",
+        Data: today,
+        Data_Emissão: today,
+        Medicamento: "",
+        Dosagem: "",
+        Frequência: "",
+        Médico: "",
+        Data_Vencimento: defaultExpire,
+        Data_Validade: defaultExpire,
+        Validade: defaultExpire,
+        Instruções: "",
         Especialidade: "Clínica Geral",
         Observação: "",
+        Ativa: true,
       });
     }
     setIsReceitaModalOpen(true);
@@ -370,17 +412,38 @@ export const SaudeInfracoesView: React.FC<Props> = ({
 
   const handleSaveReceitaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const dataVal = receitaForm.Data || receitaForm.Data_Emissão || new Date().toISOString().split("T")[0];
+    const vencimentoVal = receitaForm.Data_Vencimento || receitaForm.Data_Validade || receitaForm.Validade || "";
+    const medicoVal = (receitaForm.Médico || receitaForm.Medico || "").trim().toUpperCase();
+    const medName = (receitaForm.Medicamento || "").trim().toUpperCase() || "MEDICAMENTO";
+    const dosagemVal = (receitaForm.Dosagem || receitaForm.Posologia || "").trim().toUpperCase();
+    const freqVal = (receitaForm.Frequência || receitaForm.Frequencia || "").trim().toUpperCase();
+    const instrucoesVal = (receitaForm.Instruções || receitaForm.Instrucoes || "").trim().toUpperCase();
+    const espVal = (receitaForm.Especialidade || "").trim().toUpperCase();
+    const obsVal = (receitaForm.Observação || receitaForm.Observacao || receitaForm.Observacoes || "").trim().toUpperCase();
+    const isAtiva = receitaForm.Ativa !== false;
+
     const item: ReceitaMedica = {
       Id: editingReceita?.Id || generateNewId("REC"),
-      Medicamento: receitaForm.Medicamento || "Medicamento",
-      Dosagem: receitaForm.Dosagem || "",
-      Frequência: receitaForm.Frequência || "",
-      Médico: receitaForm.Médico || "",
-      Data_Emissão: receitaForm.Data_Emissão || "",
-      Data_Vencimento: receitaForm.Data_Vencimento || "",
-      Instruções: receitaForm.Instruções || "",
-      Especialidade: receitaForm.Especialidade || "",
-      Observação: receitaForm.Observação || "",
+      Data: dataVal,
+      data: dataVal,
+      Data_Emissão: dataVal,
+      Medicamento: medName,
+      Dosagem: dosagemVal,
+      Posologia: dosagemVal,
+      Frequência: freqVal,
+      Frequencia: freqVal,
+      Médico: medicoVal,
+      Medico: medicoVal,
+      Data_Vencimento: vencimentoVal,
+      Data_Validade: vencimentoVal,
+      Validade: vencimentoVal,
+      Instruções: instrucoesVal,
+      Instrucoes: instrucoesVal,
+      Especialidade: espVal,
+      Observação: obsVal,
+      Observacoes: obsVal,
+      Ativa: isAtiva,
     };
     await onSaveReceita(item);
     setIsReceitaModalOpen(false);
@@ -789,17 +852,27 @@ export const SaudeInfracoesView: React.FC<Props> = ({
 
                   <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
                     <div>
-                      <span className="text-slate-500 text-[10px] block">Médico Prescritor</span>
-                      <span className="font-semibold text-slate-200">{r.Médico || "—"}</span>
+                      <span className="text-slate-500 text-[10px] block">Data da Prescrição</span>
+                      <span className="font-semibold text-slate-200">{r.Data || r.Data_Emissão || "—"}</span>
                     </div>
                     <div>
                       <span className="text-slate-500 text-[10px] block">Validade / Vencimento</span>
-                      <span className="font-bold text-rose-400">{r.Data_Vencimento || r.Data_Validade || "—"}</span>
+                      <span className="font-bold text-rose-400">{r.Data_Vencimento || r.Data_Validade || r.Validade || "—"}</span>
                     </div>
-                    {r.Instruções && (
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Médico Prescritor</span>
+                      <span className="font-semibold text-slate-200">{r.Médico || r.Medico || "—"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Status</span>
+                      <span className={`font-bold ${r.Ativa !== false ? "text-emerald-400" : "text-slate-500"}`}>
+                        {r.Ativa !== false ? "Ativa" : "Inativa"}
+                      </span>
+                    </div>
+                    {(r.Instruções || r.Instrucoes) && (
                       <div className="col-span-2">
                         <span className="text-slate-500 text-[10px] block">Instruções de Uso</span>
-                        <span className="text-slate-300">{r.Instruções}</span>
+                        <span className="text-slate-300">{r.Instruções || r.Instrucoes}</span>
                       </div>
                     )}
                   </div>
@@ -1146,9 +1219,11 @@ export const SaudeInfracoesView: React.FC<Props> = ({
       {/* Modal Receita */}
       {isReceitaModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs text-xs">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-base text-white">Cadastrar Receita Médica</h3>
+              <h3 className="font-bold text-base text-white">
+                {editingReceita ? "Editar Receita Médica" : "Cadastrar Receita Médica"}
+              </h3>
               <button onClick={() => setIsReceitaModalOpen(false)}>
                 <X className="w-5 h-5 text-slate-400 hover:text-white" />
               </button>
@@ -1156,59 +1231,108 @@ export const SaudeInfracoesView: React.FC<Props> = ({
 
             <form onSubmit={handleSaveReceitaSubmit} className="space-y-3">
               <div>
-                <label className="text-slate-400 block mb-1">Medicamento</label>
+                <label className="text-slate-400 block mb-1">Medicamento *</label>
                 <input
                   type="text"
                   required
                   placeholder="Ex: Amoxicilina 500mg"
-                  value={receitaForm.Medicamento}
+                  value={receitaForm.Medicamento || ""}
                   onChange={(e) => setReceitaForm({ ...receitaForm, Medicamento: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Dosagem</label>
+                  <label className="text-slate-400 block mb-1">Data da Receita / Emissão *</label>
                   <input
-                    type="text"
-                    placeholder="Ex: 1 comprimido"
-                    value={receitaForm.Dosagem}
-                    onChange={(e) => setReceitaForm({ ...receitaForm, Dosagem: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    type="date"
+                    required
+                    value={receitaForm.Data || receitaForm.Data_Emissão || ""}
+                    onChange={(e) =>
+                      setReceitaForm({
+                        ...receitaForm,
+                        Data: e.target.value,
+                        Data_Emissão: e.target.value,
+                      })
+                    }
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">Frequência</label>
+                  <label className="text-slate-400 block mb-1">Data Validade / Vencimento</label>
                   <input
-                    type="text"
-                    placeholder="Ex: De 8 em 8 horas"
-                    value={receitaForm.Frequência}
-                    onChange={(e) => setReceitaForm({ ...receitaForm, Frequência: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    type="date"
+                    value={receitaForm.Data_Vencimento || receitaForm.Data_Validade || receitaForm.Validade || ""}
+                    onChange={(e) =>
+                      setReceitaForm({
+                        ...receitaForm,
+                        Data_Vencimento: e.target.value,
+                        Data_Validade: e.target.value,
+                        Validade: e.target.value,
+                      })
+                    }
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Data Vencimento</label>
+                  <label className="text-slate-400 block mb-1">Dosagem / Posologia</label>
                   <input
-                    type="date"
-                    value={receitaForm.Data_Vencimento}
-                    onChange={(e) => setReceitaForm({ ...receitaForm, Data_Vencimento: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                    type="text"
+                    placeholder="Ex: 1 comprimido"
+                    value={receitaForm.Dosagem || ""}
+                    onChange={(e) => setReceitaForm({ ...receitaForm, Dosagem: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">Médico Prescritor</label>
+                  <label className="text-slate-400 block mb-1">Frequência de Uso</label>
                   <input
                     type="text"
-                    value={receitaForm.Médico}
-                    onChange={(e) => setReceitaForm({ ...receitaForm, Médico: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    placeholder="Ex: De 8 em 8 horas"
+                    value={receitaForm.Frequência || ""}
+                    onChange={(e) => setReceitaForm({ ...receitaForm, Frequência: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Médico Prescritor</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Dra. Ana Paula (CRM 12345)"
+                  value={receitaForm.Médico || ""}
+                  onChange={(e) => setReceitaForm({ ...receitaForm, Médico: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Instruções de Uso / Observações</label>
+                <textarea
+                  rows={2}
+                  placeholder="Ex: Tomar após as principais refeições, não interromper o tratamento."
+                  value={receitaForm.Instruções || ""}
+                  onChange={(e) => setReceitaForm({ ...receitaForm, Instruções: e.target.value.toUpperCase() })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500 resize-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="receita_ativa"
+                  checked={receitaForm.Ativa !== false}
+                  onChange={(e) => setReceitaForm({ ...receitaForm, Ativa: e.target.checked })}
+                  className="w-4 h-4 rounded-sm bg-slate-950 border-slate-800 text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="receita_ativa" className="text-slate-300 select-none cursor-pointer">
+                  Receita ativa / Em tratamento
+                </label>
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
@@ -1221,7 +1345,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-xs transition-colors"
                 >
                   Salvar Receita
                 </button>
