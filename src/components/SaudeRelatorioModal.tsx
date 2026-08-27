@@ -31,6 +31,7 @@ import {
 } from "../types";
 import { formatDateBR } from "../utils/formatters";
 import { calcularImc } from "../utils/imc";
+import { exportReceitaPDF } from "../utils/receitaPdf";
 
 interface Props {
   isOpen: boolean;
@@ -1022,15 +1023,26 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
                   </span>
                   {receitas.length > 0 ? (
                     <div className="space-y-1.5">
-                      {receitas.slice(0, 3).map((r) => (
-                        <div key={r.Id} className="p-2.5 bg-slate-900 print:bg-slate-100 rounded-xl border border-slate-800 print:border-slate-200">
-                          <div className="flex justify-between font-bold text-white print-text-dark">
-                            <span>{r.Medicamento}</span>
-                            <span className="text-slate-400 font-mono text-[10px]">{formatDateBR(r.Data)}</span>
+                      {receitas.slice(0, 5).map((r) => (
+                        <div key={r.Id} className="p-2.5 bg-slate-900 print:bg-slate-100 rounded-xl border border-slate-800 print:border-slate-200 flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-center font-bold text-white print-text-dark">
+                              <span className="truncate">{r.Medicamento}</span>
+                              <span className="text-slate-400 font-mono text-[10px] shrink-0 ml-2">{formatDateBR(r.Data || r.Data_Emissão)}</span>
+                            </div>
+                            <div className="text-[11px] text-slate-400 print-text-muted mt-0.5 truncate">
+                              {(r.Dosagem || r.Posologia) && `Dosagem: ${r.Dosagem || r.Posologia}`}
+                              {(r.Médico || r.Medico) && ` • Médico: ${r.Médico || r.Medico}`}
+                            </div>
                           </div>
-                          <div className="text-[11px] text-slate-400 print-text-muted mt-0.5">
-                            {r.Posologia && `Posologia: ${r.Posologia}`}
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => exportReceitaPDF(r)}
+                            className="p-1.5 bg-slate-800 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border border-slate-700 hover:border-emerald-500/40 rounded-lg transition-colors print:hidden shrink-0"
+                            title="Baixar PDF da Receita"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       ))}
                     </div>

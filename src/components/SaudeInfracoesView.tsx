@@ -18,6 +18,9 @@ import {
   Zap,
   Activity,
   Dumbbell,
+  Download,
+  FileDown,
+  Printer,
 } from "lucide-react";
 import {
   ConsultaMedica,
@@ -43,6 +46,7 @@ import { RegistroRapidoAlimentoModal } from "./RegistroRapidoAlimentoModal";
 import { ExerciciosView } from "./ExerciciosView";
 import { RegistroExercicioModal } from "./RegistroExercicioModal";
 import { SaudeRelatorioModal } from "./SaudeRelatorioModal";
+import { exportReceitaPDF } from "../utils/receitaPdf";
 
 interface Props {
   consultas: ConsultaMedica[];
@@ -826,6 +830,14 @@ export const SaudeInfracoesView: React.FC<Props> = ({
 
                     <div className="flex items-center gap-1">
                       <button
+                        type="button"
+                        onClick={() => exportReceitaPDF(r)}
+                        className="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-emerald-500/10 transition-colors"
+                        title="Gerar e baixar PDF da Receita"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handleOpenReceita(r)}
                         className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                         title="Editar Receita"
@@ -875,6 +887,22 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                         <span className="text-slate-300">{r.Instruções || r.Instrucoes}</span>
                       </div>
                     )}
+                  </div>
+
+                  {/* Card Footer Actions */}
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      {r.Id ? `#${r.Id}` : ""}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => exportReceitaPDF(r)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl transition-all shadow-xs"
+                      title="Gerar e baixar PDF da Receita Médica"
+                    >
+                      <FileDown className="w-3.5 h-3.5" />
+                      <span>Gerar PDF</span>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1335,20 +1363,52 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                 </label>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIsReceitaModalOpen(false)}
-                  className="px-4 py-2 text-slate-400 hover:text-white"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-xs transition-colors"
-                >
-                  Salvar Receita
-                </button>
+              <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+                <div>
+                  {receitaForm.Medicamento && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        exportReceitaPDF({
+                          Id: editingReceita?.Id || "REC",
+                          Medicamento: receitaForm.Medicamento || "MEDICAMENTO",
+                          Dosagem: receitaForm.Dosagem || "",
+                          Frequência: receitaForm.Frequência || "",
+                          Data: receitaForm.Data || receitaForm.Data_Emissão,
+                          Data_Emissão: receitaForm.Data || receitaForm.Data_Emissão,
+                          Data_Vencimento: receitaForm.Data_Vencimento,
+                          Validade: receitaForm.Data_Vencimento,
+                          Médico: receitaForm.Médico || "",
+                          Instruções: receitaForm.Instruções || "",
+                          Especialidade: receitaForm.Especialidade || "",
+                          Observação: receitaForm.Observação || "",
+                          Ativa: receitaForm.Ativa !== false,
+                        })
+                      }
+                      className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-colors"
+                      title="Baixar PDF desta receita médica"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Baixar PDF</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsReceitaModalOpen(false)}
+                    className="px-4 py-2 text-slate-400 hover:text-white"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-xs transition-colors"
+                  >
+                    Salvar Receita
+                  </button>
+                </div>
               </div>
             </form>
           </div>
