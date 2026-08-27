@@ -58,7 +58,7 @@ export const RegistroCafeModal: React.FC<Props> = ({
 }) => {
   const [data, setData] = useState<string>("");
   const [hora, setHora] = useState<string>("");
-  const [quantidade, setQuantidade] = useState<number>(1);
+  const [quantidadeInput, setQuantidadeInput] = useState<string>("1");
   const [calorias, setCalorias] = useState<string>("");
   const [proteinas, setProteinas] = useState<string>("");
   const [carboidratos, setCarboidratos] = useState<string>("");
@@ -74,7 +74,7 @@ export const RegistroCafeModal: React.FC<Props> = ({
         const itemQtd = initialData.quantidade && initialData.quantidade > 0 ? initialData.quantidade : 1;
         setData(initialData.data || new Date().toISOString().split("T")[0]);
         setHora(initialData.hora || "");
-        setQuantidade(itemQtd);
+        setQuantidadeInput(String(itemQtd));
         setCalorias(
           initialData.calorias !== undefined && initialData.calorias !== null && initialData.calorias > 0
             ? String(Math.round(initialData.calorias / itemQtd))
@@ -114,7 +114,7 @@ export const RegistroCafeModal: React.FC<Props> = ({
 
         setData(`${year}-${month}-${day}`);
         setHora(`${hours}:${minutes}`);
-        setQuantidade(1);
+        setQuantidadeInput("1");
         setCalorias("");
         setProteinas("");
         setCarboidratos("");
@@ -128,6 +128,8 @@ export const RegistroCafeModal: React.FC<Props> = ({
   }, [isOpen, initialData]);
 
   if (!isOpen) return null;
+
+  const quantidade = parseInt(quantidadeInput, 10) || 0;
 
   const handleApplyPreset = (preset: MacroPreset) => {
     setShowMacros(true);
@@ -147,8 +149,14 @@ export const RegistroCafeModal: React.FC<Props> = ({
       return;
     }
 
-    if (quantidade < 1) {
+    const parsedQtd = parseInt(quantidadeInput, 10);
+    if (isNaN(parsedQtd) || parsedQtd < 1) {
       setError("A quantidade deve ser de pelo menos 1 café.");
+      return;
+    }
+
+    if (parsedQtd > 100) {
+      setError("A quantidade máxima permitida é de 100 cafés.");
       return;
     }
 
@@ -161,7 +169,7 @@ export const RegistroCafeModal: React.FC<Props> = ({
       const currentMinutes = String(now.getMinutes()).padStart(2, "0");
       const finalHora = hora.trim() || `${currentHours}:${currentMinutes}`;
 
-      const qtd = quantidade && quantidade > 0 ? quantidade : 1;
+      const qtd = parsedQtd;
       const parsedCal = calorias.trim() !== "" ? Math.round(Number(calorias.replace(",", "."))) : undefined;
       const parsedProt = proteinas.trim() !== "" ? Number(Number(proteinas.replace(",", ".")).toFixed(1)) : undefined;
       const parsedCarb = carboidratos.trim() !== "" ? Number(Number(carboidratos.replace(",", ".")).toFixed(1)) : undefined;
@@ -253,7 +261,7 @@ export const RegistroCafeModal: React.FC<Props> = ({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
+                onClick={() => setQuantidadeInput((prev) => String(Math.max(1, (parseInt(prev, 10) || 1) - 1)))}
                 disabled={quantidade <= 1}
                 className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
               >
@@ -263,21 +271,19 @@ export const RegistroCafeModal: React.FC<Props> = ({
               <input
                 type="number"
                 min="1"
-                max="30"
+                max="100"
                 step="1"
-                value={quantidade}
+                value={quantidadeInput}
+                placeholder="1"
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  setQuantidade(isNaN(val) ? 1 : Math.max(1, Math.min(30, val)));
-                }}
+                onChange={(e) => setQuantidadeInput(e.target.value)}
                 className="flex-1 bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-center text-lg font-bold text-amber-400 focus:outline-none focus:border-amber-500"
                 required
               />
 
               <button
                 type="button"
-                onClick={() => setQuantidade((prev) => Math.min(30, prev + 1))}
+                onClick={() => setQuantidadeInput((prev) => String(Math.min(100, (parseInt(prev, 10) || 0) + 1)))}
                 className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shrink-0"
               >
                 <Plus className="w-4 h-4" />
@@ -286,11 +292,11 @@ export const RegistroCafeModal: React.FC<Props> = ({
 
             {/* Quick chips presets */}
             <div className="flex items-center gap-1.5 pt-1">
-              {[1, 2, 3, 4].map((num) => (
+              {[1, 2, 3, 4, 5].map((num) => (
                 <button
                   key={num}
                   type="button"
-                  onClick={() => setQuantidade(num)}
+                  onClick={() => setQuantidadeInput(String(num))}
                   className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${
                     quantidade === num
                       ? "bg-amber-500/20 border-amber-500/40 text-amber-300"

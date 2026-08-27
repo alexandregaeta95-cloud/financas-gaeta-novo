@@ -30,7 +30,7 @@ const PRESET_OBS = [
   "Água com Limão",
 ];
 
-const PRESET_VOLUMES = [200, 250, 300, 500, 750, 1000];
+const PRESET_VOLUMES = [200, 250, 300, 500, 750, 800, 1000, 1500, 2000];
 
 export const RegistroAguaModal: React.FC<Props> = ({
   isOpen,
@@ -41,7 +41,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
 }) => {
   const [data, setData] = useState<string>("");
   const [hora, setHora] = useState<string>("");
-  const [quantidadeMl, setQuantidadeMl] = useState<number>(defaultTamanhoMl);
+  const [quantidadeInput, setQuantidadeInput] = useState<string>(String(defaultTamanhoMl));
   const [observacoes, setObservacoes] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +51,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
       if (initialData) {
         setData(initialData.data || new Date().toISOString().split("T")[0]);
         setHora(initialData.hora || "");
-        setQuantidadeMl(initialData.quantidadeMl || defaultTamanhoMl);
+        setQuantidadeInput(String(initialData.quantidadeMl || defaultTamanhoMl || 500));
         setObservacoes(initialData.observacoes || "");
       } else {
         const now = new Date();
@@ -63,7 +63,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
 
         setData(`${year}-${month}-${day}`);
         setHora(`${hours}:${minutes}`);
-        setQuantidadeMl(defaultTamanhoMl || 500);
+        setQuantidadeInput(String(defaultTamanhoMl || 500));
         setObservacoes("");
       }
       setError(null);
@@ -73,6 +73,8 @@ export const RegistroAguaModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
+  const currentQtdNumber = parseInt(quantidadeInput, 10) || 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!data) {
@@ -80,8 +82,14 @@ export const RegistroAguaModal: React.FC<Props> = ({
       return;
     }
 
-    if (quantidadeMl < 10) {
-      setError("A quantidade deve ser de pelo menos 10 ml.");
+    const parsedQtd = parseInt(quantidadeInput, 10);
+    if (isNaN(parsedQtd) || parsedQtd < 1) {
+      setError("A quantidade deve ser de pelo menos 1 ml.");
+      return;
+    }
+
+    if (parsedQtd > 10000) {
+      setError("A quantidade máxima por registro é de 10.000 ml (10 Litros).");
       return;
     }
 
@@ -101,8 +109,8 @@ export const RegistroAguaModal: React.FC<Props> = ({
         Data: data,
         hora: finalHora,
         Hora: finalHora,
-        quantidadeMl,
-        Quantidade_Ml: quantidadeMl,
+        quantidadeMl: parsedQtd,
+        Quantidade_Ml: parsedQtd,
         observacoes: observacoes.trim().toUpperCase() || undefined,
         Observacoes: observacoes.trim().toUpperCase() || undefined,
         dataCriacao: initialData?.dataCriacao || new Date().toISOString(),
@@ -160,17 +168,17 @@ export const RegistroAguaModal: React.FC<Props> = ({
                 Quantidade em Mililitros (ml)
               </span>
               <span className="text-[11px] text-cyan-400 font-bold">
-                {quantidadeMl >= 1000
-                  ? `${(quantidadeMl / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })} L (${quantidadeMl} ml)`
-                  : `${quantidadeMl} ml`}
+                {currentQtdNumber >= 1000
+                  ? `${(currentQtdNumber / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })} L (${currentQtdNumber} ml)`
+                  : `${currentQtdNumber} ml`}
               </span>
             </label>
 
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setQuantidadeMl((prev) => Math.max(50, prev - 50))}
-                disabled={quantidadeMl <= 50}
+                onClick={() => setQuantidadeInput((prev) => String(Math.max(1, (parseInt(prev, 10) || 50) - 50)))}
+                disabled={currentQtdNumber <= 1}
                 className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
               >
                 <Minus className="w-4 h-4" />
@@ -178,22 +186,20 @@ export const RegistroAguaModal: React.FC<Props> = ({
 
               <input
                 type="number"
-                min="10"
-                max="5000"
-                step="25"
-                value={quantidadeMl}
+                min="1"
+                max="10000"
+                step="1"
+                value={quantidadeInput}
+                placeholder="Ex: 750"
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  setQuantidadeMl(isNaN(val) ? 50 : Math.max(10, Math.min(5000, val)));
-                }}
+                onChange={(e) => setQuantidadeInput(e.target.value)}
                 className="flex-1 bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-center text-lg font-bold text-cyan-400 focus:outline-none focus:border-cyan-500"
                 required
               />
 
               <button
                 type="button"
-                onClick={() => setQuantidadeMl((prev) => Math.min(5000, prev + 50))}
+                onClick={() => setQuantidadeInput((prev) => String(Math.min(10000, (parseInt(prev, 10) || 0) + 50)))}
                 className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shrink-0"
               >
                 <Plus className="w-4 h-4" />
@@ -206,9 +212,9 @@ export const RegistroAguaModal: React.FC<Props> = ({
                 <button
                   key={vol}
                   type="button"
-                  onClick={() => setQuantidadeMl(vol)}
+                  onClick={() => setQuantidadeInput(String(vol))}
                   className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${
-                    quantidadeMl === vol
+                    currentQtdNumber === vol
                       ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-300"
                       : "bg-slate-800/60 border-slate-700/60 text-slate-400 hover:text-slate-200"
                   }`}
