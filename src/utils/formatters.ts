@@ -222,7 +222,27 @@ export const formatTime = formatarHora;
  * Format Date string safely to "dd/mm/aaaa" or "yyyy-MM-dd"
  */
 export function formatDateBR(val: any): string {
-  if (!val) return "";
+  if (val === null || val === undefined || val === "") return "";
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return "";
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, "0");
+    const d = String(val.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  if (typeof val === "number") {
+    // Excel/Google Sheets serial date (e.g. 45521)
+    if (val > 1000 && val < 60000) {
+      const utcDays = Math.floor(val - 25569);
+      const utcValue = utcDays * 86400;
+      const dateInfo = new Date(utcValue * 1000);
+      const y = dateInfo.getUTCFullYear();
+      const m = String(dateInfo.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(dateInfo.getUTCDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+    return String(val);
+  }
   const str = String(val).trim();
   if (str.includes("T")) {
     return str.split("T")[0];

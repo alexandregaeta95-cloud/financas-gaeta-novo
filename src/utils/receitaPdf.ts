@@ -14,8 +14,33 @@ export interface GrupoReceitaMedica {
 }
 
 /**
+ * Safely converts any value to a trimmed string.
+ */
+function safeStr(val: any, fallback: string = ""): string {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === "string") return val.trim();
+  if (typeof val === "number" || typeof val === "boolean") return String(val).trim();
+  if (val instanceof Date) return formatDateBR(val);
+  return String(val).trim();
+}
+
+/**
+ * Safely checks whether a medication is active (supports boolean and string representations from sheets).
+ */
+function isItemAtivo(ativa: any): boolean {
+  if (ativa === false) return false;
+  if (typeof ativa === "string") {
+    const s = ativa.trim().toUpperCase();
+    if (s === "NÃO" || s === "NAO" || s === "FALSE" || s === "0" || s === "INATIVA" || s === "INATIVO") {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
  * Groups a list of ReceitaMedica items by Prescrição (Médico + Data da Prescrição).
- * Medications prescribed by the same doctor on the same consultation date belong to the same prescription.
+ * Medications prescribed by the same doctor on the same consultation date belong to the same prescription document.
  */
 export function agruparReceitasPorPrescricao(receitas: ReceitaMedica[]): GrupoReceitaMedica[] {
   if (!Array.isArray(receitas) || receitas.length === 0) return [];
@@ -23,32 +48,39 @@ export function agruparReceitasPorPrescricao(receitas: ReceitaMedica[]): GrupoRe
   const gruposMap = new Map<string, GrupoReceitaMedica>();
 
   for (const r of receitas) {
-    const rawMedico = (r.Médico || r.Medico || "").trim();
+    if (!r || typeof r !== "object") continue;
+
+    const rawMedico = safeStr(r.Médico || r.Medico);
     const medicoNome = rawMedico || "Médico Não Informado";
-    const rawData = (r.Data || r.Data_Emissão || r.data || "").trim();
+    const rawData = safeStr(r.Data || r.Data_Emissão || r.data);
     const dataFormatada = formatDateBR(rawData) || rawData || "Data não informada";
 
     // Normalized key combining Doctor Name and Consultation / Prescription Date
     const chave = `${medicoNome.toUpperCase().replace(/\s+/g, " ")}___${dataFormatada.toUpperCase().replace(/\s+/g, " ")}`;
 
     const existing = gruposMap.get(chave);
+    const itemValidade = formatDateBR(r.Data_Vencimento || r.Data_Validade || r.Validade);
+
     if (existing) {
       existing.medicamentos.push(r);
-      if (r.Ativa !== false) existing.ativa = true;
-      if (!existing.especialidade && r.Especialidade) existing.especialidade = r.Especialidade;
-      if (!existing.validade && (r.Data_Vencimento || r.Data_Validade || r.Validade)) {
-        existing.validade = formatDateBR(r.Data_Vencimento || r.Data_Validade || r.Validade);
+      if (isItemAtivo(r.Ativa)) {
+        existing.ativa = true;
+      }
+      if (!existing.especialidade && r.Especialidade) {
+        existing.especialidade = safeStr(r.Especialidade);
+      }
+      if (!existing.validade && itemValidade) {
+        existing.validade = itemValidade;
       }
     } else {
-      const validadeFormatada = formatDateBR(r.Data_Vencimento || r.Data_Validade || r.Validade);
       gruposMap.set(chave, {
         chave,
         medico: medicoNome,
         data: rawData,
         dataFormatada,
-        validade: validadeFormatada,
-        especialidade: r.Especialidade || "",
-        ativa: r.Ativa !== false,
+        validade: itemValidade,
+        especialidade: safeStr(r.Especialidade),
+        ativa: isItemAtivo(r.Ativa),
         medicamentos: [r],
       });
     }
@@ -76,16 +108,16 @@ export function exportReceitaPDF(
     let isAtiva = true;
 
     if (Array.isArray(input)) {
-      medicamentosList = input;
-    } else if ("medicamentos" in input && Array.isArray((input as GrupoReceitaMedica).medicamentos)) {
+      medicamentosList = input.filter(Boolean);
+    } else if (input && typeof input === "object" && "medicamentos" in input && Array.isArray((input as GrupoReceitaMedica).medicamentos)) {
       const grupo = input as GrupoReceitaMedica;
-      medicamentosList = grupo.medicamentos;
-      medico = grupo.medico || medico;
-      dataPrescricao = grupo.dataFormatada || dataPrescricao;
-      validadePrescricao = grupo.validade || validadePrescricao;
-      especialidade = grupo.especialidade || especialidade;
+      medicamentosList = grupo.medicamentos.filter(Boolean);
+      medico = safeStr(grupo.medico, medico);
+      dataPrescricao = safeStr(grupo.dataFormatada, dataPrescricao);
+      validadePrescricao = safeStr(grupo.validade, validadePrescricao);
+      especialidade = safeStr(grupo.especialidade, especialidade);
       isAtiva = grupo.ativa;
-    } else {
+    } else if (input && typeof input === "object") {
       medicamentosList = [input as ReceitaMedica];
     }
 
@@ -96,21 +128,23 @@ export function exportReceitaPDF(
 
     const firstItem = medicamentosList[0];
     if (medico === "Médico não informado") {
-      medico = (firstItem.Médico || firstItem.Medico || "Médico não informado").trim();
+      medico = safeStr(firstItem.Médico || firstItem.Medico, "Médico não informado");
     }
     if (dataPrescricao === "Não informada") {
-      dataPrescricao = formatDateBR(firstItem.Data || firstItem.Data_Emissão || firstItem.data) || "Não informada";
+      const rawFirstData = safeStr(firstItem.Data || firstItem.Data_Emissão || firstItem.data);
+      dataPrescricao = formatDateBR(rawFirstData) || rawFirstData || "Não informada";
     }
     if (validadePrescricao === "Não informada") {
       const itemWithValidade = medicamentosList.find((m) => m.Data_Vencimento || m.Data_Validade || m.Validade);
-      validadePrescricao = itemWithValidade
-        ? formatDateBR(itemWithValidade.Data_Vencimento || itemWithValidade.Data_Validade || itemWithValidade.Validade)
-        : "Não informada";
+      if (itemWithValidade) {
+        const rawItemValidade = safeStr(itemWithValidade.Data_Vencimento || itemWithValidade.Data_Validade || itemWithValidade.Validade);
+        validadePrescricao = formatDateBR(rawItemValidade) || rawItemValidade || "Não informada";
+      }
     }
     if (especialidade === "Clínica Geral" && firstItem.Especialidade) {
-      especialidade = firstItem.Especialidade.trim();
+      especialidade = safeStr(firstItem.Especialidade, "Clínica Geral");
     }
-    isAtiva = medicamentosList.some((m) => m.Ativa !== false);
+    isAtiva = medicamentosList.some((m) => isItemAtivo(m.Ativa));
 
     const doc = new jsPDF({
       orientation: "portrait",
@@ -159,7 +193,12 @@ export function exportReceitaPDF(
         doc.text(`Emissão: ${dataEmissaoDoc} às ${horaEmissaoDoc}`, pageWidth - margin, 18, { align: "right" });
         doc.setFont("helvetica", "bold");
         doc.setTextColor(16, 185, 129);
-        doc.text(`${medicamentosList.length} medicamento${medicamentosList.length > 1 ? "s" : ""} prescrito${medicamentosList.length > 1 ? "s" : ""}`, pageWidth - margin, 24, { align: "right" });
+        doc.text(
+          `${medicamentosList.length} medicamento${medicamentosList.length > 1 ? "s" : ""} prescrito${medicamentosList.length > 1 ? "s" : ""}`,
+          pageWidth - margin,
+          24,
+          { align: "right" }
+        );
 
         // Divider
         doc.setDrawColor(226, 232, 240); // Slate 200
@@ -201,7 +240,7 @@ export function exportReceitaPDF(
     doc.setTextColor(100, 116, 139);
     doc.text("MÉDICO PRESCRITOR", col1, y + 6.5);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10.5);
+    doc.setFontSize(10);
     doc.setTextColor(15, 23, 42);
     const splitMedico = doc.splitTextToSize(medico, 54);
     doc.text(splitMedico, col1, y + 13);
@@ -209,7 +248,7 @@ export function exportReceitaPDF(
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(100, 116, 139);
-      doc.text(especialidade, col1, y + 20);
+      doc.text(especialidade, col1, y + 21);
     }
 
     // Col 2: Data da Prescrição & Validade
@@ -218,7 +257,7 @@ export function exportReceitaPDF(
     doc.setTextColor(100, 116, 139);
     doc.text("DATA DA PRESCRIÇÃO", col2, y + 6.5);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10.5);
+    doc.setFontSize(10);
     doc.setTextColor(15, 23, 42);
     doc.text(dataPrescricao, col2, y + 13);
 
@@ -244,14 +283,14 @@ export function exportReceitaPDF(
       doc.setFillColor(209, 250, 229); // Emerald 100
       doc.roundedRect(col3, y + 10, 48, 8, 2, 2, "F");
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
+      doc.setFontSize(8);
       doc.setTextColor(5, 150, 105); // Emerald 600
       doc.text("ATIVA / EM TRATAMENTO", col3 + 24, y + 15.5, { align: "center" });
     } else {
       doc.setFillColor(241, 245, 249); // Slate 100
       doc.roundedRect(col3, y + 10, 36, 8, 2, 2, "F");
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
+      doc.setFontSize(8);
       doc.setTextColor(100, 116, 139);
       doc.text("CONCLUÍDA / INATIVA", col3 + 18, y + 15.5, { align: "center" });
     }
@@ -267,14 +306,16 @@ export function exportReceitaPDF(
 
     // --- MEDICATIONS LIST ---
     medicamentosList.forEach((med, idx) => {
-      const medNome = (med.Medicamento || "Medicamento").trim().toUpperCase();
-      const dosagem = (med.Dosagem || med.Posologia || "").trim();
-      const frequencia = (med.Frequência || med.Frequencia || "").trim();
-      const instrucoes = (med.Instruções || med.Instrucoes || "").trim();
-      const obs = (med.Observação || med.Observacao || med.Observacoes || "").trim();
-      const medValidade = formatDateBR(med.Data_Vencimento || med.Data_Validade || med.Validade);
+      const rawNome = safeStr(med.Medicamento, "Medicamento");
+      const medNome = rawNome.toUpperCase();
+      const dosagem = safeStr(med.Dosagem || med.Posologia);
+      const frequencia = safeStr(med.Frequência || med.Frequencia);
+      const instrucoes = safeStr(med.Instruções || med.Instrucoes);
+      const obs = safeStr(med.Observação || med.Observacao || med.Observacoes);
+      const rawMedValidade = safeStr(med.Data_Vencimento || med.Data_Validade || med.Validade);
+      const medValidade = formatDateBR(rawMedValidade) || rawMedValidade;
 
-      const posologiaTexto = [dosagem, frequencia].filter(Boolean).join(" • ") || "Posologia não especificada";
+      const posologiaTexto = [dosagem, frequencia].filter(Boolean).join(" • ") || "Posologia conforme orientação médica";
       const orientacoesTexto = [instrucoes, obs].filter(Boolean).join(" | ");
 
       // Calculate needed height for this item box
@@ -346,7 +387,6 @@ export function exportReceitaPDF(
     });
 
     // --- SIGNATURE & CARIMBO SECTION ---
-    // Ensure signature fits or add new page
     if (y + 35 > pageHeight - 20) {
       doc.addPage();
       drawPageHeader(false);
@@ -386,45 +426,50 @@ export function exportReceitaPDF(
     doc.setFillColor(16, 185, 129);
     doc.rect(0, pageHeight - 3, pageWidth, 3, "F");
 
-    // --- FILE NAME & ROBUST DOWNLOAD STRATEGY ---
-    const safeDoctor = medico
+    // --- FILE NAME & ROBUST DOWNLOAD ---
+    const cleanDoctor = safeStr(medico, "Prescricao")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z0-9_-]/g, "_")
-      .slice(0, 20);
-    const safeDate = dataPrescricao.replace(/[^0-9]/g, "-") || "receita";
-    const fileName = `Receita_${safeDoctor || "Prescricao"}_${safeDate}.pdf`;
+      .slice(0, 25);
+    const cleanDate = safeStr(dataPrescricao, "consulta").replace(/[^0-9]/g, "-") || "receita";
+    const fileName = `Receita_${cleanDoctor || "Prescricao"}_${cleanDate}.pdf`;
 
-    // Download method 1: Blob URL click (works seamlessly in sandboxed iframes & mobile browsers)
+    // Download: jsPDF save with direct Blob fallback
     try {
-      const blob = doc.output("blob");
-      const blobUrl = URL.createObjectURL(blob);
-      const tempLink = document.createElement("a");
-      tempLink.href = blobUrl;
-      tempLink.download = fileName;
-      tempLink.target = "_blank";
-      tempLink.rel = "noopener noreferrer";
-      tempLink.style.display = "none";
-      document.body.appendChild(tempLink);
-      tempLink.click();
-
-      setTimeout(() => {
-        try {
-          document.body.removeChild(tempLink);
-          URL.revokeObjectURL(blobUrl);
-        } catch {
-          // ignore cleanup errors
-        }
-      }, 3000);
-      return true;
-    } catch (blobErr) {
-      console.warn("Direct blob download fallback to doc.save():", blobErr);
       doc.save(fileName);
       return true;
+    } catch (saveErr) {
+      console.warn("doc.save() fallback to manual Blob URL:", saveErr);
+      if (typeof window !== "undefined" && typeof document !== "undefined") {
+        const blob = doc.output("blob");
+        const blobUrl = URL.createObjectURL(blob);
+        const tempLink = document.createElement("a");
+        tempLink.href = blobUrl;
+        tempLink.download = fileName;
+        tempLink.target = "_blank";
+        tempLink.rel = "noopener noreferrer";
+        tempLink.style.display = "none";
+        document.body.appendChild(tempLink);
+        tempLink.click();
+
+        setTimeout(() => {
+          try {
+            document.body.removeChild(tempLink);
+            URL.revokeObjectURL(blobUrl);
+          } catch {
+            // Ignore cleanup error
+          }
+        }, 3000);
+        return true;
+      }
+      return true;
     }
-  } catch (error) {
-    console.error("Erro ao gerar PDF da Receita Médica:", error);
-    alert("Não foi possível gerar o PDF da receita. Verifique os dados e tente novamente.");
+  } catch (error: any) {
+    console.error("[Finanças Gaeta] Erro ao gerar PDF da Receita Médica:", error);
+    if (typeof window !== "undefined") {
+      alert(`Não foi possível gerar o PDF da receita: ${error?.message || "Erro desconhecido"}`);
+    }
     return false;
   }
 }
