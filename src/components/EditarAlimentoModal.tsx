@@ -13,6 +13,8 @@ import {
   FileText,
 } from "lucide-react";
 import { AlimentoAnaliseResult, AlimentoItem } from "../types";
+import { VoiceInput } from "./VoiceInput";
+import { VoiceTextArea } from "./VoiceTextArea";
 
 interface Props {
   isOpen: boolean;
@@ -122,13 +124,13 @@ export const EditarAlimentoModal: React.FC<Props> = ({
               <label className="text-xs font-semibold text-slate-300">
                 Nome do Prato / Refeição *
               </label>
-              <input
+              <VoiceInput
                 type="text"
                 required
                 value={nomePrato}
                 onChange={(e) => setNomePrato(e.target.value)}
                 placeholder="Ex: Frango com Batata Doce"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
               />
             </div>
 
@@ -216,12 +218,12 @@ export const EditarAlimentoModal: React.FC<Props> = ({
             <label className="text-xs font-semibold text-slate-300">
               Descrição / Ingredientes Gerais
             </label>
-            <textarea
+            <VoiceTextArea
               rows={2}
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
               placeholder="Ex: Peito de frango grelhado com arroz integral e legumes no vapor..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 resize-none"
+              className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 resize-none"
             />
           </div>
 
@@ -229,12 +231,12 @@ export const EditarAlimentoModal: React.FC<Props> = ({
             <label className="text-xs font-semibold text-slate-300">
               Observações Pessoais
             </label>
-            <input
+            <VoiceInput
               type="text"
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
               placeholder="Ex: Almoço pós-treino, sem tempero industrializado..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
             />
           </div>
 

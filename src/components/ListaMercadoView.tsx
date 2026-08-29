@@ -19,6 +19,7 @@ import { ItemMercado, ContaBancaria, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
 import { ComboBox } from "./ComboBox";
+import { VoiceInput } from "./VoiceInput";
 import { LerListaFotoModal } from "./LerListaFotoModal";
 
 interface Props {
@@ -445,16 +446,19 @@ export const ListaMercadoView: React.FC<Props> = ({
 
       {/* Quick Add Bar */}
       <form onSubmit={handleQuickAdd} className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Adicionar item rápido (ex: Arroz, Feijão, Sabão em pó)..."
-          value={quickInput}
-          onChange={(e) => setQuickInput(e.target.value.toUpperCase())}
-          className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white uppercase"
-        />
+        <div className="flex-1">
+          <VoiceInput
+            type="text"
+            placeholder="Adicionar item rápido (ex: Arroz, Feijão, Sabão em pó)..."
+            value={quickInput}
+            onChange={(e) => setQuickInput(e.target.value.toUpperCase())}
+            className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white uppercase focus:outline-none focus:border-emerald-500"
+            uppercase
+          />
+        </div>
         <button
           type="submit"
-          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1 shrink-0"
+          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1 shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Adicionar</span>
@@ -701,6 +705,7 @@ export const ListaMercadoView: React.FC<Props> = ({
                   value={form.Item || ""}
                   onChange={(val) => setForm({ ...form, Item: val })}
                   options={itensSugeridos}
+                  showVoice
                 />
               </div>
 
@@ -711,6 +716,7 @@ export const ListaMercadoView: React.FC<Props> = ({
                   value={form.Categoria || ""}
                   onChange={(val) => setForm({ ...form, Categoria: val })}
                   options={categoriasSugeridas}
+                  showVoice
                 />
               </div>
 

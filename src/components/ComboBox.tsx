@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronDown, Check, X } from "lucide-react";
+import { VoiceButton } from "./VoiceButton";
 
 export interface ComboBoxOption {
   value: string;
@@ -20,6 +21,7 @@ export interface ComboBoxProps {
   disabled?: boolean;
   name?: string;
   allowClear?: boolean;
+  showVoice?: boolean;
 }
 
 export const ComboBox: React.FC<ComboBoxProps> = ({
@@ -35,6 +37,7 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
   disabled = false,
   name,
   allowClear = false,
+  showVoice = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
@@ -167,12 +170,26 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
           required={required}
           disabled={disabled}
           autoComplete="off"
-          className={`w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pr-14 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors ${
+          className={`w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 ${showVoice ? "pr-20" : "pr-14"} text-white text-xs placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors ${
             uppercase ? "uppercase" : ""
           } ${inputClassName}`}
         />
 
         <div className="absolute right-1 flex items-center gap-0.5">
+          {showVoice && (
+            <VoiceButton
+              onTranscript={(spoken) => {
+                let formatted = uppercase ? spoken.toUpperCase() : spoken;
+                onChange(formatted);
+                setSearchQuery(formatted);
+                setIsOpen(false);
+              }}
+              uppercase={uppercase}
+              disabled={disabled}
+              size="xs"
+            />
+          )}
+
           {allowClear && value && !disabled && (
             <button
               type="button"

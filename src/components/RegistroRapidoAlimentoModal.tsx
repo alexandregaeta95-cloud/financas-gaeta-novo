@@ -16,6 +16,7 @@ import {
   FileText,
 } from "lucide-react";
 import { AlimentoAnaliseResult } from "../types";
+import { VoiceInput } from "./VoiceInput";
 
 interface Props {
   isOpen: boolean;
@@ -172,14 +173,15 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               O que você comeu / beliscou? <span className="text-rose-400">*</span>
             </label>
-            <input
+            <VoiceInput
               type="text"
               required
               autoFocus
               placeholder="Ex: 2 BOLACHAS, 1 FATIA DE BOLO, MAÇÃ COM CANELA..."
               value={nomePrato}
               onChange={(e) => setNomePrato(e.target.value.toUpperCase())}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors uppercase"
+              className="bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors uppercase"
+              uppercase
             />
           </div>
 
@@ -235,12 +237,13 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
             <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
               <FileText className="w-3 h-3 text-slate-500" /> Observações / Contexto (Opcional)
             </label>
-            <input
+            <VoiceInput
               type="text"
               placeholder="Ex: LANCHE DA TARDE, BELISCO NO TRABALHO..."
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value.toUpperCase())}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors uppercase"
+              className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors uppercase"
+              uppercase
             />
           </div>
 

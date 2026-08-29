@@ -24,6 +24,8 @@ import { Lancamento, Veiculo, ContaBancaria, CartaoCredito, CategoriaCustomizada
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency, formatCurrencyInput, isLancamentoExcluded } from "../utils/formatters";
 import { ComboBox } from "./ComboBox";
+import { VoiceInput } from "./VoiceInput";
+import { VoiceTextArea } from "./VoiceTextArea";
 
 interface Props {
   lancamentos: Lancamento[];
@@ -1404,12 +1406,13 @@ export const LancamentosView: React.FC<Props> = ({
 
               <div>
                 <label className="block text-slate-400 text-xs mb-1">Descrição</label>
-                <input
+                <VoiceInput
                   type="text"
                   placeholder="Ex: Mercado, Salário, Abastecimento Shell..."
                   value={formData.Descricao}
                   onChange={(e) => setFormData({ ...formData, Descricao: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white placeholder-slate-600 uppercase text-xs focus:outline-none focus:border-emerald-500"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white placeholder-slate-600 uppercase text-xs focus:outline-none focus:border-emerald-500"
+                  uppercase
                   required
                 />
               </div>
@@ -1717,6 +1720,7 @@ export const LancamentosView: React.FC<Props> = ({
                         onChange={(val) => setFormData({ ...formData, Motorista: val })}
                         options={motoristasDisponiveis}
                         placeholder="Ex: Carlos / Alexandre"
+                        showVoice
                       />
                     </div>
                   </div>
@@ -1845,6 +1849,7 @@ export const LancamentosView: React.FC<Props> = ({
                         onChange={(val) => setFormData({ ...formData, Posto: val })}
                         options={postosDisponiveis}
                         placeholder="Ex: Posto Ipiranga"
+                        showVoice
                       />
                     </div>
                     <div className="min-w-0">
@@ -2011,12 +2016,13 @@ export const LancamentosView: React.FC<Props> = ({
 
               <div>
                 <label className="block text-slate-400 text-xs mb-1">Observações</label>
-                <textarea
+                <VoiceTextArea
                   rows={2}
                   placeholder="Observações adicionais..."
                   value={formData.Observacoes || ""}
                   onChange={(e) => setFormData({ ...formData, Observacoes: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white placeholder-slate-600 resize-none uppercase text-xs focus:outline-none focus:border-emerald-500"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white placeholder-slate-600 resize-none uppercase text-xs focus:outline-none focus:border-emerald-500"
+                  uppercase
                 />
               </div>
             </form>
