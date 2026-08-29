@@ -155,6 +155,103 @@ Retorne estritamente um JSON com a seguinte estrutura:
     }
   });
 
+  // Dedicated Vision AI endpoint for Reading Shopping Lists from Images
+  app.post("/api/read-shopping-list", async (req, res) => {
+    try {
+      const { imageBase64, mimeType } = req.body;
+
+      if (!imageBase64) {
+        res.status(400).json({
+          status: "error",
+          message: "A imagem em base64 é obrigatória para ler a lista de mercado.",
+        });
+        return;
+      }
+
+      const genAI = getGenAI();
+      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+
+      const prompt = `Você é um leitor óptico (OCR) e assistente especialista em listas de compras e supermercado.
+Analise a imagem enviada (que pode ser uma lista de compras manuscrita/feita à mão em papel, uma lista impressa, ou anotações).
+
+Instruções estritas:
+1. Extraia cada item da lista individualmente.
+2. Formate o nome do item SEMPRE EM LETRAS MAIÚSCULAS (ex: "LEITE INTEGRAL", "ARROZ TIO JOÃO 5KG", "DETERGENTE NEUTRO", "BANANA PRATA").
+3. Detecte a quantidade se estiver escrita (ex: "2", "1/2", "3"). Se não tiver quantidade especificada, use 1 como padrão.
+4. Detecte a unidade de medida (ex: "UN", "KG", "G", "L", "ML", "PCT", "CX", "DZ"). Se não for indicada, use "UN".
+5. Classifique o item em uma das seguintes categorias de supermercado:
+   - "HORTIFRUTI" (frutas, legumes, verduras, temperos frescos)
+   - "AÇOUGUE" (carnes bovinas, aves, peixes, suínos, linguiças)
+   - "PADARIA" (pães, bolos, torradas, biscoitos artesanais)
+   - "LATICÍNIOS & FRIOS" (leite, queijos, iogurtes, manteiga, presunto)
+   - "MERCEARIA" (arroz, feijão, massas, óleos, açúcar, café, enlatados, molhos)
+   - "BEBIDAS" (sucos, refrigerantes, água, cervejas, vinhos)
+   - "LIMPEZA" (detergentes, sabão em pó, desinfetantes, papel toalha)
+   - "HIGIENE & BELEZA" (shampoo, sabonete, pasta de dente, desodorante, papel higiênico)
+   - "PET" (ração, sachês, petiscos, areia de gato)
+   - "CONGELADOS" (pizzas, sorvetes, pratos prontos, legumes congelados)
+   - "OUTROS" (qualquer outro item)
+
+Responda ESTRITAMENTE em formato JSON com o seguinte formato:
+{
+  "itens": [
+    {
+      "item": "NOME DO ITEM EM MAIÚSCULO",
+      "quantidade": number,
+      "unidade": "UN" | "KG" | "G" | "L" | "ML" | "PCT" | "CX" | "DZ",
+      "categoria": "HORTIFRUTI" | "AÇOUGUE" | "PADARIA" | "LATICÍNIOS & FRIOS" | "MERCEARIA" | "BEBIDAS" | "LIMPEZA" | "HIGIENE & BELEZA" | "PET" | "CONGELADOS" | "OUTROS",
+      "observacao": "detalhe ou observação se houver, ou string vazia"
+    }
+  ],
+  "resumoLeitura": "Breve frase descrevendo o que foi identificado (ex: 'Identificados 8 itens na anotação de papel.')"
+}`;
+
+      const response = await genAI.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                inlineData: {
+                  mimeType: mimeType || "image/jpeg",
+                  data: cleanBase64,
+                },
+              },
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
+        config: {
+          responseMimeType: "application/json",
+        },
+      });
+
+      const responseText = response.text || "{}";
+      let parsedData;
+      try {
+        parsedData = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.error("Erro ao fazer parse do JSON do Gemini (Lista de Mercado):", parseErr, responseText);
+        const sanitized = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+        parsedData = JSON.parse(sanitized);
+      }
+
+      res.json({
+        status: "success",
+        data: parsedData,
+      });
+    } catch (err: any) {
+      console.error("[Gemini Shopping List OCR Error]:", err);
+      res.status(500).json({
+        status: "error",
+        message: err.message || "Falha ao ler a imagem da lista de compras com Gemini.",
+      });
+    }
+  });
+
   // Proxy endpoint to communicate with Google Apps Script
   app.all("/api/proxy", async (req, res) => {
     try {

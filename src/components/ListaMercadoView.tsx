@@ -13,11 +13,13 @@ import {
   Clock,
   Bell,
   Calendar,
+  Camera,
 } from "lucide-react";
 import { ItemMercado, ContaBancaria, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
 import { ComboBox } from "./ComboBox";
+import { LerListaFotoModal } from "./LerListaFotoModal";
 
 interface Props {
   itens: ItemMercado[];
@@ -52,6 +54,7 @@ export const ListaMercadoView: React.FC<Props> = ({
 
   // Modal de Lembrete Geral de Compras
   const [isGeneralReminderModalOpen, setIsGeneralReminderModalOpen] = useState(false);
+  const [isReadPhotoModalOpen, setIsReadPhotoModalOpen] = useState(false);
   const [generalReminderDate, setGeneralReminderDate] = useState(() => {
     return localStorage.getItem("gaeta_mercado_general_date") || "";
   });
@@ -164,7 +167,7 @@ export const ListaMercadoView: React.FC<Props> = ({
     if (!quickInput.trim()) return;
     const item: ItemMercado = {
       Id: generateNewId("MERC"),
-      Item: quickInput.trim(),
+      Item: quickInput.trim().toUpperCase(),
       Categoria: "MERCADO",
       Quantidade: 1,
       Unidade: "UN",
@@ -174,6 +177,12 @@ export const ListaMercadoView: React.FC<Props> = ({
     };
     await onSaveItem(item);
     setQuickInput("");
+  };
+
+  const handleConfirmBatchItens = async (novosItens: ItemMercado[]) => {
+    for (const item of novosItens) {
+      await onSaveItem(item);
+    }
   };
 
   const handleOpenModal = (item?: ItemMercado) => {
@@ -385,7 +394,16 @@ export const ListaMercadoView: React.FC<Props> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <button
+            onClick={() => setIsReadPhotoModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 hover:to-teal-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
+            title="Tirar foto ou enviar imagem de uma lista de compras para extrair itens com IA"
+          >
+            <Camera className="w-3.5 h-3.5 text-emerald-400" />
+            <span>📷 Ler Lista por Foto</span>
+          </button>
+
           <button
             onClick={() => setIsGeneralReminderModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-semibold rounded-xl transition-colors"
@@ -973,6 +991,14 @@ export const ListaMercadoView: React.FC<Props> = ({
           </div>
         </div>
       )}
+
+      {/* Modal de Leitura de Lista por Foto (Gemini Vision) */}
+      <LerListaFotoModal
+        isOpen={isReadPhotoModalOpen}
+        onClose={() => setIsReadPhotoModalOpen(false)}
+        onConfirmItens={handleConfirmBatchItens}
+        generateNewId={generateNewId}
+      />
     </div>
   );
 };
