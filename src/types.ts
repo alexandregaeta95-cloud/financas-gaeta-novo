@@ -174,6 +174,7 @@ export interface MetaCategoria {
   Valor_Meta: number;
   Mes_Ano?: string; // YYYY-MM
   Alerta_Porcentagem?: number; // e.g. 80 for 80%
+  Observação?: string;
 }
 
 // 11. Categorias Customizadas

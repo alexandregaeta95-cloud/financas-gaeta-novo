@@ -3,6 +3,7 @@ import { X, Activity, Scale, Heart, Droplets, Calendar, Clock, AlertCircle, Info
 import { RegistroSaude } from "../types";
 import { generateNewId } from "../services/api";
 import { calcularImc } from "../utils/imc";
+import { VoiceTextArea } from "./VoiceTextArea";
 
 interface Props {
   isOpen: boolean;
@@ -434,12 +435,13 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Observações / Contexto (Peso)
                 </label>
-                <textarea
+                <VoiceTextArea
                   rows={2}
                   placeholder="Ex: Pela manhã em jejum; após treino de pernas..."
                   value={pesoObs}
                   onChange={(e) => setPesoObs(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 uppercase"
+                  className="bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 uppercase"
+                  uppercase
                 />
               </div>
             </div>
@@ -522,12 +524,13 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Observações / Sintomas (Pressão)
                 </label>
-                <textarea
+                <VoiceTextArea
                   rows={2}
                   placeholder="Ex: Aferido em repouso de 5 min; após tomar café..."
                   value={pressaoObs}
                   onChange={(e) => setPressaoObs(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 uppercase"
+                  className="bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 uppercase"
+                  uppercase
                 />
               </div>
             </div>
@@ -580,12 +583,13 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Observações / Alimentos (Glicemia)
                 </label>
-                <textarea
+                <VoiceTextArea
                   rows={2}
                   placeholder="Ex: 2 horas após almoço com massas; jejum de 10 horas..."
                   value={glicemiaObs}
                   onChange={(e) => setGlicemiaObs(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 uppercase"
+                  className="bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 uppercase"
+                  uppercase
                 />
               </div>
             </div>

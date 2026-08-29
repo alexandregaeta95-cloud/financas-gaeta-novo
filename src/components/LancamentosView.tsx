@@ -1012,13 +1012,13 @@ export const LancamentosView: React.FC<Props> = ({
           <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center flex-1">
             {/* Search Input */}
             <div className="relative flex-1 min-w-0 sm:min-w-[200px] max-w-full sm:max-w-md">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-              <input
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none z-10" />
+              <VoiceInput
                 type="text"
                 placeholder="Buscar por descrição ou categoria..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-9 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
               />
             </div>
 

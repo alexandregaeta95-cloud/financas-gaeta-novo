@@ -13,6 +13,8 @@ import {
   Check,
 } from "lucide-react";
 import { ExercicioRegistro } from "../types";
+import { VoiceInput } from "./VoiceInput";
+import { VoiceTextArea } from "./VoiceTextArea";
 
 interface Props {
   isOpen: boolean;
@@ -216,14 +218,15 @@ export const RegistroExercicioModal: React.FC<Props> = ({
 
             {tipoSelecionado === "OUTRO" && (
               <div className="mt-2.5 animate-in fade-in duration-150">
-                <input
+                <VoiceInput
                   type="text"
                   required
                   autoFocus
                   placeholder="DIGITE O TIPO DO EXERCÍCIO (EX: JIU-JITSU, TÊNIS...)"
                   value={tipoCustomizado}
                   onChange={(e) => setTipoCustomizado(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors uppercase"
+                  uppercase
                 />
               </div>
             )}
@@ -346,12 +349,13 @@ export const RegistroExercicioModal: React.FC<Props> = ({
             <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
               <FileText className="w-3 h-3 text-slate-500" /> Observações do Treino (Opcional)
             </label>
-            <textarea
+            <VoiceTextArea
               rows={2}
               placeholder="EX: TREINO A: PEITO E TRÍCEPS, 4 SÉRIES DE SUPINO..."
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value.toUpperCase())}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
+              className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors resize-none uppercase"
+              uppercase
             />
           </div>
 

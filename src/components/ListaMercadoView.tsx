@@ -20,6 +20,7 @@ import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
+import { VoiceTextArea } from "./VoiceTextArea";
 import { LerListaFotoModal } from "./LerListaFotoModal";
 
 interface Props {
@@ -651,12 +652,13 @@ export const ListaMercadoView: React.FC<Props> = ({
           {/* Campo Observações */}
           <div>
             <label className="text-slate-400 block mb-1 font-medium">Observações</label>
-            <input
+            <VoiceInput
               type="text"
               placeholder="Ex: Compras do mês"
               value={checkoutObservacoes}
               onChange={(e) => setCheckoutObservacoes(e.target.value.toUpperCase())}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs uppercase focus:outline-hidden focus:border-emerald-500"
+              className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs uppercase focus:outline-hidden focus:border-emerald-500"
+              uppercase
             />
           </div>
         </div>
@@ -831,6 +833,19 @@ export const ListaMercadoView: React.FC<Props> = ({
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Observações */}
+              <div>
+                <label className="text-slate-400 block mb-1">Observações</label>
+                <VoiceTextArea
+                  rows={2}
+                  placeholder="Ex: Marca de preferência, detalhes..."
+                  value={form.Observação || ""}
+                  onChange={(e) => setForm({ ...form, Observação: e.target.value })}
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white placeholder-slate-600 resize-none uppercase text-xs focus:outline-none focus:border-emerald-500"
+                  uppercase
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">

@@ -25,6 +25,7 @@ import { AlimentoAnaliseResult, ConsumoCafe, ConsumoAgua, ConfigAgua } from "../
 import { formatDateBR } from "../utils/formatters";
 import { ContadorCafeWidget } from "./ContadorCafeWidget";
 import { ContadorAguaWidget } from "./ContadorAguaWidget";
+import { VoiceInput } from "./VoiceInput";
 
 interface Props {
   alimentos: AlimentoAnaliseResult[];
@@ -205,22 +206,14 @@ export const HistoricoAlimentosView: React.FC<Props> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-            <input
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3 z-10 pointer-events-none" />
+            <VoiceInput
               type="text"
               placeholder="Buscar refeição, prato, ingrediente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-9 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
           </div>
 
           {/* Action Buttons: Registro Rápido & Nova Análise com Foto */}

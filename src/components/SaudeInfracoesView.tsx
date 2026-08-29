@@ -49,6 +49,8 @@ import { ExerciciosView } from "./ExerciciosView";
 import { RegistroExercicioModal } from "./RegistroExercicioModal";
 import { SaudeRelatorioModal } from "./SaudeRelatorioModal";
 import { exportReceitaPDF, agruparReceitasPorPrescricao, GrupoReceitaMedica } from "../utils/receitaPdf";
+import { VoiceInput } from "./VoiceInput";
+import { VoiceTextArea } from "./VoiceTextArea";
 
 interface Props {
   consultas: ConsultaMedica[];
@@ -1250,24 +1252,26 @@ export const SaudeInfracoesView: React.FC<Props> = ({
             <form onSubmit={handleSaveConsultaSubmit} className="space-y-3">
               <div>
                 <label className="text-slate-400 block mb-1">Especialidade</label>
-                <input
+                <VoiceInput
                   type="text"
                   required
                   placeholder="Ex: Cardiologia"
                   value={consultaForm.Especialidade}
                   onChange={(e) => setConsultaForm({ ...consultaForm, Especialidade: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Médico</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     value={consultaForm.Médico}
                     onChange={(e) => setConsultaForm({ ...consultaForm, Médico: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    uppercase
                   />
                 </div>
                 <div>
@@ -1308,12 +1312,13 @@ export const SaudeInfracoesView: React.FC<Props> = ({
 
               <div>
                 <label className="text-slate-400 block mb-1">Local</label>
-                <input
+                <VoiceInput
                   type="text"
                   placeholder="Ex: Hospital Albert Einstein - Morumbi"
                   value={consultaForm.Local}
                   onChange={(e) => setConsultaForm({ ...consultaForm, Local: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
                 />
               </div>
 
@@ -1353,13 +1358,14 @@ export const SaudeInfracoesView: React.FC<Props> = ({
             <form onSubmit={handleSaveReceitaSubmit} className="space-y-3">
               <div>
                 <label className="text-slate-400 block mb-1">Medicamento *</label>
-                <input
+                <VoiceInput
                   type="text"
                   required
                   placeholder="Ex: Amoxicilina 500mg"
                   value={receitaForm.Medicamento || ""}
                   onChange={(e) => setReceitaForm({ ...receitaForm, Medicamento: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
+                  uppercase
                 />
               </div>
 
@@ -1401,45 +1407,49 @@ export const SaudeInfracoesView: React.FC<Props> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Dosagem / Posologia</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     placeholder="Ex: 1 comprimido"
                     value={receitaForm.Dosagem || ""}
                     onChange={(e) => setReceitaForm({ ...receitaForm, Dosagem: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
+                    uppercase
                   />
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Frequência de Uso</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     placeholder="Ex: De 8 em 8 horas"
                     value={receitaForm.Frequência || ""}
                     onChange={(e) => setReceitaForm({ ...receitaForm, Frequência: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
+                    uppercase
                   />
                 </div>
               </div>
 
               <div>
                 <label className="text-slate-400 block mb-1">Médico Prescritor</label>
-                <input
+                <VoiceInput
                   type="text"
                   placeholder="Ex: Dra. Ana Paula (CRM 12345)"
                   value={receitaForm.Médico || ""}
                   onChange={(e) => setReceitaForm({ ...receitaForm, Médico: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500"
+                  uppercase
                 />
               </div>
 
               <div>
                 <label className="text-slate-400 block mb-1">Instruções de Uso / Observações</label>
-                <textarea
+                <VoiceTextArea
                   rows={2}
                   placeholder="Ex: Tomar após as principais refeições, não interromper o tratamento."
                   value={receitaForm.Instruções || ""}
                   onChange={(e) => setReceitaForm({ ...receitaForm, Instruções: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500 resize-none"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase focus:outline-none focus:border-emerald-500 resize-none"
+                  uppercase
                 />
               </div>
 
@@ -1522,13 +1532,14 @@ export const SaudeInfracoesView: React.FC<Props> = ({
             <form onSubmit={handleSaveInfracaoSubmit} className="space-y-3">
               <div>
                 <label className="text-slate-400 block mb-1">Título / Infração</label>
-                <input
+                <VoiceInput
                   type="text"
                   required
                   placeholder="Ex: Avanço de sinal vermelho"
                   value={infracaoForm.Título}
                   onChange={(e) => setInfracaoForm({ ...infracaoForm, Título: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
                 />
               </div>
 

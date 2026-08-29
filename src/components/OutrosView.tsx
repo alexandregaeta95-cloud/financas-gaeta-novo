@@ -18,6 +18,7 @@ import {
 } from "../types";
 import { generateNewId } from "../services/api";
 import { formatCurrency, parseCurrency } from "../utils/formatters";
+import { VoiceInput } from "./VoiceInput";
 
 interface Props {
   metas: MetaCategoria[];
@@ -89,16 +90,19 @@ export const OutrosView: React.FC<Props> = ({
           </h3>
 
           <form onSubmit={handleAddItemMercado} className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Adicionar item à lista..."
-              value={newItemMercadoText}
-              onChange={(e) => setNewItemMercadoText(e.target.value.toUpperCase())}
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white uppercase"
-            />
+            <div className="flex-1">
+              <VoiceInput
+                type="text"
+                placeholder="Adicionar item à lista..."
+                value={newItemMercadoText}
+                onChange={(e) => setNewItemMercadoText(e.target.value.toUpperCase())}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white uppercase"
+                uppercase
+              />
+            </div>
             <button
               type="submit"
-              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold"
+              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shrink-0"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -138,16 +142,19 @@ export const OutrosView: React.FC<Props> = ({
           </h3>
 
           <form onSubmit={handleAddAgenda} className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Novo compromisso..."
-              value={newAgendaText}
-              onChange={(e) => setNewAgendaText(e.target.value.toUpperCase())}
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white uppercase"
-            />
+            <div className="flex-1">
+              <VoiceInput
+                type="text"
+                placeholder="Novo compromisso..."
+                value={newAgendaText}
+                onChange={(e) => setNewAgendaText(e.target.value.toUpperCase())}
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white uppercase"
+                uppercase
+              />
+            </div>
             <button
               type="submit"
-              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold"
+              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shrink-0"
             >
               <Plus className="w-4 h-4" />
             </button>

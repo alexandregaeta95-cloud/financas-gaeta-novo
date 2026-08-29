@@ -12,6 +12,8 @@ import {
 } from "../utils/metasCalculations";
 import { MetasRelatorioModal } from "./MetasRelatorioModal";
 import { ComboBox } from "./ComboBox";
+import { VoiceInput } from "./VoiceInput";
+import { VoiceTextArea } from "./VoiceTextArea";
 
 interface Props {
   metas: MetaCategoria[];
@@ -588,6 +590,18 @@ export const MetasCategoriasView: React.FC<Props> = ({
                 />
               </div>
 
+              <div>
+                <label className="text-slate-400 block mb-1">Observações da Meta</label>
+                <VoiceTextArea
+                  rows={2}
+                  placeholder="Ex: Teto máximo para economia este mês..."
+                  value={metaForm.Observação || ""}
+                  onChange={(e) => setMetaForm({ ...metaForm, Observação: e.target.value })}
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white placeholder-slate-600 resize-none uppercase text-xs focus:outline-none focus:border-emerald-500"
+                  uppercase
+                />
+              </div>
+
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
                 <button
                   type="button"
@@ -624,13 +638,14 @@ export const MetasCategoriasView: React.FC<Props> = ({
             <form onSubmit={handleSaveCatSubmit} className="space-y-3">
               <div>
                 <label className="text-slate-400 block mb-1">Nome da Categoria</label>
-                <input
+                <VoiceInput
                   type="text"
                   required
                   placeholder="Ex: ACADEMIA, VET, CURSOS"
                   value={catForm.Nome}
                   onChange={(e) => setCatForm({ ...catForm, Nome: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase font-semibold"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase font-semibold"
+                  uppercase
                 />
               </div>
 

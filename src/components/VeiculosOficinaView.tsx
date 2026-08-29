@@ -15,6 +15,8 @@ import { Veiculo, ServicoOficina, ManutencaoAgendada } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
 import { ComboBox } from "./ComboBox";
+import { VoiceInput } from "./VoiceInput";
+import { VoiceTextArea } from "./VoiceTextArea";
 
 type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
 
@@ -518,8 +520,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           {/* Search Input */}
           <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-            <input
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none z-10" />
+            <VoiceInput
               type="text"
               placeholder={
                 activeTab === "veiculos"
@@ -530,7 +532,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-9 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
             />
           </div>
 
@@ -963,22 +965,24 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Marca</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     required
                     value={veiculoForm.Marca}
                     onChange={(e) => setVeiculoForm({ ...veiculoForm, Marca: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                    uppercase
                   />
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Modelo</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     required
                     value={veiculoForm.Modelo}
                     onChange={(e) => setVeiculoForm({ ...veiculoForm, Modelo: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                    uppercase
                   />
                 </div>
               </div>
@@ -986,12 +990,13 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Placa</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     required
                     value={veiculoForm.Placa}
                     onChange={(e) => setVeiculoForm({ ...veiculoForm, Placa: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono uppercase"
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono uppercase"
+                    uppercase
                   />
                 </div>
                 <div>
@@ -1025,11 +1030,12 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Motorista</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     value={veiculoForm.Motorista}
                     onChange={(e) => setVeiculoForm({ ...veiculoForm, Motorista: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
+                    uppercase
                   />
                 </div>
                 <div>

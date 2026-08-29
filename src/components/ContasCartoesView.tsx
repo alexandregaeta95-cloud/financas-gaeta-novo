@@ -11,6 +11,7 @@ import { ContaBancaria, CartaoCredito, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency, formatCurrencyInput, calculateCardBalance } from "../utils/formatters";
 import { ComboBox } from "./ComboBox";
+import { VoiceInput } from "./VoiceInput";
 
 const BANCOS_SUGESTOES = [
   "ITAÚ",
@@ -656,20 +657,22 @@ export const ContasCartoesView: React.FC<Props> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Agência</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     value={contaForm.Agência}
                     onChange={(e) => setContaForm({ ...contaForm, Agência: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono uppercase"
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono uppercase"
+                    uppercase
                   />
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Conta</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     value={contaForm.Conta}
                     onChange={(e) => setContaForm({ ...contaForm, Conta: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono uppercase"
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono uppercase"
+                    uppercase
                   />
                 </div>
               </div>
@@ -710,13 +713,14 @@ export const ContasCartoesView: React.FC<Props> = ({
             <form onSubmit={handleSaveCartaoSubmit} className="space-y-3">
               <div>
                 <label className="text-slate-400 block mb-1">Nome do Cartão</label>
-                <input
+                <VoiceInput
                   type="text"
                   required
                   placeholder="EX: NUBANK MASTERCARD BLACK"
                   value={cartaoForm.Nome}
                   onChange={(e) => setCartaoForm({ ...cartaoForm, Nome: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase font-semibold"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase font-semibold"
+                  uppercase
                 />
               </div>
 

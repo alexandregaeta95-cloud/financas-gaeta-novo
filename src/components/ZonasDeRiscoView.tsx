@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { ShieldAlert, MapPin, Plus, Edit2, Trash2, X, Navigation, Volume2, VolumeX, BellRing, Zap, Loader2 } from "lucide-react";
 import { ZonaDeRisco } from "../types";
 import { generateNewId } from "../services/api";
+import { VoiceInput } from "./VoiceInput";
 
 const DEFAULT_TIPOS_OCORRENCIA = [
   "ASSALTO",
@@ -530,14 +531,15 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
                 <label className="text-slate-300 font-bold block text-xs">
                   2. NOME DO LOCAL / REGIÃO
                 </label>
-                <input
+                <VoiceInput
                   type="text"
                   required
                   autoFocus
                   placeholder="EX: VIADUTO / POSTO / CRUZAMENTO"
                   value={quickLocal}
                   onChange={(e) => setQuickLocal(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white text-sm font-semibold uppercase placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                  className="bg-slate-950 border border-slate-700 rounded-xl p-3 text-white text-sm font-semibold uppercase placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                  uppercase
                 />
               </div>
 
@@ -582,25 +584,27 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="text-slate-400 block mb-1">Nome do Local / Descrição</label>
-                <input
+                <VoiceInput
                   type="text"
                   required
                   placeholder="Ex: ENTRADA DA COMUNIDADE X - ASSALTOS"
                   value={form.Descrição}
                   onChange={(e) => setForm({ ...form, Descrição: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Bairro / Cidade</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     placeholder="Ex: CENTRO"
                     value={form.Bairro_Cidade || ""}
                     onChange={(e) => setForm({ ...form, Bairro_Cidade: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    uppercase
                   />
                 </div>
                 <div>
@@ -625,7 +629,7 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
                     ))}
                   </select>
                   {selectedTipo === "OUTROS" && (
-                    <input
+                    <VoiceInput
                       type="text"
                       autoFocus
                       placeholder="DIGITE O NOVO TIPO"
@@ -635,7 +639,8 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
                         setCustomTipo(val);
                         setForm((prev) => ({ ...prev, Tipo_Ocorrencia: val }));
                       }}
-                      className="w-full mt-1.5 bg-slate-950 border border-rose-500/40 rounded-xl p-2.5 text-white uppercase placeholder-slate-600 focus:outline-none focus:border-rose-500"
+                      className="mt-1.5 bg-slate-950 border border-rose-500/40 rounded-xl p-2.5 text-white uppercase placeholder-slate-600 focus:outline-none focus:border-rose-500"
+                      uppercase
                     />
                   )}
                 </div>
@@ -692,22 +697,24 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
 
               <div>
                 <label className="text-slate-400 block mb-1">Mensagem de Alerta</label>
-                <input
+                <VoiceInput
                   type="text"
                   value={form.Mensagem_De_Alerta}
                   onChange={(e) => setForm({ ...form, Mensagem_De_Alerta: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
                 />
               </div>
 
               <div>
                 <label className="text-slate-400 block mb-1">Observações</label>
-                <input
+                <VoiceInput
                   type="text"
                   placeholder="Ex: EVITAR À NOITE, FECHAR VIDROS"
                   value={form.Observação || form.Observacoes || ""}
                   onChange={(e) => setForm({ ...form, Observação: e.target.value.toUpperCase(), Observacoes: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
                 />
               </div>
 

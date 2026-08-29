@@ -12,6 +12,7 @@ import {
   GlassWater,
 } from "lucide-react";
 import { ConsumoAgua } from "../types";
+import { VoiceInput } from "./VoiceInput";
 
 interface Props {
   isOpen: boolean;
@@ -262,12 +263,12 @@ export const RegistroAguaModal: React.FC<Props> = ({
               <FileText className="w-3.5 h-3.5 text-slate-400" />
               Observação (Opcional)
             </label>
-            <input
+            <VoiceInput
               type="text"
               placeholder="Ex: Garrafa térmica, Copo, Água com gás..."
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
             />
 
             {/* Sugestões rápidas */}

@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { ConsumoCafe } from "../types";
+import { VoiceInput } from "./VoiceInput";
 
 interface Props {
   isOpen: boolean;
@@ -483,12 +484,12 @@ export const RegistroCafeModal: React.FC<Props> = ({
               <FileText className="w-3.5 h-3.5 text-slate-400" />
               Observação (Opcional)
             </label>
-            <input
+            <VoiceInput
               type="text"
               placeholder="Ex: Expresso, Coado, Com leite, Sem açúcar..."
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
 
             {/* Sugestões rápidas */}

@@ -3,6 +3,8 @@ import { CalendarDays, List, Plus, Edit2, Trash2, X, CheckCircle2, Clock, AlertC
 import { CompromissoAgenda } from "../types";
 import { generateNewId } from "../services/api";
 import { formatarHora } from "../utils/formatters";
+import { VoiceInput } from "./VoiceInput";
+import { VoiceTextArea } from "./VoiceTextArea";
 
 interface Props {
   agenda: CompromissoAgenda[];
@@ -368,25 +370,27 @@ export const AgendaCompromissosView: React.FC<Props> = ({
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="text-slate-400 block mb-1">Título</label>
-                <input
+                <VoiceInput
                   type="text"
                   required
                   placeholder="Ex: Reunião de Alinhamento"
                   value={form.Titulo}
                   onChange={(e) => setForm({ ...form, Titulo: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
                 />
               </div>
 
               <div>
                 <label className="text-slate-400 block mb-1">Categoria</label>
-                <input
+                <VoiceInput
                   type="text"
                   list="categorias-agenda"
                   placeholder="Ex: TRABALHO, PESSOAL, SAÚDE, FINANÇAS..."
                   value={form.Categoria || ""}
                   onChange={(e) => setForm({ ...form, Categoria: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
                 />
                 <datalist id="categorias-agenda">
                   {categoriasSugeridas.map((cat) => (
@@ -443,11 +447,12 @@ export const AgendaCompromissosView: React.FC<Props> = ({
 
               <div>
                 <label className="text-slate-400 block mb-1">Descrição</label>
-                <textarea
+                <VoiceTextArea
                   rows={2}
                   value={form.Descrição}
                   onChange={(e) => setForm({ ...form, Descrição: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white resize-none uppercase"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white resize-none uppercase"
+                  uppercase
                 />
               </div>
 
