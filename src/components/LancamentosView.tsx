@@ -1470,15 +1470,15 @@ export const LancamentosView: React.FC<Props> = ({
                 key={itemId}
                 className="bg-slate-900 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl transition-all duration-200 shadow-xs overflow-hidden"
               >
-                {/* Linha Principal (Alta respiração, valor em destaque máximo na direita, 1-2 badges essenciais) */}
+                {/* Linha Principal Compacta (2 linhas: Linha 1 = Ícone + Descrição/Badge + Valor com ponto de status; Linha 2 = Data + Conta/Cartão + Pagamento) */}
                 <div
                   onClick={toggleExpand}
-                  className="p-4 sm:p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 cursor-pointer select-none hover:bg-slate-800/30 transition-colors"
+                  className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-slate-800/30 transition-colors"
                 >
-                  {/* Lado Esquerdo: Ícone + Título + Categoria Essencial + Data/Conta */}
-                  <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                  {/* Lado Esquerdo: Ícone + Conteúdo Compacto de 2 linhas */}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div
-                      className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
+                      className={`p-2.5 rounded-xl shrink-0 ${
                         isFuel
                           ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                           : isReceita
@@ -1495,18 +1495,19 @@ export const LancamentosView: React.FC<Props> = ({
                       )}
                     </div>
 
-                    <div className="min-w-0 space-y-1 flex-1">
+                    <div className="min-w-0 space-y-0.5 flex-1">
+                      {/* Linha 1: Descrição + Badges Essenciais */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-white text-sm sm:text-base tracking-tight truncate max-w-full sm:max-w-md">
+                        <span className="font-semibold text-white text-sm tracking-tight truncate max-w-[200px] sm:max-w-xs md:max-w-md">
                           {item.Descricao}
                         </span>
 
-                        {/* Badge 1: Categoria (Limpo e discreto) */}
-                        <span className="px-2 py-0.5 rounded-md bg-slate-800/90 text-[11px] font-medium text-slate-300 border border-slate-700/70">
+                        {/* Badge 1: Categoria */}
+                        <span className="px-2 py-0.5 rounded-md bg-slate-800/90 text-[10px] sm:text-[11px] font-medium text-slate-300 border border-slate-700/70">
                           {item.Categoria}
                         </span>
 
-                        {/* Badge 2 (Opcional): Apenas se for Parcela ou Abastecimento com combustível */}
+                        {/* Badge 2 (Opcional): Parcela ou Tipo de Combustível */}
                         {getSeriesId(item) && (
                           <span className="px-2 py-0.5 rounded-md bg-indigo-950/40 text-[10px] font-medium text-indigo-300 border border-indigo-500/30">
                             {item.Parcela_Info ? `Parc. ${item.Parcela_Info}` : "Recorrente"}
@@ -1519,11 +1520,11 @@ export const LancamentosView: React.FC<Props> = ({
                         )}
                       </div>
 
-                      {/* Informações Secundárias: Data e Conta / Cartão */}
-                      <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
+                      {/* Linha 2: Data • Conta / Cartão • Forma de Pagamento */}
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
                         <span>{item.Data}</span>
                         <span>•</span>
-                        <span className="text-slate-300">{item.Conta || item.Cartao || "Principal"}</span>
+                        <span className="text-slate-300 truncate max-w-[120px] sm:max-w-[180px]">{item.Conta || item.Cartao || "Principal"}</span>
                         {item.Forma_Pagamento && (
                           <>
                             <span>•</span>
@@ -1534,44 +1535,39 @@ export const LancamentosView: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  {/* Lado Direito: Valor de Alto Destaque + Status + Botões */}
-                  <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 border-t sm:border-0 border-slate-800/80 pt-2.5 sm:pt-0">
-                    <div className="text-left sm:text-right flex flex-col sm:items-end">
+                  {/* Lado Direito: Valor alinhado à direita na MESMA linha com ponto de status discreto + Ações */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-2">
+                      {/* Ponto indicador de status de pagamento discreto */}
                       <span
-                        className={`text-base sm:text-lg font-bold tracking-tight ${
+                        className={`w-2 h-2 rounded-full shrink-0 ${
+                          isPago ? "bg-emerald-400 shadow-xs shadow-emerald-400/50" : "bg-amber-400 shadow-xs shadow-amber-400/50"
+                        }`}
+                        title={isPago ? "Pago" : "Pendente"}
+                      />
+
+                      {/* Valor em destaque */}
+                      <span
+                        className={`text-sm sm:text-base font-bold tracking-tight whitespace-nowrap ${
                           isReceita ? "text-teal-400" : "text-white"
                         }`}
                       >
                         {isReceita ? "+" : "-"} R$ {formatCurrency(item.Valor)}
                       </span>
-
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span
-                          className={`inline-block w-1.5 h-1.5 rounded-full ${
-                            isPago ? "bg-emerald-400" : "bg-amber-400"
-                          }`}
-                        />
-                        <span
-                          className={`text-[11px] font-medium ${
-                            isPago ? "text-emerald-400/90" : "text-amber-400/90"
-                          }`}
-                        >
-                          {isPago ? "Pago" : "Pendente"}
-                        </span>
-                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    {/* Botões de Ação */}
+                    <div className="flex items-center gap-0.5">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOpenEdit(item);
                         }}
-                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
                         title="Editar lançamento"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         type="button"
@@ -1579,16 +1575,16 @@ export const LancamentosView: React.FC<Props> = ({
                           e.stopPropagation();
                           handleDeleteClick(item);
                         }}
-                        className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                         title="Excluir lançamento"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                      <div className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors ml-0.5">
+                      <div className="p-1 text-slate-500 hover:text-slate-300 transition-colors">
                         {isExpanded ? (
-                          <ChevronUp className="w-4 h-4" />
+                          <ChevronUp className="w-3.5 h-3.5" />
                         ) : (
-                          <ChevronDown className="w-4 h-4" />
+                          <ChevronDown className="w-3.5 h-3.5" />
                         )}
                       </div>
                     </div>
