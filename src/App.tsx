@@ -673,10 +673,30 @@ export default function App() {
     handleSyncAll();
   }, [handleSyncAll]);
 
-  // Handler: Save Lancamento (with automatic bank account dynamic balance recalculation)
+  // Show Toast Error with Rollback Notification
+  const showRollbackToast = (title: string, message: string, targetView: AppNotification["targetView"] = "lancamentos") => {
+    const errorNotif: AppNotification = {
+      id: `ROLLBACK_${Date.now()}`,
+      type: targetView === "lista_mercado" ? "mercado" : targetView === "saude" ? "saude" : "financas",
+      title,
+      message,
+      targetView,
+      severity: "urgent",
+      timestamp: Date.now(),
+      read: false,
+    };
+    setActiveToast(errorNotif);
+    setNotifications((prev) => [errorNotif, ...prev]);
+  };
+
+  // Handler: Save Lancamento (Optimistic Update with Automatic Rollback & Balance Recalculation)
   const handleSaveLancamento = async (itemOrItems: Lancamento | Lancamento[]) => {
     const rawItemsArray = Array.isArray(itemOrItems) ? itemOrItems : [itemOrItems];
     if (rawItemsArray.length === 0) return;
+
+    // Capture previous state snapshot for instant rollback in case of sheet failure
+    const previousLancamentos = [...lancamentos];
+    const previousContas = [...contas];
 
     // Apply uppercase sanitization to all saved items (both on create and edit)
     const itemsArray: Lancamento[] = rawItemsArray.map((it) => sanitizeRecordToUppercase(it));
@@ -690,6 +710,7 @@ export default function App() {
         nextLancamentos.unshift(item);
       }
     });
+    // 1. Immediate UI update (Zero lag)
     setLancamentos(nextLancamentos);
 
     // Recalculate and update affected accounts locally and on sheet
@@ -699,17 +720,26 @@ export default function App() {
     });
     setContas(updatedContasToSave);
 
+    // 2. Background persistence with Rollback on error
     try {
       await saveSheetRecords(SHEET_NAMES.LANCAMENTOS, itemsArray, "UPSERT");
       if (updatedContasToSave.length > 0) {
         await saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT");
       }
     } catch (err: any) {
-      alert(`Erro ao salvar na planilha: ${err.message || err}`);
+      console.error("Erro ao salvar lançamento na planilha (Executando Rollback):", err);
+      // Revert states immediately
+      setLancamentos(previousLancamentos);
+      setContas(previousContas);
+      showRollbackToast(
+        "⚠️ Falha na sincronização",
+        `Não foi possível gravar o lançamento na planilha. A alteração foi desfeita na tela para evitar divergências. (${err?.message || "Erro de conexão"})`,
+        "lancamentos"
+      );
     }
   };
 
-  // Handler: Delete Lancamento (with automatic bank account dynamic balance recalculation)
+  // Handler: Delete Lancamento (Optimistic Update with Automatic Rollback & Balance Recalculation)
   const handleDeleteLancamento = async (idOrIds: string | string[], skipConfirm: boolean = false) => {
     const idsToDelete = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
     if (idsToDelete.length === 0) return;
@@ -721,11 +751,15 @@ export default function App() {
       if (!window.confirm(msg)) return;
     }
 
+    const previousLancamentos = [...lancamentos];
+    const previousContas = [...contas];
+
     const idSet = new Set(idsToDelete.map((id) => String(id).trim()));
     const itemsToDelete = lancamentos.filter((l) => idSet.has(String(l.Id).trim()));
     const nextLancamentos = lancamentos.filter(
       (l) => !idSet.has(String(l.Id).trim())
     );
+    // 1. Immediate UI update (Zero lag)
     setLancamentos(nextLancamentos);
 
     const updatedContasToSave: ContaBancaria[] = contas.map((c) => {
@@ -734,6 +768,7 @@ export default function App() {
     });
     setContas(updatedContasToSave);
 
+    // 2. Background persistence with Rollback on error
     try {
       const payload = itemsToDelete.length > 0
         ? itemsToDelete.map((item) => ({ ...item, Status: "EXCLUÍDO" as const }))
@@ -743,11 +778,19 @@ export default function App() {
         await saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT");
       }
     } catch (err: any) {
-      alert(`Erro ao excluir lançamento: ${err.message || err}`);
+      console.error("Erro ao excluir lançamento na planilha (Executando Rollback):", err);
+      // Revert states immediately
+      setLancamentos(previousLancamentos);
+      setContas(previousContas);
+      showRollbackToast(
+        "⚠️ Falha ao excluir lançamento",
+        `Não foi possível excluir na planilha. O item foi restaurado na tela. (${err?.message || "Erro de conexão"})`,
+        "lancamentos"
+      );
     }
   };
 
-  // Generic Save
+  // Generic Save (with snapshot rollback support for target screens)
   const handleSaveGeneric = async (
     sheetName: string,
     item: any,
@@ -762,7 +805,9 @@ export default function App() {
     // Sanitize both creates and updates with UPPERCASE
     const normalizedItem = sanitizeRecordToUppercase(rawNormalized);
 
+    let previousStateSnapshot: any[] = [];
     setStateFn((prev) => {
+      previousStateSnapshot = [...prev];
       const idx = prev.findIndex((i) => String(i.Id || i.id).trim() === targetId.trim());
       if (idx !== -1) {
         const next = [...prev];
@@ -775,23 +820,57 @@ export default function App() {
     try {
       await saveSheetRecords(sheetName, [normalizedItem], "UPSERT");
     } catch (err: any) {
-      alert(`Erro ao gravar na aba ${sheetName}: ${err.message || err}`);
+      console.error(`Erro ao gravar na aba ${sheetName} (Executando Rollback):`, err);
+      // Rollback UI
+      if (previousStateSnapshot.length > 0) {
+        setStateFn(previousStateSnapshot);
+      }
+      const targetView: AppNotification["targetView"] =
+        sheetName === SHEET_NAMES.LISTA_MERCADO
+          ? "lista_mercado"
+          : sheetName === SHEET_NAMES.CONTROLE_SAUDE
+          ? "saude"
+          : "lancamentos";
+      showRollbackToast(
+        `⚠️ Falha ao sincronizar`,
+        `Não foi possível salvar na aba ${sheetName}. A alteração foi revertida na tela. (${err?.message || "Erro de conexão"})`,
+        targetView
+      );
     }
   };
 
-  // Generic Delete
+  // Generic Delete (with snapshot rollback support for target screens)
   const handleDeleteGeneric = async (
     sheetName: string,
     id: string,
     setStateFn: React.Dispatch<React.SetStateAction<any[]>>
   ) => {
     const targetId = String(id).trim();
-    setStateFn((prev) => prev.filter((i) => String(i.Id || i.id).trim() !== targetId));
+    let previousStateSnapshot: any[] = [];
+    setStateFn((prev) => {
+      previousStateSnapshot = [...prev];
+      return prev.filter((i) => String(i.Id || i.id).trim() !== targetId);
+    });
 
     try {
       await saveSheetRecords(sheetName, [{ Id: targetId, id: targetId }], "SOFT_DELETE");
     } catch (err: any) {
-      alert(`Erro ao excluir na aba ${sheetName}: ${err.message || err}`);
+      console.error(`Erro ao excluir na aba ${sheetName} (Executando Rollback):`, err);
+      // Rollback UI
+      if (previousStateSnapshot.length > 0) {
+        setStateFn(previousStateSnapshot);
+      }
+      const targetView: AppNotification["targetView"] =
+        sheetName === SHEET_NAMES.LISTA_MERCADO
+          ? "lista_mercado"
+          : sheetName === SHEET_NAMES.CONTROLE_SAUDE
+          ? "saude"
+          : "lancamentos";
+      showRollbackToast(
+        `⚠️ Falha ao excluir item`,
+        `Não foi possível excluir na aba ${sheetName}. O item foi restaurado na tela. (${err?.message || "Erro de conexão"})`,
+        targetView
+      );
     }
   };
 
