@@ -70,7 +70,7 @@ import { evaluateAllNotifications, dispatchBrowserNotification } from "./service
 import { stopAlarmLoop } from "./services/alarmSoundService";
 
 export default function App() {
-  const [activeView, setActiveView] = useState<ModuleView>("dashboard");
+  const [activeView, setActiveView] = useState<ModuleView>("painel_contas");
 
   // App Data States (Initialized from LocalStorage Cache to ensure zero lag)
   const [lancamentos, setLancamentos] = useState<Lancamento[]>(() =>
