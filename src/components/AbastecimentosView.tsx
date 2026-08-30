@@ -1,5 +1,17 @@
-import React, { useMemo } from "react";
-import { Fuel, Lock, Info, MapPin, ExternalLink, Gauge, User, CheckCircle2, FileText, CreditCard } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import {
+  Fuel,
+  Info,
+  MapPin,
+  ExternalLink,
+  Gauge,
+  User,
+  CheckCircle2,
+  FileText,
+  CreditCard,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { Lancamento } from "../types";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
 
@@ -129,6 +141,8 @@ function isFuelLancamento(l: any): boolean {
 }
 
 export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFueling }) => {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   // Filter all fueling entries directly from 1_Lancamentos
   const fuelEntries = useMemo(() => {
     return lancamentos
@@ -145,7 +159,7 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
   const openMaps = (item: Lancamento) => {
     const loc = (item.Localizacao_Do_Posto || "").trim();
     const postoName = getPostoName(item);
-    
+
     // Check if loc has "lat,lng" format (e.g. -23.55052,-46.633308)
     const coordMatch = loc.match(/^(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)$/);
     if (coordMatch) {
@@ -181,6 +195,10 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
 
   const precoMedioLitro = totalLitros > 0 ? totalGasto / totalLitros : 0;
 
+  const toggleExpand = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
+
   return (
     <div className="space-y-6 pb-20 md:pb-8">
       {/* Header */}
@@ -190,19 +208,19 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
             <h2 className="text-xl font-bold text-white tracking-tight">
               Histórico de Abastecimentos
             </h2>
-            <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-[10px] text-emerald-400 border border-emerald-500/20 font-medium">
-              <CheckCircle2 className="w-3 h-3" />
-              Fonte Oficial (1_Lancamentos)
+            <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-800 text-[10px] text-slate-300 border border-slate-700/70 font-medium">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              Sincronizado
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Exibindo todos os registros de combustível com dados completos sincronizados da aba <strong className="text-emerald-300">1_Lancamentos</strong>.
+            Registros de combustível sincronizados em tempo real com a aba principal de lançamentos.
           </p>
         </div>
 
         <button
           onClick={onOpenNewFueling}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-colors shadow-sm shrink-0 cursor-pointer"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-colors shadow-xs shrink-0 cursor-pointer"
         >
           <Fuel className="w-4 h-4" />
           <span>+ Novo Abastecimento</span>
@@ -210,12 +228,14 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
       </div>
 
       {/* Info Callout */}
-      <div className="p-4 bg-slate-900/80 border border-slate-800 rounded-2xl flex items-start gap-3 text-xs text-slate-300">
-        <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+      <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-start gap-3 text-xs text-slate-300">
+        <div className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0 mt-0.5">
+          <Info className="w-4 h-4" />
+        </div>
         <div>
-          <p className="font-semibold text-slate-200">Visão Unificada de Combustível</p>
+          <p className="font-semibold text-white">Visão Unificada de Combustível</p>
           <p className="text-slate-400 mt-0.5">
-            Todos os campos de abastecimento (preço por litro, quilometragem, autonomia média, posto, motorista e comprovante) são lidos em tempo real da aba principal de lançamentos.
+            Preço por litro, quilometragem, autonomia média, posto, motorista e comprovantes são vinculados automaticamente aos lançamentos financeiros.
           </p>
         </div>
       </div>
@@ -223,8 +243,8 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-1">
-          <span className="text-slate-400 text-xs">Total Investido em Combustível</span>
-          <p className="text-2xl font-bold text-amber-400">
+          <span className="text-slate-400 text-xs">Total Gasto em Combustível</span>
+          <p className="text-2xl font-bold text-white tracking-tight">
             R$ {formatCurrency(totalGasto)}
           </p>
           <p className="text-[11px] text-slate-500">{fuelEntries.length} abastecimentos registrados</p>
@@ -232,7 +252,7 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
 
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-1">
           <span className="text-slate-400 text-xs">Volume Total Abastecido</span>
-          <p className="text-2xl font-bold text-slate-200">
+          <p className="text-2xl font-bold text-white tracking-tight">
             {formatCurrency(totalLitros)} <span className="text-sm font-normal text-slate-400">Litros</span>
           </p>
           <p className="text-[11px] text-slate-500">Gasolina / Etanol / Diesel</p>
@@ -240,28 +260,35 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
 
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-1">
           <span className="text-slate-400 text-xs">Preço Médio por Litro</span>
-          <p className="text-2xl font-bold text-teal-400">
+          <p className="text-2xl font-bold text-white tracking-tight">
             R$ {formatCurrency(precoMedioLitro)}
           </p>
           <p className="text-[11px] text-slate-500">Média geral ponderada</p>
         </div>
       </div>
 
-      {/* Abastecimentos List */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      {/* Abastecimentos List (Compact 2-Line Pattern with Expandable Drawer) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="font-bold text-white text-sm">Registros de Abastecimento</h3>
+          <span className="text-xs text-slate-400">{fuelEntries.length} itens</span>
+        </div>
+
         {fuelEntries.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-xs space-y-2">
-            <p>Nenhum abastecimento registrado até o momento em 1_Lancamentos.</p>
+          <div className="p-12 text-center text-slate-500 text-xs bg-slate-900 border border-slate-800 rounded-2xl space-y-2">
+            <p>Nenhum abastecimento registrado até o momento.</p>
             <button
               onClick={onOpenNewFueling}
-              className="text-amber-400 hover:underline font-medium cursor-pointer"
+              className="text-emerald-400 hover:underline font-medium cursor-pointer"
             >
               + Adicionar primeiro abastecimento
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-slate-800/80">
+          <div className="space-y-2">
             {fuelEntries.map((item, idx) => {
+              const itemId = String(item.Id || `abast-${idx}`);
+              const isExpanded = expandedId === itemId;
               const itemAny = item as any;
               const valor =
                 parseCurrency(itemAny["Valor Pago"]) ||
@@ -280,129 +307,175 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
                 String(item.Completou_O_Tanque || "").trim().toUpperCase() === "SIM" ||
                 String(item.Completou_O_Tanque || "").trim().toUpperCase() === "TRUE" ||
                 String(item.Completou_O_Tanque || "").trim().toUpperCase() === "S";
+              const isPago = String(item.Status || "").toUpperCase() === "PAGO" || !item.Status;
 
               return (
                 <div
-                  key={`${item.Id || 'abast'}-${idx}`}
-                  className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-800/40 transition-colors text-xs"
+                  key={itemId}
+                  className="bg-slate-900 border border-slate-800 hover:border-slate-700/80 rounded-2xl transition-colors overflow-hidden"
                 >
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl shrink-0 mt-0.5 border border-amber-500/20">
-                      <Fuel className="w-5 h-5" />
-                    </div>
-                    <div className="space-y-1.5 min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-white text-sm">
-                          {veiculoName}
-                        </span>
-                        {item.Tipo_Combustivel && (
-                          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-300 border border-amber-500/20 font-medium">
-                            {item.Tipo_Combustivel}
-                          </span>
-                        )}
-                        {postoName && (
-                          <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 border border-slate-700 flex items-center gap-1 font-medium">
-                            {postoName}
-                          </span>
-                        )}
-                        {isTanqueCheio && (
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-[10px] text-emerald-400 border border-emerald-500/20 font-medium">
-                            Tanque Cheio
-                          </span>
-                        )}
-                        {(item.Localizacao_Do_Posto || postoName) && (
-                          <button
-                            type="button"
-                            onClick={() => openMaps(item)}
-                            title={
-                              item.Localizacao_Do_Posto
-                                ? `Abrir Google Maps (${item.Localizacao_Do_Posto})`
-                                : `Buscar no Google Maps: ${postoName}`
-                            }
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-medium transition-colors cursor-pointer"
-                          >
-                            <MapPin className="w-3 h-3" />
-                            <span>Ver no Mapa</span>
-                            <ExternalLink className="w-2.5 h-2.5 opacity-70" />
-                          </button>
-                        )}
+                  {/* Linha Principal Compacta (2 Linhas) */}
+                  <div
+                    onClick={() => toggleExpand(itemId)}
+                    className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none"
+                  >
+                    {/* Lado Esquerdo: Ícone Neutro + Linha 1 (Veículo e Tags) + Linha 2 (Data, Litros, Preço/L) */}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="p-2 sm:p-2.5 rounded-xl bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0">
+                        <Fuel className="w-4 h-4" />
                       </div>
 
-                      <div className="flex items-center gap-3 text-slate-400 text-[11px] flex-wrap">
-                        <span>
-                          Data: <strong className="text-slate-200">{item.Data}</strong>
-                        </span>
-                        {km > 0 && (
-                          <span>
-                            • Hodômetro: <strong className="text-amber-300 font-mono">{km.toLocaleString()} KM</strong>
+                      <div className="min-w-0 space-y-0.5 flex-1">
+                        {/* Linha 1: Veículo + Badges Neutros */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-white text-xs sm:text-sm tracking-tight truncate max-w-[160px] sm:max-w-xs">
+                            {veiculoName}
                           </span>
+                          {item.Tipo_Combustivel && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-slate-800 text-[10px] font-medium text-slate-300 border border-slate-700/70">
+                              {item.Tipo_Combustivel}
+                            </span>
+                          )}
+                          {postoName && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-slate-800/80 text-[10px] font-medium text-slate-400 border border-slate-700/60 truncate max-w-[120px]">
+                              {postoName}
+                            </span>
+                          )}
+                          {isTanqueCheio && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-slate-800 text-[10px] font-medium text-slate-300 border border-slate-700/70">
+                              Tanque Cheio
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Linha 2: Data • Litros • Preço/L • KM */}
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate flex-wrap">
+                          <span>{item.Data}</span>
+                          {litros > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="text-slate-300 font-medium">{formatCurrency(litros)} L</span>
+                            </>
+                          )}
+                          {preco > 0 && (
+                            <>
+                              <span>•</span>
+                              <span>R$ {formatCurrency(preco)}/L</span>
+                            </>
+                          )}
+                          {km > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="font-mono text-slate-300">{km.toLocaleString()} KM</span>
+                            </>
+                          )}
+                          {mediaKmL > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="text-emerald-400 font-medium">{mediaKmL.toFixed(2)} km/L</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Lado Direito: Valor Total alinhado na MESMA linha + Ponto de Status + Chevron */}
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      {/* Ponto indicador de status discreto */}
+                      <span
+                        className={`w-2 h-2 rounded-full shrink-0 ${
+                          isPago ? "bg-emerald-400 shadow-xs shadow-emerald-400/50" : "bg-amber-400 shadow-xs shadow-amber-400/50"
+                        }`}
+                        title={isPago ? "Pago" : "Pendente"}
+                      />
+
+                      {/* Valor total */}
+                      <span className="font-bold text-white text-xs sm:text-sm tracking-tight whitespace-nowrap">
+                        R$ {formatCurrency(valor)}
+                      </span>
+
+                      {/* Botão de expansão da gaveta */}
+                      <div className="text-slate-400 hover:text-white p-1">
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
                         )}
-                        {kmPercorrido > 0 && (
-                          <span>
-                            • Percorrido: <strong className="text-slate-200 font-mono">+{kmPercorrido.toLocaleString()} KM</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Gaveta de Detalhes Expansível */}
+                  {isExpanded && (
+                    <div className="px-4 pb-4 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-3 animate-in fade-in-50 duration-150 text-xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                        <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                          <span className="text-[10px] text-slate-500 block">Km Percorrido</span>
+                          <span className="font-semibold text-slate-200">
+                            {kmPercorrido > 0 ? `+${kmPercorrido.toLocaleString()} KM` : "—"}
                           </span>
-                        )}
-                        {mediaKmL > 0 && (
-                          <span className="inline-flex items-center gap-1 text-teal-400 font-medium">
-                            <Gauge className="w-3 h-3" />
-                            {mediaKmL.toFixed(2)} km/L
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                          <span className="text-[10px] text-slate-500 block">Autonomia Média</span>
+                          <span className="font-semibold text-emerald-400">
+                            {mediaKmL > 0 ? `${mediaKmL.toFixed(2)} km/L` : "—"}
                           </span>
-                        )}
-                        {item.Motorista && (
-                          <span className="inline-flex items-center gap-1 text-slate-400">
-                            <User className="w-3 h-3 text-slate-500" />
-                            {item.Motorista}
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                          <span className="text-[10px] text-slate-500 block">Motorista</span>
+                          <span className="font-semibold text-slate-200 truncate block">
+                            {item.Motorista || "—"}
                           </span>
-                        )}
-                        {(item.Conta || item.Cartao) && (
-                          <span className="inline-flex items-center gap-1 text-slate-400">
-                            <CreditCard className="w-3 h-3 text-slate-500" />
-                            {item.Cartao ? `Cartão: ${item.Cartao}` : `Conta: ${item.Conta}`}
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                          <span className="text-[10px] text-slate-500 block">Pagamento</span>
+                          <span className="font-semibold text-slate-200 truncate block">
+                            {item.Cartao ? `Cartão: ${item.Cartao}` : item.Conta ? `Conta: ${item.Conta}` : "—"}
                           </span>
-                        )}
-                        {item.Status && (
-                          <span className="px-1.5 py-0.2 rounded bg-slate-800 text-[10px] text-slate-400 border border-slate-700">
-                            {item.Status}
-                          </span>
-                        )}
+                        </div>
                       </div>
 
                       {item.Descricao && item.Descricao !== "Abastecimento" && (
-                        <p className="text-slate-400 text-[11px]">
-                          {item.Descricao}
+                        <p className="text-slate-300 text-[11px]">
+                          <strong>Descrição:</strong> {item.Descricao}
                         </p>
                       )}
 
                       {item.Observacoes && (
-                        <p className="text-slate-400 text-[11px] italic">
+                        <p className="text-slate-400 text-[11px] italic bg-slate-900 p-2.5 rounded-xl border border-slate-800">
                           "{item.Observacoes}"
                         </p>
                       )}
 
-                      {item.Comprovante_Url && (
-                        <div className="pt-0.5">
+                      {/* Ações da Gaveta (Mapa, Comprovante) */}
+                      <div className="flex items-center gap-3 pt-1 flex-wrap">
+                        {(item.Localizacao_Do_Posto || postoName) && (
+                          <button
+                            type="button"
+                            onClick={() => openMaps(item)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition-colors cursor-pointer"
+                          >
+                            <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Ver Posto no Google Maps</span>
+                            <ExternalLink className="w-3 h-3 opacity-60" />
+                          </button>
+                        )}
+
+                        {item.Comprovante_Url && (
                           <a
                             href={item.Comprovante_Url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 hover:underline"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition-colors"
                           >
-                            <FileText className="w-3 h-3" />
-                            <span>Ver Comprovante Anexo</span>
+                            <FileText className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Abrir Comprovante</span>
+                            <ExternalLink className="w-3 h-3 opacity-60" />
                           </a>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="text-left md:text-right shrink-0 border-t md:border-0 border-slate-800 pt-2 md:pt-0">
-                    <span className="text-base font-bold text-amber-400">
-                      R$ {formatCurrency(valor)}
-                    </span>
-                    <p className="text-[11px] text-slate-400">
-                      {formatCurrency(litros)} L @ R$ {formatCurrency(preco)}/L
-                    </p>
-                  </div>
+                  )}
                 </div>
               );
             })}
@@ -412,4 +485,5 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
     </div>
   );
 };
+
 

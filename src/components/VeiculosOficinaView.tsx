@@ -10,6 +10,10 @@ import {
   Clock,
   X,
   Search,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  CheckCircle2,
 } from "lucide-react";
 import { Veiculo, ServicoOficina, ManutencaoAgendada } from "../types";
 import { generateNewId } from "../services/api";
@@ -74,6 +78,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   onDeleteManutencao,
 }) => {
   const [activeTab, setActiveTab] = useState<"veiculos" | "oficina" | "agendadas">("veiculos");
+  const [expandedServicoId, setExpandedServicoId] = useState<string | null>(null);
+  const [expandedManutencaoId, setExpandedManutencaoId] = useState<string | null>(null);
 
   // Filter and Search States
   const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("ALL");
@@ -443,14 +449,16 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Car className="w-5 h-5 text-emerald-400" />
-            Veículos & Oficina
-          </h2>
-          <p className="text-xs text-slate-400">
-            Abas <code className="text-emerald-400 font-mono">9_Veiculos</code>,{" "}
-            <code className="text-emerald-400 font-mono">14_Oficina</code>,{" "}
-            <code className="text-emerald-400 font-mono">15_Manutenções_Agendadas</code>
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0">
+              <Car className="w-4 h-4" />
+            </div>
+            <h2 className="text-xl font-bold text-white tracking-tight">
+              Veículos & Oficina
+            </h2>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            Controle de frota, histórico de serviços e plano preventivo de revisões.
           </p>
         </div>
 
@@ -460,7 +468,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
             onClick={() => setActiveTab("veiculos")}
             className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all text-center ${
               activeTab === "veiculos"
-                ? "bg-emerald-600 text-white shadow-xs"
+                ? "bg-slate-800 text-white border border-slate-700/80 shadow-xs"
                 : "text-slate-400 hover:text-white"
             }`}
           >
@@ -470,7 +478,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
             onClick={() => setActiveTab("oficina")}
             className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all text-center ${
               activeTab === "oficina"
-                ? "bg-emerald-600 text-white shadow-xs"
+                ? "bg-slate-800 text-white border border-slate-700/80 shadow-xs"
                 : "text-slate-400 hover:text-white"
             }`}
           >
@@ -480,13 +488,13 @@ export const VeiculosOficinaView: React.FC<Props> = ({
             onClick={() => setActiveTab("agendadas")}
             className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all text-center relative ${
               activeTab === "agendadas"
-                ? "bg-emerald-600 text-white shadow-xs"
+                ? "bg-slate-800 text-white border border-slate-700/80 shadow-xs"
                 : "text-slate-400 hover:text-white"
             }`}
           >
             Agendadas ({filteredManutencoes.length})
             {alertManutencoes.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.2 bg-amber-500 text-slate-950 font-bold rounded-full text-[10px]">
+              <span className="ml-1.5 px-1.5 py-0.2 bg-amber-500 text-slate-950 font-bold rounded-full text-[10px]">
                 {alertManutencoes.length}
               </span>
             )}
@@ -496,18 +504,20 @@ export const VeiculosOficinaView: React.FC<Props> = ({
 
       {/* Maintenance Notification Banner */}
       {alertManutencoes.length > 0 && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="p-4 bg-slate-900 border border-amber-500/30 rounded-2xl flex items-start gap-3">
+          <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0 mt-0.5">
+            <AlertTriangle className="w-4 h-4" />
+          </div>
           <div className="space-y-1 text-xs">
             <h4 className="font-bold text-amber-300">
-              Atenção: {alertManutencoes.length} Manutenção(ões) Próxima(s) do Vencimento ou KM Alvo!
+              {alertManutencoes.length} Manutenção(ões) Próxima(s) do Vencimento ou KM Alvo
             </h4>
-            <ul className="list-disc list-inside text-amber-200/80 space-y-0.5">
+            <ul className="list-disc list-inside text-slate-300 space-y-0.5">
               {alertManutencoes.map((m, idx) => (
                 <li key={`${m.Id || 'manut-alert'}-${idx}`}>
-                  <strong>{m.Veículo}</strong>: {m.Descrição} —{" "}
+                  <strong className="text-white">{m.Veículo}</strong>: {m.Descrição} —{" "}
                   {m.Data_Alvo && `Data Alvo: ${m.Data_Alvo}`}
-                  {m.KM_Alvo && ` | KM Alvo: ${m.KM_Alvo}`}
+                  {m.KM_Alvo && ` | KM Alvo: ${m.KM_Alvo.toLocaleString()} KM`}
                 </li>
               ))}
             </ul>
@@ -515,7 +525,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Filter and Search Bar (Todos os Períodos, Mês Atual, Mês Passado, Selecionar Período) */}
+      {/* Filter and Search Bar */}
       <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           {/* Search Input */}
@@ -532,7 +542,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-9 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-9 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-slate-600 transition-colors"
             />
           </div>
 
@@ -543,7 +553,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               <select
                 value={periodFilter}
                 onChange={(e) => setPeriodFilter(e.target.value as PeriodFilterType)}
-                className="bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer appearance-none"
+                className="bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white focus:outline-none focus:border-slate-600 cursor-pointer appearance-none"
               >
                 <option value="ALL">Todos os Períodos</option>
                 <option value="CURRENT_MONTH">Mês Atual</option>
@@ -569,7 +579,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-slate-600"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -578,7 +588,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-slate-600"
               />
             </div>
           </div>
@@ -588,13 +598,13 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       {/* 1. VEÍCULOS TAB */}
       {activeTab === "veiculos" && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center px-1">
             <span className="text-xs text-slate-400">
-              Gerencie seus veículos cadastrados (Aba 9_Veiculos)
+              Veículos cadastrados ({filteredVeiculos.length})
             </span>
             <button
               onClick={() => handleOpenVeiculo()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Cadastrar Veículo</span>
@@ -610,19 +620,19 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               {filteredVeiculos.map((v, idx) => (
                 <div
                   key={`${v.Id || 'veic'}-${idx}`}
-                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
+                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700/80 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
-                        <Car className="w-6 h-6" />
+                      <div className="p-2.5 rounded-xl bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0">
+                        <Car className="w-5 h-5" />
                       </div>
                       <div>
                         <h3 className="font-bold text-white text-base leading-tight">
                           {v.Marca} {v.Modelo}
                         </h3>
-                        <p className="text-xs text-slate-400 font-mono">
-                          Placa: <strong className="text-emerald-400">{v.Placa}</strong> • Ano: {v.Ano}
+                        <p className="text-xs text-slate-400 font-mono mt-0.5">
+                          Placa: <strong className="text-slate-200">{v.Placa || "—"}</strong> • Ano: {v.Ano}
                         </p>
                       </div>
                     </div>
@@ -630,7 +640,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleOpenVeiculo(v)}
-                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
                         title="Editar Veículo"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -645,7 +655,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                             subtitle: `Placa: ${v.Placa || "Sem placa"} • Motorista: ${v.Motorista || "—"}`,
                           })
                         }
-                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
                         title="Excluir Veículo"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -660,7 +670,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     </div>
                     <div>
                       <span className="text-slate-500 text-[10px] block">KM Atual</span>
-                      <span className="font-bold text-emerald-400 font-mono">{v.Km_Atual} KM</span>
+                      <span className="font-bold text-white font-mono">{v.Km_Atual} KM</span>
                     </div>
                     <div>
                       <span className="text-slate-500 text-[10px] block">Combustível</span>
@@ -682,94 +692,191 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 2. OFICINA (HISTÓRICO) TAB */}
+      {/* 2. OFICINA (HISTÓRICO) TAB - Compact 2-Line Pattern with Expandable Drawer */}
       {activeTab === "oficina" && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center px-1">
             <span className="text-xs text-slate-400">
-              Histórico de manutenções e reparos realizados (Aba 14_Oficina)
+              Histórico de manutenções e reparos ({filteredServicos.length})
             </span>
             <button
               onClick={() => handleOpenServico()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Registrar Serviço</span>
             </button>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800">
-            {filteredServicos.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-xs">
-                Nenhum serviço de oficina encontrado no período selecionado.
-              </div>
-            ) : (
-              filteredServicos.map((s, idx) => (
-                <div key={`${s.Id || 'serv'}-${idx}`} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2.5 rounded-xl bg-slate-800 text-emerald-400 shrink-0 mt-0.5">
-                      <Wrench className="w-4 h-4" />
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="font-bold text-white text-sm">{s.Descrição}</h4>
-                      <p className="text-slate-400 flex flex-wrap gap-3">
-                        <span>Veículo: <strong className="text-slate-200">{s.Veiculo}</strong></span>
-                        <span>Data: <strong className="text-slate-200">{s.Data}</strong></span>
-                        <span>KM: <strong className="text-slate-200">{s.KM} KM</strong></span>
-                        {s.Oficina_Nome && <span>Oficina: <strong className="text-slate-200">{s.Oficina_Nome}</strong></span>}
-                      </p>
-                      {s.Observações && <p className="text-slate-500 italic">"{s.Observações}"</p>}
-                    </div>
-                  </div>
+          {filteredServicos.length === 0 ? (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
+              Nenhum serviço de oficina encontrado no período selecionado.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredServicos.map((s, idx) => {
+                const sId = String(s.Id || `serv-${idx}`);
+                const isExpanded = expandedServicoId === sId;
+                const valor = parseCurrency(s.Valor_Pago) || parseCurrency(s.Valor_A_PG);
 
-                  <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-0 border-slate-800 pt-2 sm:pt-0">
-                    <div className="text-left sm:text-right">
-                      <span className="font-bold text-rose-400 text-sm">
-                        R$ {formatCurrency(parseCurrency(s.Valor_Pago) || parseCurrency(s.Valor_A_PG))}
-                      </span>
+                return (
+                  <div
+                    key={sId}
+                    className="bg-slate-900 border border-slate-800 hover:border-slate-700/80 rounded-2xl transition-colors overflow-hidden"
+                  >
+                    {/* Linha Principal Compacta (2 Linhas) */}
+                    <div
+                      onClick={() => setExpandedServicoId(isExpanded ? null : sId)}
+                      className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none"
+                    >
+                      {/* Lado Esquerdo: Ícone Neutro + Linha 1 (Serviço + Veículo) + Linha 2 (Data, KM, Oficina) */}
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="p-2 sm:p-2.5 rounded-xl bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0">
+                          <Wrench className="w-4 h-4" />
+                        </div>
+
+                        <div className="min-w-0 space-y-0.5 flex-1">
+                          {/* Linha 1: Título do Serviço + Badge de Veículo */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-white text-xs sm:text-sm tracking-tight truncate max-w-[180px] sm:max-w-md">
+                              {s.Descrição}
+                            </span>
+                            {s.Veiculo && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-slate-800 text-[10px] font-medium text-slate-300 border border-slate-700/70 truncate max-w-[120px]">
+                                {s.Veiculo}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Linha 2: Data • KM • Oficina */}
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate flex-wrap">
+                            <span>{s.Data}</span>
+                            {s.KM > 0 && (
+                              <>
+                                <span>•</span>
+                                <span className="font-mono text-slate-300">{s.KM.toLocaleString()} KM</span>
+                              </>
+                            )}
+                            {s.Oficina_Nome && (
+                              <>
+                                <span>•</span>
+                                <span className="text-slate-300 truncate max-w-[140px]">{s.Oficina_Nome}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Lado Direito: Valor Total + Ações / Chevron */}
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        {/* Ponto indicador de despesa */}
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0 bg-rose-400 shadow-xs shadow-rose-400/50"
+                          title="Despesa de Oficina"
+                        />
+
+                        {/* Valor total */}
+                        <span className="font-bold text-white text-xs sm:text-sm tracking-tight whitespace-nowrap">
+                          R$ {formatCurrency(valor)}
+                        </span>
+
+                        {/* Botão de expansão da gaveta */}
+                        <div className="text-slate-400 hover:text-white p-1">
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleOpenServico(s)}
-                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-                        title="Editar Serviço"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() =>
-                          setDeleteConfirm({
-                            isOpen: true,
-                            type: "servico",
-                            id: s.Id,
-                            title: s.Descrição,
-                            subtitle: `Veículo: ${s.Veiculo} • Data: ${s.Data} • Valor: R$ ${formatCurrency(parseCurrency(s.Valor_Pago) || parseCurrency(s.Valor_A_PG))}`,
-                          })
-                        }
-                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        title="Excluir Serviço"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+
+                    {/* Gaveta de Detalhes Expansível */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-3 animate-in fade-in-50 duration-150 text-xs">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                            <span className="text-[10px] text-slate-500 block">Veículo</span>
+                            <span className="font-semibold text-slate-200 truncate block">{s.Veiculo}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                            <span className="text-[10px] text-slate-500 block">Oficina / Estabelecimento</span>
+                            <span className="font-semibold text-slate-200 truncate block">{s.Oficina_Nome || "Não informada"}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                            <span className="text-[10px] text-slate-500 block">Quilometragem</span>
+                            <span className="font-semibold text-white font-mono">{s.KM ? `${s.KM.toLocaleString()} KM` : "—"}</span>
+                          </div>
+                        </div>
+
+                        {s.Observações && (
+                          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                            <span className="text-[10px] text-slate-500 block font-medium">Observações</span>
+                            <p className="text-slate-300 text-[11px] italic">"{s.Observações}"</p>
+                          </div>
+                        )}
+
+                        {/* Ações da Gaveta */}
+                        <div className="flex items-center justify-between gap-3 pt-1 flex-wrap">
+                          <div>
+                            {s.Comprovante_Url && (
+                              <a
+                                href={s.Comprovante_Url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition-colors"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-slate-400" />
+                                <span>Abrir Nota / Comprovante</span>
+                              </a>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleOpenServico(s)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition-colors cursor-pointer"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              <span>Editar</span>
+                            </button>
+                            <button
+                              onClick={() =>
+                                setDeleteConfirm({
+                                  isOpen: true,
+                                  type: "servico",
+                                  id: s.Id,
+                                  title: s.Descrição,
+                                  subtitle: `Veículo: ${s.Veiculo} • Data: ${s.Data} • Valor: R$ ${formatCurrency(valor)}`,
+                                })
+                              }
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-medium transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Excluir</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* 3. MANUTENÇÕES AGENDADAS TAB */}
+      {/* 3. MANUTENÇÕES AGENDADAS TAB - Compact 2-Line Pattern with Expandable Drawer */}
       {activeTab === "agendadas" && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center px-1">
             <span className="text-xs text-slate-400">
-              Planejamento de revisões e manutenções futuras (Aba 15_Manutenções_Agendadas)
+              Planejamento de revisões preventivas ({filteredManutencoes.length})
             </span>
             <button
               onClick={() => handleOpenManutencao()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Agendar Manutenção</span>
@@ -781,88 +888,162 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               Nenhuma manutenção agendada encontrada no período selecionado.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
               {filteredManutencoes.map((m, idx) => {
+                const mId = String(m.Id || `manut-${idx}`);
+                const isExpanded = expandedManutencaoId === mId;
                 const isDone = m.Status === "CONCLUÍDO" || m.Status === "Concluída";
+
                 return (
                   <div
-                    key={`${m.Id || 'manut'}-${idx}`}
-                    className={`p-4 rounded-2xl border space-y-3 ${
+                    key={mId}
+                    className={`bg-slate-900 border rounded-2xl transition-colors overflow-hidden ${
                       isDone
-                        ? "bg-slate-900/50 border-slate-800/60 opacity-75"
-                        : "bg-slate-900 border-slate-800"
+                        ? "border-slate-800/60 opacity-80"
+                        : "border-slate-800 hover:border-slate-700/80"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className={`p-2 rounded-xl ${isDone ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
+                    {/* Linha Principal Compacta (2 Linhas) */}
+                    <div
+                      onClick={() => setExpandedManutencaoId(isExpanded ? null : mId)}
+                      className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none"
+                    >
+                      {/* Lado Esquerdo: Ícone Neutro + Linha 1 (Título + Veículo + Prioridade) + Linha 2 (Data Alvo, KM Alvo) */}
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className={`p-2 sm:p-2.5 rounded-xl bg-slate-800 border shrink-0 ${
+                          isDone ? "text-emerald-400 border-slate-700/60" : "text-slate-300 border-slate-700/60"
+                        }`}>
                           <Clock className="w-4 h-4" />
                         </div>
-                        <div>
-                          <h4 className="font-bold text-white text-sm">{m.Descrição}</h4>
-                          <span className="text-xs text-slate-400">{m.Veículo}</span>
+
+                        <div className="min-w-0 space-y-0.5 flex-1">
+                          {/* Linha 1: Título + Veículo + Tag de Prioridade Neutra */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`font-semibold text-xs sm:text-sm tracking-tight truncate max-w-[180px] sm:max-w-md ${
+                              isDone ? "text-slate-400 line-through" : "text-white"
+                            }`}>
+                              {m.Descrição}
+                            </span>
+                            {m.Veículo && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-slate-800 text-[10px] font-medium text-slate-300 border border-slate-700/70 truncate max-w-[120px]">
+                                {m.Veículo}
+                              </span>
+                            )}
+                            {m.Prioridade && m.Prioridade !== "Média" && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-slate-800/80 text-[10px] font-medium text-slate-400 border border-slate-700/60">
+                                {m.Prioridade}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Linha 2: Data Alvo • KM Alvo • Recorrência */}
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate flex-wrap">
+                            {m.Data_Alvo && <span>Data Alvo: <strong className="text-slate-300">{m.Data_Alvo}</strong></span>}
+                            {m.KM_Alvo && m.KM_Alvo > 0 && (
+                              <>
+                                <span>•</span>
+                                <span>KM Alvo: <strong className="font-mono text-slate-300">{m.KM_Alvo.toLocaleString()} KM</strong></span>
+                              </>
+                            )}
+                            {m.Oficina_Nome && (
+                              <>
+                                <span>•</span>
+                                <span className="text-slate-400 truncate max-w-[120px]">{m.Oficina_Nome}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1">
+                      {/* Lado Direito: Botão Status / Toggle + Chevron */}
+                      <div className="flex items-center gap-2.5 shrink-0">
                         <button
-                          onClick={() =>
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             onSaveManutencao({
                               ...m,
                               Status: isDone ? "PENDENTE" : "CONCLUÍDO",
-                            })
-                          }
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                            });
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-colors cursor-pointer ${
                             isDone
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
+                              ? "bg-slate-800 text-emerald-400 border-slate-700 hover:bg-slate-750"
+                              : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
                           }`}
                         >
                           {isDone ? "CONCLUÍDO" : "MARCAR CONCLUÍDO"}
                         </button>
-                        <button
-                          onClick={() => handleOpenManutencao(m)}
-                          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-                          title="Editar Manutenção"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() =>
-                            setDeleteConfirm({
-                              isOpen: true,
-                              type: "manutencao",
-                              id: m.Id,
-                              title: m.Descrição,
-                              subtitle: `Veículo: ${m.Veículo} • Data Alvo: ${m.Data_Alvo || "—"} • KM Alvo: ${m.KM_Alvo || "—"} KM`,
-                            })
-                          }
-                          className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                          title="Excluir Manutenção"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+
+                        {/* Botão de expansão da gaveta */}
+                        <div className="text-slate-400 hover:text-white p-1">
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                      <div>
-                        <span className="text-slate-500 text-[10px] block">Data Alvo</span>
-                        <span className="font-semibold text-slate-200">{m.Data_Alvo || "—"}</span>
+                    {/* Gaveta de Detalhes Expansível */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-3 animate-in fade-in-50 duration-150 text-xs">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                            <span className="text-[10px] text-slate-500 block">Data Alvo</span>
+                            <span className="font-semibold text-slate-200">{m.Data_Alvo || "—"}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                            <span className="text-[10px] text-slate-500 block">KM Alvo</span>
+                            <span className="font-semibold text-white font-mono">{m.KM_Alvo ? `${m.KM_Alvo.toLocaleString()} KM` : "—"}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                            <span className="text-[10px] text-slate-500 block">Recorrente</span>
+                            <span className="font-semibold text-slate-200">
+                              {m.Recorrente || "NÃO"} ({m.Frequência_Meses || 0} meses / {m.Frequência_KM || 0} KM)
+                            </span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                            <span className="text-[10px] text-slate-500 block">Oficina Indicada</span>
+                            <span className="font-semibold text-slate-200 truncate block">{m.Oficina_Nome || "A definir"}</span>
+                          </div>
+                        </div>
+
+                        {m.Observações && (
+                          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                            <span className="text-[10px] text-slate-500 block font-medium">Observações</span>
+                            <p className="text-slate-300 text-[11px] italic">"{m.Observações}"</p>
+                          </div>
+                        )}
+
+                        {/* Ações da Gaveta */}
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <button
+                            onClick={() => handleOpenManutencao(m)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span>Editar</span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              setDeleteConfirm({
+                                isOpen: true,
+                                type: "manutencao",
+                                id: m.Id,
+                                title: m.Descrição,
+                                subtitle: `Veículo: ${m.Veículo} • Data Alvo: ${m.Data_Alvo || "—"} • KM Alvo: ${m.KM_Alvo || "—"} KM`,
+                              })
+                            }
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-medium transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Excluir</span>
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-slate-500 text-[10px] block">KM Alvo</span>
-                        <span className="font-bold text-amber-400 font-mono">{m.KM_Alvo || "—"} KM</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 text-[10px] block">Recorrente</span>
-                        <span className="text-slate-300">{m.Recorrente || "NÃO"} ({m.Frequência_Meses || 0} meses / {m.Frequência_KM || 0} KM)</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 text-[10px] block">Oficina Recomendada</span>
-                        <span className="text-slate-300">{m.Oficina_Nome || "A definir"}</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}
