@@ -90,31 +90,31 @@ export const NotificationToast: React.FC<Props> = ({
 
   const getBorderColor = () => {
     if (isCurrentAlarm) {
-      return "border-rose-500 shadow-rose-950/80 bg-slate-900 ring-2 ring-rose-500/40 animate-pulse";
+      return "border-rose-500 shadow-2xl shadow-black ring-2 ring-rose-500/80 animate-pulse";
     }
     switch (notification.severity) {
       case "urgent":
-        return "border-rose-500/80 shadow-rose-950/40 bg-slate-900";
+        return "border-rose-500/90 shadow-2xl shadow-black ring-1 ring-rose-500/50";
       case "warning":
-        return "border-amber-500/80 shadow-amber-950/40 bg-slate-900";
+        return "border-amber-500/90 shadow-2xl shadow-black ring-1 ring-amber-500/50";
       default:
-        return "border-emerald-500/80 shadow-emerald-950/40 bg-slate-900";
+        return "border-slate-700 shadow-2xl shadow-black ring-1 ring-slate-800";
     }
   };
 
   return (
     <div className="fixed top-4 right-4 z-50 max-w-sm w-[calc(100vw-2rem)] sm:w-96 animate-in slide-in-from-top-3 fade-in duration-200">
       <div
-        className={`p-4 rounded-2xl border-2 shadow-2xl backdrop-blur-md text-xs space-y-3 ${getBorderColor()}`}
+        className={`p-4 rounded-2xl border-2 bg-slate-950 text-xs space-y-3 ${getBorderColor()}`}
       >
         {/* Banner do Alarme Sonoro Repetitivo */}
         {isCurrentAlarm && (
-          <div className="flex items-center justify-between px-2.5 py-1.5 bg-rose-500/20 border border-rose-500/40 rounded-xl text-rose-300 font-bold text-[11px] animate-bounce">
+          <div className="flex items-center justify-between px-2.5 py-1.5 bg-rose-950 border border-rose-500/60 rounded-xl text-rose-200 font-bold text-[11px] animate-bounce">
             <div className="flex items-center gap-1.5">
               <Volume2 className="w-4 h-4 text-rose-400 animate-pulse" />
               <span>🔔 ALARME SONORO REPETINDO</span>
             </div>
-            <span className="text-[10px] uppercase tracking-wider bg-rose-500/30 px-2 py-0.5 rounded-md font-mono">
+            <span className="text-[10px] uppercase tracking-wider bg-rose-900 px-2 py-0.5 rounded-md font-mono text-rose-200 border border-rose-700/50">
               Loop Ativo
             </span>
           </div>
@@ -122,11 +122,11 @@ export const NotificationToast: React.FC<Props> = ({
 
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-slate-800 border border-slate-700">
+            <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 shrink-0">
               {getIcon()}
             </div>
             <div>
-              <span className="font-extrabold text-white text-xs block leading-tight">
+              <span className="font-bold text-white text-sm block leading-tight">
                 {notification.title}
               </span>
               <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
@@ -137,14 +137,14 @@ export const NotificationToast: React.FC<Props> = ({
 
           <button
             onClick={handleStopAndClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-900 transition-colors cursor-pointer"
             title="Fechar / Parar alarme"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <p className="text-slate-300 text-xs leading-relaxed">
+        <p className="text-slate-100 text-xs leading-relaxed font-normal">
           {notification.message}
         </p>
 
@@ -160,7 +160,7 @@ export const NotificationToast: React.FC<Props> = ({
           </button>
         )}
 
-        <div className="flex items-center justify-between pt-1 border-t border-slate-800">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
           <button
             onClick={handleNavigate}
             className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
@@ -171,7 +171,7 @@ export const NotificationToast: React.FC<Props> = ({
 
           <button
             onClick={handleStopAndClose}
-            className="text-[10px] text-slate-400 hover:text-slate-200 cursor-pointer"
+            className="text-[11px] font-medium text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
           >
             {isCurrentAlarm ? "Silenciar & Dispensar" : "Dispensar"}
           </button>
