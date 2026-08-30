@@ -237,7 +237,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
         Data_Criacao: initialData?.Data_Criacao || new Date().toISOString(),
       };
 
-      await onSave(record);
+      onSave(record);
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || "Erro ao salvar registro de saúde.");

@@ -261,22 +261,14 @@ export const ListaMercadoView: React.FC<Props> = ({
       Comprado: form.Comprado === true || form.Comprado === "SIM",
       Observação: form.Observação || "",
     };
-    await onSaveItem(item);
+    onSaveItem(item);
     setIsModalOpen(false);
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = () => {
     if (!deleteConfirm || !onDeleteItem) return;
-    setIsDeleting(true);
-    try {
-      await onDeleteItem(deleteConfirm.id);
-      setDeleteConfirm(null);
-    } catch (err: any) {
-      console.error("Erro ao excluir item:", err);
-      alert(`Erro ao excluir item: ${err.message || err}`);
-    } finally {
-      setIsDeleting(false);
-    }
+    onDeleteItem(deleteConfirm.id);
+    setDeleteConfirm(null);
   };
 
   const handleSaveGeneralReminder = (e: React.FormEvent) => {

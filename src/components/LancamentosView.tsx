@@ -706,7 +706,7 @@ export const LancamentosView: React.FC<Props> = ({
           }
         }
 
-        await onSaveLancamento(itemToSave);
+        onSaveLancamento(itemToSave);
       } else if (!isContaFixa && !isParcelado) {
         const itemToSave: Lancamento = {
           Id: generateNewId("LANC"),
@@ -739,7 +739,7 @@ export const LancamentosView: React.FC<Props> = ({
           Data_Criacao: nowCreationTimestamp,
         };
 
-        await onSaveLancamento(itemToSave);
+        onSaveLancamento(itemToSave);
       } else if (isContaFixa) {
         // Conta Fixa: gera 12 meses (o primeiro respeita o Status escolhido pelo usuário no formulário, os demais como PENDENTE)
         const seriesId = generateNewId("FIX");
@@ -786,7 +786,7 @@ export const LancamentosView: React.FC<Props> = ({
           });
         }
 
-        await onSaveLancamento(itemsToSave);
+        onSaveLancamento(itemsToSave);
       } else if (isParcelado) {
         // Parcelado: divide valor total em N parcelas mensais (a primeira parcela respeita o Status escolhido pelo usuário)
         const seriesId = generateNewId("PARC");
@@ -837,7 +837,7 @@ export const LancamentosView: React.FC<Props> = ({
           });
         }
 
-        await onSaveLancamento(itemsToSave);
+        onSaveLancamento(itemsToSave);
       }
       onCloseModal();
     } catch (err) {
@@ -2109,9 +2109,9 @@ export const LancamentosView: React.FC<Props> = ({
             <div className="flex flex-col gap-2 pt-1">
               <button
                 type="button"
-                onClick={async () => {
+                onClick={() => {
                   const allIds = [batchDeleteData.item.Id, ...batchDeleteData.futureItems.map((f) => f.Id)];
-                  await onDeleteLancamento(allIds, true);
+                  onDeleteLancamento(allIds, true);
                   setBatchDeleteData(null);
                 }}
                 className="w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-rose-950/40"
@@ -2122,8 +2122,8 @@ export const LancamentosView: React.FC<Props> = ({
 
               <button
                 type="button"
-                onClick={async () => {
-                  await onDeleteLancamento(batchDeleteData.item.Id, true);
+                onClick={() => {
+                  onDeleteLancamento(batchDeleteData.item.Id, true);
                   setBatchDeleteData(null);
                 }}
                 className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition-colors"
@@ -2175,7 +2175,7 @@ export const LancamentosView: React.FC<Props> = ({
             <div className="flex flex-col gap-2 pt-1">
               <button
                 type="button"
-                onClick={async () => {
+                onClick={() => {
                   const updatedFutures = batchEditData.futureItems.map((futureItem) => {
                     let nextDesc = formData.Descricao || futureItem.Descricao;
                     const parcelMatch = futureItem.Descricao.match(/\(\d+\/\d+\)$/);
@@ -2193,7 +2193,7 @@ export const LancamentosView: React.FC<Props> = ({
                       Descricao: nextDesc,
                     };
                   });
-                  await onSaveLancamento([batchEditData.itemToSave, ...updatedFutures]);
+                  onSaveLancamento([batchEditData.itemToSave, ...updatedFutures]);
                   setBatchEditData(null);
                   onCloseModal();
                 }}
@@ -2205,8 +2205,8 @@ export const LancamentosView: React.FC<Props> = ({
 
               <button
                 type="button"
-                onClick={async () => {
-                  await onSaveLancamento(batchEditData.itemToSave);
+                onClick={() => {
+                  onSaveLancamento(batchEditData.itemToSave);
                   setBatchEditData(null);
                   onCloseModal();
                 }}
