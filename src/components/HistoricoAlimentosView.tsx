@@ -63,7 +63,7 @@ export const HistoricoAlimentosView: React.FC<Props> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [periodoFilter, setPeriodoFilter] = useState<
     "todos" | "mes_atual" | "mes_passado" | "custom"
-  >("todos");
+  >("mes_atual");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
   const [selectedAlimentoDetalhes, setSelectedAlimentoDetalhes] =

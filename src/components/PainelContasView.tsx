@@ -38,7 +38,7 @@ function parseDateSafely(dateStr?: string | null): Date | null {
 }
 
 export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancamento }) => {
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("ALL");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("CURRENT_MONTH");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 

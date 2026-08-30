@@ -82,7 +82,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   const [expandedManutencaoId, setExpandedManutencaoId] = useState<string | null>(null);
 
   // Filter and Search States
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("ALL");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("CURRENT_MONTH");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");

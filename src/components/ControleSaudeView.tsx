@@ -74,7 +74,7 @@ export const ControleSaudeView: React.FC<Props> = ({
   onOpenRelatorio,
 }) => {
   const [activeTab, setActiveTab] = useState<"peso" | "pressao" | "glicemia" | "dicas">("peso");
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("this_month");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
