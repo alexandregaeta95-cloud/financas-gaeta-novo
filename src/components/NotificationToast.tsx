@@ -9,9 +9,14 @@ import {
   Receipt,
   ShoppingBag,
   AlertTriangle,
+  Volume2,
+  VolumeX,
+  Square,
+  Check,
 } from "lucide-react";
 import { AppNotification } from "../types";
 import { ModuleView } from "./Navigation";
+import { useAlarmSound } from "../hooks/useAlarmSound";
 
 interface Props {
   notification: AppNotification | null;
@@ -24,15 +29,47 @@ export const NotificationToast: React.FC<Props> = ({
   onClose,
   onNavigate,
 }) => {
+  const { isPlaying, activeAlarmId, triggerAlarm, stopAlarm } = useAlarmSound();
+
+  const isCurrentAlarm =
+    Boolean(notification?.isAlarm) ||
+    Boolean(notification?.soundEnabled) ||
+    (isPlaying && activeAlarmId === notification?.id);
+
+  // Inicia o alarme sonoro em loop repetitivo se a notificação tiver som/alarme ativo
   useEffect(() => {
     if (!notification) return;
+
+    if (notification.isAlarm || notification.soundEnabled) {
+      triggerAlarm(notification.id, {
+        title: notification.title,
+        type: notification.type,
+      });
+    }
+
+    // Se for um alarme sonoro ativo, NÃO fecha automaticamente em 7s (toca até o usuário parar)
+    if (notification.isAlarm || notification.soundEnabled) {
+      return;
+    }
+
     const timer = setTimeout(() => {
       onClose();
     }, 7000);
     return () => clearTimeout(timer);
-  }, [notification, onClose]);
+  }, [notification, triggerAlarm, onClose]);
 
   if (!notification) return null;
+
+  const handleStopAndClose = () => {
+    stopAlarm();
+    onClose();
+  };
+
+  const handleNavigate = () => {
+    stopAlarm();
+    onNavigate(notification.targetView as ModuleView);
+    onClose();
+  };
 
   const getIcon = () => {
     switch (notification.type) {
@@ -52,6 +89,9 @@ export const NotificationToast: React.FC<Props> = ({
   };
 
   const getBorderColor = () => {
+    if (isCurrentAlarm) {
+      return "border-rose-500 shadow-rose-950/80 bg-slate-900 ring-2 ring-rose-500/40 animate-pulse";
+    }
     switch (notification.severity) {
       case "urgent":
         return "border-rose-500/80 shadow-rose-950/40 bg-slate-900";
@@ -65,11 +105,24 @@ export const NotificationToast: React.FC<Props> = ({
   return (
     <div className="fixed top-4 right-4 z-50 max-w-sm w-[calc(100vw-2rem)] sm:w-96 animate-in slide-in-from-top-3 fade-in duration-200">
       <div
-        className={`p-4 rounded-2xl border-2 shadow-2xl backdrop-blur-md text-xs space-y-2.5 ${getBorderColor()}`}
+        className={`p-4 rounded-2xl border-2 shadow-2xl backdrop-blur-md text-xs space-y-3 ${getBorderColor()}`}
       >
+        {/* Banner do Alarme Sonoro Repetitivo */}
+        {isCurrentAlarm && (
+          <div className="flex items-center justify-between px-2.5 py-1.5 bg-rose-500/20 border border-rose-500/40 rounded-xl text-rose-300 font-bold text-[11px] animate-bounce">
+            <div className="flex items-center gap-1.5">
+              <Volume2 className="w-4 h-4 text-rose-400 animate-pulse" />
+              <span>🔔 ALARME SONORO REPETINDO</span>
+            </div>
+            <span className="text-[10px] uppercase tracking-wider bg-rose-500/30 px-2 py-0.5 rounded-md font-mono">
+              Loop Ativo
+            </span>
+          </div>
+        )}
+
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-slate-800 border border-slate-700">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-slate-800 border border-slate-700">
               {getIcon()}
             </div>
             <div>
@@ -83,8 +136,9 @@ export const NotificationToast: React.FC<Props> = ({
           </div>
 
           <button
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            onClick={handleStopAndClose}
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            title="Fechar / Parar alarme"
           >
             <X className="w-4 h-4" />
           </button>
@@ -94,23 +148,32 @@ export const NotificationToast: React.FC<Props> = ({
           {notification.message}
         </p>
 
+        {/* Botão de Destaque para Parar o Alarme quando estiver tocando */}
+        {isCurrentAlarm && (
+          <button
+            type="button"
+            onClick={handleStopAndClose}
+            className="w-full py-2.5 px-3 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-extrabold rounded-xl shadow-lg shadow-rose-950/50 flex items-center justify-center gap-2 text-xs transition-transform active:scale-95 cursor-pointer"
+          >
+            <VolumeX className="w-4 h-4" />
+            <span>🛑 PARAR ALARME / JÁ VI</span>
+          </button>
+        )}
+
         <div className="flex items-center justify-between pt-1 border-t border-slate-800">
           <button
-            onClick={() => {
-              onNavigate(notification.targetView as ModuleView);
-              onClose();
-            }}
-            className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+            onClick={handleNavigate}
+            className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
           >
             <span>Ver no módulo</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
 
           <button
-            onClick={onClose}
-            className="text-[10px] text-slate-400 hover:text-slate-200"
+            onClick={handleStopAndClose}
+            className="text-[10px] text-slate-400 hover:text-slate-200 cursor-pointer"
           >
-            Dispensar
+            {isCurrentAlarm ? "Silenciar & Dispensar" : "Dispensar"}
           </button>
         </div>
       </div>

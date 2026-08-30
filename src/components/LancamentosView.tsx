@@ -19,6 +19,7 @@ import {
   CreditCard,
   PiggyBank,
   BadgeAlert,
+  Bell,
 } from "lucide-react";
 import { Lancamento, Veiculo, ContaBancaria, CartaoCredito, CategoriaCustomizada } from "../types";
 import { generateNewId } from "../services/api";
@@ -40,6 +41,7 @@ interface Props {
   onCloseModal: () => void;
   onOpenModal: () => void;
   initialFuelingMode?: boolean;
+  onOpenLembretesFinancas?: () => void;
 }
 
 type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
@@ -181,6 +183,7 @@ export const LancamentosView: React.FC<Props> = ({
   onCloseModal,
   onOpenModal,
   initialFuelingMode = false,
+  onOpenLembretesFinancas,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("ALL");
@@ -650,6 +653,8 @@ export const LancamentosView: React.FC<Props> = ({
         : "PENDENTE";
       const isChosenPago = chosenStatus === "PAGO";
 
+      const nowCreationTimestamp = new Date().toLocaleString("pt-BR");
+
       if (editingItem) {
         const itemToSave: Lancamento = {
           Id: editingItem.Id,
@@ -681,6 +686,7 @@ export const LancamentosView: React.FC<Props> = ({
           Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "GASOLINA COMUM") : undefined,
           Recorrencia_Id: editingItem.Recorrencia_Id,
           Parcela_Info: editingItem.Parcela_Info,
+          Data_Criacao: editingItem.Data_Criacao || nowCreationTimestamp,
         };
 
         const seriesId = getSeriesId(editingItem);
@@ -730,6 +736,7 @@ export const LancamentosView: React.FC<Props> = ({
           Localizacao_Do_Posto: isFuel ? localizacaoPosto : undefined,
           Comprovante_Url: isFuel ? comprovanteUrl : undefined,
           Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "GASOLINA COMUM") : undefined,
+          Data_Criacao: nowCreationTimestamp,
         };
 
         await onSaveLancamento(itemToSave);
@@ -775,6 +782,7 @@ export const LancamentosView: React.FC<Props> = ({
             Localizacao_Do_Posto: isFuel ? localizacaoPosto : undefined,
             Comprovante_Url: isFuel ? comprovanteUrl : undefined,
             Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "GASOLINA COMUM") : undefined,
+            Data_Criacao: nowCreationTimestamp,
           });
         }
 
@@ -808,7 +816,7 @@ export const LancamentosView: React.FC<Props> = ({
             Cartao: formData.Cartao || "",
             Forma_Pagamento: formData.Forma_Pagamento || "PIX",
             Status: itemStatus,
-            Observacoes: formData.Observacoes ? `${formData.Observacoes} [Parcela ${i + 1}/${N}] [REC:${seriesId}]` : `[Parcela ${i + 1}/${N}] [REC:${seriesId}]`,
+            Observacoes: formData.Observacoes ? `${formData.Observacoes} [Parcelado ${i + 1}/${N}] [REC:${seriesId}]` : `[Parcelado ${i + 1}/${N}] [REC:${seriesId}]`,
             Recorrencia_Id: seriesId,
             Parcela_Info: `${i + 1}/${N}`,
             Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
@@ -825,6 +833,7 @@ export const LancamentosView: React.FC<Props> = ({
             Localizacao_Do_Posto: isFuel ? localizacaoPosto : undefined,
             Comprovante_Url: isFuel ? comprovanteUrl : undefined,
             Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "GASOLINA COMUM") : undefined,
+            Data_Criacao: nowCreationTimestamp,
           });
         }
 
@@ -989,6 +998,16 @@ export const LancamentosView: React.FC<Props> = ({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {onOpenLembretesFinancas && (
+            <button
+              onClick={onOpenLembretesFinancas}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-800/90 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 font-semibold rounded-xl text-xs transition-colors shadow-xs"
+              title="Configurar Lembretes de Despesas e Receitas"
+            >
+              <Bell className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">Lembretes</span>
+            </button>
+          )}
           <button
             onClick={() => handleOpenNew(false)}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl text-xs transition-colors shadow-sm"

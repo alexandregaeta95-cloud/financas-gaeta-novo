@@ -52,6 +52,8 @@ export interface Lancamento {
   Tipo_Combustivel?: string; // Álcool, Álcool Aditivado, Gasolina Comum, Gasolina Aditivada
   Recorrencia_Id?: string;
   Parcela_Info?: string;
+  Data_Criacao?: string; // Timestamp automático de criação (ex: 29/08/2026 17:40:00)
+  Data_Hora?: string;
 }
 
 // 4. Abastecimentos (Mirror read-only view)
@@ -335,6 +337,7 @@ export const SHEET_NAMES = {
   EXERCICIOS: "23_Exercicios",
   CONSUMO_CAFE: "24_Consumo_Cafe",
   CONSUMO_AGUA: "25_Consumo_Agua",
+  CONFIG_LEMBRETES_FINANCAS: "26_Config_Lembretes_Financas",
 } as const;
 
 export interface RegistroSaude {
@@ -380,6 +383,8 @@ export interface AppNotification {
   timestamp: number;
   read?: boolean;
   dateStr?: string;
+  isAlarm?: boolean;
+  soundEnabled?: boolean;
 }
 
 // 21. Análise Nutricional de Alimentos (IA)
@@ -415,6 +420,7 @@ export interface LembreteSaudeConfig {
   Horario_2?: string;
   Horario_3?: string;
   Dias_Semana?: string;
+  Som_Alarme?: "SIM" | "NAO" | boolean | string;
   Ultima_Atualizacao?: string;
   // Aliases opcionais para compatibilidade interna
   id?: string;
@@ -424,6 +430,7 @@ export interface LembreteSaudeConfig {
   horario2?: string;
   horario3?: string;
   diasSemana?: string;
+  somAlarme?: boolean | string;
   ultimaAtualizacao?: string;
   [key: string]: any;
 }
@@ -478,6 +485,30 @@ export interface ConfigAgua {
   metaDiariaMl: number; // Ex: 3000
   tamanhoCopoMl: number; // Ex: 500 ou 750
   dataCriacao?: string;
+  [key: string]: any;
+}
+
+// 26. Configuração de Lembretes Diários de Finanças (26_Config_Lembretes_Financas)
+export interface LembreteFinancasConfig {
+  Id: string; // 'LEMBRETE_DESPESAS' | 'LEMBRETE_RECEITAS'
+  Tipo: "Despesas" | "Receitas" | string;
+  Ativo: "SIM" | "NAO" | boolean | string;
+  Horario_1?: string;
+  Horario_2?: string;
+  Horario_3?: string;
+  Dias_Semana?: string;
+  Som_Alarme?: "SIM" | "NAO" | boolean | string;
+  Ultima_Atualizacao?: string;
+  // Aliases opcionais para compatibilidade interna
+  id?: string;
+  tipo?: "Despesas" | "Receitas" | string;
+  ativo?: boolean | string;
+  horario1?: string;
+  horario2?: string;
+  horario3?: string;
+  diasSemana?: string;
+  somAlarme?: boolean | string;
+  ultimaAtualizacao?: string;
   [key: string]: any;
 }
 

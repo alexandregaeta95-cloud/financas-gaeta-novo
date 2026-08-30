@@ -10,9 +10,12 @@ import {
   AlertCircle,
   Loader2,
   Sparkles,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { LembreteSaudeConfig } from "../types";
 import { formatarHora } from "../utils/formatters";
+import { testAlarmSound } from "../services/alarmSoundService";
 
 interface ConfigLembretesSaudeModalProps {
   isOpen: boolean;
@@ -29,12 +32,14 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
 }) => {
   // Estado Pressão
   const [pressaoAtivo, setPressaoAtivo] = useState(true);
+  const [pressaoSom, setPressaoSom] = useState(true);
   const [pressaoH1, setPressaoH1] = useState("07:30");
   const [pressaoH2, setPressaoH2] = useState("13:30");
   const [pressaoH3, setPressaoH3] = useState("19:30");
 
   // Estado Glicemia
   const [glicemiaAtivo, setGlicemiaAtivo] = useState(true);
+  const [glicemiaSom, setGlicemiaSom] = useState(true);
   const [glicemiaH1, setGlicemiaH1] = useState("07:00");
   const [glicemiaH2, setGlicemiaH2] = useState("14:00");
   const [glicemiaH3, setGlicemiaH3] = useState("21:30");
@@ -42,6 +47,7 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isTestingAudio, setIsTestingAudio] = useState(false);
 
   // Carrega configurações existentes quando abrir
   useEffect(() => {
@@ -67,6 +73,14 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
           rawAtivo === 1 ||
           rawAtivo === "1";
         setPressaoAtivo(ativo);
+
+        const rawSom =
+          pressaoCfg.Som_Alarme ??
+          pressaoCfg.somAlarme ??
+          (pressaoCfg as any)["Som_Alarme"] ??
+          (pressaoCfg as any)["somAlarme"];
+        const som = rawSom !== "NAO" && rawSom !== "nao" && rawSom !== false;
+        setPressaoSom(som);
 
         const rawH1 =
           pressaoCfg.Horario_1 ||
@@ -120,6 +134,14 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
           rawAtivo === "1";
         setGlicemiaAtivo(ativo);
 
+        const rawSom =
+          glicemiaCfg.Som_Alarme ??
+          glicemiaCfg.somAlarme ??
+          (glicemiaCfg as any)["Som_Alarme"] ??
+          (glicemiaCfg as any)["somAlarme"];
+        const som = rawSom !== "NAO" && rawSom !== "nao" && rawSom !== false;
+        setGlicemiaSom(som);
+
         const rawH1 =
           glicemiaCfg.Horario_1 ||
           glicemiaCfg.horario1 ||
@@ -154,6 +176,14 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
 
   if (!isOpen) return null;
 
+  const handleTestAudio = () => {
+    setIsTestingAudio(true);
+    testAlarmSound();
+    setTimeout(() => {
+      setIsTestingAudio(false);
+    }, 1800);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     setErrorMessage(null);
@@ -170,6 +200,7 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
           Horario_2: pressaoH2,
           Horario_3: pressaoH3,
           Dias_Semana: "TODOS",
+          Som_Alarme: pressaoSom ? "SIM" : "NAO",
           Ultima_Atualizacao: nowStr,
         },
         {
@@ -180,6 +211,7 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
           Horario_2: glicemiaH2,
           Horario_3: glicemiaH3,
           Dias_Semana: "TODOS",
+          Som_Alarme: glicemiaSom ? "SIM" : "NAO",
           Ultima_Atualizacao: nowStr,
         },
       ];
@@ -237,6 +269,36 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
             </div>
           )}
 
+          {/* Banner explicativo do Alarme Sonoro Repetitivo */}
+          <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-rose-500/20 text-rose-400 rounded-xl shrink-0 mt-0.5 sm:mt-0">
+                <Volume2 className="w-4 h-4" />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                  Alarme Sonoro Repetitivo
+                  <span className="px-1.5 py-0.2 rounded-md bg-rose-500/30 text-rose-300 text-[10px] uppercase font-bold">
+                    Padrão Zonas de Risco
+                  </span>
+                </h4>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Quando o horário chegar, o som repetirá continuamente até você clicar em <strong>"Ok, já vi"</strong> ou registrar a medição.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleTestAudio}
+              disabled={isTestingAudio}
+              className="px-3 py-2 bg-rose-600/90 hover:bg-rose-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-rose-950/40 shrink-0 cursor-pointer disabled:opacity-50"
+            >
+              <Volume2 className={`w-3.5 h-3.5 ${isTestingAudio ? "animate-bounce" : ""}`} />
+              <span>{isTestingAudio ? "Tocando bips..." : "🔊 Testar Som"}</span>
+            </button>
+          </div>
+
           {/* Bloco 1: Pressão Arterial */}
           <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between">
@@ -261,44 +323,68 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
             </div>
 
             {pressaoAtivo && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-slate-500" />
-                    1º Horário (Manhã)
-                  </label>
-                  <input
-                    type="time"
-                    value={pressaoH1}
-                    onChange={(e) => setPressaoH1(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
-                  />
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-500" />
+                      1º Horário (Manhã)
+                    </label>
+                    <input
+                      type="time"
+                      value={pressaoH1}
+                      onChange={(e) => setPressaoH1(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-500" />
+                      2º Horário (Tarde)
+                    </label>
+                    <input
+                      type="time"
+                      value={pressaoH2}
+                      onChange={(e) => setPressaoH2(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-500" />
+                      3º Horário (Noite)
+                    </label>
+                    <input
+                      type="time"
+                      value={pressaoH3}
+                      onChange={(e) => setPressaoH3(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-slate-500" />
-                    2º Horário (Tarde)
+
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {pressaoSom ? (
+                      <Volume2 className="w-3.5 h-3.5 text-rose-400" />
+                    ) : (
+                      <VolumeX className="w-3.5 h-3.5 text-slate-500" />
+                    )}
+                    <span className="text-[11px] font-medium text-slate-300">
+                      Tocar som de alarme repetitivo para Pressão
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={pressaoSom}
+                      onChange={(e) => setPressaoSom(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-500"></div>
                   </label>
-                  <input
-                    type="time"
-                    value={pressaoH2}
-                    onChange={(e) => setPressaoH2(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
-                  />
                 </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-slate-500" />
-                    3º Horário (Noite)
-                  </label>
-                  <input
-                    type="time"
-                    value={pressaoH3}
-                    onChange={(e) => setPressaoH3(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
+              </>
             )}
           </div>
 
@@ -326,44 +412,68 @@ export const ConfigLembretesSaudeModal: React.FC<ConfigLembretesSaudeModalProps>
             </div>
 
             {glicemiaAtivo && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-slate-500" />
-                    1º Horário (Jejum)
-                  </label>
-                  <input
-                    type="time"
-                    value={glicemiaH1}
-                    onChange={(e) => setGlicemiaH1(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
-                  />
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-500" />
+                      1º Horário (Jejum)
+                    </label>
+                    <input
+                      type="time"
+                      value={glicemiaH1}
+                      onChange={(e) => setGlicemiaH1(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-500" />
+                      2º Horário (Pós-Almoço)
+                    </label>
+                    <input
+                      type="time"
+                      value={glicemiaH2}
+                      onChange={(e) => setGlicemiaH2(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-500" />
+                      3º Horário (Antes de Dormir)
+                    </label>
+                    <input
+                      type="time"
+                      value={glicemiaH3}
+                      onChange={(e) => setGlicemiaH3(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-slate-500" />
-                    2º Horário (Pós-Almoço)
+
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {glicemiaSom ? (
+                      <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+                    ) : (
+                      <VolumeX className="w-3.5 h-3.5 text-slate-500" />
+                    )}
+                    <span className="text-[11px] font-medium text-slate-300">
+                      Tocar som de alarme repetitivo para Glicemia
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={glicemiaSom}
+                      onChange={(e) => setGlicemiaSom(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
                   </label>
-                  <input
-                    type="time"
-                    value={glicemiaH2}
-                    onChange={(e) => setGlicemiaH2(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
-                  />
                 </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1.5 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-slate-500" />
-                    3º Horário (Antes de Dormir)
-                  </label>
-                  <input
-                    type="time"
-                    value={glicemiaH3}
-                    onChange={(e) => setGlicemiaH3(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
+              </>
             )}
           </div>
         </div>

@@ -28,6 +28,7 @@ import {
   ConsumoCafe,
   ConsumoAgua,
   ConfigAgua,
+  LembreteFinancasConfig,
 } from "../types";
 
 /**
@@ -463,6 +464,17 @@ export function normalizeLancamento(raw: any): Lancamento {
       raw.Parcela_Info ??
         raw["Parcela_Info"] ??
         raw.parcela_info ??
+        ""
+    ).trim() || undefined,
+    Data_Criacao: String(
+      raw.Data_Criacao ??
+        raw["Data_Criacao"] ??
+        raw["Data Criação"] ??
+        raw["Data_Criação"] ??
+        raw.data_criacao ??
+        raw.dataCriacao ??
+        raw["Data_Hora"] ??
+        raw.Data_Hora ??
         ""
     ).trim() || undefined,
   };
@@ -1727,6 +1739,63 @@ export function normalizeConsumoAgua(raw: any, index = 0): ConsumoAgua | ConfigA
     Observacoes: observacoes || undefined,
     dataCriacao,
     Data_Criacao: dataCriacao,
+  };
+}
+
+/**
+ * 26. Normalize Config Lembretes Financas (26_Config_Lembretes_Financas)
+ * Robustly parses and extracts clean "HH:mm" strings for reminder times.
+ */
+export function normalizeConfigLembreteFinancas(raw: any): LembreteFinancasConfig {
+  if (!raw || typeof raw !== "object") return raw;
+
+  const id = String(raw.Id || raw.id || raw.ID || `LEMBRETE_${Date.now()}`).trim();
+  const tipo = String(raw.Tipo || raw.tipo || "").trim();
+  const rawAtivo = raw.Ativo ?? raw.ativo;
+  const ativo =
+    rawAtivo === true ||
+    rawAtivo === "SIM" ||
+    rawAtivo === "sim" ||
+    rawAtivo === "TRUE" ||
+    rawAtivo === "true" ||
+    rawAtivo === 1 ||
+    rawAtivo === "1";
+
+  const rawSom = raw.Som_Alarme ?? raw.somAlarme ?? raw.Som ?? raw.som;
+  const somAlarme = rawSom !== "NAO" && rawSom !== "nao" && rawSom !== false;
+
+  let h1 = String(raw.Horario_1 ?? raw.horario1 ?? raw.Horario1 ?? raw["Horário 1"] ?? raw["Horario 1"] ?? "").trim();
+  let h2 = String(raw.Horario_2 ?? raw.horario2 ?? raw.Horario2 ?? raw["Horário 2"] ?? raw["Horario 2"] ?? "").trim();
+  let h3 = String(raw.Horario_3 ?? raw.horario3 ?? raw.Horario3 ?? raw["Horário 3"] ?? raw["Horario 3"] ?? "").trim();
+
+  h1 = formatarHora(h1);
+  h2 = formatarHora(h2);
+  h3 = formatarHora(h3);
+
+  const diasSemana = String(raw.Dias_Semana ?? raw.diasSemana ?? raw.dias_semana ?? "TODOS").trim().toUpperCase() || "TODOS";
+  const ultimaAtualizacao = String(
+    raw.Ultima_Atualizacao ?? raw.ultimaAtualizacao ?? raw.ultima_atualizacao ?? ""
+  ).trim();
+
+  return {
+    id,
+    Id: id,
+    tipo,
+    Tipo: tipo,
+    ativo: ativo ? "SIM" : "NAO",
+    Ativo: ativo ? "SIM" : "NAO",
+    somAlarme: somAlarme ? "SIM" : "NAO",
+    Som_Alarme: somAlarme ? "SIM" : "NAO",
+    horario1: h1,
+    Horario_1: h1,
+    horario2: h2,
+    Horario_2: h2,
+    horario3: h3,
+    Horario_3: h3,
+    diasSemana,
+    Dias_Semana: diasSemana,
+    ultimaAtualizacao,
+    Ultima_Atualizacao: ultimaAtualizacao,
   };
 }
 

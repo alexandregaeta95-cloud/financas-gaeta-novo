@@ -23,6 +23,7 @@ import { NotificationCenterModal } from "./components/NotificationCenterModal";
 import { NotificationToast } from "./components/NotificationToast";
 import { BiometricLockScreen } from "./components/BiometricLockScreen";
 import { SegurancaModal } from "./components/SegurancaModal";
+import { ConfigLembretesFinancasModal } from "./components/ConfigLembretesFinancasModal";
 import { isBiometricEnabled, isSessionAuthenticated } from "./services/biometricAuth";
 
 import {
@@ -47,6 +48,7 @@ import {
   RegistroSaude,
   AlimentoAnaliseResult,
   LembreteSaudeConfig,
+  LembreteFinancasConfig,
   ExercicioRegistro,
   ConsumoCafe,
   ConsumoAgua,
@@ -65,6 +67,7 @@ import {
 
 import { calculateAccountCurrentBalance } from "./utils/formatters";
 import { evaluateAllNotifications, dispatchBrowserNotification } from "./services/notificationEngine";
+import { stopAlarmLoop } from "./services/alarmSoundService";
 
 export default function App() {
   const [activeView, setActiveView] = useState<ModuleView>("dashboard");
@@ -337,6 +340,52 @@ export default function App() {
       },
     ];
   });
+  const [lembretesFinancas, setLembretesFinancas] = useState<LembreteFinancasConfig[]>(() => {
+    const cached = getCachedSheetData<LembreteFinancasConfig>(SHEET_NAMES.CONFIG_LEMBRETES_FINANCAS);
+    if (cached && cached.length > 0) return cached;
+    return [
+      {
+        Id: "LEMBRETE_DESPESAS",
+        id: "LEMBRETE_DESPESAS",
+        Tipo: "Despesas",
+        tipo: "Despesas",
+        Ativo: "SIM",
+        ativo: "SIM",
+        Som_Alarme: "SIM",
+        somAlarme: "SIM",
+        Horario_1: "08:30",
+        horario1: "08:30",
+        Horario_2: "13:30",
+        horario2: "13:30",
+        Horario_3: "20:00",
+        horario3: "20:00",
+        Dias_Semana: "TODOS",
+        diasSemana: "TODOS",
+        Ultima_Atualizacao: new Date().toLocaleString("pt-BR"),
+        ultimaAtualizacao: new Date().toLocaleString("pt-BR"),
+      },
+      {
+        Id: "LEMBRETE_RECEITAS",
+        id: "LEMBRETE_RECEITAS",
+        Tipo: "Receitas",
+        tipo: "Receitas",
+        Ativo: "SIM",
+        ativo: "SIM",
+        Som_Alarme: "SIM",
+        somAlarme: "SIM",
+        Horario_1: "09:00",
+        horario1: "09:00",
+        Horario_2: "18:00",
+        horario2: "18:00",
+        Horario_3: "",
+        horario3: "",
+        Dias_Semana: "TODOS",
+        diasSemana: "TODOS",
+        Ultima_Atualizacao: new Date().toLocaleString("pt-BR"),
+        ultimaAtualizacao: new Date().toLocaleString("pt-BR"),
+      },
+    ];
+  });
   const [metas, setMetas] = useState<MetaCategoria[]>(() =>
     getCachedSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
   );
@@ -400,6 +449,7 @@ export default function App() {
   const [isLancamentoModalOpen, setIsLancamentoModalOpen] = useState(false);
   const [isFuelingModeModal, setIsFuelingModeModal] = useState(false);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+  const [isLembretesFinancasModalOpen, setIsLembretesFinancasModalOpen] = useState(false);
 
   // Biometric Session Lock State
   const [isBiometricsActive, setIsBiometricsActive] = useState<boolean>(() => isBiometricEnabled());
@@ -424,6 +474,7 @@ export default function App() {
       itensMercado,
       lembretesSaude,
       registrosSaude,
+      lembretesFinancas,
     });
 
     setNotifications((prev) => {
@@ -458,6 +509,7 @@ export default function App() {
     itensMercado,
     lembretesSaude,
     registrosSaude,
+    lembretesFinancas,
   ]);
 
   // Run notification check on data changes and periodically every 60 seconds
@@ -470,16 +522,19 @@ export default function App() {
   }, [checkNotifications]);
 
   const handleDismissNotification = (id: string) => {
+    stopAlarmLoop(id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
   };
 
   const handleDismissAllNotifications = () => {
+    stopAlarmLoop();
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
   const handleNavigateFromNotification = (view: ModuleView) => {
+    stopAlarmLoop();
     setActiveView(view);
     setIsNotificationCenterOpen(false);
     setActiveToast(null);
@@ -559,6 +614,9 @@ export default function App() {
         .catch(() => {});
       fetchSheetData<LembreteSaudeConfig>(SHEET_NAMES.CONFIG_LEMBRETES_SAUDE)
         .then((data) => data && data.length > 0 && setLembretesSaude(data))
+        .catch(() => {});
+      fetchSheetData<LembreteFinancasConfig>(SHEET_NAMES.CONFIG_LEMBRETES_FINANCAS)
+        .then((data) => data && data.length > 0 && setLembretesFinancas(data))
         .catch(() => {});
       fetchSheetData<AlimentoAnaliseResult>(SHEET_NAMES.ANALISE_ALIMENTOS)
         .then((data) => data && setAlimentos(data))
@@ -807,6 +865,16 @@ export default function App() {
     }
   };
 
+  const handleSaveConfigLembretesFinancas = async (updatedConfigs: LembreteFinancasConfig[]) => {
+    setLembretesFinancas(updatedConfigs);
+    try {
+      await saveSheetRecords(SHEET_NAMES.CONFIG_LEMBRETES_FINANCAS, updatedConfigs, "UPSERT");
+    } catch (err: any) {
+      console.error("Erro ao salvar lembretes financeiros na planilha:", err);
+      alert(`Erro ao salvar lembretes financeiros na planilha: ${err.message || err}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col w-full max-w-full overflow-x-hidden">
       {/* Top Sync Status Bar */}
@@ -871,6 +939,7 @@ export default function App() {
             }}
             onCloseModal={() => setIsLancamentoModalOpen(false)}
             initialFuelingMode={isFuelingModeModal}
+            onOpenLembretesFinancas={() => setIsLembretesFinancasModalOpen(true)}
           />
         )}
 
@@ -1033,6 +1102,15 @@ export default function App() {
         onDismissAll={handleDismissAllNotifications}
         onNavigate={handleNavigateFromNotification}
         onRefreshNotifications={checkNotifications}
+      />
+
+      {/* Lembretes de Finanças Modal */}
+      <ConfigLembretesFinancasModal
+        isOpen={isLembretesFinancasModalOpen}
+        onClose={() => setIsLembretesFinancasModalOpen(false)}
+        configs={lembretesFinancas}
+        lancamentos={lancamentos}
+        onSaveConfigs={handleSaveConfigLembretesFinancas}
       />
 
       {/* Security & Biometrics Modal */}

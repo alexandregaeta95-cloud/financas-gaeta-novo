@@ -15,7 +15,10 @@ import {
   ShoppingBag,
   Bell,
   Fingerprint,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import { useAlarmSound } from "../hooks/useAlarmSound";
 
 export type ModuleView =
   | "dashboard"
@@ -48,6 +51,8 @@ export const Navigation: React.FC<Props> = ({
   onOpenSecurity,
   isBiometricsActive = false,
 }) => {
+  const { isPlaying, stopAlarm } = useAlarmSound();
+
   const navItems: { id: ModuleView; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: "dashboard", label: "Início", icon: LayoutDashboard },
     { id: "lancamentos", label: "Finanças", icon: Receipt },
@@ -101,6 +106,17 @@ export const Navigation: React.FC<Props> = ({
             })}
           </nav>
 
+          {isPlaying && (
+            <button
+              onClick={() => stopAlarm()}
+              className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-rose-950/60 animate-bounce cursor-pointer"
+              title="Alarme sonoro ativo! Clique para parar."
+            >
+              <VolumeX className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Parar Alarme</span>
+            </button>
+          )}
+
           {onOpenSecurity && (
             <button
               onClick={onOpenSecurity}
@@ -142,6 +158,16 @@ export const Navigation: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {isPlaying && (
+            <button
+              onClick={() => stopAlarm()}
+              className="p-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs flex items-center gap-1 shadow-md shadow-rose-950 animate-bounce cursor-pointer"
+              title="Alarme sonoro ativo! Clique para parar."
+            >
+              <VolumeX className="w-4 h-4" />
+            </button>
+          )}
+
           {onOpenSecurity && (
             <button
               onClick={onOpenSecurity}

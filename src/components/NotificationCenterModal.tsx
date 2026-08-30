@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Check,
   Volume2,
+  VolumeX,
 } from "lucide-react";
 import { AppNotification } from "../types";
 import { ModuleView } from "./Navigation";
@@ -21,6 +22,7 @@ import {
   requestBrowserNotificationPermission,
   registerTireCalibrationNow,
 } from "../services/notificationEngine";
+import { useAlarmSound } from "../hooks/useAlarmSound";
 
 interface Props {
   isOpen: boolean;
@@ -41,6 +43,8 @@ export const NotificationCenterModal: React.FC<Props> = ({
   onNavigate,
   onRefreshNotifications,
 }) => {
+  const { isPlaying, activeAlarmId, alarmTitle, stopAlarm } = useAlarmSound();
+
   if (!isOpen) return null;
 
   const permissionStatus = getNotificationPermissionStatus();
@@ -55,6 +59,24 @@ export const NotificationCenterModal: React.FC<Props> = ({
   const handleCalibrationCheck = () => {
     registerTireCalibrationNow();
     onRefreshNotifications();
+  };
+
+  const handleDismissSingle = (id: string) => {
+    if (activeAlarmId === id || isPlaying) {
+      stopAlarm();
+    }
+    onDismiss(id);
+  };
+
+  const handleDismissAllWithAudio = () => {
+    stopAlarm();
+    onDismissAll();
+  };
+
+  const handleNavigateWithAudio = (view: ModuleView) => {
+    stopAlarm();
+    onNavigate(view);
+    onClose();
   };
 
   const getCategoryInfo = (type: AppNotification["type"]) => {
@@ -129,6 +151,23 @@ export const NotificationCenterModal: React.FC<Props> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Banner de Alarme Sonoro Repetitivo Ativo */}
+        {isPlaying && (
+          <div className="p-3 sm:px-5 bg-rose-500/20 border-b border-rose-500/40 flex items-center justify-between gap-3 animate-pulse">
+            <div className="flex items-center gap-2 text-rose-300 font-bold text-xs">
+              <Volume2 className="w-4 h-4 text-rose-400 shrink-0 animate-bounce" />
+              <span>🔔 Alarme Sonoro Repetindo no momento! ({alarmTitle || "Saúde"})</span>
+            </div>
+            <button
+              onClick={() => stopAlarm()}
+              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-rose-950 transition-transform active:scale-95 cursor-pointer shrink-0"
+            >
+              <VolumeX className="w-4 h-4" />
+              <span>🛑 Silenciar Alarme</span>
+            </button>
+          </div>
+        )}
 
         {/* Browser Permission Banner */}
         <div className="p-3 sm:px-5 bg-slate-950 border-b border-slate-800/80">
@@ -216,8 +255,8 @@ export const NotificationCenterModal: React.FC<Props> = ({
                     </div>
 
                     <button
-                      onClick={() => onDismiss(item.id)}
-                      className="text-slate-500 hover:text-slate-300 p-1"
+                      onClick={() => handleDismissSingle(item.id)}
+                      className="text-slate-500 hover:text-slate-300 p-1 cursor-pointer"
                       title="Dispensar"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -233,22 +272,32 @@ export const NotificationCenterModal: React.FC<Props> = ({
                     </p>
                   </div>
 
+                  {/* Ação rápida para parar o alarme se o alarme estiver tocando */}
+                  {isPlaying && (activeAlarmId === item.id || !activeAlarmId) && (
+                    <div className="mt-2.5">
+                      <button
+                        onClick={() => stopAlarm()}
+                        className="w-full py-1.5 px-3 bg-rose-600/90 hover:bg-rose-500 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer"
+                      >
+                        <VolumeX className="w-3.5 h-3.5" />
+                        <span>🛑 Parar Alarme / Já vi</span>
+                      </button>
+                    </div>
+                  )}
+
                   <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
                     {item.id === "veiculos_calibragem_pneus_7dias" ? (
                       <button
                         onClick={handleCalibrationCheck}
-                        className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300"
+                        className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" />
                         <span>Marcar como Calibrado Hoje</span>
                       </button>
                     ) : (
                       <button
-                        onClick={() => {
-                          onNavigate(item.targetView as ModuleView);
-                          onClose();
-                        }}
-                        className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300"
+                        onClick={() => handleNavigateWithAudio(item.targetView as ModuleView)}
+                        className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 cursor-pointer"
                       >
                         <span>Abrir {cat.label}</span>
                         <ExternalLink className="w-3 h-3" />
@@ -256,8 +305,8 @@ export const NotificationCenterModal: React.FC<Props> = ({
                     )}
 
                     <button
-                      onClick={() => onDismiss(item.id)}
-                      className="text-[10px] text-slate-500 hover:text-slate-300"
+                      onClick={() => handleDismissSingle(item.id)}
+                      className="text-[10px] text-slate-500 hover:text-slate-300 cursor-pointer"
                     >
                       Dispensar
                     </button>
@@ -275,8 +324,8 @@ export const NotificationCenterModal: React.FC<Props> = ({
               {notifications.length} alerta(s) ativo(s)
             </span>
             <button
-              onClick={onDismissAll}
-              className="text-xs text-rose-400 hover:text-rose-300 font-semibold transition-colors"
+              onClick={handleDismissAllWithAudio}
+              className="text-xs text-rose-400 hover:text-rose-300 font-semibold transition-colors cursor-pointer"
             >
               Limpar Todos os Alertas
             </button>

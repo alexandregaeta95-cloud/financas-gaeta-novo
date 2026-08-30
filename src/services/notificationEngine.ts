@@ -11,6 +11,7 @@ import {
   CartaoCredito,
   ItemMercado,
   LembreteSaudeConfig,
+  LembreteFinancasConfig,
   RegistroSaude,
   MetaCategoria,
 } from "../types";
@@ -172,6 +173,7 @@ export function evaluateAllNotifications({
   itensMercado = [],
   lembretesSaude = [],
   registrosSaude = [],
+  lembretesFinancas = [],
 }: {
   agenda?: CompromissoAgenda[];
   consultas?: ConsultaMedica[];
@@ -186,6 +188,7 @@ export function evaluateAllNotifications({
   itensMercado?: ItemMercado[];
   lembretesSaude?: LembreteSaudeConfig[];
   registrosSaude?: RegistroSaude[];
+  lembretesFinancas?: LembreteFinancasConfig[];
 }): AppNotification[] {
   const list: AppNotification[] = [];
   const now = Date.now();
@@ -522,6 +525,13 @@ export function evaluateAllNotifications({
         if (!jaRegistrouNesteSlot) {
           console.log(`[Lembretes Saúde] 🔔 DISPARANDO NOTIFICAÇÃO para ${tipoLabel} (${timeStr})!`);
           const slotClean = timeStr.replace(":", "");
+          const somHabilitado =
+            cfg.Som_Alarme !== "NAO" &&
+            cfg.Som_Alarme !== "nao" &&
+            cfg.Som_Alarme !== false &&
+            cfg.somAlarme !== "NAO" &&
+            cfg.somAlarme !== false;
+
           list.push({
             id: `lembrete_saude_${tipoKey.toLowerCase()}_${slotClean}_${todayLocalStr}`,
             type: "saude",
@@ -530,6 +540,8 @@ export function evaluateAllNotifications({
             targetView: "saude",
             severity: diffMins <= 15 ? "urgent" : "warning",
             timestamp: now,
+            isAlarm: somHabilitado,
+            soundEnabled: somHabilitado,
           });
         } else {
           console.log(
@@ -785,6 +797,126 @@ export function evaluateAllNotifications({
     }
   });
 
+  // B. LEMBRETES DIÁRIOS DE FINANÇAS (Despesas e Receitas - 26_Config_Lembretes_Financas)
+  lembretesFinancas.forEach((cfg: any) => {
+    const rawAtivo =
+      cfg.Ativo ??
+      cfg.ativo ??
+      cfg.ATIVO ??
+      cfg.status ??
+      cfg.Status ??
+      true;
+
+    const isAtivo =
+      rawAtivo === true ||
+      rawAtivo === 1 ||
+      String(rawAtivo).trim().toUpperCase() === "SIM" ||
+      String(rawAtivo).trim().toUpperCase() === "TRUE" ||
+      String(rawAtivo).trim().toUpperCase() === "ATIVO";
+
+    if (!isAtivo) return;
+
+    const id = String(cfg.Id || cfg.id || "");
+    const tipo = String(cfg.Tipo || cfg.tipo || "");
+    const isDespesa =
+      id.toUpperCase().includes("DESPESA") ||
+      tipo.toLowerCase().includes("despesa");
+    const tipoKey = isDespesa ? "DESPESAS" : "RECEITAS";
+    const tipoLabel = isDespesa ? "Despesas" : "Receitas";
+    const icon = isDespesa ? "💸" : "💰";
+
+    // Validação dos Dias da Semana
+    const rawDiasSemana = String(
+      cfg.Dias_Semana || cfg.diasSemana || "TODOS"
+    ).trim().toUpperCase();
+
+    if (rawDiasSemana && rawDiasSemana !== "TODOS") {
+      const todayTokens = dayOfWeekNames[currentDayOfWeek] || [];
+      const matchesDay = todayTokens.some((tok) => rawDiasSemana.includes(tok));
+      if (!matchesDay) return;
+    }
+
+    // Extração dos horários
+    const rawHorariosSet = new Set<string>();
+    const explicitCandidates = [
+      cfg.Horario_1,
+      cfg.Horario_2,
+      cfg.Horario_3,
+      cfg.horario1,
+      cfg.horario2,
+      cfg.horario3,
+      cfg["Horário 1"],
+      cfg["Horario 1"],
+      cfg["Horário 2"],
+      cfg["Horario 2"],
+      cfg["Horário 3"],
+      cfg["Horario 3"],
+    ];
+
+    explicitCandidates.forEach((val) => {
+      if (val !== undefined && val !== null) {
+        const strVal = String(val).trim();
+        if (strVal) {
+          const formatted = formatarHora(strVal);
+          if (formatted && /^\d{1,2}:\d{2}$/.test(formatted)) {
+            rawHorariosSet.add(formatted);
+          }
+        }
+      }
+    });
+
+    const rawHorarios = Array.from(rawHorariosSet);
+
+    rawHorarios.forEach((timeStr) => {
+      const parts = timeStr.split(":");
+      if (parts.length < 2) return;
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) return;
+
+      const targetTotalMins = h * 60 + m;
+      const diffMins = currentTotalMins - targetTotalMins;
+      const isDentroJanela = diffMins >= 0 && diffMins <= 45;
+
+      if (isDentroJanela) {
+        // Verifica se já existe um lançamento correspondente registrado hoje
+        const jaRegistrouHoje = lancamentos.some((l) => {
+          const lData = String(l.Data || "").trim();
+          if (lData !== todayLocalStr) return false;
+
+          const lTipo = String(l.Tipo || "").toUpperCase();
+          if (isDespesa) {
+            return lTipo.includes("DESPESA") || lTipo.includes("ABASTECIMENTO");
+          } else {
+            return lTipo.includes("RECEITA");
+          }
+        });
+
+        if (!jaRegistrouHoje) {
+          const slotClean = timeStr.replace(":", "");
+          const somHabilitado =
+            cfg.Som_Alarme !== "NAO" &&
+            cfg.Som_Alarme !== "nao" &&
+            cfg.Som_Alarme !== false &&
+            cfg.somAlarme !== "NAO" &&
+            cfg.somAlarme !== false;
+
+          list.push({
+            id: `lembrete_financas_${tipoKey.toLowerCase()}_${slotClean}_${todayLocalStr}`,
+            type: "financas",
+            title: `${icon} Registrar ${tipoLabel} do Dia`,
+            message: `Lembrete agendado (${timeStr}). Registre seus lançamentos e mantenha o caixa sincronizado!`,
+            targetView: "lancamentos",
+            severity: diffMins <= 15 ? "urgent" : "warning",
+            timestamp: now,
+            isAlarm: somHabilitado,
+            soundEnabled: somHabilitado,
+          });
+        }
+      }
+    });
+  });
+
   // 5. LISTA DE MERCADO
   // A. Lembretes por item
   const itensComLembrete = itensMercado.filter((i) => {
@@ -854,5 +986,10 @@ export function evaluateAllNotifications({
     }
   }
 
-  return list;
+  // Garante que todas as notificações do sistema tenham som/alarme repetitivo ativado por padrão
+  return list.map((item) => ({
+    ...item,
+    isAlarm: item.isAlarm !== undefined ? item.isAlarm : true,
+    soundEnabled: item.soundEnabled !== undefined ? item.soundEnabled : true,
+  }));
 }

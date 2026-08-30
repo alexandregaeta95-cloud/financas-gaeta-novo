@@ -31,6 +31,7 @@ import {
   normalizeConfigLembreteSaude,
   normalizeConsumoCafe,
   normalizeConsumoAgua,
+  normalizeConfigLembreteFinancas,
   formatarHora,
 } from "../utils/formatters";
 
@@ -162,6 +163,14 @@ export function normalizeRecordBySheet(sheetName: string, item: any): any {
     sheetName === "25_Consumo_Agua"
   ) {
     return normalizeConsumoAgua(item);
+  }
+  if (
+    s.includes("26_config") ||
+    s.includes("lembretes_financas") ||
+    sheetName === SHEET_NAMES.CONFIG_LEMBRETES_FINANCAS ||
+    sheetName === "26_Config_Lembretes_Financas"
+  ) {
+    return normalizeConfigLembreteFinancas(item);
   }
   return item;
 }
@@ -1049,6 +1058,62 @@ export async function saveSheetRecords<T = any>(
       delete enriched.DataCriacao;
     }
 
+    // 26_Config_Lembretes_Financas mapping (Canonical Title_Case ONLY)
+    if (
+      sheetName === SHEET_NAMES.CONFIG_LEMBRETES_FINANCAS ||
+      sheetName === "26_Config_Lembretes_Financas" ||
+      item.Id === "LEMBRETE_DESPESAS" ||
+      item.Id === "LEMBRETE_RECEITAS" ||
+      item.id === "LEMBRETE_DESPESAS" ||
+      item.id === "LEMBRETE_RECEITAS"
+    ) {
+      const lembreteId = String(item.Id || item.id || `LEMBRETE_${Date.now()}`).trim();
+      const tipoVal = String(item.Tipo || item.tipo || "").trim();
+      const rawAtivo = item.Ativo ?? item.ativo;
+      const ativoVal =
+        rawAtivo === true || rawAtivo === "SIM" || rawAtivo === "sim" || rawAtivo === "TRUE" || rawAtivo === "true" || rawAtivo === 1
+          ? "SIM"
+          : "NAO";
+      const rawSom = item.Som_Alarme ?? item.somAlarme ?? item.Som ?? item.som;
+      const somVal = rawSom !== "NAO" && rawSom !== "nao" && rawSom !== false ? "SIM" : "NAO";
+
+      const h1 = formatarHora(item.Horario_1 || item.horario1 || item.Horario1 || "");
+      const h2 = formatarHora(item.Horario_2 || item.horario2 || item.Horario2 || "");
+      const h3 = formatarHora(item.Horario_3 || item.horario3 || item.Horario3 || "");
+      const diasVal = String(item.Dias_Semana || item.diasSemana || item.dias_semana || "TODOS").trim().toUpperCase() || "TODOS";
+      const atualizacaoVal = String(
+        item.Ultima_Atualizacao || item.ultimaAtualizacao || new Date().toLocaleString("pt-BR")
+      ).trim();
+
+      // Canonical Title_Case columns ONLY
+      enriched["Id"] = lembreteId;
+      enriched["Tipo"] = tipoVal;
+      enriched["Ativo"] = ativoVal;
+      enriched["Som_Alarme"] = somVal;
+      enriched["Horario_1"] = h1;
+      enriched["Horario_2"] = h2;
+      enriched["Horario_3"] = h3;
+      enriched["Dias_Semana"] = diasVal;
+      enriched["Ultima_Atualizacao"] = atualizacaoVal;
+
+      // Strictly remove duplicate camelCase and alternate keys
+      delete enriched.id;
+      delete enriched.tipo;
+      delete enriched.ativo;
+      delete enriched.somAlarme;
+      delete enriched.som_alarme;
+      delete enriched.horario1;
+      delete enriched.horario2;
+      delete enriched.horario3;
+      delete enriched.Horario1;
+      delete enriched.Horario2;
+      delete enriched.Horario3;
+      delete enriched.diasSemana;
+      delete enriched.dias_semana;
+      delete enriched.ultimaAtualizacao;
+      delete enriched.ultima_atualizacao;
+    }
+
     // 7_Receitas_Médicas mapping (guarantees Data, Medicamento, Dosagem, Instrucoes, Medico, Validade, Ativa are all filled)
     if (
       sheetName === SHEET_NAMES.RECEITAS_MEDICAS ||
@@ -1135,7 +1200,28 @@ export async function saveSheetRecords<T = any>(
       enriched["Saldo_atual"] = formattedAtu;
     }
 
-    // Tipo_Combustivel mapping (1_Lancamentos)
+    // Tipo_Combustivel & Data_Criacao mapping (1_Lancamentos)
+    if (
+      sheetName === SHEET_NAMES.LANCAMENTOS ||
+      sheetName === "1_Lancamentos" ||
+      item.Tipo_Combustivel !== undefined ||
+      item.Completou_O_Tanque !== undefined
+    ) {
+      const nowFormatted = new Date().toLocaleString("pt-BR");
+      const criacaoVal =
+        item.Data_Criacao ||
+        item["Data_Criacao"] ||
+        item["Data Criação"] ||
+        item.data_criacao ||
+        item.dataCriacao ||
+        item["Data_Hora"] ||
+        item.Data_Hora ||
+        nowFormatted;
+
+      enriched["Data_Criacao"] = criacaoVal;
+      enriched["Data_Hora"] = criacaoVal;
+    }
+
     if (
       item.Tipo_Combustivel !== undefined ||
       item["Tipo_Combustivel"] !== undefined ||

@@ -3,6 +3,7 @@ import { ShieldAlert, MapPin, Plus, Edit2, Trash2, X, Navigation, Volume2, Volum
 import { ZonaDeRisco } from "../types";
 import { generateNewId } from "../services/api";
 import { VoiceInput } from "./VoiceInput";
+import { playAlertBeepSound, startAlarmLoop, stopAlarmLoop } from "../services/alarmSoundService";
 
 const DEFAULT_TIPOS_OCORRENCIA = [
   "ASSALTO",
@@ -80,53 +81,9 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
     Observação: "Trancar portas e fechar vidros",
   });
 
-  const audioCtxRef = useRef<AudioContext | null>(null);
-
   // Sound generator function using Web Audio API
   const playRiskAlertSound = useCallback(() => {
-    try {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtx) return;
-
-      if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
-        audioCtxRef.current = new AudioCtx();
-      }
-      const ctx = audioCtxRef.current;
-      if (ctx.state === "suspended") {
-        ctx.resume();
-      }
-      const now = ctx.currentTime;
-
-      // Pulse 1: 880Hz -> 1046.5Hz
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = "sawtooth";
-      osc1.frequency.setValueAtTime(880, now);
-      osc1.frequency.setValueAtTime(1046.5, now + 0.12);
-      gain1.gain.setValueAtTime(0.35, now);
-      gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.3);
-
-      // Pulse 2: 880Hz -> 1174.66Hz (250ms later)
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type = "sawtooth";
-      osc2.frequency.setValueAtTime(880, now + 0.25);
-      osc2.frequency.setValueAtTime(1174.66, now + 0.38);
-      gain2.gain.setValueAtTime(0.4, now + 0.25);
-      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.start(now + 0.25);
-      osc2.stop(now + 0.6);
-    } catch (e) {
-      console.log("Audio alert failed or muted:", e);
-    }
+    playAlertBeepSound(0.38);
   }, []);
 
   // Start GPS Geolocation Tracking
@@ -174,21 +131,22 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
   // Periodic Sound Alert Loop while inside an active risk zone
   useEffect(() => {
     if (!activeAlertZone || isMuted) {
+      stopAlarmLoop();
       return;
     }
 
-    // Play immediately when entering the zone
-    playRiskAlertSound();
-
-    // Repeat automatically every 6 seconds while inside the zone
-    const intervalId = setInterval(() => {
-      playRiskAlertSound();
-    }, 6000);
+    // Inicia o alarme sonoro repetitivo centralizado
+    startAlarmLoop(`zona_risco_${activeAlertZone.Id}`, {
+      title: `⚠️ Zona de Risco: ${activeAlertZone.Descrição || activeAlertZone.Tipo_Ocorrencia}`,
+      type: "seguranca",
+      intervalMs: 4000,
+      volume: 0.45,
+    });
 
     return () => {
-      clearInterval(intervalId);
+      stopAlarmLoop();
     };
-  }, [activeAlertZone, isMuted, playRiskAlertSound]);
+  }, [activeAlertZone, isMuted]);
 
   const handleOpenModal = (z?: ZonaDeRisco) => {
     if (z) {

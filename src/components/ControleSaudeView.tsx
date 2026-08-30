@@ -45,6 +45,8 @@ import { formatDateBR } from "../utils/formatters";
 import { ConfigLembretesSaudeModal } from "./ConfigLembretesSaudeModal";
 import { EditarAlturaModal } from "./EditarAlturaModal";
 import { calcularImc } from "../utils/imc";
+import { useAlarmSound } from "../hooks/useAlarmSound";
+import { Volume2, VolumeX } from "lucide-react";
 
 interface Props {
   registros: RegistroSaude[];
@@ -78,6 +80,13 @@ export const ControleSaudeView: React.FC<Props> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [isLembretesModalOpen, setIsLembretesModalOpen] = useState(false);
   const [isAlturaModalOpen, setIsAlturaModalOpen] = useState(false);
+
+  const { isPlaying, activeAlarmId, alarmTitle, stopAlarm } = useAlarmSound();
+
+  const handleNovoRegistroWithAudio = (tipo?: "PESO" | "PRESSAO" | "GLICEMIA") => {
+    stopAlarm();
+    onOpenNovoRegistro(tipo);
+  };
 
   // Extract altura from lembretesConfigs if not explicitly passed
   const effectiveAltura = useMemo(() => {
@@ -318,6 +327,53 @@ export const ControleSaudeView: React.FC<Props> = ({
 
   return (
     <div className="space-y-6">
+      {/* Alarme Sonoro Repetitivo Ativo na tela de Saúde */}
+      {isPlaying && (
+        <div className="bg-gradient-to-r from-rose-950/80 via-rose-900/60 to-rose-950/80 border-2 border-rose-500 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xl shadow-rose-950/80 animate-pulse">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 bg-rose-500/20 text-rose-400 border border-rose-500/40 rounded-2xl shrink-0 animate-bounce">
+              <Volume2 className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black uppercase tracking-wider bg-rose-600 text-white px-2 py-0.5 rounded-md shadow-xs">
+                  ALARME REPETINDO
+                </span>
+                <span className="text-xs text-rose-300 font-bold">
+                  {alarmTitle || "Hora de Medir Pressão ou Glicemia"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-200 mt-1">
+                O lembrete sonoro continuará tocando até você confirmar ou registrar a sua medição.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => stopAlarm()}
+              className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-rose-300 border border-rose-500/40 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+            >
+              <VolumeX className="w-4 h-4" />
+              <span>🛑 Silenciar / Já vi</span>
+            </button>
+            <button
+              onClick={() =>
+                handleNovoRegistroWithAudio(
+                  String(alarmTitle || "").toLowerCase().includes("glicemia")
+                    ? "GLICEMIA"
+                    : "PRESSAO"
+                )
+              }
+              className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-lg shadow-rose-950 active:scale-95 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Registrar Agora</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Banner with Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-800/80 border border-slate-700/70 p-4 sm:p-5 rounded-2xl">
         <div>
@@ -358,7 +414,7 @@ export const ControleSaudeView: React.FC<Props> = ({
           )}
           <button
             onClick={() =>
-              onOpenNovoRegistro(
+              handleNovoRegistroWithAudio(
                 activeTab === "peso"
                   ? "PESO"
                   : activeTab === "pressao"
