@@ -304,14 +304,14 @@ export const ContasCartoesView: React.FC<Props> = ({
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
-                        <Landmark className="w-6 h-6" />
+                      <div className="p-3 rounded-xl bg-slate-800 text-slate-300 border border-slate-700/60">
+                        <Landmark className="w-5 h-5" />
                       </div>
                       <div>
                         <h3 className="font-bold text-white text-base leading-tight">
                           {c.Nome}
                         </h3>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+                        <span className="text-[10px] uppercase font-semibold text-slate-300 px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700/70 inline-block mt-0.5">
                           {c.Tipo}
                         </span>
                       </div>
@@ -414,20 +414,25 @@ export const ContasCartoesView: React.FC<Props> = ({
                 return (
                   <div
                     key={`${card.Id || 'card'}-${idx}`}
-                    className="p-5 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl space-y-4 relative hover:border-slate-700 transition-colors"
+                    className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-4 relative hover:border-slate-700 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
-                          <CreditCard className="w-6 h-6" />
+                        <div className="p-3 rounded-xl bg-slate-800 text-slate-300 border border-slate-700/60">
+                          <CreditCard className="w-5 h-5" />
                         </div>
                         <div>
                           <h3 className="font-bold text-white text-base leading-tight uppercase">
                             {card.Nome}
                           </h3>
-                          <p className="text-xs text-slate-400">
-                            {card.Bandeira || "CARTÃO"} • Fecha dia {fechamento} / Vence dia {vencimento}
-                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] uppercase font-semibold text-slate-300 px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700/70">
+                              {card.Bandeira || "CARTÃO"}
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              Fecha dia {fechamento} / Vence dia {vencimento}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -461,13 +466,13 @@ export const ContasCartoesView: React.FC<Props> = ({
                     <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800/80">
                       <div>
                         <span className="text-slate-500 text-[10px] block">Limite Disponível</span>
-                        <span className="font-bold text-emerald-400 text-sm">
+                        <span className={`font-bold text-sm ${cardBal.availableLimit > 0 ? "text-emerald-400" : "text-rose-400"}`}>
                           R$ {formatCurrency(cardBal.availableLimit)}
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-500 text-[10px] block">Fatura Atual (Gasto)</span>
-                        <span className="font-bold text-amber-400 text-sm">
+                        <span className="text-slate-500 text-[10px] block">Fatura Atual</span>
+                        <span className="font-bold text-white text-sm">
                           R$ {formatCurrency(cardBal.currentSpent)}
                         </span>
                       </div>
@@ -493,10 +498,10 @@ export const ContasCartoesView: React.FC<Props> = ({
                           {usedPct}% utilizado
                         </span>
                       </div>
-                      <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
                         <div
                           className={`h-full transition-all ${
-                            usedPct > 80 ? "bg-rose-500" : "bg-amber-500"
+                            usedPct > 80 ? "bg-rose-500" : "bg-slate-500"
                           }`}
                           style={{ width: `${usedPct}%` }}
                         />

@@ -311,8 +311,9 @@ export const MetasCategoriasView: React.FC<Props> = ({
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
                         <span className="text-slate-400">Gasto Realizado:</span>
-                        <strong className={isOver ? "text-rose-400" : isNear ? "text-amber-400" : "text-emerald-400"}>
-                          R$ {formatCurrency(spent)} / R$ {formatCurrency(target)}
+                        <strong className={isOver ? "text-rose-400 font-bold" : isNear ? "text-amber-400 font-bold" : "text-white font-semibold"}>
+                          R$ {formatCurrency(spent)}{" "}
+                          <span className="text-slate-400 font-normal">/ R$ {formatCurrency(target)}</span>
                         </strong>
                       </div>
 
@@ -323,7 +324,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
                               ? "bg-rose-500"
                               : isNear
                               ? "bg-amber-500"
-                              : "bg-emerald-500"
+                              : "bg-slate-500"
                           }`}
                           style={{ width: `${pctBar}%` }}
                         />
@@ -331,7 +332,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
 
                       <div className="flex justify-between text-[10px] text-slate-500">
                         <span>Alerta em {alertThreshold}%</span>
-                        <span className={isOver ? "text-rose-400 font-bold" : isNear ? "text-amber-400 font-semibold" : ""}>
+                        <span className={isOver ? "text-rose-400 font-bold" : isNear ? "text-amber-400 font-semibold" : "text-slate-400"}>
                           {pct}% {isOver ? "ultrapassado" : "atingido"}
                         </span>
                       </div>
@@ -381,13 +382,14 @@ export const MetasCategoriasView: React.FC<Props> = ({
                   className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between gap-2 hover:border-slate-700 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div
-                      className="w-3.5 h-3.5 rounded-full shrink-0"
-                      style={{ backgroundColor: cat.Cor_Hex || "#10b981" }}
-                    />
+                    <div className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0">
+                      <Tag className="w-3.5 h-3.5" />
+                    </div>
                     <div>
                       <h4 className="font-bold text-white text-xs">{cat.Nome}</h4>
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold">{cat.Tipo}</span>
+                      <span className="text-[10px] text-slate-300 uppercase font-semibold px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700/70 inline-block mt-0.5">
+                        {cat.Tipo}
+                      </span>
                     </div>
                   </div>
 

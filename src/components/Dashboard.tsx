@@ -190,11 +190,11 @@ export const Dashboard: React.FC<Props> = ({
         <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-2 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400">Saldo Geral</span>
-            <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
+            <div className={`p-2 rounded-xl ${saldoLiquido >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-white tracking-tight">
+          <div className={`text-2xl font-bold tracking-tight ${saldoLiquido >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
             R$ {formatCurrency(saldoLiquido)}
           </div>
           <p className="text-[11px] text-slate-500">Receitas acumuladas - Despesas</p>
@@ -204,15 +204,15 @@ export const Dashboard: React.FC<Props> = ({
         <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400">Receitas</span>
-            <div className="p-2 bg-teal-500/10 text-teal-400 rounded-xl">
+            <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-teal-400 tracking-tight">
+          <div className="text-2xl font-bold text-emerald-400 tracking-tight">
             + R$ {formatCurrency(totalReceitas)}
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-teal-500/80">
-            <ArrowUpRight className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1 text-[11px] text-slate-400">
+            <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
             <span>Entradas confirmadas</span>
           </div>
         </div>
@@ -228,8 +228,8 @@ export const Dashboard: React.FC<Props> = ({
           <div className="text-2xl font-bold text-rose-400 tracking-tight">
             - R$ {formatCurrency(totalDespesas)}
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-rose-500/80">
-            <ArrowDownRight className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1 text-[11px] text-slate-400">
+            <ArrowDownRight className="w-3.5 h-3.5 text-rose-400" />
             <span>Inclui gastos veiculares</span>
           </div>
         </div>
@@ -238,11 +238,11 @@ export const Dashboard: React.FC<Props> = ({
         <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400">Gastos com Combustível</span>
-            <div className="p-2 bg-amber-500/10 text-amber-400 rounded-xl">
+            <div className="p-2 bg-slate-800 text-slate-300 rounded-xl border border-slate-700/60">
               <Fuel className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-amber-400 tracking-tight">
+          <div className="text-2xl font-bold text-white tracking-tight">
             R$ {formatCurrency(totalAbastecimento)}
           </div>
           <p className="text-[11px] text-slate-500">
@@ -378,44 +378,68 @@ export const Dashboard: React.FC<Props> = ({
               const conta = getItemConta(tx);
               const data = getItemData(tx);
               const valorNum = parseCurrency(tx.Valor ?? (tx as any)["Valor"] ?? 0);
+              const isPago = String(tx.Status || "").toUpperCase() === "PAGO" || !tx.Status;
 
               return (
-                <div key={`${tx.Id || 'tx'}-${idx}`} className="py-3 flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`p-2 rounded-xl shrink-0 ${
-                        isReceita
-                          ? "bg-teal-500/10 text-teal-400"
-                          : isFuel
-                          ? "bg-amber-500/10 text-amber-400"
-                          : "bg-rose-500/10 text-rose-400"
-                      }`}
-                    >
+                <div
+                  key={`${tx.Id || 'tx'}-${idx}`}
+                  onClick={() => onNavigate("lancamentos")}
+                  className="py-3 px-1 flex items-center justify-between gap-3 text-xs hover:bg-slate-800/30 rounded-xl transition-colors cursor-pointer"
+                >
+                  {/* Lado Esquerdo: Ícone Neutro + Descrição & Categoria (Linha 1) + Data/Conta (Linha 2) */}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="p-2 rounded-xl shrink-0 bg-slate-800 text-slate-300 border border-slate-700/60">
                       {isFuel ? (
-                        <Fuel className="w-4 h-4" />
+                        <Fuel className="w-3.5 h-3.5" />
                       ) : isReceita ? (
-                        <TrendingUp className="w-4 h-4" />
+                        <TrendingUp className="w-3.5 h-3.5" />
                       ) : (
-                        <TrendingDown className="w-4 h-4" />
+                        <TrendingDown className="w-3.5 h-3.5" />
                       )}
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-slate-200 truncate">{desc}</p>
-                      <p className="text-[11px] text-slate-500 truncate">
-                        {cat} {conta ? `• ${conta}` : ""} {data ? `• ${data}` : ""}
-                      </p>
+
+                    <div className="min-w-0 space-y-0.5 flex-1">
+                      {/* Linha 1: Descrição + Badge Categoria Neutro */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-white text-xs sm:text-sm tracking-tight truncate max-w-[160px] sm:max-w-xs md:max-w-md">
+                          {desc}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded-md bg-slate-800/90 text-[10px] font-medium text-slate-300 border border-slate-700/70">
+                          {cat}
+                        </span>
+                      </div>
+
+                      {/* Linha 2: Data • Conta */}
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
+                        <span>{data}</span>
+                        {conta && (
+                          <>
+                            <span>•</span>
+                            <span className="text-slate-300 truncate max-w-[140px]">{conta}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
+
+                  {/* Lado Direito: Valor alinhado na MESMA linha com ponto discreto de status */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Ponto indicador de status discreto */}
                     <span
-                      className={`font-bold ${
-                        isReceita ? "text-teal-400" : "text-slate-200"
+                      className={`w-2 h-2 rounded-full shrink-0 ${
+                        isPago ? "bg-emerald-400 shadow-xs shadow-emerald-400/50" : "bg-amber-400 shadow-xs shadow-amber-400/50"
+                      }`}
+                      title={isPago ? "Pago" : "Pendente"}
+                    />
+
+                    {/* Valor numérico em destaque com cor financeira */}
+                    <span
+                      className={`font-bold text-xs sm:text-sm tracking-tight whitespace-nowrap ${
+                        isReceita ? "text-emerald-400" : "text-white"
                       }`}
                     >
-                      {isReceita ? "+" : "-"} R${" "}
-                      {formatCurrency(valorNum)}
+                      {isReceita ? "+" : "-"} R$ {formatCurrency(valorNum)}
                     </span>
-                    <p className="text-[10px] text-slate-500">{tx.Status || "Pago"}</p>
                   </div>
                 </div>
               );
