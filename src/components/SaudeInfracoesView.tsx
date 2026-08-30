@@ -525,7 +525,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           {/* Consolidated Health Report Button */}
           <button
             onClick={() => setIsRelatorioModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 text-xs font-bold rounded-xl transition-all border border-slate-800 hover:border-emerald-500/40 shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 text-xs font-bold rounded-xl transition-all border border-slate-800 hover:border-emerald-500/40 shadow-xs cursor-pointer"
             title="Abrir Relatório Consolidado de Saúde (PDF)"
           >
             <FileText className="w-4 h-4 text-emerald-400" />
@@ -535,7 +535,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           {/* AI Food Analysis Action Button */}
           <button
             onClick={() => setIsFoodModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-950/40 border border-emerald-500/30"
+            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-950/40 border border-emerald-500/30 cursor-pointer"
           >
             <Camera className="w-4 h-4 text-white" />
             <span>📷 Analisar Alimento</span>
@@ -543,83 +543,93 @@ export const SaudeInfracoesView: React.FC<Props> = ({
               IA
             </span>
           </button>
+        </div>
+      </div>
 
-          {/* Tab Switcher */}
-          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
-            <button
-              onClick={() => setActiveTab("consultas")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
-                activeTab === "consultas"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Consultas ({consultas.length})
-              {alertConsultas.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 bg-amber-500 text-slate-950 font-bold rounded-full text-[10px]">
-                  {alertConsultas.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab("receitas")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
-                activeTab === "receitas"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Receitas ({receitas.length})
-              {alertReceitas.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white font-bold rounded-full text-[10px]">
-                  {alertReceitas.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab("infracoes")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTab === "infracoes"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Infrações ({infracoes.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("alimentos")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                activeTab === "alimentos"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Utensils className="w-3.5 h-3.5" />
-              <span>Alimentos IA ({alimentos.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("controle_saude")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                activeTab === "controle_saude"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Activity className="w-3.5 h-3.5" />
-              <span>Controle de Saúde ({registrosSaude.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("exercicios")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                activeTab === "exercicios"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Dumbbell className="w-3.5 h-3.5" />
-              <span>Exercícios ({exercicios.length})</span>
-            </button>
-          </div>
+      {/* Sub-Tabs Navigation Bar (Full width, horizontal scrollable with smooth touch on mobile) */}
+      <div className="w-full overflow-x-auto pb-1 -mt-1 touch-pan-x">
+        <div className="inline-flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800/90 shadow-xs min-w-full sm:min-w-0">
+          <button
+            onClick={() => setActiveTab("consultas")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "consultas"
+                ? "bg-emerald-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <Stethoscope className="w-3.5 h-3.5" />
+            <span>Consultas ({consultas.length})</span>
+            {alertConsultas.length > 0 && (
+              <span className="ml-0.5 px-1.5 py-0.2 bg-amber-500 text-slate-950 font-bold rounded-full text-[10px]">
+                {alertConsultas.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab("receitas")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "receitas"
+                ? "bg-emerald-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <Pill className="w-3.5 h-3.5" />
+            <span>Receitas ({receitas.length})</span>
+            {alertReceitas.length > 0 && (
+              <span className="ml-0.5 px-1.5 py-0.2 bg-rose-500 text-white font-bold rounded-full text-[10px]">
+                {alertReceitas.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab("infracoes")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "infracoes"
+                ? "bg-emerald-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <AlertOctagon className="w-3.5 h-3.5" />
+            <span>Infrações ({infracoes.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("alimentos")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "alimentos"
+                ? "bg-emerald-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <Utensils className="w-3.5 h-3.5" />
+            <span>Alimentos IA ({alimentos.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("controle_saude")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "controle_saude"
+                ? "bg-emerald-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>Controle de Saúde ({registrosSaude.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("exercicios")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "exercicios"
+                ? "bg-emerald-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <Dumbbell className="w-3.5 h-3.5" />
+            <span>Exercícios ({exercicios.length})</span>
+          </button>
         </div>
       </div>
 
