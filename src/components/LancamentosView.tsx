@@ -20,6 +20,14 @@ import {
   PiggyBank,
   BadgeAlert,
   Bell,
+  ChevronDown,
+  ChevronUp,
+  SlidersHorizontal,
+  ChevronRight,
+  Info,
+  Clock,
+  Sparkles,
+  Wallet,
 } from "lucide-react";
 import { Lancamento, Veiculo, ContaBancaria, CartaoCredito, CategoriaCustomizada } from "../types";
 import { generateNewId } from "../services/api";
@@ -190,6 +198,12 @@ export const LancamentosView: React.FC<Props> = ({
   const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("ALL");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>("ALL");
+  const [selectedContaFilter, setSelectedContaFilter] = useState<string>("ALL");
+  const [selectedCategoriaFilter, setSelectedCategoriaFilter] = useState<string>("ALL");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+  const [expandedItemIds, setExpandedItemIds] = useState<Set<string>>(new Set());
+  const [showAdvancedModalFields, setShowAdvancedModalFields] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<Lancamento | null>(null);
   const [isContaFixa, setIsContaFixa] = useState(false);
   const [isParcelado, setIsParcelado] = useState(false);
@@ -924,17 +938,76 @@ export const LancamentosView: React.FC<Props> = ({
       }
       return true;
     })
+    .filter((item) => {
+      if (selectedStatusFilter === "PAGO") {
+        return String(item.Status || "").toUpperCase() === "PAGO";
+      }
+      if (selectedStatusFilter === "PENDENTE") {
+        return String(item.Status || "").toUpperCase() !== "PAGO";
+      }
+      return true;
+    })
+    .filter((item) => {
+      if (selectedContaFilter !== "ALL") {
+        const cNome = (item.Conta || "").toUpperCase();
+        const cardNome = (item.Cartao || "").toUpperCase();
+        return cNome === selectedContaFilter.toUpperCase() || cardNome === selectedContaFilter.toUpperCase();
+      }
+      return true;
+    })
+    .filter((item) => {
+      if (selectedCategoriaFilter !== "ALL") {
+        return (item.Categoria || "").toUpperCase() === selectedCategoriaFilter.toUpperCase();
+      }
+      return true;
+    })
     .filter((item) => isDateInPeriod(item.Data))
     .filter(
       (item) =>
         (item.Descricao || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.Categoria || "").toLowerCase().includes(searchTerm.toLowerCase())
+        (item.Categoria || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.Conta || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.Cartao || "").toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
       const dateA = parseDateSafely(a.Data)?.getTime() || 0;
       const dateB = parseDateSafely(b.Data)?.getTime() || 0;
       return dateB - dateA;
     });
+
+  // Calculate quick summary metrics for current filtered view
+  const financialTotals = useMemo(() => {
+    let totalReceitas = 0;
+    let totalDespesas = 0;
+    let totalPago = 0;
+    let totalPendente = 0;
+
+    filteredList.forEach((item) => {
+      const val = parseCurrency(item.Valor);
+      const isRec = isReceitaItem(item);
+      const isPago = String(item.Status || "").toUpperCase() === "PAGO";
+
+      if (isRec) {
+        totalReceitas += val;
+      } else {
+        totalDespesas += val;
+      }
+
+      if (isPago) {
+        totalPago += val;
+      } else {
+        totalPendente += val;
+      }
+    });
+
+    return {
+      totalReceitas,
+      totalDespesas,
+      saldo: totalReceitas - totalDespesas,
+      totalPago,
+      totalPendente,
+    };
+  }, [filteredList]);
 
   // Calculate Aggregated Savings / Extra Spent for current filtered period (Expenses & Fuelings only)
   const economyStats = useMemo(() => {
@@ -1025,7 +1098,68 @@ export const LancamentosView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
+      {/* Summary Financial Metric Cards (Clean, high-contrast, modern layout) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Receitas */}
+        <div className="p-3.5 sm:p-4 bg-slate-900/90 border border-slate-800/80 rounded-2xl">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="text-[11px] font-medium text-slate-400">Receitas</span>
+            <div className="p-1 rounded-md bg-teal-500/10 text-teal-400">
+              <TrendingUp className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <p className="text-base sm:text-lg font-bold text-teal-400 tracking-tight">
+            R$ {formatCurrency(financialTotals.totalReceitas)}
+          </p>
+        </div>
+
+        {/* Despesas */}
+        <div className="p-3.5 sm:p-4 bg-slate-900/90 border border-slate-800/80 rounded-2xl">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="text-[11px] font-medium text-slate-400">Despesas</span>
+            <div className="p-1 rounded-md bg-rose-500/10 text-rose-400">
+              <TrendingDown className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <p className="text-base sm:text-lg font-bold text-slate-200 tracking-tight">
+            R$ {formatCurrency(financialTotals.totalDespesas)}
+          </p>
+        </div>
+
+        {/* Saldo Líquido */}
+        <div className="p-3.5 sm:p-4 bg-slate-900/90 border border-slate-800/80 rounded-2xl">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="text-[11px] font-medium text-slate-400">Saldo Líquido</span>
+            <div className={`p-1 rounded-md ${financialTotals.saldo >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+              <Wallet className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <p className={`text-base sm:text-lg font-bold tracking-tight ${financialTotals.saldo >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+            R$ {formatCurrency(financialTotals.saldo)}
+          </p>
+        </div>
+
+        {/* Status Pago / Pendente */}
+        <div className="p-3.5 sm:p-4 bg-slate-900/90 border border-slate-800/80 rounded-2xl">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="text-[11px] font-medium text-slate-400">Pago / Pendente</span>
+            <div className="p-1 rounded-md bg-amber-500/10 text-amber-400">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xs sm:text-sm font-bold text-emerald-400">
+              R$ {formatCurrency(financialTotals.totalPago)}
+            </span>
+            <span className="text-[11px] text-slate-500">/</span>
+            <span className="text-xs font-semibold text-amber-400/90" title="Total Pendente">
+              R$ {formatCurrency(financialTotals.totalPendente)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar (Clean Bar + Collapsible Advanced Filters Drawer) */}
       <div className="p-3 sm:p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
         <div className="flex flex-col xl:flex-row gap-3 items-stretch xl:items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center flex-1">
@@ -1034,7 +1168,7 @@ export const LancamentosView: React.FC<Props> = ({
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none z-10" />
               <VoiceInput
                 type="text"
-                placeholder="Buscar por descrição ou categoria..."
+                placeholder="Buscar por descrição, categoria, conta..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-9 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
@@ -1061,6 +1195,24 @@ export const LancamentosView: React.FC<Props> = ({
                   </svg>
                 </div>
               </div>
+
+              {/* Botão para Expandir/Colapsar Filtros Avançados */}
+              <button
+                type="button"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl text-xs font-medium transition-colors shrink-0 ${
+                  showAdvancedFilters || selectedStatusFilter !== "ALL" || selectedContaFilter !== "ALL" || selectedCategoriaFilter !== "ALL"
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                    : "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200"
+                }`}
+                title="Filtros avançados (Status, Conta, Categoria)"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Filtros</span>
+                {(selectedStatusFilter !== "ALL" || selectedContaFilter !== "ALL" || selectedCategoriaFilter !== "ALL") && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-0.5 animate-pulse" />
+                )}
+              </button>
             </div>
           </div>
 
@@ -1086,6 +1238,80 @@ export const LancamentosView: React.FC<Props> = ({
             ))}
           </div>
         </div>
+
+        {/* Drawer de Filtros Avançados (Colapsável) */}
+        {showAdvancedFilters && (
+          <div className="pt-3 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-1 duration-150">
+            {/* Filtro por Status */}
+            <div>
+              <label className="block text-[11px] text-slate-400 mb-1">Status de Pagamento</label>
+              <select
+                value={selectedStatusFilter}
+                onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              >
+                <option value="ALL">Todos os Status</option>
+                <option value="PAGO">Somente Pagos</option>
+                <option value="PENDENTE">Somente Pendentes</option>
+              </select>
+            </div>
+
+            {/* Filtro por Conta / Cartão */}
+            <div>
+              <label className="block text-[11px] text-slate-400 mb-1">Conta ou Cartão</label>
+              <select
+                value={selectedContaFilter}
+                onChange={(e) => setSelectedContaFilter(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              >
+                <option value="ALL">Todas as Contas / Cartões</option>
+                {contas.map((c) => (
+                  <option key={c.Id || c.Nome} value={c.Nome}>
+                    Conta: {c.Nome}
+                  </option>
+                ))}
+                {cartoes.map((card) => (
+                  <option key={card.Id || card.Nome} value={card.Nome}>
+                    Cartão: {card.Nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtro por Categoria */}
+            <div>
+              <label className="block text-[11px] text-slate-400 mb-1">Categoria</label>
+              <select
+                value={selectedCategoriaFilter}
+                onChange={(e) => setSelectedCategoriaFilter(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              >
+                <option value="ALL">Todas as Categorias</option>
+                {categoriasDisponiveis.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {(selectedStatusFilter !== "ALL" || selectedContaFilter !== "ALL" || selectedCategoriaFilter !== "ALL") && (
+              <div className="sm:col-span-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedStatusFilter("ALL");
+                    setSelectedContaFilter("ALL");
+                    setSelectedCategoriaFilter("ALL");
+                  }}
+                  className="text-[11px] text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+                >
+                  Limpar filtros avançados
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Custom Period Date Range Pickers (shown when periodFilter === "CUSTOM") */}
         {periodFilter === "CUSTOM" && (
@@ -1198,45 +1424,66 @@ export const LancamentosView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Transactions Table / List */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      {/* Redesigned Transactions List (Clean lines, strong value hierarchy, 1-2 badges max, click-to-expand details) */}
+      <div className="space-y-3">
         {filteredList.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-xs space-y-2">
+          <div className="p-12 text-center text-slate-500 text-xs space-y-2 bg-slate-900/60 border border-slate-800 rounded-2xl">
             <p>Nenhum lançamento encontrado para os filtros selecionados.</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-800/80">
-            {filteredList.map((item, idx) => {
-              const isReceita = isReceitaItem(item);
-              const isFuel = isFuelItem(item);
+          filteredList.map((item, idx) => {
+            const isReceita = isReceitaItem(item);
+            const isFuel = isFuelItem(item);
+            const itemId = item.Id || `lanc-${idx}`;
+            const isExpanded = expandedItemIds.has(itemId);
 
-              // Comparison logic between Valor and Valor_Pago (Expenses and Fuelings only)
-              const valorOriginal = extractValorOriginal(item);
-              const valorPago = extractValorPago(item);
-              let diffTag: { type: "ECONOMY" | "EXTRA"; amount: number } | null = null;
-
-              if (!isReceita && valorOriginal > 0 && valorPago > 0) {
-                const diff = Number((valorOriginal - valorPago).toFixed(2));
-                if (diff > 0.009) {
-                  diffTag = { type: "ECONOMY", amount: diff };
-                } else if (diff < -0.009) {
-                  diffTag = { type: "EXTRA", amount: Math.abs(diff) };
+            const toggleExpand = () => {
+              setExpandedItemIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(itemId)) {
+                  next.delete(itemId);
+                } else {
+                  next.add(itemId);
                 }
-              }
+                return next;
+              });
+            };
 
-              return (
+            // Comparison logic between Valor and Valor_Pago (Expenses and Fuelings only)
+            const valorOriginal = extractValorOriginal(item);
+            const valorPago = extractValorPago(item);
+            let diffTag: { type: "ECONOMY" | "EXTRA"; amount: number } | null = null;
+
+            if (!isReceita && valorOriginal > 0 && valorPago > 0) {
+              const diff = Number((valorOriginal - valorPago).toFixed(2));
+              if (diff > 0.009) {
+                diffTag = { type: "ECONOMY", amount: diff };
+              } else if (diff < -0.009) {
+                diffTag = { type: "EXTRA", amount: Math.abs(diff) };
+              }
+            }
+
+            const isPago = String(item.Status || "").toUpperCase() === "PAGO";
+
+            return (
+              <div
+                key={itemId}
+                className="bg-slate-900 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl transition-all duration-200 shadow-xs overflow-hidden"
+              >
+                {/* Linha Principal (Alta respiração, valor em destaque máximo na direita, 1-2 badges essenciais) */}
                 <div
-                  key={`${item.Id || 'lanc'}-${idx}`}
-                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-800/40 transition-colors text-xs"
+                  onClick={toggleExpand}
+                  className="p-4 sm:p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 cursor-pointer select-none hover:bg-slate-800/30 transition-colors"
                 >
-                  <div className="flex items-start gap-3 min-w-0">
+                  {/* Lado Esquerdo: Ícone + Título + Categoria Essencial + Data/Conta */}
+                  <div className="flex items-start gap-3.5 min-w-0 flex-1">
                     <div
                       className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
                         isFuel
-                          ? "bg-amber-500/10 text-amber-400"
+                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                           : isReceita
-                          ? "bg-teal-500/10 text-teal-400"
-                          : "bg-rose-500/10 text-rose-400"
+                          ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
+                          : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                       }`}
                     >
                       {isFuel ? (
@@ -1247,101 +1494,260 @@ export const LancamentosView: React.FC<Props> = ({
                         <TrendingDown className="w-4 h-4" />
                       )}
                     </div>
-                    <div className="min-w-0 space-y-0.5">
+
+                    <div className="min-w-0 space-y-1 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-white text-sm truncate">
+                        <span className="font-semibold text-white text-sm sm:text-base tracking-tight truncate max-w-full sm:max-w-md">
                           {item.Descricao}
                         </span>
-                        <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400 border border-slate-700">
+
+                        {/* Badge 1: Categoria (Limpo e discreto) */}
+                        <span className="px-2 py-0.5 rounded-md bg-slate-800/90 text-[11px] font-medium text-slate-300 border border-slate-700/70">
                           {item.Categoria}
                         </span>
-                        {isFuel && item.Tipo_Combustivel && (
-                          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-[10px] text-amber-300 border border-amber-500/20">
+
+                        {/* Badge 2 (Opcional): Apenas se for Parcela ou Abastecimento com combustível */}
+                        {getSeriesId(item) && (
+                          <span className="px-2 py-0.5 rounded-md bg-indigo-950/40 text-[10px] font-medium text-indigo-300 border border-indigo-500/30">
+                            {item.Parcela_Info ? `Parc. ${item.Parcela_Info}` : "Recorrente"}
+                          </span>
+                        )}
+                        {!getSeriesId(item) && isFuel && item.Tipo_Combustivel && (
+                          <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-[10px] font-medium text-amber-300 border border-amber-500/20">
                             {item.Tipo_Combustivel}
                           </span>
                         )}
-                        {getSeriesId(item) && (
-                          <span className="px-2 py-0.5 rounded bg-indigo-950/50 text-[10px] text-indigo-300 border border-indigo-500/30">
-                            {item.Parcela_Info ? `Parcela ${item.Parcela_Info}` : "Recorrente"}
-                          </span>
-                        )}
-                        {diffTag && diffTag.type === "ECONOMY" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
-                            💰 Economia de R$ {formatCurrency(diffTag.amount)}
-                          </span>
-                        )}
-                        {diffTag && diffTag.type === "EXTRA" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-semibold">
-                            ⚠️ Pago R$ {formatCurrency(diffTag.amount)} a mais
-                          </span>
-                        )}
-                        {isFuel && (item.Localizacao_Do_Posto || item.Posto) && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openMapsForLancamento(item);
-                            }}
-                            title={
-                              item.Localizacao_Do_Posto
-                                ? `Abrir Google Maps (${item.Localizacao_Do_Posto})`
-                                : `Buscar no Google Maps: ${item.Posto}`
-                            }
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-medium transition-colors"
-                          >
-                            <MapPin className="w-3 h-3" />
-                            <span>Mapa</span>
-                            <ExternalLink className="w-2.5 h-2.5 opacity-70" />
-                          </button>
+                      </div>
+
+                      {/* Informações Secundárias: Data e Conta / Cartão */}
+                      <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
+                        <span>{item.Data}</span>
+                        <span>•</span>
+                        <span className="text-slate-300">{item.Conta || item.Cartao || "Principal"}</span>
+                        {item.Forma_Pagamento && (
+                          <>
+                            <span>•</span>
+                            <span className="text-slate-400">{item.Forma_Pagamento}</span>
+                          </>
                         )}
                       </div>
-                      <p className="text-slate-400 text-[11px]">
-                        Data: <span className="text-slate-300">{item.Data}</span> • Conta:{" "}
-                        <span className="text-slate-300">{item.Conta || "Principal"}</span>
-                        {isFuel && parseCurrency(item.Litros) > 0 && (
-                          <span className="text-amber-400 ml-2">
-                            • {formatCurrency(item.Litros)}L @ R$ {formatCurrency(item.Preco_Litro)}/L
-                            {parseCurrency(item.Km_Atual) > 0 && ` (${item.Km_Atual} KM)`}
-                          </span>
-                        )}
-                      </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 border-t sm:border-0 border-slate-800 pt-2 sm:pt-0">
-                    <div className="text-left sm:text-right">
+                  {/* Lado Direito: Valor de Alto Destaque + Status + Botões */}
+                  <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 border-t sm:border-0 border-slate-800/80 pt-2.5 sm:pt-0">
+                    <div className="text-left sm:text-right flex flex-col sm:items-end">
                       <span
-                        className={`text-sm font-bold ${
-                          isReceita ? "text-teal-400" : "text-slate-200"
+                        className={`text-base sm:text-lg font-bold tracking-tight ${
+                          isReceita ? "text-teal-400" : "text-white"
                         }`}
                       >
-                        {isReceita ? "+" : "-"} R${" "}
-                        {formatCurrency(item.Valor)}
+                        {isReceita ? "+" : "-"} R$ {formatCurrency(item.Valor)}
                       </span>
-                      <p className="text-[10px] text-slate-500">{item.Status}</p>
+
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span
+                          className={`inline-block w-1.5 h-1.5 rounded-full ${
+                            isPago ? "bg-emerald-400" : "bg-amber-400"
+                          }`}
+                        />
+                        <span
+                          className={`text-[11px] font-medium ${
+                            isPago ? "text-emerald-400/90" : "text-amber-400/90"
+                          }`}
+                        >
+                          {isPago ? "Pago" : "Pendente"}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => handleOpenEdit(item)}
-                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-                        title="Editar"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEdit(item);
+                        }}
+                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
+                        title="Editar lançamento"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteClick(item)}
-                        className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        title="Excluir (Soft delete)"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(item);
+                        }}
+                        className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors"
+                        title="Excluir lançamento"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+                      <div className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors ml-0.5">
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Gaveta de Detalhes Expandida ("Ver Detalhes" com todos os metadados ricos) */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 pt-1 sm:px-5 sm:pb-4.5 bg-slate-950/40 border-t border-slate-800/80 animate-in fade-in duration-150">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2">
+                      {/* Valor Pago vs Valor Original */}
+                      <div className="p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl">
+                        <span className="text-[10px] text-slate-400 block mb-0.5">Valor Pago</span>
+                        <span className="font-semibold text-white">
+                          R$ {formatCurrency(item.Valor_Pago ?? item.Valor)}
+                        </span>
+                      </div>
+
+                      {/* Status Completo */}
+                      <div className="p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl">
+                        <span className="text-[10px] text-slate-400 block mb-0.5">Status de Quitação</span>
+                        <span className={`font-semibold ${isPago ? "text-emerald-400" : "text-amber-400"}`}>
+                          {item.Status || "Pendente"}
+                        </span>
+                      </div>
+
+                      {/* Conta & Cartão */}
+                      <div className="p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl">
+                        <span className="text-[10px] text-slate-400 block mb-0.5">Conta / Origem</span>
+                        <span className="font-semibold text-slate-200 truncate block">
+                          {item.Conta || item.Cartao || "Conta Principal"}
+                        </span>
+                      </div>
+
+                      {/* Forma de Pagamento */}
+                      <div className="p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl">
+                        <span className="text-[10px] text-slate-400 block mb-0.5">Forma de Pagamento</span>
+                        <span className="font-semibold text-slate-200 truncate block">
+                          {item.Forma_Pagamento || "PIX"}
+                        </span>
+                      </div>
+
+                      {/* Tag de Economia / Gasto a Mais se houver */}
+                      {diffTag && (
+                        <div className={`col-span-2 sm:col-span-4 p-2.5 rounded-xl border flex items-center gap-2 ${
+                          diffTag.type === "ECONOMY"
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                            : "bg-rose-500/10 border-rose-500/30 text-rose-300"
+                        }`}>
+                          <Sparkles className="w-4 h-4 shrink-0" />
+                          <span className="text-xs font-semibold">
+                            {diffTag.type === "ECONOMY"
+                              ? `Economia identificada de R$ ${formatCurrency(diffTag.amount)} em relação ao valor previsto.`
+                              : `Valor pago foi R$ ${formatCurrency(diffTag.amount)} acima do valor previsto.`}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Metadados Exclusivos de Abastecimento */}
+                      {isFuel && (
+                        <div className="col-span-2 sm:col-span-4 p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl space-y-2">
+                          <div className="flex items-center gap-2 text-amber-400 font-semibold text-xs">
+                            <Fuel className="w-4 h-4" />
+                            <span>Detalhes Técnicos do Abastecimento</span>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                            {item.Veiculo && (
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">Veículo</span>
+                                <span className="font-medium text-slate-200">{item.Veiculo}</span>
+                              </div>
+                            )}
+                            {item.Motorista && (
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">Motorista</span>
+                                <span className="font-medium text-slate-200">{item.Motorista}</span>
+                              </div>
+                            )}
+                            {parseCurrency(item.Litros) > 0 && (
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">Litros</span>
+                                <span className="font-medium text-amber-300">{formatCurrency(item.Litros)} L</span>
+                              </div>
+                            )}
+                            {parseCurrency(item.Preco_Litro) > 0 && (
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">Preço / Litro</span>
+                                <span className="font-medium text-amber-300">R$ {formatCurrency(item.Preco_Litro)}</span>
+                              </div>
+                            )}
+                            {parseCurrency(item.Km_Atual) > 0 && (
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">KM Hodômetro</span>
+                                <span className="font-medium text-slate-200">{item.Km_Atual} KM</span>
+                              </div>
+                            )}
+                            {item.Completou_O_Tanque && (
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">Tanque Cheio?</span>
+                                <span className="font-medium text-slate-200">{item.Completou_O_Tanque}</span>
+                              </div>
+                            )}
+                            {item.Posto && (
+                              <div>
+                                <span className="text-[10px] text-slate-400 block">Posto</span>
+                                <span className="font-medium text-slate-200 truncate block">{item.Posto}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {(item.Localizacao_Do_Posto || item.Posto) && (
+                            <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between">
+                              <span className="text-[11px] text-slate-400">Localização registrada:</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openMapsForLancamento(item);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition-colors"
+                              >
+                                <MapPin className="w-3.5 h-3.5" />
+                                <span>Ver Posto no Google Maps</span>
+                                <ExternalLink className="w-3 h-3 opacity-70" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Observações / Notas */}
+                      {item.Observacoes && (
+                        <div className="col-span-2 sm:col-span-4 p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl">
+                          <span className="text-[10px] text-slate-400 block mb-0.5">Observações</span>
+                          <p className="text-slate-300 text-xs break-words">{item.Observacoes}</p>
+                        </div>
+                      )}
+
+                      {/* Comprovante */}
+                      {item.Comprovante_Url && (
+                        <div className="col-span-2 sm:col-span-4 p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl flex items-center justify-between">
+                          <span className="text-[11px] text-slate-400">Comprovante em anexo</span>
+                          <a
+                            href={item.Comprovante_Url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 text-xs font-medium underline"
+                          >
+                            <span>Abrir Comprovante</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -1929,121 +2335,144 @@ export const LancamentosView: React.FC<Props> = ({
                 </div>
               )}
 
-              {/* Opções de Recorrência / Parcelamento (Apenas para novos lançamentos) */}
-              {!editingItem && (
-                <div className="p-3.5 sm:p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3">
-                  <span className="text-xs font-semibold text-slate-300 block">
-                    Recorrência & Parcelamento (Opcional)
-                  </span>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {/* Opção 1: Conta Fixa / Mensal */}
-                    <label
-                      className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${
-                        isContaFixa
-                          ? "bg-emerald-950/30 border-emerald-500/40 text-emerald-300"
-                          : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isContaFixa}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setIsContaFixa(checked);
-                          if (checked) setIsParcelado(false);
-                        }}
-                        className="w-4 h-4 rounded text-emerald-500 bg-slate-950 border-slate-700 focus:ring-0 focus:ring-offset-0"
-                      />
-                      <div className="text-left">
-                        <span className="font-medium text-xs block text-white">Conta Fixa / Mensal</span>
-                        <span className="text-[10px] text-slate-400 block">Repete todo mês (12 meses)</span>
-                      </div>
-                    </label>
-
-                    {/* Opção 2: Parcelado */}
-                    <label
-                      className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${
-                        isParcelado
-                          ? "bg-indigo-950/30 border-indigo-500/40 text-indigo-300"
-                          : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isParcelado}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setIsParcelado(checked);
-                          if (checked) setIsContaFixa(false);
-                        }}
-                        className="w-4 h-4 rounded text-indigo-500 bg-slate-950 border-slate-700 focus:ring-0 focus:ring-offset-0"
-                      />
-                      <div className="text-left">
-                        <span className="font-medium text-xs block text-white">Parcelado</span>
-                        <span className="text-[10px] text-slate-400 block">Divide em parcelas mensais</span>
-                      </div>
-                    </label>
+              {/* Advanced / Optional Fields Toggle (Conta, Cartão, Recorrência, Observações) */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedModalFields(!showAdvancedModalFields)}
+                  className="w-full flex items-center justify-between p-3 bg-slate-950/70 hover:bg-slate-950 border border-slate-800/80 rounded-xl text-slate-300 text-xs font-medium transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Opções Avançadas {isContaFixa || isParcelado || formData.Observacoes ? "(Configurado)" : ""}</span>
                   </div>
+                  <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                    <span>{showAdvancedModalFields ? "Ocultar" : "Mostrar mais"}</span>
+                    {showAdvancedModalFields ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </div>
+                </button>
+              </div>
 
-                  {/* Detalhes do Parcelamento quando ativo */}
-                  {isParcelado && (
-                    <div className="pt-2 border-t border-slate-800/80 space-y-2">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-                        <div>
-                          <label className="block text-slate-400 text-[11px] mb-1">
-                            Número de Parcelas
-                          </label>
+              {/* Advanced Section Body (Expandable) */}
+              {showAdvancedModalFields && (
+                <div className="space-y-4 pt-1 animate-in fade-in duration-150">
+                  {/* Opções de Recorrência / Parcelamento (Apenas para novos lançamentos) */}
+                  {!editingItem && (
+                    <div className="p-3.5 sm:p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3">
+                      <span className="text-xs font-semibold text-slate-300 block">
+                        Recorrência & Parcelamento (Opcional)
+                      </span>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {/* Opção 1: Conta Fixa / Mensal */}
+                        <label
+                          className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${
+                            isContaFixa
+                              ? "bg-emerald-950/30 border-emerald-500/40 text-emerald-300"
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
                           <input
-                            type="number"
-                            min={2}
-                            max={72}
-                            value={numParcelas}
+                            type="checkbox"
+                            checked={isContaFixa}
                             onChange={(e) => {
-                              const v = parseInt(e.target.value, 10);
-                              setNumParcelas(isNaN(v) ? 2 : Math.max(2, Math.min(72, v)));
+                              const checked = e.target.checked;
+                              setIsContaFixa(checked);
+                              if (checked) setIsParcelado(false);
                             }}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white text-xs font-bold"
-                            required
+                            className="w-4 h-4 rounded text-emerald-500 bg-slate-950 border-slate-700 focus:ring-0 focus:ring-offset-0"
                           />
-                        </div>
-                        <div>
-                          <label className="block text-slate-400 text-[11px] mb-1">
-                            Valor de cada Parcela
-                          </label>
-                          <div className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-indigo-400">
-                            {numParcelas > 0 && parseCurrency(formData.Valor) > 0
-                              ? `R$ ${formatCurrency(parseCurrency(formData.Valor) / numParcelas)} /mês`
-                              : "R$ 0,00"}
+                          <div className="text-left">
+                            <span className="font-medium text-xs block text-white">Conta Fixa / Mensal</span>
+                            <span className="text-[10px] text-slate-400 block">Repete todo mês (12 meses)</span>
                           </div>
-                        </div>
+                        </label>
+
+                        {/* Opção 2: Parcelado */}
+                        <label
+                          className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${
+                            isParcelado
+                              ? "bg-indigo-950/30 border-indigo-500/40 text-indigo-300"
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isParcelado}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setIsParcelado(checked);
+                              if (checked) setIsContaFixa(false);
+                            }}
+                            className="w-4 h-4 rounded text-indigo-500 bg-slate-950 border-slate-700 focus:ring-0 focus:ring-offset-0"
+                          />
+                          <div className="text-left">
+                            <span className="font-medium text-xs block text-white">Parcelado</span>
+                            <span className="text-[10px] text-slate-400 block">Divide em parcelas mensais</span>
+                          </div>
+                        </label>
                       </div>
-                      <p className="text-[10px] text-slate-400">
-                        Serão gerados {numParcelas} lançamentos mensais automáticos com a descrição identificada (ex: "(1/{numParcelas})", "(2/{numParcelas})"...).
-                      </p>
+
+                      {/* Detalhes do Parcelamento quando ativo */}
+                      {isParcelado && (
+                        <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                            <div>
+                              <label className="block text-slate-400 text-[11px] mb-1">
+                                Número de Parcelas
+                              </label>
+                              <input
+                                type="number"
+                                min={2}
+                                max={72}
+                                value={numParcelas}
+                                onChange={(e) => {
+                                  const v = parseInt(e.target.value, 10);
+                                  setNumParcelas(isNaN(v) ? 2 : Math.max(2, Math.min(72, v)));
+                                }}
+                                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white text-xs font-bold"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-slate-400 text-[11px] mb-1">
+                                Valor de cada Parcela
+                              </label>
+                              <div className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-indigo-400">
+                                {numParcelas > 0 && parseCurrency(formData.Valor) > 0
+                                  ? `R$ ${formatCurrency(parseCurrency(formData.Valor) / numParcelas)} /mês`
+                                  : "R$ 0,00"}
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400">
+                            Serão gerados {numParcelas} lançamentos mensais automáticos com a descrição identificada (ex: "(1/{numParcelas})", "(2/{numParcelas})"...).
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Informação sobre Conta Fixa quando ativa */}
+                      {isContaFixa && (
+                        <div className="pt-1 text-[10px] text-emerald-400/90">
+                          Serão geradas 12 projeções mensais com o mesmo valor e dia de vencimento nos meses seguintes.
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* Informação sobre Conta Fixa quando ativa */}
-                  {isContaFixa && (
-                    <div className="pt-1 text-[10px] text-emerald-400/90">
-                      Serão geradas 12 projeções mensais com o mesmo valor e dia de vencimento nos meses seguintes.
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-slate-400 text-xs mb-1">Observações</label>
+                    <VoiceTextArea
+                      rows={2}
+                      placeholder="Observações adicionais..."
+                      value={formData.Observacoes || ""}
+                      onChange={(e) => setFormData({ ...formData, Observacoes: e.target.value.toUpperCase() })}
+                      className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white placeholder-slate-600 resize-none uppercase text-xs focus:outline-none focus:border-emerald-500"
+                      uppercase
+                    />
+                  </div>
                 </div>
               )}
-
-              <div>
-                <label className="block text-slate-400 text-xs mb-1">Observações</label>
-                <VoiceTextArea
-                  rows={2}
-                  placeholder="Observações adicionais..."
-                  value={formData.Observacoes || ""}
-                  onChange={(e) => setFormData({ ...formData, Observacoes: e.target.value.toUpperCase() })}
-                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white placeholder-slate-600 resize-none uppercase text-xs focus:outline-none focus:border-emerald-500"
-                  uppercase
-                />
-              </div>
             </form>
 
             {/* Modal Pinned Footer */}
