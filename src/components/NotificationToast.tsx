@@ -26,6 +26,7 @@ interface Props {
   onClose: () => void;
   onNavigate: (view: ModuleView) => void;
   onSnooze?: (id: string, minutes: number) => void;
+  onDismiss?: (id: string) => void;
 }
 
 export const NotificationToast: React.FC<Props> = ({
@@ -33,6 +34,7 @@ export const NotificationToast: React.FC<Props> = ({
   onClose,
   onNavigate,
   onSnooze,
+  onDismiss,
 }) => {
   const { isPlaying, activeAlarmId, triggerAlarm, stopAlarm } = useAlarmSound();
 
@@ -67,6 +69,9 @@ export const NotificationToast: React.FC<Props> = ({
 
   const handleStopAndClose = () => {
     stopAlarm();
+    if (notification && onDismiss) {
+      onDismiss(notification.id);
+    }
     onClose();
   };
 
@@ -81,6 +86,9 @@ export const NotificationToast: React.FC<Props> = ({
 
   const handleNavigate = () => {
     stopAlarm();
+    if (notification && onDismiss) {
+      onDismiss(notification.id);
+    }
     onNavigate(notification.targetView as ModuleView);
     onClose();
   };

@@ -565,8 +565,9 @@ export default function App() {
   }, [checkNotifications]);
 
   const handleDismissNotification = (id: string) => {
-    stopAlarmLoop(id);
+    stopAlarmLoop();
     cancelSnooze(id);
+    setActiveToast((current) => (current?.id === id ? null : current));
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
@@ -1236,6 +1237,7 @@ export default function App() {
       <NotificationToast
         notification={activeToast}
         onClose={() => setActiveToast(null)}
+        onDismiss={handleDismissNotification}
         onNavigate={handleNavigateFromNotification}
         onSnooze={handleSnoozeNotification}
       />

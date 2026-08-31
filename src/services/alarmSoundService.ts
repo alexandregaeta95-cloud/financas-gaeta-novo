@@ -138,8 +138,8 @@ export function startAlarmLoop(
  * Para o loop de alarme sonoro ativo.
  */
 export function stopAlarmLoop(alarmId?: string): void {
-  if (alarmId && currentAlarmState.alarmId !== alarmId) {
-    // Se foi solicitado parar um ID específico e outro está tocando, ignora
+  if (alarmId && currentAlarmState.alarmId && currentAlarmState.alarmId !== alarmId) {
+    // Se foi solicitado parar um ID específico e outro diferente está tocando, ignora
     return;
   }
 
@@ -148,7 +148,7 @@ export function stopAlarmLoop(alarmId?: string): void {
     currentAlarmInterval = null;
   }
 
-  if (currentAlarmState.isPlaying) {
+  if (currentAlarmState.isPlaying || currentAlarmState.alarmId) {
     currentAlarmState = {
       isPlaying: false,
       alarmId: null,
