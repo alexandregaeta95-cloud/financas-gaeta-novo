@@ -14,13 +14,71 @@ import {
   ChevronUp,
   FileText,
   CheckCircle2,
+  Volume2,
+  VolumeX,
+  Gauge,
+  Check,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { Veiculo, ServicoOficina, ManutencaoAgendada } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { markCycleAsCompleted } from "../services/snoozeService";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
+
+const TEMPLATES_MANUTENCAO = [
+  {
+    label: "🚗 Calibrar Pneus",
+    desc: "Calibrar Pneus",
+    tipo: "Dias" as const,
+    intervalo: 7,
+    freqKm: 0,
+    obs: "Verificar pressão a frio (ex: 32 psi dianteiros / 30 psi traseiros)",
+  },
+  {
+    label: "🛢️ Troca de Óleo & Filtros",
+    desc: "Troca de Óleo e Filtros",
+    tipo: "Ambos" as const,
+    intervalo: 180,
+    freqKm: 10000,
+    obs: "Óleo 5W30 Sintético + Filtros novos (óleo, ar e combustível)",
+  },
+  {
+    label: "🔄 Rodízio de Pneus",
+    desc: "Rodízio e Balanceamento",
+    tipo: "KM" as const,
+    intervalo: 0,
+    freqKm: 10000,
+    obs: "Inverter pneus dianteiros/traseiros e checar balanceamento",
+  },
+  {
+    label: "🛑 Pastilhas de Freio",
+    desc: "Checagem de Pastilhas e Freios",
+    tipo: "Ambos" as const,
+    intervalo: 365,
+    freqKm: 20000,
+    obs: "Verificar espessura das pastilhas e nível do fluido DOT4",
+  },
+  {
+    label: "💨 Filtro do Ar-Condicionado",
+    desc: "Troca do Filtro de Cabine e Higienização",
+    tipo: "Dias" as const,
+    intervalo: 180,
+    freqKm: 0,
+    obs: "Higienização interna e troca do elemento filtrante",
+  },
+  {
+    label: "🔍 Revisão Geral Preventiva",
+    desc: "Revisão Geral Preventiva",
+    tipo: "Ambos" as const,
+    intervalo: 365,
+    freqKm: 10000,
+    obs: "Suspensão, arrefecimento, velas, correias e freios",
+  },
+];
 
 type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
 
@@ -64,6 +122,16 @@ function parseDateSafely(val: any): Date | null {
 
   const d = new Date(s);
   return isNaN(d.getTime()) ? null : d;
+}
+
+function getDiffInDaysFromToday(dateStr?: string | null): number | null {
+  if (!dateStr) return null;
+  const d = parseDateSafely(dateStr);
+  if (!d) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
+  return Math.round((today.getTime() - d.getTime()) / (1000 * 3600 * 24));
 }
 
 export const VeiculosOficinaView: React.FC<Props> = ({
@@ -135,13 +203,18 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   const [editingManutencao, setEditingManutencao] = useState<ManutencaoAgendada | null>(null);
   const [manutencaoForm, setManutencaoForm] = useState<Partial<ManutencaoAgendada>>({
     Veículo: veiculos[0]?.Modelo || "CARRO",
-    Descrição: "",
-    Tipo_Agendamento: "Ambos",
-    Data_Alvo: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split("T")[0],
+    Descrição: "Calibrar Pneus",
+    Tipo_Agendamento: "Dias",
+    Intervalo_Dias: 7,
+    Data_Ultima_Realizacao: new Date().toISOString().split("T")[0],
+    KM_Ultima_Realizacao: veiculos[0]?.Km_Atual || 0,
+    Data_Alvo: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split("T")[0],
     KM_Alvo: (veiculos[0]?.Km_Atual || 25000) + 10000,
     Recorrente: "SIM",
     Frequência_Meses: 12,
     Frequência_KM: 10000,
+    Horario_Alerta: "08:00",
+    Som_Alarme: true,
     Status: "PENDENTE",
     Prioridade: "Média",
     Oficina_Nome: "",
@@ -242,7 +315,18 @@ export const VeiculosOficinaView: React.FC<Props> = ({
 
   const filteredManutencoes = useMemo(() => {
     return manutencoes
-      .filter((m) => isDateInPeriod(m.Data_Alvo))
+      .filter((m) => {
+        // Se for lembrete recorrente por intervalo ou KM, sempre mantém visível no filtro Mês Atual ou Todos
+        if (
+          m.Intervalo_Dias ||
+          m.Tipo_Agendamento === "Dias" ||
+          m.Tipo_Agendamento === "KM" ||
+          m.Tipo_Agendamento === "Ambos"
+        ) {
+          if (periodFilter === "ALL" || periodFilter === "CURRENT_MONTH") return true;
+        }
+        return isDateInPeriod(m.Data_Alvo || m.Data_Ultima_Realizacao);
+      })
       .filter((m) => {
         if (!searchTerm.trim()) return true;
         const q = searchTerm.toLowerCase();
@@ -258,8 +342,10 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   // Lista dinâmica de sugestões de serviços e oficinas
   const servicosDisponiveis = useMemo(() => {
     const defaults = [
+      "CALIBRAR PNEUS",
       "TROCA DE ÓLEO E FILTRO",
       "ALINHAMENTO E BALANCEAMENTO",
+      "RODÍZIO DE PNEUS",
       "PASTILHAS DE FREIO",
       "DISCOS DE FREIO",
       "TROCA DE CORREIA DENTADA",
@@ -378,26 +464,60 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   const handleOpenManutencao = (m?: ManutencaoAgendada) => {
     if (m) {
       setEditingManutencao(m);
-      setManutencaoForm({ ...m });
+      setManutencaoForm({
+        ...m,
+        Tipo_Agendamento: m.Tipo_Agendamento || (m.Intervalo_Dias ? "Dias" : "Ambos"),
+        Intervalo_Dias: m.Intervalo_Dias || 7,
+        Som_Alarme: m.Som_Alarme !== "NAO" && m.Som_Alarme !== false,
+      });
     } else {
       setEditingManutencao(null);
       const defaultVeic = veiculos[0];
+      const todayStr = new Date().toISOString().split("T")[0];
       setManutencaoForm({
         Veículo: defaultVeic?.Modelo || "CARRO",
-        Descrição: "Troca de Óleo e Filtros",
-        Tipo_Agendamento: "Ambos",
-        Data_Alvo: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split("T")[0],
+        Descrição: "Calibrar Pneus",
+        Tipo_Agendamento: "Dias",
+        Intervalo_Dias: 7,
+        Data_Ultima_Realizacao: todayStr,
+        KM_Ultima_Realizacao: defaultVeic?.Km_Atual || 0,
+        Data_Alvo: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split("T")[0],
         KM_Alvo: (parseCurrency(defaultVeic?.Km_Atual) || 25000) + 10000,
         Recorrente: "SIM",
         Frequência_Meses: 12,
         Frequência_KM: 10000,
+        Horario_Alerta: "08:00",
+        Som_Alarme: true,
         Status: "PENDENTE",
         Prioridade: "Média",
         Oficina_Nome: "",
-        Observações: "",
+        Observações: "Verificar calibragem a frio (32 psi dianteiros / 30 psi traseiros)",
       });
     }
     setIsManutencaoModalOpen(true);
+  };
+
+  const handleApplyTemplate = (tmpl: typeof TEMPLATES_MANUTENCAO[0]) => {
+    const defaultVeic = veiculos.find((v) => v.Modelo === manutencaoForm.Veículo) || veiculos[0];
+    const currentKm = defaultVeic?.Km_Atual || 0;
+    const today = new Date();
+    const nextDate = tmpl.intervalo > 0
+      ? new Date(today.getTime() + tmpl.intervalo * 24 * 3600 * 1000).toISOString().split("T")[0]
+      : manutencaoForm.Data_Alvo;
+
+    setManutencaoForm((prev) => ({
+      ...prev,
+      Descrição: tmpl.desc,
+      Tipo_Agendamento: tmpl.tipo,
+      Intervalo_Dias: tmpl.intervalo > 0 ? tmpl.intervalo : undefined,
+      Frequência_KM: tmpl.freqKm > 0 ? tmpl.freqKm : undefined,
+      KM_Alvo: tmpl.freqKm > 0 ? currentKm + tmpl.freqKm : prev.KM_Alvo,
+      Data_Alvo: nextDate,
+      Data_Ultima_Realizacao: today.toISOString().split("T")[0],
+      KM_Ultima_Realizacao: currentKm,
+      Observações: tmpl.obs,
+      Som_Alarme: true,
+    }));
   };
 
   const handleSaveManutencaoSubmit = async (e: React.FormEvent) => {
@@ -406,12 +526,17 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Id: editingManutencao?.Id || generateNewId("MANUT"),
       Veículo: manutencaoForm.Veículo || veiculos[0]?.Modelo || "CARRO",
       Descrição: manutencaoForm.Descrição || "Manutenção Agendada",
-      Tipo_Agendamento: manutencaoForm.Tipo_Agendamento || "Ambos",
+      Tipo_Agendamento: manutencaoForm.Tipo_Agendamento || "Dias",
       Data_Alvo: manutencaoForm.Data_Alvo || "",
       KM_Alvo: parseCurrency(manutencaoForm.KM_Alvo),
       Recorrente: manutencaoForm.Recorrente || "SIM",
       Frequência_Meses: parseCurrency(manutencaoForm.Frequência_Meses) || 12,
-      Frequência_KM: parseCurrency(manutencaoForm.Frequência_KM) || 10000,
+      Frequência_KM: parseCurrency(manutencaoForm.Frequência_KM),
+      Intervalo_Dias: parseCurrency(manutencaoForm.Intervalo_Dias),
+      Data_Ultima_Realizacao: manutencaoForm.Data_Ultima_Realizacao || new Date().toISOString().split("T")[0],
+      KM_Ultima_Realizacao: parseCurrency(manutencaoForm.KM_Ultima_Realizacao),
+      Horario_Alerta: manutencaoForm.Horario_Alerta || "08:00",
+      Som_Alarme: manutencaoForm.Som_Alarme ? "SIM" : "NAO",
       Status: manutencaoForm.Status || "PENDENTE",
       Prioridade: manutencaoForm.Prioridade || "Média",
       Oficina_Nome: manutencaoForm.Oficina_Nome || "",
@@ -421,21 +546,71 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     setIsManutencaoModalOpen(false);
   };
 
+  // Realizar / Concluir Manutenção Hoje e Avançar Ciclo
+  const handleCompleteManutencaoToday = async (m: ManutencaoAgendada) => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const relatedVeic = veiculos.find(
+      (v) => v.Modelo === m.Veículo || v.Placa === m.Veículo || v.Id === m.Veículo
+    );
+    const currentKm = relatedVeic?.Km_Atual || 0;
+
+    // Registra no histórico de ciclos concluídos
+    markCycleAsCompleted(`manutencao_intervalo_${m.Id}_${todayStr}`);
+    markCycleAsCompleted(`manutencao_${m.Id}_hoje_${todayStr}`);
+    markCycleAsCompleted(`manutencao_km_${m.Id}`);
+    markCycleAsCompleted(`manutencao_freq_km_${m.Id}`);
+
+    const intervaloDias = m.Intervalo_Dias ? Number(m.Intervalo_Dias) : 0;
+    const freqKm = m.Frequência_KM ? Number(m.Frequência_KM) : 0;
+
+    if (intervaloDias > 0 || freqKm > 0 || m.Tipo_Agendamento === "Ambos" || m.Recorrente === "SIM") {
+      const nextDate = intervaloDias > 0
+        ? new Date(Date.now() + intervaloDias * 24 * 3600 * 1000).toISOString().split("T")[0]
+        : m.Data_Alvo;
+      const nextKm = freqKm > 0 ? currentKm + freqKm : m.KM_Alvo;
+
+      await onSaveManutencao({
+        ...m,
+        Data_Ultima_Realizacao: todayStr,
+        KM_Ultima_Realizacao: currentKm,
+        Data_Alvo: nextDate,
+        KM_Alvo: nextKm,
+        Status: "PENDENTE",
+      });
+    } else {
+      // Pontual
+      await onSaveManutencao({
+        ...m,
+        Data_Ultima_Realizacao: todayStr,
+        KM_Ultima_Realizacao: currentKm,
+        Status: m.Status === "CONCLUÍDO" || m.Status === "Concluída" ? "PENDENTE" : "CONCLUÍDO",
+      });
+    }
+  };
+
   // Check upcoming maintenance alerts (Date <= 7 days or past, OR KM >= target - 500)
   const nowTime = new Date().getTime();
   const alertManutencoes = manutencoes.filter((m) => {
     if (m.Status === "CONCLUÍDO" || m.Status === "Concluída") return false;
     let isAlert = false;
 
+    // Intervalo de dias
+    if (m.Intervalo_Dias && m.Intervalo_Dias > 0 && m.Data_Ultima_Realizacao) {
+      const diff = getDiffInDaysFromToday(m.Data_Ultima_Realizacao);
+      if (diff !== null && Math.abs(diff) >= m.Intervalo_Dias) {
+        return true;
+      }
+    }
+
     if (m.Data_Alvo) {
       const targetTime = new Date(m.Data_Alvo).getTime();
       const diffDays = (targetTime - nowTime) / (1000 * 3600 * 24);
-      if (diffDays <= 7) isAlert = true;
+      if (diffDays <= 3) isAlert = true;
     }
 
     if (m.KM_Alvo && m.KM_Alvo > 0) {
       const relatedVeic = veiculos.find(
-        (v) => v.Modelo === m.Veículo || v.Descrição === m.Veículo
+        (v) => v.Modelo === m.Veículo || v.Descrição === m.Veículo || v.Placa === m.Veículo
       );
       const currentKm = relatedVeic?.Km_Atual || 0;
       if (currentKm >= m.KM_Alvo - 500) isAlert = true;
@@ -870,29 +1045,52 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       {/* 3. MANUTENÇÕES AGENDADAS TAB - Compact 2-Line Pattern with Expandable Drawer */}
       {activeTab === "agendadas" && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center px-1">
-            <span className="text-xs text-slate-400">
-              Planejamento de revisões preventivas ({filteredManutencoes.length})
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+            <div>
+              <span className="text-xs font-semibold text-slate-300 block">
+                Lembretes & Manutenções Preventivas ({filteredManutencoes.length})
+              </span>
+              <span className="text-[11px] text-slate-400">
+                Calibragem de pneus, trocas de óleo por KM, revisões híbridas e preventivas periódicas
+              </span>
+            </div>
             <button
               onClick={() => handleOpenManutencao()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
+              className="flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition-colors shadow-xs cursor-pointer shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>Agendar Manutenção</span>
+              <span>Novo Lembrete / Manutenção</span>
             </button>
           </div>
 
           {filteredManutencoes.length === 0 ? (
-            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
-              Nenhuma manutenção agendada encontrada no período selecionado.
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 text-xs space-y-3">
+              <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-slate-300">
+                <RefreshCw className="w-5 h-5" />
+              </div>
+              <p className="font-medium text-slate-300">Nenhum lembrete de manutenção cadastrado.</p>
+              <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                Você pode cadastrar calibragem semanal de pneus, troca de óleo por KM, pastilhas de freio ou qualquer revisão periódica.
+              </p>
+              <button
+                onClick={() => handleOpenManutencao()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Cadastrar Primeiro Lembrete</span>
+              </button>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {filteredManutencoes.map((m, idx) => {
                 const mId = String(m.Id || `manut-${idx}`);
                 const isExpanded = expandedManutencaoId === mId;
                 const isDone = m.Status === "CONCLUÍDO" || m.Status === "Concluída";
+                const intervalo = m.Intervalo_Dias ? Number(m.Intervalo_Dias) : 0;
+                const freqKm = m.Frequência_KM ? Number(m.Frequência_KM) : 0;
+                const isHybrid = m.Tipo_Agendamento === "Ambos" || (intervalo > 0 && freqKm > 0);
+                const isKmOnly = m.Tipo_Agendamento === "KM" || (freqKm > 0 && !intervalo);
+                const isDaysOnly = m.Tipo_Agendamento === "Dias" || (intervalo > 0 && !freqKm);
 
                 return (
                   <div
@@ -908,71 +1106,110 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                       onClick={() => setExpandedManutencaoId(isExpanded ? null : mId)}
                       className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none"
                     >
-                      {/* Lado Esquerdo: Ícone Neutro + Linha 1 (Título + Veículo + Prioridade) + Linha 2 (Data Alvo, KM Alvo) */}
+                      {/* Lado Esquerdo: Ícone Neutro + Linha 1 + Linha 2 */}
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className={`p-2 sm:p-2.5 rounded-xl bg-slate-800 border shrink-0 ${
-                          isDone ? "text-emerald-400 border-slate-700/60" : "text-slate-300 border-slate-700/60"
-                        }`}>
-                          <Clock className="w-4 h-4" />
+                        <div
+                          className={`p-2 sm:p-2.5 rounded-xl bg-slate-800 border shrink-0 ${
+                            isDone
+                              ? "text-emerald-400 border-slate-700/60"
+                              : isHybrid
+                              ? "text-sky-400 border-slate-700/60"
+                              : isKmOnly
+                              ? "text-amber-400 border-slate-700/60"
+                              : "text-emerald-400 border-slate-700/60"
+                          }`}
+                        >
+                          {isKmOnly ? (
+                            <Gauge className="w-4 h-4" />
+                          ) : isHybrid ? (
+                            <RefreshCw className="w-4 h-4" />
+                          ) : (
+                            <Clock className="w-4 h-4" />
+                          )}
                         </div>
 
-                        <div className="min-w-0 space-y-0.5 flex-1">
-                          {/* Linha 1: Título + Veículo + Tag de Prioridade Neutra */}
+                        <div className="min-w-0 space-y-1 flex-1">
+                          {/* Linha 1: Título + Veículo + Tag de Recorrência */}
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`font-semibold text-xs sm:text-sm tracking-tight truncate max-w-[180px] sm:max-w-md ${
-                              isDone ? "text-slate-400 line-through" : "text-white"
-                            }`}>
+                            <span
+                              className={`font-semibold text-xs sm:text-sm tracking-tight truncate max-w-[200px] sm:max-w-md ${
+                                isDone ? "text-slate-400 line-through" : "text-white"
+                              }`}
+                            >
                               {m.Descrição}
                             </span>
+
                             {m.Veículo && (
                               <span className="px-1.5 py-0.5 rounded-md bg-slate-800 text-[10px] font-medium text-slate-300 border border-slate-700/70 truncate max-w-[120px]">
                                 {m.Veículo}
                               </span>
                             )}
-                            {m.Prioridade && m.Prioridade !== "Média" && (
-                              <span className="px-1.5 py-0.5 rounded-md bg-slate-800/80 text-[10px] font-medium text-slate-400 border border-slate-700/60">
-                                {m.Prioridade}
+
+                            {/* Badge de Recorrência */}
+                            {isDaysOnly && intervalo > 0 && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[10px] font-medium">
+                                A cada {intervalo} {intervalo === 1 ? "dia" : "dias"}
+                              </span>
+                            )}
+                            {isKmOnly && freqKm > 0 && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[10px] font-medium font-mono">
+                                A cada {freqKm.toLocaleString()} KM
+                              </span>
+                            )}
+                            {isHybrid && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-sky-500/10 text-sky-300 border border-sky-500/20 text-[10px] font-medium">
+                                Híbrido: {intervalo > 0 ? `${intervalo}d` : `${m.Frequência_Meses || 6}m`} / {freqKm > 0 ? `${freqKm.toLocaleString()} KM` : "10.000 KM"}
+                              </span>
+                            )}
+
+                            {m.Som_Alarme === "SIM" && (
+                              <span className="p-0.5 text-slate-400" title="Alarme sonoro ativado">
+                                <Volume2 className="w-3.5 h-3.5 text-slate-400" />
                               </span>
                             )}
                           </div>
 
-                          {/* Linha 2: Data Alvo • KM Alvo • Recorrência */}
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate flex-wrap">
-                            {m.Data_Alvo && <span>Data Alvo: <strong className="text-slate-300">{m.Data_Alvo}</strong></span>}
+                          {/* Linha 2: Próxima previsão • Última realização */}
+                          <div className="flex items-center gap-2 text-[11px] text-slate-400 truncate flex-wrap">
+                            {m.Data_Alvo && (
+                              <span>
+                                Próxima: <strong className="text-slate-200">{m.Data_Alvo}</strong>
+                              </span>
+                            )}
                             {m.KM_Alvo && m.KM_Alvo > 0 && (
                               <>
                                 <span>•</span>
-                                <span>KM Alvo: <strong className="font-mono text-slate-300">{m.KM_Alvo.toLocaleString()} KM</strong></span>
+                                <span>
+                                  KM Alvo: <strong className="font-mono text-slate-200">{m.KM_Alvo.toLocaleString()} KM</strong>
+                                </span>
                               </>
                             )}
-                            {m.Oficina_Nome && (
+                            {m.Data_Ultima_Realizacao && (
                               <>
-                                <span>•</span>
-                                <span className="text-slate-400 truncate max-w-[120px]">{m.Oficina_Nome}</span>
+                                <span className="text-slate-600">•</span>
+                                <span className="text-slate-400">
+                                  Última: {m.Data_Ultima_Realizacao}
+                                  {m.KM_Ultima_Realizacao ? ` (${Number(m.KM_Ultima_Realizacao).toLocaleString()} KM)` : ""}
+                                </span>
                               </>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Lado Direito: Botão Status / Toggle + Chevron */}
-                      <div className="flex items-center gap-2.5 shrink-0">
+                      {/* Lado Direito: Botão Concluir Hoje / Ciclo + Chevron */}
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onSaveManutencao({
-                              ...m,
-                              Status: isDone ? "PENDENTE" : "CONCLUÍDO",
-                            });
+                            handleCompleteManutencaoToday(m);
                           }}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-colors cursor-pointer ${
-                            isDone
-                              ? "bg-slate-800 text-emerald-400 border-slate-700 hover:bg-slate-750"
-                              : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
-                          }`}
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-colors cursor-pointer bg-slate-800 text-emerald-400 border-slate-700 hover:bg-slate-750 flex items-center gap-1"
+                          title="Registrar que esta manutenção foi feita hoje e avançar para o próximo ciclo"
                         >
-                          {isDone ? "CONCLUÍDO" : "MARCAR CONCLUÍDO"}
+                          <Check className="w-3 h-3" />
+                          <span>REALIZADO HOJE</span>
                         </button>
 
                         {/* Botão de expansão da gaveta */}
@@ -991,22 +1228,39 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                       <div className="px-4 pb-4 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-3 animate-in fade-in-50 duration-150 text-xs">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                           <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
-                            <span className="text-[10px] text-slate-500 block">Data Alvo</span>
-                            <span className="font-semibold text-slate-200">{m.Data_Alvo || "—"}</span>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
-                            <span className="text-[10px] text-slate-500 block">KM Alvo</span>
-                            <span className="font-semibold text-white font-mono">{m.KM_Alvo ? `${m.KM_Alvo.toLocaleString()} KM` : "—"}</span>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
-                            <span className="text-[10px] text-slate-500 block">Recorrente</span>
+                            <span className="text-[10px] text-slate-500 block">Tipo & Recorrência</span>
                             <span className="font-semibold text-slate-200">
-                              {m.Recorrente || "NÃO"} ({m.Frequência_Meses || 0} meses / {m.Frequência_KM || 0} KM)
+                              {isHybrid
+                                ? `Híbrido (${intervalo}d / ${freqKm} KM)`
+                                : isKmOnly
+                                ? `Por KM (${freqKm} KM)`
+                                : intervalo > 0
+                                ? `A cada ${intervalo} dias`
+                                : "Pontual"}
                             </span>
                           </div>
+
                           <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
-                            <span className="text-[10px] text-slate-500 block">Oficina Indicada</span>
-                            <span className="font-semibold text-slate-200 truncate block">{m.Oficina_Nome || "A definir"}</span>
+                            <span className="text-[10px] text-slate-500 block">Última Realização</span>
+                            <span className="font-semibold text-slate-200">
+                              {m.Data_Ultima_Realizacao || "—"}{" "}
+                              {m.KM_Ultima_Realizacao ? `(${Number(m.KM_Ultima_Realizacao).toLocaleString()} KM)` : ""}
+                            </span>
+                          </div>
+
+                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                            <span className="text-[10px] text-slate-500 block">Próxima Data / KM</span>
+                            <span className="font-semibold text-slate-200">
+                              {m.Data_Alvo || "—"} {m.KM_Alvo ? `/ ${Number(m.KM_Alvo).toLocaleString()} KM` : ""}
+                            </span>
+                          </div>
+
+                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                            <span className="text-[10px] text-slate-500 block">Alarme Sonoro & Hora</span>
+                            <span className="font-semibold text-slate-200">
+                              {m.Som_Alarme === "SIM" ? "🔔 Ativo" : "Silencioso"}{" "}
+                              {m.Horario_Alerta ? `às ${m.Horario_Alerta}` : ""}
+                            </span>
                           </div>
                         </div>
 
@@ -1024,7 +1278,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition-colors cursor-pointer"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
-                            <span>Editar</span>
+                            <span>Editar Configuração</span>
                           </button>
                           <button
                             onClick={() =>
@@ -1033,7 +1287,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                                 type: "manutencao",
                                 id: m.Id,
                                 title: m.Descrição,
-                                subtitle: `Veículo: ${m.Veículo} • Data Alvo: ${m.Data_Alvo || "—"} • KM Alvo: ${m.KM_Alvo || "—"} KM`,
+                                subtitle: `Veículo: ${m.Veículo} • Recorrência: ${m.Tipo_Agendamento || "Dias"}`,
                               })
                             }
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-medium transition-colors cursor-pointer"
@@ -1356,39 +1610,92 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Modal: Manutenção Agendada */}
+      {/* Modal: Manutenção Agendada & Lembretes Configuráveis */}
       {isManutencaoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 text-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-5 sm:p-6 space-y-4 text-xs my-8 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-base text-white">Agendar Manutenção Futura</h3>
-              <button onClick={() => setIsManutencaoModalOpen(false)}>
-                <X className="w-5 h-5 text-slate-400 hover:text-white" />
+              <div>
+                <h3 className="font-bold text-sm sm:text-base text-white flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-emerald-400" />
+                  <span>{editingManutencao ? "Editar Lembrete de Manutenção" : "Novo Lembrete de Manutenção"}</span>
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  Configure lembretes por intervalo de dias, quilometragem ou modo híbrido.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsManutencaoModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveManutencaoSubmit} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+            {/* Quick Templates Bar */}
+            <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+              <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1.5 uppercase tracking-wider">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                <span>Modelos Rápidos (1-Clique)</span>
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {TEMPLATES_MANUTENCAO.map((tmpl, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleApplyTemplate(tmpl)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 text-[11px] font-medium transition-colors cursor-pointer"
+                  >
+                    {tmpl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveManutencaoSubmit} className="space-y-3.5">
+              {/* Veículo e Descrição */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Veículo</label>
+                  <label className="text-slate-400 block mb-1 font-medium">Veículo</label>
                   <select
                     value={manutencaoForm.Veículo}
-                    onChange={(e) => setManutencaoForm({ ...manutencaoForm, Veículo: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    onChange={(e) => {
+                      const selModelo = e.target.value;
+                      const selVeic = veiculos.find((v) => v.Modelo === selModelo);
+                      setManutencaoForm((prev) => ({
+                        ...prev,
+                        Veículo: selModelo,
+                        KM_Ultima_Realizacao: selVeic?.Km_Atual || prev.KM_Ultima_Realizacao,
+                        KM_Alvo: prev.Frequência_KM ? (selVeic?.Km_Atual || 0) + prev.Frequência_KM : prev.KM_Alvo,
+                      }));
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-medium focus:border-emerald-500 outline-hidden"
                   >
                     {veiculos.map((v) => (
                       <option key={v.Id} value={v.Modelo}>
-                        {v.Modelo} ({v.Placa})
+                        {v.Modelo} ({v.Placa}) • {Number(v.Km_Atual || 0).toLocaleString()} KM
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Descrição</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-400 font-medium">Descrição da Manutenção</label>
+                    <VoiceInput
+                      onTranscript={(text) =>
+                        setManutencaoForm((prev) => ({
+                          ...prev,
+                          Descrição: prev.Descrição ? `${prev.Descrição} ${text}` : text,
+                        }))
+                      }
+                    />
+                  </div>
                   <ComboBox
                     required
-                    placeholder="Ex: Troca de Correia Dentada"
+                    placeholder="Ex: Calibrar Pneus, Troca de Óleo..."
                     value={manutencaoForm.Descrição}
                     onChange={(val) => setManutencaoForm({ ...manutencaoForm, Descrição: val })}
                     options={servicosDisponiveis}
@@ -1396,41 +1703,372 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* Modo de Recorrência */}
+              <div className="space-y-1.5">
+                <label className="text-slate-400 block font-medium">Tipo de Recorrência</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {[
+                    { id: "Dias", label: "⏱️ Intervalo Dias", desc: "Ex: A cada 7 dias" },
+                    { id: "KM", label: "🚗 Por KM", desc: "Ex: A cada 10.000 KM" },
+                    { id: "Ambos", label: "⚡ Modo Híbrido", desc: "Tempo ou KM (1º)" },
+                    { id: "Data", label: "📅 Data Fixa", desc: "Agendamento único" },
+                  ].map((tab) => {
+                    const isSelected = (manutencaoForm.Tipo_Agendamento || "Dias") === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() =>
+                          setManutencaoForm((prev) => ({
+                            ...prev,
+                            Tipo_Agendamento: tab.id as any,
+                          }))
+                        }
+                        className={`p-2 rounded-xl text-left border transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-emerald-500/10 border-emerald-500/50 text-white shadow-xs"
+                            : "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                        }`}
+                      >
+                        <div className={`font-semibold text-[11px] ${isSelected ? "text-emerald-400" : ""}`}>
+                          {tab.label}
+                        </div>
+                        <div className="text-[9px] text-slate-500 truncate">{tab.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Seções Condicionais de Acordo com o Tipo */}
+              {/* 1. INTERVALO DE DIAS (se Dias ou Ambos) */}
+              {(manutencaoForm.Tipo_Agendamento === "Dias" || manutencaoForm.Tipo_Agendamento === "Ambos") && (
+                <div className="p-3 bg-slate-950/70 border border-slate-800/90 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-300 text-[11px] flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Configuração por Tempo (Dias)</span>
+                    </span>
+                    {manutencaoForm.Intervalo_Dias ? (
+                      <span className="text-[10px] text-emerald-400 font-mono font-medium">
+                        Repetir a cada {manutencaoForm.Intervalo_Dias} dias
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="text-slate-400 block mb-1 text-[11px]">Intervalo em Dias</label>
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Ex: 7"
+                        value={manutencaoForm.Intervalo_Dias || ""}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          const lastDate = manutencaoForm.Data_Ultima_Realizacao
+                            ? new Date(manutencaoForm.Data_Ultima_Realizacao)
+                            : new Date();
+                          const nextDate = val > 0
+                            ? new Date(lastDate.getTime() + val * 24 * 3600 * 1000).toISOString().split("T")[0]
+                            : manutencaoForm.Data_Alvo;
+                          setManutencaoForm((prev) => ({
+                            ...prev,
+                            Intervalo_Dias: val,
+                            Data_Alvo: nextDate,
+                          }));
+                        }}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-white font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-slate-400 block mb-1 text-[11px]">Data da Última Realização</label>
+                      <input
+                        type="date"
+                        value={manutencaoForm.Data_Ultima_Realizacao || ""}
+                        onChange={(e) => {
+                          const newLastDateStr = e.target.value;
+                          const interval = manutencaoForm.Intervalo_Dias || 0;
+                          const nextDate = interval > 0 && newLastDateStr
+                            ? new Date(new Date(newLastDateStr).getTime() + interval * 24 * 3600 * 1000).toISOString().split("T")[0]
+                            : manutencaoForm.Data_Alvo;
+                          setManutencaoForm((prev) => ({
+                            ...prev,
+                            Data_Ultima_Realizacao: newLastDateStr,
+                            Data_Alvo: nextDate,
+                          }));
+                        }}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-slate-400 block mb-1 text-[11px]">Próxima Data Prevista</label>
+                      <input
+                        type="date"
+                        value={manutencaoForm.Data_Alvo || ""}
+                        onChange={(e) => setManutencaoForm({ ...manutencaoForm, Data_Alvo: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Presets Rápidos de Dias */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] text-slate-500 mr-1">Atalhos:</span>
+                    {[
+                      { label: "7 dias (Semanal)", val: 7 },
+                      { label: "15 dias", val: 15 },
+                      { label: "30 dias (Mensal)", val: 30 },
+                      { label: "90 dias (3m)", val: 90 },
+                      { label: "180 dias (6m)", val: 180 },
+                      { label: "365 dias (1 ano)", val: 365 },
+                    ].map((btn) => (
+                      <button
+                        key={btn.val}
+                        type="button"
+                        onClick={() => {
+                          const lastDate = manutencaoForm.Data_Ultima_Realizacao
+                            ? new Date(manutencaoForm.Data_Ultima_Realizacao)
+                            : new Date();
+                          const nextDate = new Date(lastDate.getTime() + btn.val * 24 * 3600 * 1000).toISOString().split("T")[0];
+                          setManutencaoForm((prev) => ({
+                            ...prev,
+                            Intervalo_Dias: btn.val,
+                            Data_Alvo: nextDate,
+                          }));
+                        }}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-medium border transition-colors cursor-pointer ${
+                          manutencaoForm.Intervalo_Dias === btn.val
+                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                            : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                        }`}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. FREQUÊNCIA POR QUILOMETRAGEM (se KM ou Ambos) */}
+              {(manutencaoForm.Tipo_Agendamento === "KM" || manutencaoForm.Tipo_Agendamento === "Ambos") && (
+                <div className="p-3 bg-slate-950/70 border border-slate-800/90 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-300 text-[11px] flex items-center gap-1.5">
+                      <Gauge className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Configuração por Quilometragem (KM)</span>
+                    </span>
+                    {manutencaoForm.Frequência_KM ? (
+                      <span className="text-[10px] text-amber-400 font-mono font-medium">
+                        Repetir a cada {Number(manutencaoForm.Frequência_KM).toLocaleString()} KM
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="text-slate-400 block mb-1 text-[11px]">Frequência em KM</label>
+                      <input
+                        type="number"
+                        step="500"
+                        placeholder="Ex: 10000"
+                        value={manutencaoForm.Frequência_KM || ""}
+                        onChange={(e) => {
+                          const freq = Number(e.target.value);
+                          const lastKm = Number(manutencaoForm.KM_Ultima_Realizacao || 0);
+                          setManutencaoForm((prev) => ({
+                            ...prev,
+                            Frequência_KM: freq,
+                            KM_Alvo: freq > 0 ? lastKm + freq : prev.KM_Alvo,
+                          }));
+                        }}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-white font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-slate-400 block mb-1 text-[11px]">KM na Última Realização</label>
+                      <input
+                        type="number"
+                        placeholder="KM anterior"
+                        value={manutencaoForm.KM_Ultima_Realizacao || ""}
+                        onChange={(e) => {
+                          const lastKm = Number(e.target.value);
+                          const freq = Number(manutencaoForm.Frequência_KM || 0);
+                          setManutencaoForm((prev) => ({
+                            ...prev,
+                            KM_Ultima_Realizacao: lastKm,
+                            KM_Alvo: freq > 0 ? lastKm + freq : prev.KM_Alvo,
+                          }));
+                        }}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-white font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-slate-400 block mb-1 text-[11px]">KM Alvo Previsto</label>
+                      <input
+                        type="number"
+                        placeholder="KM do alerta"
+                        value={manutencaoForm.KM_Alvo || ""}
+                        onChange={(e) => setManutencaoForm({ ...manutencaoForm, KM_Alvo: Number(e.target.value) })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-white font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Presets Rápidos de KM */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] text-slate-500 mr-1">Atalhos:</span>
+                    {[
+                      { label: "5.000 KM", val: 5000 },
+                      { label: "10.000 KM", val: 10000 },
+                      { label: "15.000 KM", val: 15000 },
+                      { label: "20.000 KM", val: 20000 },
+                      { label: "40.000 KM", val: 40000 },
+                    ].map((btn) => (
+                      <button
+                        key={btn.val}
+                        type="button"
+                        onClick={() => {
+                          const lastKm = Number(manutencaoForm.KM_Ultima_Realizacao || 0);
+                          setManutencaoForm((prev) => ({
+                            ...prev,
+                            Frequência_KM: btn.val,
+                            KM_Alvo: lastKm + btn.val,
+                          }));
+                        }}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-medium border transition-colors cursor-pointer ${
+                          manutencaoForm.Frequência_KM === btn.val
+                            ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                            : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                        }`}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. DATA FIXA PONTUAL (se Data) */}
+              {manutencaoForm.Tipo_Agendamento === "Data" && (
+                <div className="p-3 bg-slate-950/70 border border-slate-800/90 rounded-xl space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-slate-400 block mb-1 text-[11px]">Data Alvo Específica</label>
+                      <input
+                        type="date"
+                        required
+                        value={manutencaoForm.Data_Alvo || ""}
+                        onChange={(e) => setManutencaoForm({ ...manutencaoForm, Data_Alvo: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-slate-400 block mb-1 text-[11px]">KM Alvo (Opcional)</label>
+                      <input
+                        type="number"
+                        value={manutencaoForm.KM_Alvo || ""}
+                        onChange={(e) => setManutencaoForm({ ...manutencaoForm, KM_Alvo: Number(e.target.value) })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-white font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Alarme, Horário, Prioridade e Oficina */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                 <div>
-                  <label className="text-slate-400 block mb-1">Data Alvo</label>
+                  <label className="text-slate-400 block mb-1 font-medium">Horário do Alerta</label>
                   <input
-                    type="date"
-                    value={manutencaoForm.Data_Alvo}
-                    onChange={(e) => setManutencaoForm({ ...manutencaoForm, Data_Alvo: e.target.value })}
+                    type="time"
+                    value={manutencaoForm.Horario_Alerta || "08:00"}
+                    onChange={(e) => setManutencaoForm({ ...manutencaoForm, Horario_Alerta: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">KM Alvo</label>
-                  <input
-                    type="number"
-                    value={manutencaoForm.KM_Alvo}
-                    onChange={(e) => setManutencaoForm({ ...manutencaoForm, KM_Alvo: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono"
+                  <label className="text-slate-400 block mb-1 font-medium">Prioridade</label>
+                  <select
+                    value={manutencaoForm.Prioridade || "Média"}
+                    onChange={(e) => setManutencaoForm({ ...manutencaoForm, Prioridade: e.target.value as any })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                  >
+                    <option value="Baixa">Baixa</option>
+                    <option value="Média">Média</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Urgente">Urgente</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 block mb-1 font-medium">Oficina Indicada</label>
+                  <ComboBox
+                    placeholder="Oficina preferencial"
+                    value={manutencaoForm.Oficina_Nome}
+                    onChange={(val) => setManutencaoForm({ ...manutencaoForm, Oficina_Nome: val })}
+                    options={oficinasDisponiveis}
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              {/* Alarme Sonoro Toggle */}
+              <div className="flex items-center justify-between p-2.5 bg-slate-950/60 border border-slate-800 rounded-xl">
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-1.5 rounded-lg ${manutencaoForm.Som_Alarme ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-800 text-slate-500"}`}>
+                    {manutencaoForm.Som_Alarme ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-200 text-[11px] block">Alarme Sonoro</span>
+                    <span className="text-[10px] text-slate-400">Tocar sinal sonoro ao disparar notificação</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setManutencaoForm((prev) => ({ ...prev, Som_Alarme: !prev.Som_Alarme }))}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                    manutencaoForm.Som_Alarme
+                      ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/30"
+                      : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
+                  }`}
+                >
+                  {manutencaoForm.Som_Alarme ? "ATIVADO" : "DESATIVADO"}
+                </button>
+              </div>
+
+              {/* Observações */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-400 font-medium">Observações / Instruções</label>
+                </div>
+                <VoiceTextArea
+                  placeholder="Ex: Calibrar dianteiros 32 psi e traseiros 30 psi. Óleo sintético 5W30..."
+                  value={manutencaoForm.Observações || ""}
+                  onChange={(val) => setManutencaoForm({ ...manutencaoForm, Observações: val })}
+                  rows={2}
+                />
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsManutencaoModalOpen(false)}
-                  className="px-4 py-2 text-slate-400 hover:text-white"
+                  className="px-4 py-2 text-slate-400 hover:text-white text-xs font-medium cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
-                  Salvar Agendamento
+                  <Check className="w-4 h-4" />
+                  <span>Salvar Lembrete</span>
                 </button>
               </div>
             </form>

@@ -222,17 +222,22 @@ export interface ServicoOficina {
   Veiculo?: string;
 }
 
-// 15. Manutenções Agendadas
+// 15. Manutenções Agendadas & Lembretes Recorrentes
 export interface ManutencaoAgendada {
   Id: string;
   Veículo: string;
   Descrição: string;
-  Tipo_Agendamento?: "Data" | "KM" | "Ambos";
-  Data_Alvo?: string;
+  Tipo_Agendamento?: "Data" | "KM" | "Ambos" | "Dias" | "Intervalo";
+  Data_Alvo?: string; // YYYY-MM-DD
   KM_Alvo?: number;
   Recorrente?: "SIM" | "NÃO";
   Frequência_Meses?: number;
   Frequência_KM?: number;
+  Intervalo_Dias?: number; // Ex: 7 dias (calibragem), 30, 90, 180 dias
+  Data_Ultima_Realizacao?: string; // YYYY-MM-DD
+  KM_Ultima_Realizacao?: number;
+  Horario_Alerta?: string; // HH:mm ex: "08:00"
+  Som_Alarme?: "SIM" | "NAO" | boolean;
   Status: "PENDENTE" | "CONCLUÍDO" | "Pendente" | "Concluída";
   Prioridade?: "Baixa" | "Média" | "Alta";
   Oficina_Nome?: string;

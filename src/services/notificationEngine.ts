@@ -661,8 +661,7 @@ export function evaluateAllNotifications({
     });
   });
 
-  // 3. VEÍCULOS & OFICINA
-  // A. Manutenções Agendadas
+  // 3. VEÍCULOS & OFICINA — LEMBRETES DE MANUTENÇÃO CONFIGURÁVEIS (DIAS, KM OU HÍBRIDO)
   manutencoes.forEach((m) => {
     const isPendente =
       m.Status === "PENDENTE" ||
@@ -670,84 +669,125 @@ export function evaluateAllNotifications({
       String(m.Status).toUpperCase() === "PENDENTE";
     if (!isPendente) return;
 
-    // Por data alvo
-    if (m.Data_Alvo) {
-      const diff = getDiffInDaysFromToday(m.Data_Alvo);
-      if (diff !== null) {
-        if (diff === 0) {
+    const veiculoMatch = veiculos.find(
+      (v) =>
+        v.Placa?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+        v.Modelo?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+        v.Id === m.Veículo ||
+        (m.Veículo && v.Modelo && v.Modelo.toLowerCase().includes(m.Veículo.toLowerCase()))
+    );
+    const veiculoNome = veiculoMatch?.Modelo
+      ? `${veiculoMatch.Marca || ""} ${veiculoMatch.Modelo}`.trim()
+      : m.Veículo || "Veículo";
+    const kmAtual = veiculoMatch?.Km_Atual || 0;
+
+    const rawSom = m.Som_Alarme;
+    const somHabilitado = rawSom !== "NAO" && (rawSom as any) !== "nao" && rawSom !== false;
+
+    // 3.1. Recorrência por Intervalo de Dias (ex: Calibragem a cada 7 dias, filtro a cada 180 dias)
+    const intervaloDias = m.Intervalo_Dias ? Number(m.Intervalo_Dias) : 0;
+    if (intervaloDias > 0) {
+      const dataBaseStr = m.Data_Ultima_Realizacao || m.Data_Alvo || "";
+      if (dataBaseStr) {
+        const diffUltima = getDiffInDaysFromToday(dataBaseStr);
+        // Se diffUltima < 0, significa que se passaram Math.abs(diffUltima) dias
+        const diasDecorridos = diffUltima !== null ? Math.abs(diffUltima) : 0;
+        if (diasDecorridos >= intervaloDias) {
+          const diasAtraso = diasDecorridos - intervaloDias;
           list.push({
-            id: `manutencao_${m.Id}_hoje`,
+            id: `manutencao_intervalo_${m.Id}_${todayLocalStr}`,
             type: "veiculos",
-            title: "🔧 Manutenção Veicular Hoje!",
-            message: `${m.Descrição} (${m.Veículo}) agendada para hoje.`,
+            title: diasAtraso > 0 ? `🚗 Manutenção Atrasada: ${m.Descrição}` : `🚗 Lembrete: ${m.Descrição}`,
+            message: `${m.Descrição} (${veiculoNome}) atingiu a frequência de ${intervaloDias} dias (última realização: ${dataBaseStr}).`,
             targetView: "veiculos",
-            severity: "urgent",
+            severity: diasAtraso > 2 ? "urgent" : "warning",
             timestamp: now,
-          });
-        } else if (diff > 0 && diff <= 3) {
-          list.push({
-            id: `manutencao_${m.Id}_prox`,
-            type: "veiculos",
-            title: `🔧 Manutenção Próxima (${diff === 1 ? "Amanhã" : `em ${diff} dias`})`,
-            message: `${m.Descrição} (${m.Veículo}) em ${m.Data_Alvo}.`,
-            targetView: "veiculos",
-            severity: "warning",
-            timestamp: now,
-          });
-        } else if (diff < 0) {
-          list.push({
-            id: `manutencao_${m.Id}_atrasada`,
-            type: "veiculos",
-            title: "⚠️ Manutenção Veicular Atrasada",
-            message: `${m.Descrição} (${m.Veículo}) estava prevista para ${m.Data_Alvo}.`,
-            targetView: "veiculos",
-            severity: "urgent",
-            timestamp: now,
+            soundEnabled: somHabilitado,
+            isAlarm: somHabilitado,
           });
         }
       }
     }
 
-    // Por KM Alvo
-    if (m.KM_Alvo && m.KM_Alvo > 0) {
-      const veiculoMatch = veiculos.find(
-        (v) =>
-          v.Placa?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
-          v.Modelo?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
-          v.Id === m.Veículo
-      );
-      if (veiculoMatch && veiculoMatch.Km_Atual >= m.KM_Alvo - 300) {
+    // 3.2. Recorrência por Data Alvo Fixa
+    if (m.Data_Alvo && (!intervaloDias || intervaloDias <= 0)) {
+      const diff = getDiffInDaysFromToday(m.Data_Alvo);
+      if (diff !== null) {
+        if (diff === 0) {
+          list.push({
+            id: `manutencao_${m.Id}_hoje_${todayLocalStr}`,
+            type: "veiculos",
+            title: "🔧 Manutenção Veicular Hoje!",
+            message: `${m.Descrição} (${veiculoNome}) agendada para hoje.`,
+            targetView: "veiculos",
+            severity: "urgent",
+            timestamp: now,
+            soundEnabled: somHabilitado,
+            isAlarm: somHabilitado,
+          });
+        } else if (diff > 0 && diff <= 3) {
+          list.push({
+            id: `manutencao_${m.Id}_prox_${todayLocalStr}`,
+            type: "veiculos",
+            title: `🔧 Manutenção Próxima (${diff === 1 ? "Amanhã" : `em ${diff} dias`})`,
+            message: `${m.Descrição} (${veiculoNome}) prevista para ${m.Data_Alvo}.`,
+            targetView: "veiculos",
+            severity: "warning",
+            timestamp: now,
+            soundEnabled: somHabilitado,
+            isAlarm: somHabilitado,
+          });
+        } else if (diff < 0) {
+          list.push({
+            id: `manutencao_${m.Id}_atrasada_${todayLocalStr}`,
+            type: "veiculos",
+            title: "⚠️ Manutenção Veicular Atrasada",
+            message: `${m.Descrição} (${veiculoNome}) estava prevista para ${m.Data_Alvo}.`,
+            targetView: "veiculos",
+            severity: "urgent",
+            timestamp: now,
+            soundEnabled: somHabilitado,
+            isAlarm: somHabilitado,
+          });
+        }
+      }
+    }
+
+    // 3.3. Recorrência por KM Frequência (ex: a cada 10.000 KM desde a última revisão)
+    if (m.Frequência_KM && m.Frequência_KM > 0 && m.KM_Ultima_Realizacao !== undefined) {
+      const kmDesdeUltima = kmAtual - m.KM_Ultima_Realizacao;
+      if (kmDesdeUltima >= m.Frequência_KM - 300) {
         list.push({
-          id: `manutencao_km_${m.Id}`,
+          id: `manutencao_freq_km_${m.Id}_${Math.floor(kmAtual / 500)}`,
           type: "veiculos",
-          title: "🚗 Quilometragem de Manutenção Atingida!",
-          message: `${m.Descrição} (${m.Veículo}): KM Alvo ${m.KM_Alvo} km atingido (KM Atual: ${veiculoMatch.Km_Atual} km).`,
+          title: "🚗 Manutenção por KM Atingida!",
+          message: `${m.Descrição} (${veiculoNome}): Rodou ${kmDesdeUltima.toLocaleString()} km desde a última realização (Frequência: a cada ${m.Frequência_KM.toLocaleString()} km | KM Atual: ${kmAtual.toLocaleString()} km).`,
           targetView: "veiculos",
           severity: "urgent",
           timestamp: now,
+          soundEnabled: somHabilitado,
+          isAlarm: somHabilitado,
+        });
+      }
+    }
+
+    // 3.4. Recorrência por KM Alvo Fixo
+    if (m.KM_Alvo && m.KM_Alvo > 0 && (!m.Frequência_KM || m.Frequência_KM <= 0)) {
+      if (kmAtual >= m.KM_Alvo - 300) {
+        list.push({
+          id: `manutencao_km_${m.Id}_${Math.floor(kmAtual / 500)}`,
+          type: "veiculos",
+          title: "🚗 Quilometragem de Manutenção Atingida!",
+          message: `${m.Descrição} (${veiculoNome}): KM Alvo ${m.KM_Alvo.toLocaleString()} km atingido (KM Atual: ${kmAtual.toLocaleString()} km).`,
+          targetView: "veiculos",
+          severity: "urgent",
+          timestamp: now,
+          soundEnabled: somHabilitado,
+          isAlarm: somHabilitado,
         });
       }
     }
   });
-
-  // B. Lembrete de Calibragem de Pneus (7 dias)
-  const daysSinceCalibration = getDaysSinceLastTireCalibration();
-  if (daysSinceCalibration >= 7 && veiculos.length > 0) {
-    const mainVehicle = veiculos[0];
-    const veiculoNome = mainVehicle.Modelo
-      ? `${mainVehicle.Marca || ""} ${mainVehicle.Modelo}`
-      : "seus veículos";
-
-    list.push({
-      id: "veiculos_calibragem_pneus_7dias",
-      type: "veiculos",
-      title: "🚗 Lembrete: Calibragem de Pneus",
-      message: `Não se esqueça de calibrar os pneus do ${veiculoNome}! Já fazem ${daysSinceCalibration} dias desde a última checagem.`,
-      targetView: "veiculos",
-      severity: "warning",
-      timestamp: now,
-    });
-  }
 
   // 4. LANÇAMENTOS FINANCEIROS (CONTAS A PAGAR, CARTÕES & ALERTAS DE RECEITAS VS DESPESAS)
   
