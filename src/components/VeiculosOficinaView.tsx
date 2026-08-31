@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Veiculo, ServicoOficina, ManutencaoAgendada } from "../types";
 import { generateNewId } from "../services/api";
-import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { parseCurrency, formatCurrency, formatCurrencyInput } from "../utils/formatters";
 import { markCycleAsCompleted } from "../services/snoozeService";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
@@ -186,10 +186,14 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   // Oficina (Serviço) Modal State
   const [isServicoModalOpen, setIsServicoModalOpen] = useState(false);
   const [editingServico, setEditingServico] = useState<ServicoOficina | null>(null);
+  const [servicoKmDisplay, setServicoKmDisplay] = useState<string>("");
+  const [servicoValorDisplay, setServicoValorDisplay] = useState<string>("");
+  const [servicoValorPagoDisplay, setServicoValorPagoDisplay] = useState<string>("");
   const [servicoForm, setServicoForm] = useState<Partial<ServicoOficina>>({
     Data: new Date().toISOString().split("T")[0],
     Descrição: "",
     KM: 0,
+    Valor: 0,
     Valor_A_PG: 0,
     Valor_Pago: 0,
     Oficina_Nome: "",
@@ -424,13 +428,20 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     if (s) {
       setEditingServico(s);
       setServicoForm({ ...s });
+      setServicoKmDisplay(s.KM && s.KM > 0 ? String(s.KM) : "");
+      const val = s.Valor !== undefined && s.Valor !== null ? s.Valor : (s.Valor_A_PG || s.Valor_Pago || 0);
+      setServicoValorDisplay(val > 0 ? formatCurrency(val) : "");
+      const valPago = s.Valor_Pago ?? 0;
+      setServicoValorPagoDisplay(valPago > 0 ? formatCurrency(valPago) : "");
     } else {
       setEditingServico(null);
       const defaultVeic = veiculos[0];
+      const defaultKm = defaultVeic?.Km_Atual || 0;
       setServicoForm({
         Data: new Date().toISOString().split("T")[0],
         Descrição: "",
-        KM: defaultVeic?.Km_Atual || 0,
+        KM: defaultKm,
+        Valor: 0,
         Valor_A_PG: 0,
         Valor_Pago: 0,
         Oficina_Nome: "",
@@ -438,19 +449,27 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         Observações: "",
         Veiculo: defaultVeic?.Modelo || "CARRO",
       });
+      setServicoKmDisplay(defaultKm > 0 ? String(defaultKm) : "");
+      setServicoValorDisplay("");
+      setServicoValorPagoDisplay("");
     }
     setIsServicoModalOpen(true);
   };
 
   const handleSaveServicoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const kmNum = servicoKmDisplay ? parseInt(servicoKmDisplay.replace(/\D/g, ""), 10) || 0 : (parseCurrency(servicoForm.KM) || 0);
+    const valorNum = parseCurrency(servicoValorDisplay) || parseCurrency(servicoForm.Valor) || 0;
+    const valorPagoNum = parseCurrency(servicoValorPagoDisplay) || parseCurrency(servicoForm.Valor_Pago) || 0;
+
     const item: ServicoOficina = {
       Id: editingServico?.Id || generateNewId("OFI"),
       Data: servicoForm.Data || new Date().toISOString().split("T")[0],
       Descrição: servicoForm.Descrição || "Serviço de Oficina",
-      KM: parseCurrency(servicoForm.KM),
-      Valor_A_PG: parseCurrency(servicoForm.Valor_A_PG),
-      Valor_Pago: parseCurrency(servicoForm.Valor_Pago),
+      KM: kmNum,
+      Valor: valorNum,
+      Valor_A_PG: valorNum,
+      Valor_Pago: valorPagoNum,
       Oficina_Nome: servicoForm.Oficina_Nome || "",
       Comprovante_Url: servicoForm.Comprovante_Url || "",
       Observações: servicoForm.Observações || "",
@@ -969,7 +988,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     {/* Gaveta de Detalhes Expansível */}
                     {isExpanded && (
                       <div className="px-4 pb-4 pt-2 border-t border-slate-800/80 bg-slate-950/50 space-y-3 animate-in fade-in-50 duration-150 text-xs">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                           <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
                             <span className="text-[10px] text-slate-500 block">Veículo</span>
                             <span className="font-semibold text-slate-200 truncate block">{s.Veiculo}</span>
@@ -981,6 +1000,22 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                           <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
                             <span className="text-[10px] text-slate-500 block">Quilometragem</span>
                             <span className="font-semibold text-white font-mono">{s.KM ? `${s.KM.toLocaleString()} KM` : "—"}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                            <span className="text-[10px] text-slate-500 block">Valor Orçado vs Pago</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-semibold text-slate-300">
+                                {s.Valor !== undefined && s.Valor !== null && s.Valor > 0
+                                  ? `R$ ${formatCurrency(s.Valor)}`
+                                  : s.Valor_A_PG
+                                  ? `R$ ${formatCurrency(s.Valor_A_PG)}`
+                                  : "—"}
+                              </span>
+                              <span className="text-slate-500">→</span>
+                              <span className="font-bold text-emerald-400">
+                                R$ {formatCurrency(s.Valor_Pago || 0)}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
@@ -1511,33 +1546,57 @@ export const VeiculosOficinaView: React.FC<Props> = ({
 
       {/* Modal: Oficina */}
       {isServicoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 text-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl my-auto animate-in fade-in-50 duration-150 text-xs">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-base text-white">Registrar Serviço de Oficina</h3>
-              <button onClick={() => setIsServicoModalOpen(false)}>
-                <X className="w-5 h-5 text-slate-400 hover:text-white" />
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                  <Wrench className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">
+                    {editingServico ? "Editar Serviço de Oficina" : "Registrar Serviço de Oficina"}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Registre os dados da manutenção e valores orçado/pago
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsServicoModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveServicoSubmit} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleSaveServicoSubmit} className="space-y-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Data</label>
+                  <label className="text-slate-300 text-xs font-medium block mb-1">Data</label>
                   <input
                     type="date"
                     required
                     value={servicoForm.Data}
                     onChange={(e) => setServicoForm({ ...servicoForm, Data: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:border-emerald-500 outline-hidden"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">Veículo</label>
+                  <label className="text-slate-300 text-xs font-medium block mb-1">Veículo</label>
                   <select
                     value={servicoForm.Veiculo}
-                    onChange={(e) => setServicoForm({ ...servicoForm, Veiculo: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                    onChange={(e) => {
+                      const selModelo = e.target.value;
+                      const selectedVeic = veiculos.find((v) => v.Modelo === selModelo);
+                      setServicoForm((prev) => ({ ...prev, Veiculo: selModelo }));
+                      if (selectedVeic?.Km_Atual && (!servicoKmDisplay || servicoKmDisplay === "0")) {
+                        setServicoKmDisplay(String(selectedVeic.Km_Atual));
+                        setServicoForm((prev) => ({ ...prev, KM: selectedVeic.Km_Atual }));
+                      }
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:border-emerald-500 outline-hidden"
                   >
                     {veiculos.map((v) => (
                       <option key={v.Id} value={v.Modelo}>
@@ -1549,7 +1608,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               </div>
 
               <div>
-                <label className="text-slate-400 block mb-1">Descrição do Serviço</label>
+                <label className="text-slate-300 text-xs font-medium block mb-1">Descrição do Serviço</label>
                 <ComboBox
                   required
                   placeholder="Ex: Troca de pastilhas de freio e alinhamento"
@@ -1559,30 +1618,30 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Grid: KM e Oficina */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">KM no Serviço</label>
+                  <label className="text-slate-300 text-xs font-medium block mb-1">KM no Serviço</label>
                   <input
-                    type="number"
-                    value={servicoForm.KM}
-                    onChange={(e) => setServicoForm({ ...servicoForm, KM: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Ex: 85200"
+                    value={servicoKmDisplay}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, "");
+                      setServicoKmDisplay(raw);
+                      setServicoForm((prev) => ({
+                        ...prev,
+                        KM: raw ? parseInt(raw, 10) : 0,
+                      }));
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono focus:border-emerald-500 outline-hidden"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">Valor Pago (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={servicoForm.Valor_Pago}
-                    onChange={(e) => setServicoForm({ ...servicoForm, Valor_Pago: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">Oficina Nome</label>
+                  <label className="text-slate-300 text-xs font-medium block mb-1">Oficina / Estabelecimento</label>
                   <ComboBox
-                    placeholder="Oficina Bosch"
+                    placeholder="Ex: Oficina Bosch, Mecânica Silva..."
                     value={servicoForm.Oficina_Nome}
                     onChange={(val) => setServicoForm({ ...servicoForm, Oficina_Nome: val })}
                     options={oficinasDisponiveis}
@@ -1590,17 +1649,95 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
+              {/* Grid: Valor (Orçado/Original) e Valor Pago */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-950/60 border border-slate-800/80 rounded-2xl">
+                <div>
+                  <label className="text-slate-300 text-xs font-medium block mb-1">
+                    Valor (Orçado / Total) (R$)
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-slate-400 font-semibold text-xs select-none">
+                      R$
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0,00"
+                      value={servicoValorDisplay}
+                      onChange={(e) => {
+                        const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                        setServicoValorDisplay(formatted);
+                        setServicoForm((prev) => ({
+                          ...prev,
+                          Valor: numeric,
+                          Valor_A_PG: numeric,
+                        }));
+                        if (!servicoValorPagoDisplay) {
+                          setServicoValorPagoDisplay(formatted);
+                          setServicoForm((prev) => ({
+                            ...prev,
+                            Valor: numeric,
+                            Valor_A_PG: numeric,
+                            Valor_Pago: numeric,
+                          }));
+                        }
+                      }}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 pl-9 text-white text-xs font-medium focus:border-emerald-500 outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-emerald-400 text-xs font-semibold block mb-1">
+                    Valor Pago (Realizado) (R$)
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-emerald-400 font-semibold text-xs select-none">
+                      R$
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0,00"
+                      value={servicoValorPagoDisplay}
+                      onChange={(e) => {
+                        const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                        setServicoValorPagoDisplay(formatted);
+                        setServicoForm((prev) => ({
+                          ...prev,
+                          Valor_Pago: numeric,
+                        }));
+                      }}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 pl-9 text-white text-xs font-bold text-emerald-400 focus:border-emerald-500 outline-hidden"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Observações */}
+              <div>
+                <label className="text-slate-300 text-xs font-medium block mb-1">
+                  Observações / Peças Trocadas
+                </label>
+                <VoiceTextArea
+                  placeholder="Ex: Trocadas pastilhas dianteiras e fluido de freio DOT4..."
+                  value={servicoForm.Observações || ""}
+                  onChange={(val) => setServicoForm({ ...servicoForm, Observações: val })}
+                  rows={2}
+                />
+              </div>
+
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsServicoModalOpen(false)}
-                  className="px-4 py-2 text-slate-400 hover:text-white"
+                  className="px-4 py-2 text-slate-400 hover:text-white text-xs font-medium transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors shadow-xs cursor-pointer"
                 >
                   Salvar Serviço
                 </button>

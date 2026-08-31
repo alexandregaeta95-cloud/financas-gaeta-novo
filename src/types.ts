@@ -213,6 +213,7 @@ export interface ServicoOficina {
   Data: string;
   Descrição: string;
   KM: number;
+  Valor?: number;
   Valor_A_PG?: number;
   Valor_Pago: number;
   Oficina_Nome?: string;

@@ -876,7 +876,10 @@ export function normalizeCategoriaCustomizada(raw: any): CategoriaCustomizada {
 export function normalizeServicoOficina(raw: any): ServicoOficina {
   if (!raw || typeof raw !== "object") return raw;
   const km = parseCurrency(raw.KM ?? raw.km ?? raw.Km_Atual ?? raw.km_atual ?? 0);
-  const valorAPg = parseCurrency(raw.Valor_A_PG ?? raw["Valor_A_PG"] ?? raw.valor_a_pg ?? 0);
+  const valor = parseCurrency(
+    raw.Valor ?? raw["Valor"] ?? raw.valor ?? raw.Valor_A_PG ?? raw["Valor_A_PG"] ?? raw.valor_a_pg ?? 0
+  );
+  const valorAPg = parseCurrency(raw.Valor_A_PG ?? raw["Valor_A_PG"] ?? raw.valor_a_pg ?? valor);
   const valorPago = parseCurrency(
     raw.Valor_Pago ?? raw["Valor_Pago"] ?? raw.valor_pago ?? raw.Valor ?? raw.valor ?? 0
   );
@@ -888,6 +891,7 @@ export function normalizeServicoOficina(raw: any): ServicoOficina {
     Data: formatDateBR(raw.Data ?? raw.data ?? ""),
     Descrição: String(desc).trim(),
     KM: km,
+    Valor: valor || valorPago,
     Valor_A_PG: valorAPg,
     Valor_Pago: valorPago,
     Oficina_Nome: raw.Oficina_Nome ?? raw["Oficina_Nome"] ?? raw.oficina ?? "",
