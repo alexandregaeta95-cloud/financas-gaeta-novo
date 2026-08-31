@@ -75,6 +75,7 @@ import {
   snoozeNotification,
   cancelSnooze,
   subscribeSnooze,
+  markCycleAsCompleted,
 } from "./services/snoozeService";
 
 export default function App() {
@@ -566,11 +567,12 @@ export default function App() {
 
   const handleDismissNotification = (id: string) => {
     stopAlarmLoop();
-    cancelSnooze(id);
+    markCycleAsCompleted(id);
     setActiveToast((current) => (current?.id === id ? null : current));
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+    checkNotifications();
   };
 
   const handleSnoozeNotification = (id: string, minutes: number) => {
@@ -582,7 +584,11 @@ export default function App() {
 
   const handleDismissAllNotifications = () => {
     stopAlarmLoop();
+    notifications.forEach((n) => {
+      markCycleAsCompleted(n.id);
+    });
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    checkNotifications();
   };
 
   const handleNavigateFromNotification = (view: ModuleView) => {

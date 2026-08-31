@@ -422,6 +422,7 @@ export interface LembreteSaudeConfig {
   Horario_2?: string;
   Horario_3?: string;
   Dias_Semana?: string;
+  Intervalo_Dias?: number | string; // Ex: 1 (todos os dias), 7 (a cada 7 dias), 15, 30
   Som_Alarme?: "SIM" | "NAO" | boolean | string;
   Ultima_Atualizacao?: string;
   // Aliases opcionais para compatibilidade interna
@@ -432,6 +433,7 @@ export interface LembreteSaudeConfig {
   horario2?: string;
   horario3?: string;
   diasSemana?: string;
+  intervaloDias?: number | string;
   somAlarme?: boolean | string;
   ultimaAtualizacao?: string;
   [key: string]: any;
@@ -499,6 +501,7 @@ export interface LembreteFinancasConfig {
   Horario_2?: string;
   Horario_3?: string;
   Dias_Semana?: string;
+  Intervalo_Dias?: number | string; // Ex: 1, 7, 15, 30
   Som_Alarme?: "SIM" | "NAO" | boolean | string;
   Ultima_Atualizacao?: string;
   // Aliases opcionais para compatibilidade interna
@@ -509,6 +512,7 @@ export interface LembreteFinancasConfig {
   horario2?: string;
   horario3?: string;
   diasSemana?: string;
+  intervaloDias?: number | string;
   somAlarme?: boolean | string;
   ultimaAtualizacao?: string;
   [key: string]: any;
@@ -522,6 +526,7 @@ export interface LembreteRemedio {
   Horario_1: string;
   Horario_2?: string;
   Horario_3?: string;
+  Intervalo_Dias?: number | string; // Ex: 1 (diário), 2 (dia sim dia não), 7 (semanal)
   Som_Alarme?: "SIM" | "NAO" | boolean | string;
   Instrucoes?: string;
   Data_Cadastro?: string;
@@ -532,6 +537,7 @@ export interface LembreteRemedio {
   horario1?: string;
   horario2?: string;
   horario3?: string;
+  intervaloDias?: number | string;
   somAlarme?: boolean | string;
   instrucoes?: string;
   dataCadastro?: string;

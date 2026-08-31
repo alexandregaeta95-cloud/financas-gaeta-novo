@@ -43,6 +43,7 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
   const [formH1, setFormH1] = useState("08:00");
   const [formH2, setFormH2] = useState("");
   const [formH3, setFormH3] = useState("");
+  const [formIntervaloDias, setFormIntervaloDias] = useState<number | string>(1);
   const [formInstrucoes, setFormInstrucoes] = useState("");
 
   const [showH2, setShowH2] = useState(false);
@@ -64,6 +65,7 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
     setFormH1("08:00");
     setFormH2("");
     setFormH3("");
+    setFormIntervaloDias(1);
     setShowH2(false);
     setShowH3(false);
     setFormInstrucoes("");
@@ -96,6 +98,7 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
     setFormH1(h1);
     setFormH2(h2);
     setFormH3(h3);
+    setFormIntervaloDias(rem.Intervalo_Dias ?? rem.intervaloDias ?? 1);
     setShowH2(!!h2);
     setShowH3(!!h3);
     setFormInstrucoes(rem.Instrucoes || rem.instrucoes || "");
@@ -178,6 +181,9 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
     const id = editingId || `REM_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const today = new Date().toISOString().split("T")[0];
 
+    const rawIntervalo = parseInt(String(formIntervaloDias), 10);
+    const validIntervalo = isNaN(rawIntervalo) || rawIntervalo < 1 ? 1 : rawIntervalo;
+
     const novoRemedio: LembreteRemedio = {
       Id: id,
       id,
@@ -191,6 +197,8 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
       horario2: cleanH2 || undefined,
       Horario_3: cleanH3 || undefined,
       horario3: cleanH3 || undefined,
+      Intervalo_Dias: validIntervalo,
+      intervaloDias: validIntervalo,
       Som_Alarme: formSom ? "SIM" : "NAO",
       somAlarme: formSom,
       Instrucoes: formInstrucoes.trim() || undefined,
@@ -408,6 +416,58 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
                         <span>+ 3º Horário</span>
                       </button>
                     )}
+                  </div>
+                </div>
+
+                {/* Recorrência em Dias (Intervalo de Dias) */}
+                <div className="pt-2 border-t border-slate-800/80">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                    <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Frequência / Intervalo de Dias</span>
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      {Number(formIntervaloDias) === 1
+                        ? "Todos os dias"
+                        : `A cada ${formIntervaloDias} dias`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5">
+                      <span className="text-xs text-slate-400">A cada</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={formIntervaloDias}
+                        onChange={(e) => setFormIntervaloDias(e.target.value)}
+                        className="w-14 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-center text-xs focus:outline-none focus:border-emerald-500"
+                      />
+                      <span className="text-xs text-slate-400">dia(s)</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {[
+                        { label: "Todo dia", val: 1 },
+                        { label: "A cada 2 dias", val: 2 },
+                        { label: "A cada 7 dias (Semanal)", val: 7 },
+                        { label: "A cada 15 dias", val: 15 },
+                        { label: "A cada 30 dias (Mensal)", val: 30 },
+                      ].map((item) => (
+                        <button
+                          key={item.val}
+                          type="button"
+                          onClick={() => setFormIntervaloDias(item.val)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                            Number(formIntervaloDias) === item.val
+                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold"
+                              : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -643,7 +703,7 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
                               )}
                             </div>
 
-                            {/* Horários */}
+                            {/* Horários e Frequência */}
                             <div className="flex items-center gap-2 flex-wrap pt-0.5">
                               <span className="text-[11px] text-slate-400 flex items-center gap-1 font-semibold">
                                 <Clock className="w-3 h-3 text-emerald-400" />
@@ -662,6 +722,13 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
                               {h3 && (
                                 <span className="px-2.5 py-1 bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 font-mono font-bold text-xs rounded-lg shadow-xs">
                                   {h3}
+                                </span>
+                              )}
+
+                              {/* Badge de Intervalo */}
+                              {rem.Intervalo_Dias && Number(rem.Intervalo_Dias) > 1 && (
+                                <span className="px-2 py-0.5 bg-slate-900 border border-slate-700 text-slate-300 text-[10px] font-semibold rounded-md">
+                                  A cada {rem.Intervalo_Dias} dias
                                 </span>
                               )}
                             </div>

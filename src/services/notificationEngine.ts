@@ -18,6 +18,7 @@ import {
 } from "../types";
 import { formatCurrency, formatarHora } from "../utils/formatters";
 import { calcularAlertasFinanceiros, getIntervalosPeriodos } from "../utils/financeAlertEngine";
+import { isCycleCompleted, isNotificationSnoozed } from "./snoozeService";
 
 // Helper: Get local date string YYYY-MM-DD (e.g. Brasilia timezone UTC-3)
 export function getLocalTodayDateStr(date: Date = new Date()): string {
@@ -579,6 +580,25 @@ export function evaluateAllNotifications({
     const rawSom = rem.Som_Alarme ?? rem.somAlarme ?? rem.Som ?? rem.som;
     const somHabilitado = rawSom !== "NAO" && rawSom !== "nao" && rawSom !== false;
 
+    // Se houver configuração de intervalo de dias (> 1 dia), verifica se hoje é o dia de disparo
+    const rawIntervalo = rem.Intervalo_Dias ?? rem.intervaloDias ?? 1;
+    const intervaloDias = parseInt(String(rawIntervalo), 10);
+    if (!isNaN(intervaloDias) && intervaloDias > 1) {
+      const dataCadastroStr = rem.Data_Cadastro || rem.dataCadastro || rem.CreatedAt || rem.createdAt || "";
+      if (dataCadastroStr) {
+        const dCadastro = new Date(dataCadastroStr.split("T")[0]);
+        const dHoje = new Date(todayLocalStr);
+        if (!isNaN(dCadastro.getTime()) && !isNaN(dHoje.getTime())) {
+          const diffTime = Math.abs(dHoje.getTime() - dCadastro.getTime());
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays % intervaloDias !== 0) {
+            // Não é o dia deste intervalo
+            return;
+          }
+        }
+      }
+    }
+
     // Extração dos horários configurados (1 a 3 horários)
     const rawHorariosSet = new Set<string>();
     const explicitCandidates = [
@@ -1074,10 +1094,22 @@ export function evaluateAllNotifications({
     }
   }
 
-  // Garante que todas as notificações do sistema tenham som/alarme repetitivo ativado por padrão
-  return list.map((item) => ({
-    ...item,
-    isAlarm: item.isAlarm !== undefined ? item.isAlarm : true,
-    soundEnabled: item.soundEnabled !== undefined ? item.soundEnabled : true,
-  }));
+  // 6. Garante som/alarme repetitivo e filtra notificações concluídas/em soneca
+  return list
+    .filter((item) => {
+      // Se este ciclo/ocorrência específico já foi concluído pelo usuário, não re-dispara
+      if (isCycleCompleted(item.id)) {
+        return false;
+      }
+      // Se estiver em soneca ativa (ex: adiado por 5, 15 ou 30 min), não exibe até acordar
+      if (isNotificationSnoozed(item.id)) {
+        return false;
+      }
+      return true;
+    })
+    .map((item) => ({
+      ...item,
+      isAlarm: item.isAlarm !== undefined ? item.isAlarm : true,
+      soundEnabled: item.soundEnabled !== undefined ? item.soundEnabled : true,
+    }));
 }

@@ -31,6 +31,7 @@ import {
   cancelSnooze,
   getSnoozeInfo,
   subscribeSnooze,
+  markCycleAsCompleted,
 } from "../services/snoozeService";
 
 interface Props {
@@ -82,15 +83,14 @@ export const NotificationCenterModal: React.FC<Props> = ({
   };
 
   const handleDismissSingle = (id: string) => {
-    if (activeAlarmId === id || isPlaying) {
-      stopAlarm();
-    }
-    cancelSnooze(id);
+    stopAlarm();
+    markCycleAsCompleted(id);
     onDismiss(id);
+    onRefreshNotifications();
   };
 
   const handleSnoozeSingle = (id: string, minutes: number) => {
-    stopAlarm(id);
+    stopAlarm();
     snoozeNotification(id, minutes);
     if (onSnooze) {
       onSnooze(id, minutes);
@@ -105,7 +105,11 @@ export const NotificationCenterModal: React.FC<Props> = ({
 
   const handleDismissAllWithAudio = () => {
     stopAlarm();
+    notifications.forEach((item) => {
+      markCycleAsCompleted(item.id);
+    });
     onDismissAll();
+    onRefreshNotifications();
   };
 
   const handleNavigateWithAudio = (view: ModuleView) => {
@@ -322,26 +326,19 @@ export const NotificationCenterModal: React.FC<Props> = ({
                     </p>
                   </div>
 
-                  {/* Ação rápida para parar o alarme se o alarme estiver tocando */}
-                  {isPlaying && (activeAlarmId === item.id || !activeAlarmId) && (
-                    <div className="mt-2.5">
-                      <button
-                        onClick={() => {
-                          stopAlarm();
-                          handleDismissSingle(item.id);
-                        }}
-                        className="w-full py-1.5 px-3 bg-rose-600/90 hover:bg-rose-500 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer"
-                      >
-                        <VolumeX className="w-3.5 h-3.5" />
-                        <span>🛑 Parar Alarme / Já vi</span>
-                      </button>
-                    </div>
-                  )}
+                  {/* Ações Rápidas: Concluir / Finalizar e Adiar */}
+                  <div className="mt-3 pt-2.5 border-t border-slate-800/80 space-y-2">
+                    <button
+                      onClick={() => handleDismissSingle(item.id)}
+                      className="w-full py-2 px-3 bg-emerald-600/90 hover:bg-emerald-500 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Concluído / Finalizada</span>
+                    </button>
 
-                  {/* Opções de Soneca no Card */}
-                  <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-2">
+                    {/* Opções de Soneca / Adiar no Card */}
                     {isSnoozed ? (
-                      <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center justify-between w-full bg-slate-900/60 p-2 rounded-xl border border-slate-800">
                         <span className="text-[11px] text-amber-300/90 flex items-center gap-1">
                           <Clock className="w-3 h-3 text-amber-400" />
                           <span>Adiado por {snoozeInfo?.durationMinutes} min</span>
@@ -355,29 +352,29 @@ export const NotificationCenterModal: React.FC<Props> = ({
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between w-full gap-2">
+                      <div className="flex items-center justify-between w-full gap-2 bg-slate-900/40 p-1.5 px-2.5 rounded-xl border border-slate-800/60">
                         <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1 shrink-0">
                           <AlarmClock className="w-3 h-3 text-amber-400" />
-                          <span>Soneca:</span>
+                          <span>Adiar:</span>
                         </span>
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => handleSnoozeSingle(item.id, 5)}
-                            className="px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
+                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
                             title="Adiar por 5 min"
                           >
                             5 min
                           </button>
                           <button
                             onClick={() => handleSnoozeSingle(item.id, 15)}
-                            className="px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
+                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
                             title="Adiar por 15 min"
                           >
                             15 min
                           </button>
                           <button
                             onClick={() => handleSnoozeSingle(item.id, 30)}
-                            className="px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
+                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
                             title="Adiar por 30 min"
                           >
                             30 min
@@ -394,14 +391,14 @@ export const NotificationCenterModal: React.FC<Props> = ({
                         className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        <span>Marcar como Calibrado Hoje</span>
+                        <span>Marcar Calibragem Feita</span>
                       </button>
                     ) : (
                       <button
                         onClick={() => handleNavigateWithAudio(item.targetView as ModuleView)}
                         className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 cursor-pointer"
                       >
-                        <span>Abrir {cat.label}</span>
+                        <span>Abrir no módulo</span>
                         <ExternalLink className="w-3 h-3" />
                       </button>
                     )}

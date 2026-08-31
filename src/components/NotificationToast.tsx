@@ -170,22 +170,22 @@ export const NotificationToast: React.FC<Props> = ({
           {notification.message}
         </p>
 
-        {/* Botão de Destaque para Parar o Alarme */}
+        {/* Ação Principal: Concluído / Finalizada (interrompe o alarme e conclui o ciclo) */}
         <button
           type="button"
           onClick={handleStopAndClose}
-          className="w-full py-2.5 px-3 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-extrabold rounded-xl shadow-lg shadow-rose-950/50 flex items-center justify-center gap-2 text-xs transition-transform active:scale-95 cursor-pointer"
+          className="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold rounded-xl shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 text-xs transition-transform active:scale-95 cursor-pointer"
         >
-          <VolumeX className="w-4 h-4" />
-          <span>🛑 PARAR ALARME / JÁ VI</span>
+          <Check className="w-4 h-4 text-emerald-200" />
+          <span>✅ CONCLUÍDO / FINALIZADA</span>
         </button>
 
-        {/* Seção de Soneca (Me lembre em 5 min, 15 min, 30 min) */}
+        {/* Seção de Soneca / Adiar (5 min, 15 min, 30 min) */}
         <div className="pt-1 space-y-1.5">
           <div className="flex items-center justify-between text-[11px] text-slate-300 font-semibold px-0.5">
             <span className="flex items-center gap-1.5 text-amber-300">
               <AlarmClock className="w-3.5 h-3.5" />
-              <span>Soneca (Me lembre em):</span>
+              <span>Adiar (Me lembre em):</span>
             </span>
           </div>
           <div className="grid grid-cols-3 gap-1.5">
@@ -232,7 +232,7 @@ export const NotificationToast: React.FC<Props> = ({
             onClick={handleStopAndClose}
             className="text-[11px] font-medium text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
           >
-            {isCurrentAlarm ? "Silenciar & Dispensar" : "Dispensar"}
+            {isCurrentAlarm ? "Silenciar & Concluir" : "Dispensar"}
           </button>
         </div>
       </div>

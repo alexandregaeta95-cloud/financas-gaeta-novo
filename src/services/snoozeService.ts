@@ -7,6 +7,7 @@
 import { stopAlarmLoop } from "./alarmSoundService";
 
 const STORAGE_KEY = "gaeta_notification_snoozes";
+const COMPLETED_CYCLES_KEY = "gaeta_notification_completed_cycles";
 
 export interface SnoozeEntry {
   id: string;
@@ -47,6 +48,76 @@ function setStoredSnoozes(snoozes: Record<string, SnoozeEntry>): void {
   } catch (e) {
     console.warn("Erro ao salvar dados de soneca no localStorage:", e);
   }
+}
+
+/**
+ * Retorna os ciclos/ocorrências de notificações já concluídas/finalizadas pelo usuário.
+ * Estrutura: { [occurrenceId: string]: timestamp_conclusao_ms }
+ */
+export function getCompletedCycles(): Record<string, number> {
+  if (typeof window === "undefined" || !window.localStorage) return {};
+  try {
+    const raw = localStorage.getItem(COMPLETED_CYCLES_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn("Erro ao ler ciclos concluídos:", e);
+    return {};
+  }
+}
+
+function setCompletedCycles(cycles: Record<string, number>): void {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    localStorage.setItem(COMPLETED_CYCLES_KEY, JSON.stringify(cycles));
+  } catch (e) {
+    console.warn("Erro ao salvar ciclos concluídos:", e);
+  }
+}
+
+/**
+ * Marca uma ocorrência de notificação como Concluída / Finalizada.
+ * Para o loop de som do alarme imediatamente e registra no armazenamento persistente
+ * para que não volte a tocar nesta mesma ocorrência/ciclo.
+ */
+export function markCycleAsCompleted(notificationId: string): void {
+  // 1. Para incondicionalmente qualquer alarme sonoro tocando
+  stopAlarmLoop();
+
+  // 2. Remove da lista de sonecas se estava adiado
+  cancelSnooze(notificationId);
+
+  // 3. Registra nos ciclos concluídos
+  const cycles = getCompletedCycles();
+  cycles[notificationId] = Date.now();
+
+  // Limpeza de ciclos mais antigos que 30 dias para não sobrecarregar localStorage
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  Object.keys(cycles).forEach((k) => {
+    if (cycles[k] < thirtyDaysAgo) {
+      delete cycles[k];
+    }
+  });
+
+  setCompletedCycles(cycles);
+
+  // Se for notificação de calibragem de pneus, registra a data de calibragem imediatamente
+  if (notificationId === "veiculos_calibragem_pneus_7dias") {
+    if (typeof localStorage !== "undefined") {
+      const todayIso = new Date().toISOString().split("T")[0];
+      localStorage.setItem("gaeta_last_tire_calibration_date", todayIso);
+    }
+  }
+
+  notifyListeners();
+}
+
+/**
+ * Verifica se uma ocorrência específica já foi marcada como Concluída.
+ */
+export function isCycleCompleted(notificationId: string): boolean {
+  const cycles = getCompletedCycles();
+  return Boolean(cycles[notificationId]);
 }
 
 /**
