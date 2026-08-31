@@ -17,6 +17,12 @@ import {
   Clock,
   AlarmClock,
   RotateCcw,
+  Sliders,
+  Moon,
+  Sparkles,
+  Layers,
+  Eye,
+  SlidersHorizontal,
 } from "lucide-react";
 import { AppNotification } from "../types";
 import { ModuleView } from "./Navigation";
@@ -33,6 +39,10 @@ import {
   subscribeSnooze,
   markCycleAsCompleted,
 } from "../services/snoozeService";
+import {
+  useNotificationAppearance,
+  DEFAULT_NOTIFICATION_APPEARANCE,
+} from "../utils/notificationAppearance";
 
 interface Props {
   isOpen: boolean;
@@ -56,6 +66,8 @@ export const NotificationCenterModal: React.FC<Props> = ({
   onSnooze,
 }) => {
   const { isPlaying, activeAlarmId, alarmTitle, stopAlarm } = useAlarmSound();
+  const { config, updateConfig, resetConfig, backgroundStyle } = useNotificationAppearance();
+  const [activeTab, setActiveTab] = useState<"notifications" | "appearance">("notifications");
   const [, setSnoozeTick] = useState(0);
 
   // Escuta alterações no estado de soneca
@@ -191,6 +203,38 @@ export const NotificationCenterModal: React.FC<Props> = ({
           </button>
         </div>
 
+        {/* Tabs: Notificações vs Ajuste de Tom & Opacidade */}
+        <div className="flex items-center px-4 sm:px-5 pt-3 pb-2 gap-2 bg-slate-950/80 border-b border-slate-800">
+          <button
+            onClick={() => setActiveTab("notifications")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+              activeTab === "notifications"
+                ? "bg-emerald-600 text-white shadow-sm shadow-emerald-950"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+            }`}
+          >
+            <Bell className="w-3.5 h-3.5" />
+            <span>Alertas Ativos</span>
+            {notifications.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 bg-slate-900/60 rounded-full text-[10px] font-mono">
+                {notifications.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab("appearance")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+              activeTab === "appearance"
+                ? "bg-emerald-600 text-white shadow-sm shadow-emerald-950"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Ajustar Tom & Opacidade</span>
+          </button>
+        </div>
+
         {/* Banner de Alarme Sonoro Repetitivo Ativo */}
         {isPlaying && (
           <div className="p-3 sm:px-5 bg-rose-500/20 border-b border-rose-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-pulse">
@@ -254,167 +298,398 @@ export const NotificationCenterModal: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Body Notification List */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
-          {notifications.length === 0 ? (
-            <div className="py-12 text-center space-y-3">
-              <div className="w-14 h-14 mx-auto rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <CheckCircle2 className="w-7 h-7" />
+        {/* Content Body: Alertas Ativos OU Ajustes de Tom e Opacidade */}
+        {activeTab === "appearance" ? (
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+            {/* Header explicativo */}
+            <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300 space-y-1">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+                <Sliders className="w-4 h-4" />
+                <span>Controle de Tom & Opacidade das Notificações</span>
               </div>
-              <div>
-                <h3 className="font-bold text-sm text-white">
-                  Tudo em dia por aqui!
-                </h3>
-                <p className="text-xs text-slate-400 max-w-xs mx-auto mt-1">
-                  Nenhum vencimento, consulta ou compromisso urgente para hoje.
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Deslize as barras abaixo para regular o tom escuro do fundo e o nível de transparência/opacidade dos alertas e popups em tempo real.
+              </p>
+            </div>
+
+            {/* Painel de Pré-visualização em Tempo Real */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                <span className="flex items-center gap-1.5 text-emerald-400">
+                  <Eye className="w-4 h-4" />
+                  <span>Pré-visualização do Cartão em Tempo Real</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  Tom: {config.darkness}% • Opacidade: {config.opacity}%
+                </span>
+              </div>
+
+              {/* Cartão de Exemplo Dinâmico */}
+              <div
+                style={backgroundStyle}
+                className="p-4 rounded-2xl border-2 border-slate-700/80 shadow-2xl text-xs space-y-3 transition-all ring-1 ring-slate-800"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-emerald-400 shrink-0">
+                      <BellRing className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block leading-tight">
+                        Exemplo de Alerta Noturno
+                      </span>
+                      <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                        Demonstração Visual
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                    Ao Vivo
+                  </span>
+                </div>
+
+                <p className="text-slate-100 text-xs leading-relaxed font-normal">
+                  Este é o visual exato com o tom de fundo e opacidade que você está ajustando no slider abaixo.
                 </p>
+
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-emerald-400">
+                    Ação Demonstrativa
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    {config.darkness >= 95 ? "Preto Puro OLED" : config.darkness >= 70 ? "Escuro Intenso" : "Slate Suave"}
+                  </span>
+                </div>
               </div>
             </div>
-          ) : (
-            notifications.map((item) => {
-              const cat = getCategoryInfo(item.type);
-              const CatIcon = cat.icon;
-              const isUrgent = item.severity === "urgent";
-              const snoozeInfo = getSnoozeInfo(item.id);
-              const isSnoozed = Boolean(snoozeInfo);
 
-              return (
-                <div
-                  key={item.id}
-                  className={`p-3.5 rounded-2xl border transition-all ${
-                    isUrgent
-                      ? "bg-rose-950/20 border-rose-500/40 hover:border-rose-500/60"
-                      : "bg-slate-950 border-slate-800 hover:border-slate-700"
+            {/* Sliders Container */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-5">
+              {/* Slider 1: Tom / Escurecimento */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-white flex items-center gap-2">
+                    <Moon className="w-4 h-4 text-indigo-400" />
+                    <span>Tom do Fundo (Escurecimento)</span>
+                  </label>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-indigo-950/80 border border-indigo-700/50 text-indigo-300 text-[11px] font-bold font-mono">
+                    {config.darkness}% {config.darkness >= 95 ? "• Preto Puro OLED" : config.darkness >= 70 ? "• Escuro Profundo" : config.darkness >= 40 ? "• Slate 950" : "• Slate 900"}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={config.darkness}
+                  onChange={(e) => updateConfig({ darkness: Number(e.target.value) })}
+                  className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-400"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 font-medium px-0.5">
+                  <span>0% (Slate 900)</span>
+                  <span>50% (Slate 950)</span>
+                  <span>100% (Preto Puro OLED)</span>
+                </div>
+              </div>
+
+              {/* Slider 2: Opacidade */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-white flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-emerald-400" />
+                    <span>Opacidade do Fundo (Transparência vs Sólido)</span>
+                  </label>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-emerald-950/80 border border-emerald-700/50 text-emerald-300 text-[11px] font-bold font-mono">
+                    {config.opacity}% {config.opacity >= 98 ? "• 100% Sólido" : config.opacity >= 75 ? "• Alta Opacidade" : "• Translúcido"}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="30"
+                  max="100"
+                  step="1"
+                  value={config.opacity}
+                  onChange={(e) => updateConfig({ opacity: Number(e.target.value) })}
+                  className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-400"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 font-medium px-0.5">
+                  <span>30% (Translúcido / Vidro)</span>
+                  <span>70% (Semi-opaco)</span>
+                  <span>100% (Totalmente Sólido)</span>
+                </div>
+              </div>
+
+              {/* Slider 3: Desfoque / Blur de Fundo */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>Desfoque de Fundo (Backdrop Blur)</span>
+                  </label>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-amber-950/80 border border-amber-700/50 text-amber-300 text-[11px] font-bold font-mono">
+                    {config.blur}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="24"
+                  step="1"
+                  value={config.blur}
+                  onChange={(e) => updateConfig({ blur: Number(e.target.value) })}
+                  className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-400"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 font-medium px-0.5">
+                  <span>0px (Nenhum)</span>
+                  <span>12px (Suave)</span>
+                  <span>24px (Máximo)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Presets Rápidos */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-300 block">
+                  Atalhos Rápidos de Tom:
+                </label>
+                <button
+                  type="button"
+                  onClick={resetConfig}
+                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Restaurar valores padrão"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Restaurar Padrão</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ darkness: 100, opacity: 100, blur: 0 })}
+                  className={`p-2.5 rounded-xl bg-black border text-left transition-all cursor-pointer group ${
+                    config.darkness === 100 && config.opacity === 100
+                      ? "border-emerald-500 ring-2 ring-emerald-500/30"
+                      : "border-slate-800 hover:border-slate-700"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${cat.color}`}
+                  <span className="font-bold text-white text-xs block group-hover:text-emerald-400">
+                    🌌 Preto OLED
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">100% Escuro / 100% Opaco</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ darkness: 85, opacity: 98, blur: 12 })}
+                  className={`p-2.5 rounded-xl bg-slate-950 border text-left transition-all cursor-pointer group ${
+                    config.darkness === 85 && config.opacity === 98
+                      ? "border-emerald-500 ring-2 ring-emerald-500/30"
+                      : "border-slate-800 hover:border-slate-700"
+                  }`}
+                >
+                  <span className="font-bold text-white text-xs block group-hover:text-emerald-400">
+                    🌑 Noturno
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">85% Escuro / 98% Opaco</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ darkness: 50, opacity: 92, blur: 12 })}
+                  className={`p-2.5 rounded-xl bg-slate-900 border text-left transition-all cursor-pointer group ${
+                    config.darkness === 50 && config.opacity === 92
+                      ? "border-emerald-500 ring-2 ring-emerald-500/30"
+                      : "border-slate-800 hover:border-slate-700"
+                  }`}
+                >
+                  <span className="font-bold text-white text-xs block group-hover:text-emerald-400">
+                    🪐 Slate Padrão
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">50% Escuro / 92% Opaco</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ darkness: 60, opacity: 65, blur: 16 })}
+                  className={`p-2.5 rounded-xl bg-slate-900/60 backdrop-blur-md border text-left transition-all cursor-pointer group ${
+                    config.darkness === 60 && config.opacity === 65
+                      ? "border-emerald-500 ring-2 ring-emerald-500/30"
+                      : "border-slate-800 hover:border-slate-700"
+                  }`}
+                >
+                  <span className="font-bold text-white text-xs block group-hover:text-emerald-400">
+                    🌫️ Translúcido
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">60% Escuro / 65% Opaco</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+            {notifications.length === 0 ? (
+              <div className="py-12 text-center space-y-3">
+                <div className="w-14 h-14 mx-auto rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <CheckCircle2 className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">
+                    Tudo em dia por aqui!
+                  </h3>
+                  <p className="text-xs text-slate-400 max-w-xs mx-auto mt-1">
+                    Nenhum vencimento, consulta ou compromisso urgente para hoje.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              notifications.map((item) => {
+                const cat = getCategoryInfo(item.type);
+                const CatIcon = cat.icon;
+                const isUrgent = item.severity === "urgent";
+                const snoozeInfo = getSnoozeInfo(item.id);
+                const isSnoozed = Boolean(snoozeInfo);
+
+                return (
+                  <div
+                    key={item.id}
+                    style={backgroundStyle}
+                    className={`p-3.5 rounded-2xl border transition-all ${
+                      isUrgent
+                        ? "border-rose-500/60 hover:border-rose-500 ring-1 ring-rose-500/30"
+                        : "border-slate-800 hover:border-slate-700 ring-1 ring-slate-800/60"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${cat.color}`}
+                        >
+                          <CatIcon className="w-3 h-3" />
+                          {cat.label}
+                        </span>
+                        {isUrgent && (
+                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-rose-600 text-white tracking-wide">
+                            Urgente
+                          </span>
+                        )}
+                        {isSnoozed && snoozeInfo && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <AlarmClock className="w-3 h-3 text-amber-400" />
+                            <span>Soneca até {snoozeInfo.snoozedUntilFormatted} ({snoozeInfo.remainingMinutes} min)</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => handleDismissSingle(item.id)}
+                        className="text-slate-500 hover:text-slate-300 p-1 cursor-pointer"
+                        title="Dispensar"
                       >
-                        <CatIcon className="w-3 h-3" />
-                        {cat.label}
-                      </span>
-                      {isUrgent && (
-                        <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-rose-600 text-white tracking-wide">
-                          Urgente
-                        </span>
-                      )}
-                      {isSnoozed && snoozeInfo && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                          <AlarmClock className="w-3 h-3 text-amber-400" />
-                          <span>Soneca até {snoozeInfo.snoozedUntilFormatted} ({snoozeInfo.remainingMinutes} min)</span>
-                        </span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="mt-2 space-y-1">
+                      <h4 className="font-bold text-xs text-white">
+                        {item.title}
+                      </h4>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        {item.message}
+                      </p>
+                    </div>
+
+                    {/* Ações Rápidas: Concluir / Finalizar e Adiar */}
+                    <div className="mt-3 pt-2.5 border-t border-slate-800/80 space-y-2">
+                      <button
+                        onClick={() => handleDismissSingle(item.id)}
+                        className="w-full py-2 px-3 bg-emerald-600/90 hover:bg-emerald-500 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Concluído / Finalizada</span>
+                      </button>
+
+                      {/* Opções de Soneca / Adiar no Card */}
+                      {isSnoozed ? (
+                        <div className="flex items-center justify-between w-full bg-slate-900/60 p-2 rounded-xl border border-slate-800">
+                          <span className="text-[11px] text-amber-300/90 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-400" />
+                            <span>Adiado por {snoozeInfo?.durationMinutes} min</span>
+                          </span>
+                          <button
+                            onClick={() => handleCancelSnooze(item.id)}
+                            className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg text-[10px] font-bold border border-amber-500/40 flex items-center gap-1 cursor-pointer"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span>Despertar agora</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between w-full gap-2 bg-slate-900/40 p-1.5 px-2.5 rounded-xl border border-slate-800/60">
+                          <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1 shrink-0">
+                            <AlarmClock className="w-3 h-3 text-amber-400" />
+                            <span>Adiar:</span>
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleSnoozeSingle(item.id, 5)}
+                              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
+                              title="Adiar por 5 min"
+                            >
+                              5 min
+                            </button>
+                            <button
+                              onClick={() => handleSnoozeSingle(item.id, 15)}
+                              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
+                              title="Adiar por 15 min"
+                            >
+                              15 min
+                            </button>
+                            <button
+                              onClick={() => handleSnoozeSingle(item.id, 30)}
+                              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
+                              title="Adiar por 30 min"
+                            >
+                              30 min
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
 
-                    <button
-                      onClick={() => handleDismissSingle(item.id)}
-                      className="text-slate-500 hover:text-slate-300 p-1 cursor-pointer"
-                      title="Dispensar"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <div className="mt-2 space-y-1">
-                    <h4 className="font-bold text-xs text-white">
-                      {item.title}
-                    </h4>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      {item.message}
-                    </p>
-                  </div>
-
-                  {/* Ações Rápidas: Concluir / Finalizar e Adiar */}
-                  <div className="mt-3 pt-2.5 border-t border-slate-800/80 space-y-2">
-                    <button
-                      onClick={() => handleDismissSingle(item.id)}
-                      className="w-full py-2 px-3 bg-emerald-600/90 hover:bg-emerald-500 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Concluído / Finalizada</span>
-                    </button>
-
-                    {/* Opções de Soneca / Adiar no Card */}
-                    {isSnoozed ? (
-                      <div className="flex items-center justify-between w-full bg-slate-900/60 p-2 rounded-xl border border-slate-800">
-                        <span className="text-[11px] text-amber-300/90 flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-amber-400" />
-                          <span>Adiado por {snoozeInfo?.durationMinutes} min</span>
-                        </span>
+                    <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                      {item.id === "veiculos_calibragem_pneus_7dias" ? (
                         <button
-                          onClick={() => handleCancelSnooze(item.id)}
-                          className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg text-[10px] font-bold border border-amber-500/40 flex items-center gap-1 cursor-pointer"
+                          onClick={handleCalibrationCheck}
+                          className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 cursor-pointer"
                         >
-                          <RotateCcw className="w-3 h-3" />
-                          <span>Despertar agora</span>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Marcar Calibragem Feita</span>
                         </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between w-full gap-2 bg-slate-900/40 p-1.5 px-2.5 rounded-xl border border-slate-800/60">
-                        <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1 shrink-0">
-                          <AlarmClock className="w-3 h-3 text-amber-400" />
-                          <span>Adiar:</span>
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleSnoozeSingle(item.id, 5)}
-                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
-                            title="Adiar por 5 min"
-                          >
-                            5 min
-                          </button>
-                          <button
-                            onClick={() => handleSnoozeSingle(item.id, 15)}
-                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
-                            title="Adiar por 15 min"
-                          >
-                            15 min
-                          </button>
-                          <button
-                            onClick={() => handleSnoozeSingle(item.id, 30)}
-                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-lg text-slate-200 hover:text-amber-300 font-bold text-[10px] transition-colors cursor-pointer"
-                            title="Adiar por 30 min"
-                          >
-                            30 min
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      ) : (
+                        <button
+                          onClick={() => handleNavigateWithAudio(item.targetView as ModuleView)}
+                          className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 cursor-pointer"
+                        >
+                          <span>Abrir no módulo</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      )}
 
-                  <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                    {item.id === "veiculos_calibragem_pneus_7dias" ? (
                       <button
-                        onClick={handleCalibrationCheck}
-                        className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 cursor-pointer"
+                        onClick={() => handleDismissSingle(item.id)}
+                        className="text-[10px] text-slate-500 hover:text-slate-300 cursor-pointer"
                       >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Marcar Calibragem Feita</span>
+                        Dispensar
                       </button>
-                    ) : (
-                      <button
-                        onClick={() => handleNavigateWithAudio(item.targetView as ModuleView)}
-                        className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 cursor-pointer"
-                      >
-                        <span>Abrir no módulo</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => handleDismissSingle(item.id)}
-                      className="text-[10px] text-slate-500 hover:text-slate-300 cursor-pointer"
-                    >
-                      Dispensar
-                    </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+                );
+              })
+            )}
+          </div>
+        )}
 
         {/* Footer */}
         {notifications.length > 0 && (

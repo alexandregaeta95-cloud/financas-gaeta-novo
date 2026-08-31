@@ -20,6 +20,7 @@ import { AppNotification } from "../types";
 import { ModuleView } from "./Navigation";
 import { useAlarmSound } from "../hooks/useAlarmSound";
 import { snoozeNotification } from "../services/snoozeService";
+import { useNotificationAppearance } from "../utils/notificationAppearance";
 
 interface Props {
   notification: AppNotification | null;
@@ -37,6 +38,7 @@ export const NotificationToast: React.FC<Props> = ({
   onDismiss,
 }) => {
   const { isPlaying, activeAlarmId, triggerAlarm, stopAlarm } = useAlarmSound();
+  const { backgroundStyle } = useNotificationAppearance();
 
   const isCurrentAlarm =
     Boolean(notification?.isAlarm) ||
@@ -127,7 +129,8 @@ export const NotificationToast: React.FC<Props> = ({
   return (
     <div className="fixed top-4 right-4 z-50 max-w-sm w-[calc(100vw-2rem)] sm:w-96 animate-in slide-in-from-top-3 fade-in duration-200">
       <div
-        className={`p-4 rounded-2xl border-2 bg-slate-950 text-xs space-y-3 ${getBorderColor()}`}
+        style={backgroundStyle}
+        className={`p-4 rounded-2xl border-2 text-xs space-y-3 ${getBorderColor()}`}
       >
         {/* Banner do Alarme Sonoro Repetitivo */}
         {isCurrentAlarm && (
