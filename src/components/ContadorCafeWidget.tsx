@@ -107,33 +107,28 @@ export const ContadorCafeWidget: React.FC<Props> = ({
     return filteredList.reduce((acc, curr) => acc + (curr.quantidade || 1), 0);
   }, [filteredList]);
 
-  // Quick 1-click +1 Coffee
-  const handleQuickAddOne = async () => {
-    setIsQuickAdding(true);
-    try {
-      const now = new Date();
-      const currentHours = String(now.getHours()).padStart(2, "0");
-      const currentMinutes = String(now.getMinutes()).padStart(2, "0");
-      const hora = `${currentHours}:${currentMinutes}`;
+  // Quick 1-click +1 coffee
+  const handleQuickAddOne = () => {
+    const now = new Date();
+    const currentHours = String(now.getHours()).padStart(2, "0");
+    const currentMinutes = String(now.getMinutes()).padStart(2, "0");
+    const hora = `${currentHours}:${currentMinutes}`;
 
-      const newCafe: ConsumoCafe = {
-        id: `CAFE_${Date.now()}`,
-        Id: `CAFE_${Date.now()}`,
-        data: todayStr,
-        Data: todayStr,
-        hora,
-        Hora: hora,
-        quantidade: 1,
-        Quantidade: 1,
-        observacoes: undefined,
-        dataCriacao: now.toISOString(),
-        Data_Criacao: now.toISOString(),
-      };
+    const newCafe: ConsumoCafe = {
+      id: `CAFE_${Date.now()}`,
+      Id: `CAFE_${Date.now()}`,
+      data: todayStr,
+      Data: todayStr,
+      hora,
+      Hora: hora,
+      quantidade: 1,
+      Quantidade: 1,
+      observacoes: undefined,
+      dataCriacao: now.toISOString(),
+      Data_Criacao: now.toISOString(),
+    };
 
-      await onSaveCafe(newCafe);
-    } finally {
-      setIsQuickAdding(false);
-    }
+    onSaveCafe(newCafe);
   };
 
   const handleOpenEdit = (item: ConsumoCafe) => {
@@ -146,9 +141,9 @@ export const ContadorCafeWidget: React.FC<Props> = ({
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    await onDeleteCafe(id);
+  const handleDelete = (id: string) => {
     setDeleteConfirmId(null);
+    onDeleteCafe(id);
   };
 
   return (

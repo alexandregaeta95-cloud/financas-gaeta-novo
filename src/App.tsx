@@ -292,8 +292,8 @@ export default function App() {
       return {
         id: "CONFIG_AGUA",
         Id: "CONFIG_AGUA",
-        metaDiariaMl: Number(cfg.metaDiariaMl || cfg.Meta_Diaria_Ml || 2500),
-        tamanhoCopoMl: Number(cfg.tamanhoCopoMl || cfg.Tamanho_Copo_Ml || 500),
+        metaDiariaMl: Number(cfg.metaDiariaMl || cfg.Meta_Diaria_Ml || cfg.Meta_Diária_Ml || cfg.Meta_Diaria || cfg.Meta || cfg.meta || 2500),
+        tamanhoCopoMl: Number(cfg.tamanhoCopoMl || cfg.Tamanho_Copo_Ml || cfg.Tamanho_Copo || cfg.Copo_Ml || cfg.Copo || cfg.copo || 500),
       };
     }
     return {
@@ -699,8 +699,8 @@ export default function App() {
               setConfigAgua({
                 id: "CONFIG_AGUA",
                 Id: "CONFIG_AGUA",
-                metaDiariaMl: Number(cfg.metaDiariaMl || cfg.Meta_Diaria_Ml || 2500),
-                tamanhoCopoMl: Number(cfg.tamanhoCopoMl || cfg.Tamanho_Copo_Ml || 500),
+                metaDiariaMl: Number(cfg.metaDiariaMl || cfg.Meta_Diaria_Ml || cfg.Meta_Diária_Ml || cfg.Meta_Diaria || cfg.Meta || cfg.meta || 2500),
+                tamanhoCopoMl: Number(cfg.tamanhoCopoMl || cfg.Tamanho_Copo_Ml || cfg.Tamanho_Copo || cfg.Copo_Ml || cfg.Copo || cfg.copo || 500),
               });
             }
             const logs = data.filter((item) => item.id !== "CONFIG_AGUA" && item.Id !== "CONFIG_AGUA");
@@ -892,8 +892,14 @@ export default function App() {
       const targetView: AppNotification["targetView"] =
         sheetName === SHEET_NAMES.LISTA_MERCADO
           ? "lista_mercado"
-          : sheetName === SHEET_NAMES.CONTROLE_SAUDE
+          : sheetName === SHEET_NAMES.CONTROLE_SAUDE ||
+            sheetName === SHEET_NAMES.CONSUMO_CAFE ||
+            sheetName === SHEET_NAMES.CONSUMO_AGUA
           ? "saude"
+          : sheetName === SHEET_NAMES.VEICULOS ||
+            sheetName === SHEET_NAMES.OFICINA ||
+            sheetName === SHEET_NAMES.MANUTENCOES_AGENDADAS
+          ? "veiculos"
           : "lancamentos";
       showRollbackToast(
         `⚠️ Falha ao sincronizar`,
@@ -927,8 +933,14 @@ export default function App() {
       const targetView: AppNotification["targetView"] =
         sheetName === SHEET_NAMES.LISTA_MERCADO
           ? "lista_mercado"
-          : sheetName === SHEET_NAMES.CONTROLE_SAUDE
+          : sheetName === SHEET_NAMES.CONTROLE_SAUDE ||
+            sheetName === SHEET_NAMES.CONSUMO_CAFE ||
+            sheetName === SHEET_NAMES.CONSUMO_AGUA
           ? "saude"
+          : sheetName === SHEET_NAMES.VEICULOS ||
+            sheetName === SHEET_NAMES.OFICINA ||
+            sheetName === SHEET_NAMES.MANUTENCOES_AGENDADAS
+          ? "veiculos"
           : "lancamentos";
       showRollbackToast(
         `⚠️ Falha ao excluir item`,
@@ -988,6 +1000,7 @@ export default function App() {
   };
 
   const handleSaveConfigAgua = async (config: ConfigAgua) => {
+    const previousConfig = configAgua;
     setConfigAgua(config);
     try {
       const configItem = {
@@ -995,16 +1008,27 @@ export default function App() {
         id: "CONFIG_AGUA",
         Meta_Diaria_Ml: config.metaDiariaMl,
         metaDiariaMl: config.metaDiariaMl,
+        Meta_Diaria: config.metaDiariaMl,
+        Meta: config.metaDiariaMl,
         Tamanho_Copo_Ml: config.tamanhoCopoMl,
         tamanhoCopoMl: config.tamanhoCopoMl,
+        Tamanho_Copo: config.tamanhoCopoMl,
+        Copo: config.tamanhoCopoMl,
         Data_Criacao: config.dataCriacao || new Date().toISOString(),
         dataCriacao: config.dataCriacao || new Date().toISOString(),
         Observacoes: "CONFIG_USUARIO",
       };
       await saveSheetRecords(SHEET_NAMES.CONSUMO_AGUA, [configItem], "UPSERT");
     } catch (err: any) {
-      console.error("Erro ao salvar configurações de água na planilha:", err);
-      alert(`Erro ao salvar configurações de água na planilha: ${err.message || err}`);
+      console.error("Erro ao salvar configurações de água na planilha (Rollback):", err);
+      if (previousConfig) {
+        setConfigAgua(previousConfig);
+      }
+      showRollbackToast(
+        "⚠️ Falha ao salvar configurações de água",
+        `Não foi possível salvar na planilha. A alteração foi desfeita. (${err?.message || "Erro de conexão"})`,
+        "saude"
+      );
     }
   };
 

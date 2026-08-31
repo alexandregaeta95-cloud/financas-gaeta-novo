@@ -402,7 +402,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     setIsVeiculoModalOpen(true);
   };
 
-  const handleSaveVeiculoSubmit = async (e: React.FormEvent) => {
+  const handleSaveVeiculoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const item: Veiculo = {
       Id: editingVeiculo?.Id || generateNewId("VEIC"),
@@ -419,8 +419,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Km_Atual: parseCurrency(veiculoForm.Km_Atual),
       Ativo: veiculoForm.Ativo !== false,
     };
-    await onSaveVeiculo(item);
     setIsVeiculoModalOpen(false);
+    onSaveVeiculo(item);
   };
 
   // Open Oficina Modal
@@ -456,7 +456,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     setIsServicoModalOpen(true);
   };
 
-  const handleSaveServicoSubmit = async (e: React.FormEvent) => {
+  const handleSaveServicoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const kmNum = servicoKmDisplay ? parseInt(servicoKmDisplay.replace(/\D/g, ""), 10) || 0 : (parseCurrency(servicoForm.KM) || 0);
     const valorNum = parseCurrency(servicoValorDisplay) || parseCurrency(servicoForm.Valor) || 0;
@@ -475,8 +475,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Observações: servicoForm.Observações || "",
       Veiculo: servicoForm.Veiculo || veiculos[0]?.Modelo || "CARRO",
     };
-    await onSaveServico(item);
     setIsServicoModalOpen(false);
+    onSaveServico(item);
   };
 
   // Open Manutenção Modal
@@ -539,7 +539,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     }));
   };
 
-  const handleSaveManutencaoSubmit = async (e: React.FormEvent) => {
+  const handleSaveManutencaoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const item: ManutencaoAgendada = {
       Id: editingManutencao?.Id || generateNewId("MANUT"),
@@ -561,12 +561,12 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Oficina_Nome: manutencaoForm.Oficina_Nome || "",
       Observações: manutencaoForm.Observações || "",
     };
-    await onSaveManutencao(item);
     setIsManutencaoModalOpen(false);
+    onSaveManutencao(item);
   };
 
   // Realizar / Concluir Manutenção Hoje e Avançar Ciclo
-  const handleCompleteManutencaoToday = async (m: ManutencaoAgendada) => {
+  const handleCompleteManutencaoToday = (m: ManutencaoAgendada) => {
     const todayStr = new Date().toISOString().split("T")[0];
     const relatedVeic = veiculos.find(
       (v) => v.Modelo === m.Veículo || v.Placa === m.Veículo || v.Id === m.Veículo
@@ -588,7 +588,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         : m.Data_Alvo;
       const nextKm = freqKm > 0 ? currentKm + freqKm : m.KM_Alvo;
 
-      await onSaveManutencao({
+      onSaveManutencao({
         ...m,
         Data_Ultima_Realizacao: todayStr,
         KM_Ultima_Realizacao: currentKm,
@@ -598,7 +598,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       });
     } else {
       // Pontual
-      await onSaveManutencao({
+      onSaveManutencao({
         ...m,
         Data_Ultima_Realizacao: todayStr,
         KM_Ultima_Realizacao: currentKm,
@@ -1382,36 +1382,28 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setDeleteConfirm(null)}
-                disabled={isDeleting}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition-colors"
               >
                 Cancelar
               </button>
               <button
                 type="button"
-                onClick={async () => {
+                onClick={() => {
                   if (!deleteConfirm) return;
-                  setIsDeleting(true);
-                  try {
-                    if (deleteConfirm.type === "veiculo") {
-                      await onDeleteVeiculo(deleteConfirm.id);
-                    } else if (deleteConfirm.type === "servico") {
-                      await onDeleteServico(deleteConfirm.id);
-                    } else if (deleteConfirm.type === "manutencao") {
-                      await onDeleteManutencao(deleteConfirm.id);
-                    }
-                    setDeleteConfirm(null);
-                  } catch (err) {
-                    console.error("Erro ao excluir registro:", err);
-                  } finally {
-                    setIsDeleting(false);
+                  const { type, id } = deleteConfirm;
+                  setDeleteConfirm(null);
+                  if (type === "veiculo") {
+                    onDeleteVeiculo(id);
+                  } else if (type === "servico") {
+                    onDeleteServico(id);
+                  } else if (type === "manutencao") {
+                    onDeleteManutencao(id);
                   }
                 }}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-rose-950/40"
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-rose-950/40 cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>{isDeleting ? "Excluindo..." : "Confirmar Exclusão"}</span>
+                <span>Confirmar Exclusão</span>
               </button>
             </div>
           </div>

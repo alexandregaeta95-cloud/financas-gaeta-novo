@@ -143,7 +143,7 @@ export const RegistroCafeModal: React.FC<Props> = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!data) {
       setError("Por favor, informe a data do registro.");
@@ -161,56 +161,47 @@ export const RegistroCafeModal: React.FC<Props> = ({
       return;
     }
 
-    setIsSaving(true);
-    setError(null);
+    const now = new Date();
+    const currentHours = String(now.getHours()).padStart(2, "0");
+    const currentMinutes = String(now.getMinutes()).padStart(2, "0");
+    const finalHora = hora.trim() || `${currentHours}:${currentMinutes}`;
 
-    try {
-      const now = new Date();
-      const currentHours = String(now.getHours()).padStart(2, "0");
-      const currentMinutes = String(now.getMinutes()).padStart(2, "0");
-      const finalHora = hora.trim() || `${currentHours}:${currentMinutes}`;
+    const qtd = parsedQtd;
+    const parsedCal = calorias.trim() !== "" ? Math.round(Number(calorias.replace(",", "."))) : undefined;
+    const parsedProt = proteinas.trim() !== "" ? Number(Number(proteinas.replace(",", ".")).toFixed(1)) : undefined;
+    const parsedCarb = carboidratos.trim() !== "" ? Number(Number(carboidratos.replace(",", ".")).toFixed(1)) : undefined;
+    const parsedGord = gorduras.trim() !== "" ? Number(Number(gorduras.replace(",", ".")).toFixed(1)) : undefined;
 
-      const qtd = parsedQtd;
-      const parsedCal = calorias.trim() !== "" ? Math.round(Number(calorias.replace(",", "."))) : undefined;
-      const parsedProt = proteinas.trim() !== "" ? Number(Number(proteinas.replace(",", ".")).toFixed(1)) : undefined;
-      const parsedCarb = carboidratos.trim() !== "" ? Number(Number(carboidratos.replace(",", ".")).toFixed(1)) : undefined;
-      const parsedGord = gorduras.trim() !== "" ? Number(Number(gorduras.replace(",", ".")).toFixed(1)) : undefined;
+    const totalCal = parsedCal !== undefined && parsedCal > 0 ? Math.round(parsedCal * qtd) : undefined;
+    const totalProt = parsedProt !== undefined && parsedProt > 0 ? Number((parsedProt * qtd).toFixed(1)) : undefined;
+    const totalCarb = parsedCarb !== undefined && parsedCarb > 0 ? Number((parsedCarb * qtd).toFixed(1)) : undefined;
+    const totalGord = parsedGord !== undefined && parsedGord > 0 ? Number((parsedGord * qtd).toFixed(1)) : undefined;
 
-      const totalCal = parsedCal !== undefined && parsedCal > 0 ? Math.round(parsedCal * qtd) : undefined;
-      const totalProt = parsedProt !== undefined && parsedProt > 0 ? Number((parsedProt * qtd).toFixed(1)) : undefined;
-      const totalCarb = parsedCarb !== undefined && parsedCarb > 0 ? Number((parsedCarb * qtd).toFixed(1)) : undefined;
-      const totalGord = parsedGord !== undefined && parsedGord > 0 ? Number((parsedGord * qtd).toFixed(1)) : undefined;
+    const itemToSave: ConsumoCafe = {
+      id: initialData?.id || `CAFE_${Date.now()}`,
+      Id: initialData?.id || `CAFE_${Date.now()}`,
+      data,
+      Data: data,
+      hora: finalHora,
+      Hora: finalHora,
+      quantidade: qtd,
+      Quantidade: qtd,
+      calorias: totalCal,
+      Calorias: totalCal,
+      proteinas: totalProt,
+      Proteinas: totalProt,
+      carboidratos: totalCarb,
+      Carboidratos: totalCarb,
+      gorduras: totalGord,
+      Gorduras: totalGord,
+      observacoes: observacoes.trim().toUpperCase() || undefined,
+      Observacoes: observacoes.trim().toUpperCase() || undefined,
+      dataCriacao: initialData?.dataCriacao || new Date().toISOString(),
+      Data_Criacao: initialData?.dataCriacao || new Date().toISOString(),
+    };
 
-      const itemToSave: ConsumoCafe = {
-        id: initialData?.id || `CAFE_${Date.now()}`,
-        Id: initialData?.id || `CAFE_${Date.now()}`,
-        data,
-        Data: data,
-        hora: finalHora,
-        Hora: finalHora,
-        quantidade: qtd,
-        Quantidade: qtd,
-        calorias: totalCal,
-        Calorias: totalCal,
-        proteinas: totalProt,
-        Proteinas: totalProt,
-        carboidratos: totalCarb,
-        Carboidratos: totalCarb,
-        gorduras: totalGord,
-        Gorduras: totalGord,
-        observacoes: observacoes.trim().toUpperCase() || undefined,
-        Observacoes: observacoes.trim().toUpperCase() || undefined,
-        dataCriacao: initialData?.dataCriacao || new Date().toISOString(),
-        Data_Criacao: initialData?.dataCriacao || new Date().toISOString(),
-      };
-
-      await onSave(itemToSave);
-      onClose();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao salvar o registro de café.");
-    } finally {
-      setIsSaving(false);
-    }
+    onClose();
+    onSave(itemToSave);
   };
 
   return (

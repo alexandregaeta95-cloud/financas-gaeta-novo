@@ -124,32 +124,27 @@ export const ContadorAguaWidget: React.FC<Props> = ({
   }, [filteredList]);
 
   // Quick 1-click +[tamanhoCopoMl] water
-  const handleQuickAdd = async (mlToAdd: number = tamanhoCopoMl) => {
-    setIsQuickAdding(true);
-    try {
-      const now = new Date();
-      const currentHours = String(now.getHours()).padStart(2, "0");
-      const currentMinutes = String(now.getMinutes()).padStart(2, "0");
-      const hora = `${currentHours}:${currentMinutes}`;
+  const handleQuickAdd = (mlToAdd: number = tamanhoCopoMl) => {
+    const now = new Date();
+    const currentHours = String(now.getHours()).padStart(2, "0");
+    const currentMinutes = String(now.getMinutes()).padStart(2, "0");
+    const hora = `${currentHours}:${currentMinutes}`;
 
-      const newAgua: ConsumoAgua = {
-        id: `AGUA_${Date.now()}`,
-        Id: `AGUA_${Date.now()}`,
-        data: todayStr,
-        Data: todayStr,
-        hora,
-        Hora: hora,
-        quantidadeMl: mlToAdd,
-        Quantidade_Ml: mlToAdd,
-        observacoes: undefined,
-        dataCriacao: now.toISOString(),
-        Data_Criacao: now.toISOString(),
-      };
+    const newAgua: ConsumoAgua = {
+      id: `AGUA_${Date.now()}`,
+      Id: `AGUA_${Date.now()}`,
+      data: todayStr,
+      Data: todayStr,
+      hora,
+      Hora: hora,
+      quantidadeMl: mlToAdd,
+      Quantidade_Ml: mlToAdd,
+      observacoes: undefined,
+      dataCriacao: now.toISOString(),
+      Data_Criacao: now.toISOString(),
+    };
 
-      await onSaveAgua(newAgua);
-    } finally {
-      setIsQuickAdding(false);
-    }
+    onSaveAgua(newAgua);
   };
 
   const handleOpenEdit = (item: ConsumoAgua) => {
@@ -162,9 +157,9 @@ export const ContadorAguaWidget: React.FC<Props> = ({
     setIsRegistroModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    await onDeleteAgua(id);
+  const handleDelete = (id: string) => {
     setDeleteConfirmId(null);
+    onDeleteAgua(id);
   };
 
   // Helper formatting for ml vs L

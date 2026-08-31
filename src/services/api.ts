@@ -1012,13 +1012,26 @@ export async function saveSheetRecords<T = any>(
         const copoVal = Math.max(50, Math.round(Number(parseCurrency(rawCopo)) || 500));
         const criacaoVal = String(item.Data_Criacao || item.data_criacao || item.dataCriacao || new Date().toISOString()).trim();
 
-        // Canonical columns for CONFIG row
+        // Canonical columns and alias compatibility for CONFIG row
         enriched["Id"] = "CONFIG_AGUA";
         enriched["Data"] = "";
         enriched["Hora"] = "";
         enriched["Quantidade_Ml"] = "";
         enriched["Meta_Diaria_Ml"] = metaVal;
+        enriched["Meta_Diária_Ml"] = metaVal;
+        enriched["Meta_Diaria"] = metaVal;
+        enriched["Meta_Diária"] = metaVal;
+        enriched["Meta"] = metaVal;
+        enriched["Meta_Ml"] = metaVal;
+        enriched["metaDiariaMl"] = metaVal;
+
         enriched["Tamanho_Copo_Ml"] = copoVal;
+        enriched["Tamanho_Copo"] = copoVal;
+        enriched["Tamanho_do_Copo"] = copoVal;
+        enriched["Tamanho_Do_Copo"] = copoVal;
+        enriched["Copo_Ml"] = copoVal;
+        enriched["Copo"] = copoVal;
+        enriched["tamanhoCopoMl"] = copoVal;
         enriched["Observacoes"] = "CONFIG_USUARIO";
         enriched["Data_Criacao"] = criacaoVal;
       } else {
@@ -1050,7 +1063,7 @@ export async function saveSheetRecords<T = any>(
         enriched["Data_Criacao"] = criacaoVal;
       }
 
-      // Delete all camelCase and alternate duplicate keys
+      // Delete alternate duplicate keys that shouldn't pollute the payload
       delete enriched.id;
       delete enriched.data;
       delete enriched.hora;
@@ -1064,14 +1077,6 @@ export async function saveSheetRecords<T = any>(
       delete enriched.Ml;
       delete enriched.qtdMl;
       delete enriched.Qtd_Ml;
-      delete enriched.metaDiariaMl;
-      delete enriched.meta_diaria_ml;
-      delete enriched.meta;
-      delete enriched.Meta;
-      delete enriched.tamanhoCopoMl;
-      delete enriched.tamanho_copo_ml;
-      delete enriched.copo;
-      delete enriched.Copo;
       delete enriched.observacoes;
       delete enriched["Observações"];
       delete enriched.observações;

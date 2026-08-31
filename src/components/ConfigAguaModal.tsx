@@ -47,7 +47,7 @@ export const ConfigAguaModal: React.FC<Props> = ({
   const tamanhoCopoMl = parseInt(tamanhoCopoInput, 10) || 0;
   const metaDiariaMl = parseInt(metaDiariaInput, 10) || 0;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const parsedCopo = parseInt(tamanhoCopoInput, 10);
@@ -63,28 +63,19 @@ export const ConfigAguaModal: React.FC<Props> = ({
       return;
     }
 
-    setIsSaving(true);
-    setError(null);
+    const configToSave: ConfigAgua = {
+      id: "CONFIG_AGUA",
+      Id: "CONFIG_AGUA",
+      metaDiariaMl: parsedMeta,
+      Meta_Diaria_Ml: parsedMeta,
+      tamanhoCopoMl: parsedCopo,
+      Tamanho_Copo_Ml: parsedCopo,
+      dataCriacao: currentConfig?.dataCriacao || new Date().toISOString(),
+      Data_Criacao: currentConfig?.dataCriacao || new Date().toISOString(),
+    };
 
-    try {
-      const configToSave: ConfigAgua = {
-        id: "CONFIG_AGUA",
-        Id: "CONFIG_AGUA",
-        metaDiariaMl: parsedMeta,
-        Meta_Diaria_Ml: parsedMeta,
-        tamanhoCopoMl: parsedCopo,
-        Tamanho_Copo_Ml: parsedCopo,
-        dataCriacao: currentConfig?.dataCriacao || new Date().toISOString(),
-        Data_Criacao: currentConfig?.dataCriacao || new Date().toISOString(),
-      };
-
-      await onSaveConfig(configToSave);
-      onClose();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao salvar as configurações de hidratação.");
-    } finally {
-      setIsSaving(false);
-    }
+    onClose();
+    onSaveConfig(configToSave);
   };
 
   const coposPorDia = tamanhoCopoMl > 0 ? (metaDiariaMl / tamanhoCopoMl).toFixed(1) : "0";

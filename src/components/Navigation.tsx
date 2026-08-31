@@ -94,7 +94,7 @@ export const Navigation: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <nav className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80 overflow-x-auto max-w-3xl">
+          <nav className="flex items-center gap-1 bg-slate-950 p-1.5 rounded-xl border border-slate-800/80 overflow-x-auto max-w-4xl">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeView === item.id;
@@ -102,13 +102,13 @@ export const Navigation: React.FC<Props> = ({
                 <button
                   key={item.id}
                   onClick={() => onSelectView(item.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                     isActive
-                      ? "bg-emerald-600 text-white shadow-xs"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                      ? "bg-emerald-600 text-white font-semibold shadow-xs"
+                      : "text-slate-300 hover:text-white hover:bg-slate-900"
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-4 h-4" />
                   <span>{item.label}</span>
                 </button>
               );

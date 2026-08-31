@@ -454,7 +454,18 @@ function writeSheetRecords(ss, sheetName, items, action) {
     { key: "Batimentos", label: "Batimentos_Bpm" },
     { key: "bpm", label: "Batimentos_Bpm" },
     { key: "Bpm", label: "Batimentos_Bpm" },
-    { key: "BPM", label: "Batimentos_Bpm" }
+    { key: "BPM", label: "Batimentos_Bpm" },
+    { key: "Meta_Diaria_Ml", label: "Meta_Diaria_Ml" },
+    { key: "Meta_Diária_Ml", label: "Meta_Diaria_Ml" },
+    { key: "Meta_Diaria", label: "Meta_Diaria_Ml" },
+    { key: "Meta_Diária", label: "Meta_Diaria_Ml" },
+    { key: "metaDiariaMl", label: "Meta_Diaria_Ml" },
+    { key: "Tamanho_Copo_Ml", label: "Tamanho_Copo_Ml" },
+    { key: "Tamanho_Copo", label: "Tamanho_Copo_Ml" },
+    { key: "Tamanho_do_Copo", label: "Tamanho_Copo_Ml" },
+    { key: "Tamanho_Do_Copo", label: "Tamanho_Copo_Ml" },
+    { key: "Copo_Ml", label: "Tamanho_Copo_Ml" },
+    { key: "tamanhoCopoMl", label: "Tamanho_Copo_Ml" }
   ];
 
   // Garantir também que qualquer cabeçalho oficial da aba seja adicionado se enviado nos itens

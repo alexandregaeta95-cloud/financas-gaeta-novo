@@ -76,7 +76,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
 
   const currentQtdNumber = parseInt(quantidadeInput, 10) || 0;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!data) {
       setError("Por favor, informe a data do registro.");
@@ -94,37 +94,28 @@ export const RegistroAguaModal: React.FC<Props> = ({
       return;
     }
 
-    setIsSaving(true);
-    setError(null);
+    const now = new Date();
+    const currentHours = String(now.getHours()).padStart(2, "0");
+    const currentMinutes = String(now.getMinutes()).padStart(2, "0");
+    const finalHora = hora.trim() || `${currentHours}:${currentMinutes}`;
 
-    try {
-      const now = new Date();
-      const currentHours = String(now.getHours()).padStart(2, "0");
-      const currentMinutes = String(now.getMinutes()).padStart(2, "0");
-      const finalHora = hora.trim() || `${currentHours}:${currentMinutes}`;
+    const itemToSave: ConsumoAgua = {
+      id: initialData?.id || `AGUA_${Date.now()}`,
+      Id: initialData?.id || `AGUA_${Date.now()}`,
+      data,
+      Data: data,
+      hora: finalHora,
+      Hora: finalHora,
+      quantidadeMl: parsedQtd,
+      Quantidade_Ml: parsedQtd,
+      observacoes: observacoes.trim().toUpperCase() || undefined,
+      Observacoes: observacoes.trim().toUpperCase() || undefined,
+      dataCriacao: initialData?.dataCriacao || new Date().toISOString(),
+      Data_Criacao: initialData?.dataCriacao || new Date().toISOString(),
+    };
 
-      const itemToSave: ConsumoAgua = {
-        id: initialData?.id || `AGUA_${Date.now()}`,
-        Id: initialData?.id || `AGUA_${Date.now()}`,
-        data,
-        Data: data,
-        hora: finalHora,
-        Hora: finalHora,
-        quantidadeMl: parsedQtd,
-        Quantidade_Ml: parsedQtd,
-        observacoes: observacoes.trim().toUpperCase() || undefined,
-        Observacoes: observacoes.trim().toUpperCase() || undefined,
-        dataCriacao: initialData?.dataCriacao || new Date().toISOString(),
-        Data_Criacao: initialData?.dataCriacao || new Date().toISOString(),
-      };
-
-      await onSave(itemToSave);
-      onClose();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao salvar o registro de água.");
-    } finally {
-      setIsSaving(false);
-    }
+    onClose();
+    onSave(itemToSave);
   };
 
   return (
