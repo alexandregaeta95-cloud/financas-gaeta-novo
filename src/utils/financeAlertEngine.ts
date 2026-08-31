@@ -156,7 +156,7 @@ export function calcularAlertasFinanceiros(
 
     const isDesp = isDespesaAtiva(l);
     const isRec = isReceitaAtiva(l);
-    const cat = (l.Categoria || "Outros").trim();
+    const cat = String(l.Categoria || "Outros").trim();
 
     if (isDesp) {
       // Agregação histórica diária
@@ -223,13 +223,13 @@ export function calcularAlertasFinanceiros(
   // Helper para verificar se a categoria ofensora estourou meta no mês
   const checkMetaEstourada = (categoriaNome?: string) => {
     if (!categoriaNome || !metas || metas.length === 0) return undefined;
-    const catNorm = categoriaNome.toUpperCase().trim();
+    const catNorm = String(categoriaNome).toUpperCase().trim();
     const metaObj = metas.find(
       (m) =>
         m.Categoria &&
-        (m.Categoria.toUpperCase().trim() === catNorm ||
-          catNorm.includes(m.Categoria.toUpperCase().trim())) &&
-        (!m.Mes_Ano || m.Mes_Ano === mesAnoAtual)
+        (String(m.Categoria).toUpperCase().trim() === catNorm ||
+          catNorm.includes(String(m.Categoria).toUpperCase().trim())) &&
+        (!m.Mes_Ano || String(m.Mes_Ano) === mesAnoAtual)
     );
 
     if (!metaObj) return undefined;

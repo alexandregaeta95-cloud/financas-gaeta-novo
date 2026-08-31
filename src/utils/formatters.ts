@@ -319,9 +319,9 @@ export function normalizeLancamento(raw: any): Lancamento {
     else tipo = tUpper;
   }
 
-  let categoria = (
+  let categoria = String(
     raw.Categoria ?? raw.categoria ?? (tipo === "ABASTECIMENTO" ? "ABASTECIMENTO" : "Outros")
-  ) as string;
+  ).trim();
 
   // Migração automática segura: identifica "UBER" ou "99" na Descrição e preenche a Categoria
   const descUpper = String(desc || "").trim().toUpperCase();

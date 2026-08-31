@@ -164,7 +164,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
     e.preventDefault();
     const item: MetaCategoria = {
       Id: editingMeta?.Id || generateNewId("META"),
-      Categoria: (metaForm.Categoria || "OUTROS").toUpperCase(),
+      Categoria: String(metaForm.Categoria || "OUTROS").toUpperCase(),
       Valor_Meta: parseCurrency(metaForm.Valor_Meta),
       Mes_Ano: `${selectedYear}-${selectedMonth}`,
       Alerta_Porcentagem: parseCurrency(metaForm.Alerta_Porcentagem) || 80,

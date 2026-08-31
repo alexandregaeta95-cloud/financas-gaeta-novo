@@ -968,17 +968,17 @@ export const LancamentosView: React.FC<Props> = ({
     })
     .filter((item) => {
       if (selectedCategoriaFilter !== "ALL") {
-        return (item.Categoria || "").toUpperCase() === selectedCategoriaFilter.toUpperCase();
+        return String(item.Categoria || "").toUpperCase() === selectedCategoriaFilter.toUpperCase();
       }
       return true;
     })
     .filter((item) => isDateInPeriod(item.Data))
     .filter(
       (item) =>
-        (item.Descricao || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.Categoria || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.Conta || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.Cartao || "").toLowerCase().includes(searchTerm.toLowerCase())
+        String(item.Descricao || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        String(item.Categoria || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        String(item.Conta || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        String(item.Cartao || "").toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
       const dateA = parseDateSafely(a.Data)?.getTime() || 0;
