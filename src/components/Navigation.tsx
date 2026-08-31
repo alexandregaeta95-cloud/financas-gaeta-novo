@@ -19,12 +19,14 @@ import {
   VolumeX,
   TrendingUp,
   BarChart3,
+  FileText,
 } from "lucide-react";
 import { useAlarmSound } from "../hooks/useAlarmSound";
 
 export type ModuleView =
   | "dashboard"
   | "indicadores"
+  | "relatorios"
   | "lancamentos"
   | "analise_corridas"
   | "painel_contas"
@@ -60,6 +62,7 @@ export const Navigation: React.FC<Props> = ({
   const navItems: { id: ModuleView; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: "dashboard", label: "Início", icon: LayoutDashboard },
     { id: "indicadores", label: "Indicadores", icon: BarChart3 },
+    { id: "relatorios", label: "Relatórios", icon: FileText },
     { id: "lancamentos", label: "Finanças", icon: Receipt },
     { id: "analise_corridas", label: "Uber/99", icon: TrendingUp },
     { id: "painel_contas", label: "Painel Contas", icon: Clock },

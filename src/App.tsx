@@ -21,6 +21,7 @@ import { IndicacoesPostosView } from "./components/IndicacoesPostosView";
 import { PainelContasView } from "./components/PainelContasView";
 import { AnaliseCorridasView } from "./components/AnaliseCorridasView";
 import { IndicadoresView } from "./components/IndicadoresView";
+import { RelatoriosView } from "./components/RelatoriosView";
 import { NotificationCenterModal } from "./components/NotificationCenterModal";
 import { NotificationToast } from "./components/NotificationToast";
 import { BiometricLockScreen } from "./components/BiometricLockScreen";
@@ -1076,6 +1077,19 @@ export default function App() {
           <IndicadoresView
             onNavigate={setActiveView}
             lancamentos={lancamentos}
+          />
+        )}
+
+        {activeView === "relatorios" && (
+          <RelatoriosView
+            metas={metas}
+            lancamentos={lancamentos}
+            registrosSaude={registrosSaude}
+            exercicios={exercicios}
+            alturaUsuario={alturaUsuario}
+            lembretesConfigs={lembretesSaude}
+            consultas={consultas}
+            receitas={receitas}
           />
         )}
 

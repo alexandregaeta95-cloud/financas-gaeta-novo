@@ -14,6 +14,7 @@ import {
   Fingerprint,
   ShieldCheck,
   BarChart3,
+  FileText,
 } from "lucide-react";
 import { Lancamento, Abastecimento, Veiculo, SyncState, MetaCategoria } from "../types";
 import { ModuleView } from "./Navigation";
@@ -253,7 +254,7 @@ export const Dashboard: React.FC<Props> = ({
       </div>
 
       {/* Quick Action Buttons */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5 sm:gap-3">
         <button
           onClick={() => onNavigate("lancamentos")}
           className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-all shadow-md active:scale-95 text-center cursor-pointer"
@@ -268,6 +269,14 @@ export const Dashboard: React.FC<Props> = ({
         >
           <BarChart3 className="w-4 h-4 shrink-0" />
           <span className="truncate">Indicadores</span>
+        </button>
+
+        <button
+          onClick={() => onNavigate("relatorios")}
+          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-purple-300 font-semibold rounded-xl text-xs border border-purple-500/30 transition-all active:scale-95 text-center cursor-pointer"
+        >
+          <FileText className="w-4 h-4 shrink-0" />
+          <span className="truncate">Relatórios</span>
         </button>
 
         <button
