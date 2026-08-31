@@ -20,6 +20,7 @@ import { ListaMercadoView } from "./components/ListaMercadoView";
 import { IndicacoesPostosView } from "./components/IndicacoesPostosView";
 import { PainelContasView } from "./components/PainelContasView";
 import { AnaliseCorridasView } from "./components/AnaliseCorridasView";
+import { IndicadoresView } from "./components/IndicadoresView";
 import { NotificationCenterModal } from "./components/NotificationCenterModal";
 import { NotificationToast } from "./components/NotificationToast";
 import { BiometricLockScreen } from "./components/BiometricLockScreen";
@@ -1068,6 +1069,13 @@ export default function App() {
             onOpenSetup={() => setIsSetupModalOpen(true)}
             onOpenSecurity={() => setIsSecurityModalOpen(true)}
             isBiometricsActive={isBiometricsActive}
+          />
+        )}
+
+        {activeView === "indicadores" && (
+          <IndicadoresView
+            onNavigate={setActiveView}
+            lancamentos={lancamentos}
           />
         )}
 
