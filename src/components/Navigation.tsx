@@ -17,12 +17,14 @@ import {
   Fingerprint,
   Volume2,
   VolumeX,
+  TrendingUp,
 } from "lucide-react";
 import { useAlarmSound } from "../hooks/useAlarmSound";
 
 export type ModuleView =
   | "dashboard"
   | "lancamentos"
+  | "analise_corridas"
   | "painel_contas"
   | "abastecimentos"
   | "indicacoes_postos"
@@ -56,6 +58,7 @@ export const Navigation: React.FC<Props> = ({
   const navItems: { id: ModuleView; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: "dashboard", label: "Início", icon: LayoutDashboard },
     { id: "lancamentos", label: "Finanças", icon: Receipt },
+    { id: "analise_corridas", label: "Uber/99", icon: TrendingUp },
     { id: "painel_contas", label: "Painel Contas", icon: Clock },
     { id: "abastecimentos", label: "Abastecer", icon: Fuel },
     { id: "indicacoes_postos", label: "Postos", icon: Fuel },

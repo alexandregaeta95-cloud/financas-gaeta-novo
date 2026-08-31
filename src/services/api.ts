@@ -540,6 +540,22 @@ export async function saveSheetRecords<T = any>(
       enriched["Observacoes"] = upperVal;
     }
 
+    // Hora / Horário mapping
+    if (
+      item.Hora !== undefined ||
+      item["Hora"] !== undefined ||
+      item.Horario !== undefined ||
+      item["Horário"] !== undefined ||
+      item["Horario"] !== undefined
+    ) {
+      const valHora = String(
+        item.Hora ?? item["Hora"] ?? item.Horario ?? item["Horário"] ?? item["Horario"] ?? ""
+      ).trim();
+      enriched["Hora"] = valHora;
+      enriched["Horario"] = valHora;
+      enriched["Horário"] = valHora;
+    }
+
     // 20_Controle_Saude biometric mappings (Canonical Title_Case ONLY)
     if (
       sheetName === SHEET_NAMES.CONTROLE_SAUDE ||

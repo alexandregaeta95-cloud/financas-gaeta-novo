@@ -327,6 +327,7 @@ export const LancamentosView: React.FC<Props> = ({
   // Form State
   const [formData, setFormData] = useState<Partial<Lancamento>>({
     Data: new Date().toISOString().split("T")[0],
+    Hora: "",
     Tipo: initialFuelingMode ? "ABASTECIMENTO" : "DESPESA",
     Categoria: initialFuelingMode ? "ABASTECIMENTO" : "Alimentação",
     Descricao: "",
@@ -375,6 +376,8 @@ export const LancamentosView: React.FC<Props> = ({
       ? ["ABASTECIMENTO"]
       : isReceita
       ? [
+          "UBER",
+          "99",
           "SALÁRIO",
           "INVESTIMENTOS",
           "RENDIMENTOS",
@@ -478,6 +481,7 @@ export const LancamentosView: React.FC<Props> = ({
     const defM = defV?.Motorista ? defV.Motorista.trim() : "";
     setFormData({
       Data: new Date().toISOString().split("T")[0],
+      Hora: "",
       Tipo: isFuel ? "ABASTECIMENTO" : "DESPESA",
       Categoria: isFuel ? "ABASTECIMENTO" : "Alimentação",
       Descricao: "",
@@ -518,8 +522,13 @@ export const LancamentosView: React.FC<Props> = ({
       : isReceitaItem(item)
       ? "RECEITA"
       : "DESPESA";
+    
+    // Extrai horário se disponível
+    const extractedHora = item.Hora || (item.Data_Hora && item.Data_Hora.includes("T") ? item.Data_Hora.split("T")[1].slice(0, 5) : "") || "";
+
     setFormData({
       ...item,
+      Hora: extractedHora,
       Tipo: rawTipo,
       Completou_O_Tanque: item.Completou_O_Tanque || "SIM",
       Localizacao_Do_Posto: item.Localizacao_Do_Posto || "",
@@ -673,6 +682,7 @@ export const LancamentosView: React.FC<Props> = ({
         const itemToSave: Lancamento = {
           Id: editingItem.Id,
           Data: formData.Data || new Date().toISOString().split("T")[0],
+          Hora: formData.Hora ? String(formData.Hora).trim() : undefined,
           Tipo: isFuel ? "ABASTECIMENTO" : (formData.Tipo ? String(formData.Tipo).toUpperCase() : "DESPESA"),
           Categoria: finalCategoria,
           Subcategoria: formData.Subcategoria || "",
@@ -725,6 +735,7 @@ export const LancamentosView: React.FC<Props> = ({
         const itemToSave: Lancamento = {
           Id: generateNewId("LANC"),
           Data: formData.Data || new Date().toISOString().split("T")[0],
+          Hora: formData.Hora ? String(formData.Hora).trim() : undefined,
           Tipo: isFuel ? "ABASTECIMENTO" : (formData.Tipo ? String(formData.Tipo).toUpperCase() : "DESPESA"),
           Categoria: finalCategoria,
           Subcategoria: formData.Subcategoria || "",
@@ -1520,9 +1531,14 @@ export const LancamentosView: React.FC<Props> = ({
                         )}
                       </div>
 
-                      {/* Linha 2: Data • Conta / Cartão • Forma de Pagamento */}
+                      {/* Linha 2: Data • Hora (se houver) • Conta / Cartão • Forma de Pagamento */}
                       <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
                         <span>{item.Data}</span>
+                        {item.Hora && (
+                          <span className="font-mono text-emerald-400 font-medium px-1 py-0.2 bg-emerald-500/10 rounded border border-emerald-500/20">
+                            🕒 {item.Hora}
+                          </span>
+                        )}
                         <span>•</span>
                         <span className="text-slate-300 truncate max-w-[120px] sm:max-w-[180px]">{item.Conta || item.Cartao || "Principal"}</span>
                         {item.Forma_Pagamento && (
@@ -1792,7 +1808,7 @@ export const LancamentosView: React.FC<Props> = ({
 
             {/* Modal Scrollable Form Body */}
             <form id="lancamento-form" onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto flex-1 overscroll-contain space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-slate-400 text-xs mb-1">Tipo</label>
                   <select
@@ -1821,6 +1837,18 @@ export const LancamentosView: React.FC<Props> = ({
                     onChange={(e) => setFormData({ ...formData, Data: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-emerald-500"
                     required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 text-xs mb-1">
+                    Horário <span className="text-slate-500 font-normal">(Opcional)</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.Hora || ""}
+                    onChange={(e) => setFormData({ ...formData, Hora: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>

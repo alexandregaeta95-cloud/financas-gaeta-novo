@@ -319,9 +319,43 @@ export function normalizeLancamento(raw: any): Lancamento {
     else tipo = tUpper;
   }
 
-  const categoria = (
+  let categoria = (
     raw.Categoria ?? raw.categoria ?? (tipo === "ABASTECIMENTO" ? "ABASTECIMENTO" : "Outros")
   ) as string;
+
+  // Migração automática segura: identifica "UBER" ou "99" na Descrição e preenche a Categoria
+  const descUpper = String(desc || "").trim().toUpperCase();
+  const catUpper = String(categoria || "").trim().toUpperCase();
+  const isReceita = tipo === "RECEITA";
+
+  if (isReceita || !catUpper || catUpper === "OUTROS" || catUpper === "RECEITA" || catUpper === "RECEITAS" || catUpper === "GERAL" || catUpper === "CORRIDAS") {
+    const isUberMatch = /\bUBER\b/i.test(descUpper) || descUpper.includes("UBER");
+    const is99Match = /\b99\b/i.test(descUpper) || descUpper.includes("99POP") || descUpper.includes("99APP") || descUpper.includes("99 MOTORISTA") || descUpper.includes("CORRIDA 99") || descUpper.includes("99 CORRIDA") || descUpper.includes("99");
+
+    if (isUberMatch && catUpper !== "UBER" && catUpper !== "99") {
+      categoria = "UBER";
+    } else if (is99Match && catUpper !== "99" && catUpper !== "UBER") {
+      categoria = "99";
+    }
+  }
+
+  // Horário Opcional (HH:mm)
+  const rawHora = String(
+    raw.Hora ??
+      raw.hora ??
+      raw.Horario ??
+      raw.horario ??
+      raw["Horário"] ??
+      raw["Horario"] ??
+      ""
+  ).trim();
+  let hora = rawHora;
+  if (!hora && raw.Data_Hora && String(raw.Data_Hora).includes("T")) {
+    const parts = String(raw.Data_Hora).split("T")[1];
+    if (parts && parts.length >= 5) {
+      hora = parts.slice(0, 5);
+    }
+  }
 
   const data = formatDateBR(raw.Data ?? raw.data ?? new Date().toISOString().split("T")[0]);
 
@@ -394,6 +428,7 @@ export function normalizeLancamento(raw: any): Lancamento {
     ...raw,
     Id: String(raw.Id || ""),
     Data: data,
+    Hora: hora || undefined,
     Tipo: tipo,
     Categoria: categoria,
     Subcategoria: raw.Subcategoria ?? raw.subcategoria ?? "",

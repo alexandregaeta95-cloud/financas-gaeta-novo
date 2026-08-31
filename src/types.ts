@@ -7,6 +7,7 @@
 export interface Lancamento {
   Id: string;
   Data: string; // YYYY-MM-DD
+  Hora?: string; // HH:mm (horário opcional da corrida / transação)
   Tipo:
     | "DESPESA"
     | "RECEITA"
