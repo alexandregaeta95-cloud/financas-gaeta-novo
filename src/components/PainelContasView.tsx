@@ -6,8 +6,14 @@ import {
   PieChart as PieChartIcon,
   Calendar,
   X,
+  BarChart3,
+  FileText,
+  TrendingUp,
+  Fuel,
+  Car,
 } from "lucide-react";
 import { Lancamento } from "../types";
+import { ModuleView } from "./Navigation";
 import { parseCurrency, formatCurrency, isLancamentoExcluded } from "../utils/formatters";
 
 type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
@@ -15,6 +21,7 @@ type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
 interface Props {
   lancamentos: Lancamento[];
   onSaveLancamento: (lancamento: Lancamento) => Promise<void>;
+  onNavigate?: (view: ModuleView) => void;
 }
 
 function parseDateSafely(dateStr?: string | null): Date | null {
@@ -37,7 +44,11 @@ function parseDateSafely(dateStr?: string | null): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancamento }) => {
+export const PainelContasView: React.FC<Props> = ({
+  lancamentos,
+  onSaveLancamento,
+  onNavigate,
+}) => {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("CURRENT_MONTH");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -185,6 +196,51 @@ export const PainelContasView: React.FC<Props> = ({ lancamentos, onSaveLancament
           </div>
         </div>
       </div>
+
+      {/* Quick Action Shortcuts Grid */}
+      {onNavigate && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+          <button
+            onClick={() => onNavigate("indicadores")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-teal-300 font-semibold rounded-xl text-xs border border-teal-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <BarChart3 className="w-4 h-4 shrink-0" />
+            <span className="truncate">Indicadores</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("relatorios")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-purple-300 font-semibold rounded-xl text-xs border border-purple-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <FileText className="w-4 h-4 shrink-0" />
+            <span className="truncate">Relatórios</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("analise_corridas")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-semibold rounded-xl text-xs border border-emerald-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <TrendingUp className="w-4 h-4 shrink-0" />
+            <span className="truncate">Análise Uber / 99</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("abastecimentos")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold rounded-xl text-xs border border-amber-500/20 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <Fuel className="w-4 h-4 shrink-0" />
+            <span className="truncate">Abastecimento</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("veiculos")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 transition-all shadow-xs active:scale-95 text-center cursor-pointer col-span-2 sm:col-span-1"
+          >
+            <Car className="w-4 h-4 shrink-0" />
+            <span className="truncate">Veículos</span>
+          </button>
+        </div>
+      )}
 
       {/* Custom Period Date Range Pickers (shown when periodFilter === "CUSTOM") */}
       {periodFilter === "CUSTOM" && (

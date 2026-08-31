@@ -61,11 +61,11 @@ export const Navigation: React.FC<Props> = ({
 
   const navItems: { id: ModuleView; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: "dashboard", label: "Início", icon: LayoutDashboard },
+    { id: "painel_contas", label: "Painel", icon: Clock },
     { id: "indicadores", label: "Indicadores", icon: BarChart3 },
     { id: "relatorios", label: "Relatórios", icon: FileText },
     { id: "lancamentos", label: "Finanças", icon: Receipt },
     { id: "analise_corridas", label: "Uber/99", icon: TrendingUp },
-    { id: "painel_contas", label: "Painel Contas", icon: Clock },
     { id: "abastecimentos", label: "Abastecer", icon: Fuel },
     { id: "indicacoes_postos", label: "Postos", icon: Fuel },
     { id: "veiculos", label: "Veículos", icon: Car },

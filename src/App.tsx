@@ -1155,6 +1155,7 @@ export default function App() {
           <PainelContasView
             lancamentos={lancamentos}
             onSaveLancamento={handleSaveLancamento}
+            onNavigate={setActiveView}
           />
         )}
 

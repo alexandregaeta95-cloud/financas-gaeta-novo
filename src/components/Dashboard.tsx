@@ -254,59 +254,19 @@ export const Dashboard: React.FC<Props> = ({
       </div>
 
       {/* Quick Action Buttons */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
         <button
           onClick={() => onNavigate("lancamentos")}
-          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-all shadow-md active:scale-95 text-center cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 p-3 sm:p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-md active:scale-95 text-center cursor-pointer"
         >
           <PlusCircle className="w-4 h-4 shrink-0" />
           <span className="truncate">Novo Lançamento</span>
         </button>
 
-        <button
-          onClick={() => onNavigate("indicadores")}
-          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-teal-300 font-semibold rounded-xl text-xs border border-teal-500/30 transition-all active:scale-95 text-center cursor-pointer"
-        >
-          <BarChart3 className="w-4 h-4 shrink-0" />
-          <span className="truncate">Indicadores</span>
-        </button>
-
-        <button
-          onClick={() => onNavigate("relatorios")}
-          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-purple-300 font-semibold rounded-xl text-xs border border-purple-500/30 transition-all active:scale-95 text-center cursor-pointer"
-        >
-          <FileText className="w-4 h-4 shrink-0" />
-          <span className="truncate">Relatórios</span>
-        </button>
-
-        <button
-          onClick={() => onNavigate("analise_corridas")}
-          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-semibold rounded-xl text-xs border border-emerald-500/30 transition-all active:scale-95 text-center cursor-pointer"
-        >
-          <TrendingUp className="w-4 h-4 shrink-0" />
-          <span className="truncate">Análise Uber / 99</span>
-        </button>
-
-        <button
-          onClick={() => onNavigate("lancamentos")}
-          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold rounded-xl text-xs border border-amber-500/20 transition-all active:scale-95 text-center cursor-pointer"
-        >
-          <Fuel className="w-4 h-4 shrink-0" />
-          <span className="truncate">Abastecimento</span>
-        </button>
-
-        <button
-          onClick={() => onNavigate("veiculos")}
-          className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 transition-all active:scale-95 text-center cursor-pointer"
-        >
-          <Car className="w-4 h-4 shrink-0" />
-          <span className="truncate">Veículos</span>
-        </button>
-
         {onOpenSecurity && (
           <button
             onClick={onOpenSecurity}
-            className={`w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 text-center cursor-pointer ${
+            className={`w-full flex items-center justify-center gap-2 p-3 sm:p-3.5 rounded-xl text-xs sm:text-sm font-semibold border transition-all active:scale-95 text-center cursor-pointer ${
               isBiometricsActive
                 ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
                 : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
