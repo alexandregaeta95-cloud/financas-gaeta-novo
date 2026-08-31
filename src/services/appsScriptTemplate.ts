@@ -42,7 +42,9 @@ var SHEET_NAMES = [
   "22_Config_Lembretes_Saude",
   "23_Exercicios",
   "24_Consumo_Cafe",
-  "25_Consumo_Agua"
+  "25_Consumo_Agua",
+  "26_Config_Lembretes_Financas",
+  "27_Lembretes_Remedios"
 ];
 
 // Mapeamento de cabeçalhos por aba
@@ -95,7 +97,9 @@ var HEADERS_BY_SHEET = {
   "22_Config_Lembretes_Saude": ["Id", "Tipo", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Dias_Semana", "Ultima_Atualizacao"],
   "23_Exercicios": ["Id", "Data", "Hora", "Tipo_Exercicio", "Duracao_Minutos", "Calorias_Queimadas", "Intensidade", "Observacoes", "Data_Criacao"],
   "24_Consumo_Cafe": ["Id", "Data", "Hora", "Quantidade", "Calorias", "Proteinas", "Carboidratos", "Gorduras", "Observacoes", "Data_Criacao"],
-  "25_Consumo_Agua": ["Id", "Data", "Hora", "Quantidade_Ml", "Meta_Diaria_Ml", "Tamanho_Copo_Ml", "Observacoes", "Data_Criacao"]
+  "25_Consumo_Agua": ["Id", "Data", "Hora", "Quantidade_Ml", "Meta_Diaria_Ml", "Tamanho_Copo_Ml", "Observacoes", "Data_Criacao"],
+  "26_Config_Lembretes_Financas": ["Id", "Tipo", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Dias_Semana", "Som_Alarme", "Ultima_Atualizacao"],
+  "27_Lembretes_Remedios": ["Id", "Nome", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Som_Alarme", "Instrucoes", "Data_Cadastro"]
 };
 
 /**

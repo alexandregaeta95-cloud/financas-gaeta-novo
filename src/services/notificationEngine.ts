@@ -12,6 +12,7 @@ import {
   ItemMercado,
   LembreteSaudeConfig,
   LembreteFinancasConfig,
+  LembreteRemedio,
   RegistroSaude,
   MetaCategoria,
 } from "../types";
@@ -174,6 +175,7 @@ export function evaluateAllNotifications({
   lembretesSaude = [],
   registrosSaude = [],
   lembretesFinancas = [],
+  lembretesRemedios = [],
 }: {
   agenda?: CompromissoAgenda[];
   consultas?: ConsultaMedica[];
@@ -189,6 +191,7 @@ export function evaluateAllNotifications({
   lembretesSaude?: LembreteSaudeConfig[];
   registrosSaude?: RegistroSaude[];
   lembretesFinancas?: LembreteFinancasConfig[];
+  lembretesRemedios?: LembreteRemedio[];
 }): AppNotification[] {
   const list: AppNotification[] = [];
   const now = Date.now();
@@ -552,6 +555,91 @@ export function evaluateAllNotifications({
     });
   });
   console.groupEnd();
+
+  // 2.B LEMBRETES DE REMÉDIOS E MEDICAMENTOS (27_Lembretes_Remedios)
+  lembretesRemedios.forEach((rem: any) => {
+    const rawAtivo =
+      rem.Ativo ??
+      rem.ativo ??
+      rem.ATIVO ??
+      rem.status ??
+      rem.Status ??
+      true;
+
+    const isAtivo =
+      rawAtivo === true ||
+      rawAtivo === 1 ||
+      String(rawAtivo).trim().toUpperCase() === "SIM" ||
+      String(rawAtivo).trim().toUpperCase() === "TRUE" ||
+      String(rawAtivo).trim().toUpperCase() === "ATIVO";
+
+    if (!isAtivo) return;
+
+    const remedioNome = String(rem.Nome || rem.nome || rem.Medicamento || rem.medicamento || "Medicamento").trim();
+    const rawSom = rem.Som_Alarme ?? rem.somAlarme ?? rem.Som ?? rem.som;
+    const somHabilitado = rawSom !== "NAO" && rawSom !== "nao" && rawSom !== false;
+
+    // Extração dos horários configurados (1 a 3 horários)
+    const rawHorariosSet = new Set<string>();
+    const explicitCandidates = [
+      rem.Horario_1,
+      rem.Horario_2,
+      rem.Horario_3,
+      rem.horario1,
+      rem.horario2,
+      rem.horario3,
+      rem["Horário 1"],
+      rem["Horario 1"],
+      rem["Horário 2"],
+      rem["Horario 2"],
+      rem["Horário 3"],
+      rem["Horario 3"],
+    ];
+
+    explicitCandidates.forEach((val) => {
+      if (val !== undefined && val !== null) {
+        const strVal = String(val).trim();
+        if (strVal) {
+          const formatted = formatarHora(strVal);
+          if (formatted && /^\d{1,2}:\d{2}$/.test(formatted)) {
+            rawHorariosSet.add(formatted);
+          }
+        }
+      }
+    });
+
+    const rawHorarios = Array.from(rawHorariosSet);
+
+    rawHorarios.forEach((timeStr) => {
+      const parts = timeStr.split(":");
+      if (parts.length < 2) return;
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) return;
+
+      const targetTotalMins = h * 60 + m;
+      const diffMins = currentTotalMins - targetTotalMins;
+      const isDentroJanela = diffMins >= 0 && diffMins <= 45;
+
+      if (isDentroJanela) {
+        const slotClean = timeStr.replace(":", "");
+        const remId = String(rem.Id || rem.id || remedioNome.toLowerCase().replace(/\s+/g, "_"));
+        const instrucoes = String(rem.Instrucoes || rem.instrucoes || "").trim();
+
+        list.push({
+          id: `lembrete_remedio_${remId}_${slotClean}_${todayLocalStr}`,
+          type: "saude",
+          title: `💊 Hora do Remédio: ${remedioNome}`,
+          message: `Lembrete agendado (${timeStr}). ${instrucoes ? `Instruções: ${instrucoes}` : "Não esqueça de tomar sua medicação no horário prescrito!"}`,
+          targetView: "saude",
+          severity: diffMins <= 15 ? "urgent" : "warning",
+          timestamp: now,
+          isAlarm: somHabilitado,
+          soundEnabled: somHabilitado,
+        });
+      }
+    });
+  });
 
   // 3. VEÍCULOS & OFICINA
   // A. Manutenções Agendadas

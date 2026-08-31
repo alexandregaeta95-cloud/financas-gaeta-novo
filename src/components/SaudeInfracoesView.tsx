@@ -32,6 +32,7 @@ import {
   AlimentoAnaliseResult,
   RegistroSaude,
   LembreteSaudeConfig,
+  LembreteRemedio,
   ExercicioRegistro,
   ConsumoCafe,
   ConsumoAgua,
@@ -58,6 +59,7 @@ interface Props {
   infracoes: Infracao[];
   registrosSaude?: RegistroSaude[];
   lembretesConfigs?: LembreteSaudeConfig[];
+  lembretesRemedios?: LembreteRemedio[];
   alimentos?: AlimentoAnaliseResult[];
   exercicios?: ExercicioRegistro[];
   consumosCafe?: ConsumoCafe[];
@@ -66,6 +68,8 @@ interface Props {
   veiculos?: Veiculo[];
   alturaUsuario?: number;
   onSaveAltura?: (alturaCm: number) => Promise<void> | void;
+  onOpenLembretesRemedios?: () => void;
+  onSaveLembretesRemedios?: (remedios: LembreteRemedio[]) => Promise<void> | void;
   onSaveConsulta: (consulta: ConsultaMedica) => Promise<void>;
   onSaveReceita: (receita: ReceitaMedica) => Promise<void>;
   onSaveInfracao: (infracao: Infracao) => Promise<void>;
@@ -92,6 +96,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   infracoes,
   registrosSaude = [],
   lembretesConfigs = [],
+  lembretesRemedios = [],
   alimentos = [],
   exercicios = [],
   consumosCafe = [],
@@ -100,6 +105,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   veiculos = [],
   alturaUsuario,
   onSaveAltura,
+  onOpenLembretesRemedios,
+  onSaveLembretesRemedios,
   onSaveConsulta,
   onSaveReceita,
   onSaveInfracao,
@@ -818,13 +825,25 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                 Medicamentos agrupados por consulta médica (Médico + Data da Prescrição). Clique em "Gerar PDF" para exportar o documento oficial da receita com todos os medicamentos prescritos juntos.
               </p>
             </div>
-            <button
-              onClick={() => handleOpenReceita()}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition-colors shadow-xs shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nova Receita / Medicamento</span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              {onOpenLembretesRemedios && (
+                <button
+                  onClick={onOpenLembretesRemedios}
+                  className="flex items-center gap-2 px-3.5 py-2 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/60 text-xs font-semibold rounded-xl transition-all shadow-xs"
+                  title="Configurar Lembretes de Medicamentos com Alarmes e Soneca (Aba 27_Lembretes_Remedios)"
+                >
+                  <Pill className="w-4 h-4 text-emerald-400" />
+                  <span>Lembretes de Remédios ({lembretesRemedios.length})</span>
+                </button>
+              )}
+              <button
+                onClick={() => handleOpenReceita()}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition-colors shadow-xs shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nova Receita / Medicamento</span>
+              </button>
+            </div>
           </div>
 
           {prescricoesAgrupadas.length === 0 ? (
@@ -1143,6 +1162,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
           alturaUsuario={alturaUsuario}
           onSaveAltura={onSaveAltura}
           onOpenRelatorio={() => setIsRelatorioModalOpen(true)}
+          onOpenLembretesRemedios={onOpenLembretesRemedios}
         />
       )}
 

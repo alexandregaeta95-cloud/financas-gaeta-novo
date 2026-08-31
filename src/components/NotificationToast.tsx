@@ -13,21 +13,26 @@ import {
   VolumeX,
   Square,
   Check,
+  Clock,
+  AlarmClock,
 } from "lucide-react";
 import { AppNotification } from "../types";
 import { ModuleView } from "./Navigation";
 import { useAlarmSound } from "../hooks/useAlarmSound";
+import { snoozeNotification } from "../services/snoozeService";
 
 interface Props {
   notification: AppNotification | null;
   onClose: () => void;
   onNavigate: (view: ModuleView) => void;
+  onSnooze?: (id: string, minutes: number) => void;
 }
 
 export const NotificationToast: React.FC<Props> = ({
   notification,
   onClose,
   onNavigate,
+  onSnooze,
 }) => {
   const { isPlaying, activeAlarmId, triggerAlarm, stopAlarm } = useAlarmSound();
 
@@ -47,7 +52,7 @@ export const NotificationToast: React.FC<Props> = ({
       });
     }
 
-    // Se for um alarme sonoro ativo, NÃO fecha automaticamente em 7s (toca até o usuário parar)
+    // Se for um alarme sonoro ativo, NÃO fecha automaticamente em 7s (toca até o usuário parar ou escolher soneca)
     if (notification.isAlarm || notification.soundEnabled) {
       return;
     }
@@ -62,6 +67,15 @@ export const NotificationToast: React.FC<Props> = ({
 
   const handleStopAndClose = () => {
     stopAlarm();
+    onClose();
+  };
+
+  const handleSnooze = (minutes: number) => {
+    stopAlarm();
+    snoozeNotification(notification.id, minutes);
+    if (onSnooze) {
+      onSnooze(notification.id, minutes);
+    }
     onClose();
   };
 
@@ -148,17 +162,54 @@ export const NotificationToast: React.FC<Props> = ({
           {notification.message}
         </p>
 
-        {/* Botão de Destaque para Parar o Alarme quando estiver tocando */}
-        {isCurrentAlarm && (
-          <button
-            type="button"
-            onClick={handleStopAndClose}
-            className="w-full py-2.5 px-3 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-extrabold rounded-xl shadow-lg shadow-rose-950/50 flex items-center justify-center gap-2 text-xs transition-transform active:scale-95 cursor-pointer"
-          >
-            <VolumeX className="w-4 h-4" />
-            <span>🛑 PARAR ALARME / JÁ VI</span>
-          </button>
-        )}
+        {/* Botão de Destaque para Parar o Alarme */}
+        <button
+          type="button"
+          onClick={handleStopAndClose}
+          className="w-full py-2.5 px-3 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-extrabold rounded-xl shadow-lg shadow-rose-950/50 flex items-center justify-center gap-2 text-xs transition-transform active:scale-95 cursor-pointer"
+        >
+          <VolumeX className="w-4 h-4" />
+          <span>🛑 PARAR ALARME / JÁ VI</span>
+        </button>
+
+        {/* Seção de Soneca (Me lembre em 5 min, 15 min, 30 min) */}
+        <div className="pt-1 space-y-1.5">
+          <div className="flex items-center justify-between text-[11px] text-slate-300 font-semibold px-0.5">
+            <span className="flex items-center gap-1.5 text-amber-300">
+              <AlarmClock className="w-3.5 h-3.5" />
+              <span>Soneca (Me lembre em):</span>
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleSnooze(5)}
+              className="py-2 px-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/60 rounded-xl text-slate-100 hover:text-amber-300 font-bold text-center text-xs transition-all cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+              title="Adiar por 5 minutos"
+            >
+              <Clock className="w-3 h-3 text-amber-400" />
+              <span>5 min</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSnooze(15)}
+              className="py-2 px-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/60 rounded-xl text-slate-100 hover:text-amber-300 font-bold text-center text-xs transition-all cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+              title="Adiar por 15 minutos"
+            >
+              <Clock className="w-3 h-3 text-amber-400" />
+              <span>15 min</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSnooze(30)}
+              className="py-2 px-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/60 rounded-xl text-slate-100 hover:text-amber-300 font-bold text-center text-xs transition-all cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+              title="Adiar por 30 minutos"
+            >
+              <Clock className="w-3 h-3 text-amber-400" />
+              <span>30 min</span>
+            </button>
+          </div>
+        </div>
 
         <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
           <button

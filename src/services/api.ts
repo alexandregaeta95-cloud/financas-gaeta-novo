@@ -32,6 +32,7 @@ import {
   normalizeConsumoCafe,
   normalizeConsumoAgua,
   normalizeConfigLembreteFinancas,
+  normalizeLembreteRemedio,
   formatarHora,
 } from "../utils/formatters";
 
@@ -171,6 +172,15 @@ export function normalizeRecordBySheet(sheetName: string, item: any): any {
     sheetName === "26_Config_Lembretes_Financas"
   ) {
     return normalizeConfigLembreteFinancas(item);
+  }
+  if (
+    s.includes("27_") ||
+    s.includes("remedio") ||
+    s.includes("remédio") ||
+    sheetName === SHEET_NAMES.LEMBRETES_REMEDIOS ||
+    sheetName === "27_Lembretes_Remedios"
+  ) {
+    return normalizeLembreteRemedio(item);
   }
   return item;
 }
@@ -1113,6 +1123,62 @@ export async function saveSheetRecords<T = any>(
       delete enriched.ultimaAtualizacao;
       delete enriched.ultima_atualizacao;
     }
+
+    // 27_Lembretes_Remedios mapping (Canonical Title_Case ONLY)
+    if (
+      sheetName === SHEET_NAMES.LEMBRETES_REMEDIOS ||
+      sheetName === "27_Lembretes_Remedios" ||
+      sheetName.toLowerCase().includes("remedio") ||
+      sheetName.toLowerCase().includes("remédio")
+    ) {
+      const remedioId = String(item.Id || item.id || `REM_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`).trim();
+      const nomeVal = String(item.Nome || item.nome || item.Medicamento || item.medicamento || "").trim();
+      const rawAtivo = item.Ativo ?? item.ativo;
+      const ativoVal =
+        rawAtivo === true || rawAtivo === "SIM" || rawAtivo === "sim" || rawAtivo === "TRUE" || rawAtivo === "true" || rawAtivo === 1 || rawAtivo === undefined || rawAtivo === null || rawAtivo === ""
+          ? "SIM"
+          : "NAO";
+      const rawSom = item.Som_Alarme ?? item.somAlarme ?? item.Som ?? item.som;
+      const somVal = rawSom !== "NAO" && rawSom !== "nao" && rawSom !== false ? "SIM" : "NAO";
+
+      const h1 = formatarHora(item.Horario_1 || item.horario1 || item.Horario1 || "");
+      const h2 = formatarHora(item.Horario_2 || item.horario2 || item.Horario2 || "");
+      const h3 = formatarHora(item.Horario_3 || item.horario3 || item.Horario3 || "");
+      const instrucoesVal = String(item.Instrucoes || item.instrucoes || item.Instruções || item.instruções || item.Observacoes || item.observacoes || "").trim();
+      const dataCadastroVal = String(
+        item.Data_Cadastro || item.dataCadastro || item.Data || item.data || new Date().toISOString().split("T")[0]
+      ).trim();
+
+      // Canonical Title_Case columns ONLY
+      enriched["Id"] = remedioId;
+      enriched["Nome"] = nomeVal;
+      enriched["Ativo"] = ativoVal;
+      enriched["Horario_1"] = h1;
+      enriched["Horario_2"] = h2;
+      enriched["Horario_3"] = h3;
+      enriched["Som_Alarme"] = somVal;
+      enriched["Instrucoes"] = instrucoesVal;
+      enriched["Data_Cadastro"] = dataCadastroVal;
+
+      // Clean alternate & camelCase keys
+      delete enriched.id;
+      delete enriched.nome;
+      delete enriched.ativo;
+      delete enriched.somAlarme;
+      delete enriched.som_alarme;
+      delete enriched.horario1;
+      delete enriched.horario2;
+      delete enriched.horario3;
+      delete enriched.Horario1;
+      delete enriched.Horario2;
+      delete enriched.Horario3;
+      delete enriched.instrucoes;
+      delete enriched.instruções;
+      delete enriched.Instruções;
+      delete enriched.dataCadastro;
+      delete enriched.data_cadastro;
+    }
+
 
     // 7_Receitas_Médicas mapping (guarantees Data, Medicamento, Dosagem, Instrucoes, Medico, Validade, Ativa are all filled)
     if (

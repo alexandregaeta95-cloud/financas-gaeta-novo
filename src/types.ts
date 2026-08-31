@@ -338,6 +338,7 @@ export const SHEET_NAMES = {
   CONSUMO_CAFE: "24_Consumo_Cafe",
   CONSUMO_AGUA: "25_Consumo_Agua",
   CONFIG_LEMBRETES_FINANCAS: "26_Config_Lembretes_Financas",
+  LEMBRETES_REMEDIOS: "27_Lembretes_Remedios",
 } as const;
 
 export interface RegistroSaude {
@@ -385,6 +386,7 @@ export interface AppNotification {
   dateStr?: string;
   isAlarm?: boolean;
   soundEnabled?: boolean;
+  snoozedUntil?: number;
 }
 
 // 21. Análise Nutricional de Alimentos (IA)
@@ -511,4 +513,29 @@ export interface LembreteFinancasConfig {
   ultimaAtualizacao?: string;
   [key: string]: any;
 }
+
+// 27. Lembretes de Remédios e Medicamentos (27_Lembretes_Remedios)
+export interface LembreteRemedio {
+  Id: string;
+  Nome: string;
+  Ativo: "SIM" | "NAO" | boolean | string;
+  Horario_1: string;
+  Horario_2?: string;
+  Horario_3?: string;
+  Som_Alarme?: "SIM" | "NAO" | boolean | string;
+  Instrucoes?: string;
+  Data_Cadastro?: string;
+  // Aliases opcionais para compatibilidade interna
+  id?: string;
+  nome?: string;
+  ativo?: boolean | string;
+  horario1?: string;
+  horario2?: string;
+  horario3?: string;
+  somAlarme?: boolean | string;
+  instrucoes?: string;
+  dataCadastro?: string;
+  [key: string]: any;
+}
+
 

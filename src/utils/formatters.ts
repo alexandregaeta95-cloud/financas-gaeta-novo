@@ -29,6 +29,7 @@ import {
   ConsumoAgua,
   ConfigAgua,
   LembreteFinancasConfig,
+  LembreteRemedio,
 } from "../types";
 
 /**
@@ -1798,5 +1799,65 @@ export function normalizeConfigLembreteFinancas(raw: any): LembreteFinancasConfi
     Ultima_Atualizacao: ultimaAtualizacao,
   };
 }
+
+/**
+ * 27. Normalize Lembrete Remedio (27_Lembretes_Remedios)
+ * Handles medicine name, dosage, multiple reminder times (HH:mm), alarm sound, instructions, and active status.
+ */
+export function normalizeLembreteRemedio(raw: any): LembreteRemedio {
+  if (!raw || typeof raw !== "object") return raw;
+
+  const id = String(raw.Id || raw.id || raw.ID || `REM_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`).trim();
+  const nome = String(raw.Nome || raw.nome || raw.Medicamento || raw.medicamento || raw.Remedio || raw.remedio || "").trim();
+
+  const rawAtivo = raw.Ativo ?? raw.ativo;
+  const ativo =
+    rawAtivo === true ||
+    rawAtivo === "SIM" ||
+    rawAtivo === "sim" ||
+    rawAtivo === "TRUE" ||
+    rawAtivo === "true" ||
+    rawAtivo === 1 ||
+    rawAtivo === "1" ||
+    rawAtivo === undefined ||
+    rawAtivo === null ||
+    rawAtivo === "";
+
+  const rawSom = raw.Som_Alarme ?? raw.somAlarme ?? raw.Som ?? raw.som;
+  const somAlarme = rawSom !== "NAO" && rawSom !== "nao" && rawSom !== false;
+
+  let h1 = String(raw.Horario_1 ?? raw.horario1 ?? raw.Horario1 ?? raw["Horário 1"] ?? raw["Horario 1"] ?? "").trim();
+  let h2 = String(raw.Horario_2 ?? raw.horario2 ?? raw.Horario2 ?? raw["Horário 2"] ?? raw["Horario 2"] ?? "").trim();
+  let h3 = String(raw.Horario_3 ?? raw.horario3 ?? raw.Horario3 ?? raw["Horário 3"] ?? raw["Horario 3"] ?? "").trim();
+
+  h1 = formatarHora(h1);
+  h2 = formatarHora(h2);
+  h3 = formatarHora(h3);
+
+  const instrucoes = String(raw.Instrucoes ?? raw.instrucoes ?? raw.Instruções ?? raw.instruções ?? raw.Observacoes ?? raw.observacoes ?? "").trim();
+  const dataCadastro = String(raw.Data_Cadastro ?? raw.dataCadastro ?? raw.Data ?? raw.data ?? new Date().toISOString().split("T")[0]).trim();
+
+  return {
+    id,
+    Id: id,
+    nome,
+    Nome: nome,
+    ativo: ativo ? "SIM" : "NAO",
+    Ativo: ativo ? "SIM" : "NAO",
+    somAlarme: somAlarme ? "SIM" : "NAO",
+    Som_Alarme: somAlarme ? "SIM" : "NAO",
+    horario1: h1,
+    Horario_1: h1,
+    horario2: h2,
+    Horario_2: h2,
+    horario3: h3,
+    Horario_3: h3,
+    instrucoes,
+    Instrucoes: instrucoes,
+    dataCadastro,
+    Data_Cadastro: dataCadastro,
+  };
+}
+
 
 

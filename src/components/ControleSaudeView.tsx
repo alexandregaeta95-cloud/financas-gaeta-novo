@@ -26,6 +26,7 @@ import {
   BellRing,
   Ruler,
   FileText,
+  Pill,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -46,6 +47,7 @@ import { ConfigLembretesSaudeModal } from "./ConfigLembretesSaudeModal";
 import { EditarAlturaModal } from "./EditarAlturaModal";
 import { calcularImc } from "../utils/imc";
 import { useAlarmSound } from "../hooks/useAlarmSound";
+import { snoozeNotification } from "../services/snoozeService";
 import { Volume2, VolumeX } from "lucide-react";
 
 interface Props {
@@ -58,6 +60,7 @@ interface Props {
   alturaUsuario?: number;
   onSaveAltura?: (alturaCm: number) => Promise<void> | void;
   onOpenRelatorio?: () => void;
+  onOpenLembretesRemedios?: () => void;
 }
 
 type PeriodFilter = "all" | "this_month" | "last_month" | "custom";
@@ -72,6 +75,7 @@ export const ControleSaudeView: React.FC<Props> = ({
   alturaUsuario,
   onSaveAltura,
   onOpenRelatorio,
+  onOpenLembretesRemedios,
 }) => {
   const [activeTab, setActiveTab] = useState<"peso" | "pressao" | "glicemia" | "dicas">("peso");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("this_month");
@@ -349,10 +353,48 @@ export const ControleSaudeView: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Botões de Soneca */}
+            <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-rose-500/30">
+              <span className="text-[10px] text-amber-300 font-bold px-1.5 hidden sm:inline">Soneca:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  stopAlarm();
+                  if (activeAlarmId) snoozeNotification(activeAlarmId, 5);
+                }}
+                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 font-bold rounded-lg text-xs transition-colors cursor-pointer"
+                title="Adiar por 5 minutos"
+              >
+                5 min
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  stopAlarm();
+                  if (activeAlarmId) snoozeNotification(activeAlarmId, 15);
+                }}
+                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 font-bold rounded-lg text-xs transition-colors cursor-pointer"
+                title="Adiar por 15 minutos"
+              >
+                15 min
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  stopAlarm();
+                  if (activeAlarmId) snoozeNotification(activeAlarmId, 30);
+                }}
+                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 font-bold rounded-lg text-xs transition-colors cursor-pointer"
+                title="Adiar por 30 minutos"
+              >
+                30 min
+              </button>
+            </div>
+
             <button
               onClick={() => stopAlarm()}
-              className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-rose-300 border border-rose-500/40 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-rose-300 border border-rose-500/40 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
             >
               <VolumeX className="w-4 h-4" />
               <span>🛑 Silenciar / Já vi</span>
@@ -365,7 +407,7 @@ export const ControleSaudeView: React.FC<Props> = ({
                     : "PRESSAO"
                 )
               }
-              className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-lg shadow-rose-950 active:scale-95 cursor-pointer"
+              className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-lg shadow-rose-950 active:scale-95 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Registrar Agora</span>
@@ -400,6 +442,16 @@ export const ControleSaudeView: React.FC<Props> = ({
             >
               <FileText className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
               <span className="truncate">Relatório Geral (PDF)</span>
+            </button>
+          )}
+          {onOpenLembretesRemedios && (
+            <button
+              onClick={onOpenLembretesRemedios}
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/60 transition-all shadow-sm group cursor-pointer w-full md:w-auto"
+              title="Configurar Lembretes de Medicamentos e Remédios (Aba 27_Lembretes_Remedios)"
+            >
+              <Pill className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
+              <span className="truncate">Lembretes de Remédios</span>
             </button>
           )}
           {onSaveLembretesConfigs && (

@@ -24,6 +24,7 @@ import { NotificationToast } from "./components/NotificationToast";
 import { BiometricLockScreen } from "./components/BiometricLockScreen";
 import { SegurancaModal } from "./components/SegurancaModal";
 import { ConfigLembretesFinancasModal } from "./components/ConfigLembretesFinancasModal";
+import { LembretesRemediosModal } from "./components/LembretesRemediosModal";
 import { isBiometricEnabled, isSessionAuthenticated } from "./services/biometricAuth";
 
 import {
@@ -49,6 +50,7 @@ import {
   AlimentoAnaliseResult,
   LembreteSaudeConfig,
   LembreteFinancasConfig,
+  LembreteRemedio,
   ExercicioRegistro,
   ConsumoCafe,
   ConsumoAgua,
@@ -68,6 +70,12 @@ import {
 import { calculateAccountCurrentBalance } from "./utils/formatters";
 import { evaluateAllNotifications, dispatchBrowserNotification } from "./services/notificationEngine";
 import { stopAlarmLoop } from "./services/alarmSoundService";
+import {
+  isNotificationSnoozed,
+  snoozeNotification,
+  cancelSnooze,
+  subscribeSnooze,
+} from "./services/snoozeService";
 
 export default function App() {
   const [activeView, setActiveView] = useState<ModuleView>("painel_contas");
@@ -386,6 +394,11 @@ export default function App() {
       },
     ];
   });
+  const [lembretesRemedios, setLembretesRemedios] = useState<LembreteRemedio[]>(() => {
+    const cached = getCachedSheetData<LembreteRemedio>(SHEET_NAMES.LEMBRETES_REMEDIOS);
+    if (cached && cached.length > 0) return cached;
+    return [];
+  });
   const [metas, setMetas] = useState<MetaCategoria[]>(() =>
     getCachedSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
   );
@@ -450,6 +463,7 @@ export default function App() {
   const [isFuelingModeModal, setIsFuelingModeModal] = useState(false);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
   const [isLembretesFinancasModalOpen, setIsLembretesFinancasModalOpen] = useState(false);
+  const [isLembretesRemediosModalOpen, setIsLembretesRemediosModalOpen] = useState(false);
 
   // Biometric Session Lock State
   const [isBiometricsActive, setIsBiometricsActive] = useState<boolean>(() => isBiometricEnabled());
@@ -460,7 +474,7 @@ export default function App() {
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
   const [activeToast, setActiveToast] = useState<AppNotification | null>(null);
 
-  // Notification Engine Evaluation
+  // Notification Engine Evaluation with Snooze Support
   const checkNotifications = useCallback(() => {
     const freshNotifs = evaluateAllNotifications({
       agenda,
@@ -475,6 +489,7 @@ export default function App() {
       lembretesSaude,
       registrosSaude,
       lembretesFinancas,
+      lembretesRemedios,
     });
 
     setNotifications((prev) => {
@@ -486,21 +501,40 @@ export default function App() {
         read: readIds.has(n.id) || n.read,
       }));
 
-      // Find any newly arrived warning or urgent priority notification to toast
-      const newlyAdded = updated.filter(
-        (n) => !previousIds.has(n.id) && !n.read && (n.severity === "urgent" || n.severity === "warning")
+      // Notificações ativas elegíveis para alerta/toast (não lidas, urgentes/avisos/alarmes, e que NÃO estão em soneca)
+      const eligibleForAlarm = updated.filter(
+        (n) =>
+          !n.read &&
+          (n.severity === "urgent" || n.severity === "warning" || n.isAlarm || n.soundEnabled) &&
+          !isNotificationSnoozed(n.id)
       );
-      if (newlyAdded.length > 0) {
-        setActiveToast(newlyAdded[0]);
-        // Dispara notificação nativa do navegador/SO se permitido
-        newlyAdded.forEach((n) => dispatchBrowserNotification(n));
-      }
+
+      // Se não houver toast ativo ou se o toast atual foi adiado/lido, seleciona o próximo alarme prioritário
+      setActiveToast((currentToast) => {
+        // Se o toast atual estiver em soneca ativa, fecha ele
+        if (currentToast && isNotificationSnoozed(currentToast.id)) {
+          return null;
+        }
+
+        // Se o toast atual ainda é válido, não lido e não adiado, mantém ele na tela
+        if (currentToast && !currentToast.read && eligibleForAlarm.some((e) => e.id === currentToast.id)) {
+          return currentToast;
+        }
+
+        // Caso contrário, ativa o próximo alarme pendente
+        const nextToast = eligibleForAlarm[0] || null;
+        if (nextToast) {
+          dispatchBrowserNotification(nextToast);
+        }
+        return nextToast;
+      });
 
       return updated;
     });
   }, [
     agenda,
     lancamentos,
+    metas,
     consultas,
     infracoes,
     manutencoes,
@@ -510,22 +544,39 @@ export default function App() {
     lembretesSaude,
     registrosSaude,
     lembretesFinancas,
+    lembretesRemedios,
   ]);
 
-  // Run notification check on data changes and periodically every 60 seconds
+  // Executa verificação periódica rápida a cada 10 segundos para despertar alarmes e checar sonecas
   useEffect(() => {
     checkNotifications();
     const interval = setInterval(() => {
       checkNotifications();
-    }, 60 * 1000);
-    return () => clearInterval(interval);
+    }, 10 * 1000);
+
+    const unsubSnooze = subscribeSnooze(() => {
+      checkNotifications();
+    });
+
+    return () => {
+      clearInterval(interval);
+      unsubSnooze();
+    };
   }, [checkNotifications]);
 
   const handleDismissNotification = (id: string) => {
     stopAlarmLoop(id);
+    cancelSnooze(id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+  };
+
+  const handleSnoozeNotification = (id: string, minutes: number) => {
+    stopAlarmLoop(id);
+    snoozeNotification(id, minutes);
+    setActiveToast((current) => (current?.id === id ? null : current));
+    checkNotifications();
   };
 
   const handleDismissAllNotifications = () => {
@@ -617,6 +668,9 @@ export default function App() {
         .catch(() => {});
       fetchSheetData<LembreteFinancasConfig>(SHEET_NAMES.CONFIG_LEMBRETES_FINANCAS)
         .then((data) => data && data.length > 0 && setLembretesFinancas(data))
+        .catch(() => {});
+      fetchSheetData<LembreteRemedio>(SHEET_NAMES.LEMBRETES_REMEDIOS)
+        .then((data) => data && setLembretesRemedios(data))
         .catch(() => {});
       fetchSheetData<AlimentoAnaliseResult>(SHEET_NAMES.ANALISE_ALIMENTOS)
         .then((data) => data && setAlimentos(data))
@@ -954,6 +1008,16 @@ export default function App() {
     }
   };
 
+  const handleSaveLembretesRemedios = async (updatedRemedios: LembreteRemedio[]) => {
+    setLembretesRemedios(updatedRemedios);
+    try {
+      await saveSheetRecords(SHEET_NAMES.LEMBRETES_REMEDIOS, updatedRemedios, "UPSERT");
+    } catch (err: any) {
+      console.error("Erro ao salvar lembretes de remédios na planilha:", err);
+      alert(`Erro ao salvar lembretes de remédios na planilha: ${err.message || err}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col w-full max-w-full overflow-x-hidden">
       {/* Top Sync Status Bar */}
@@ -1089,6 +1153,9 @@ export default function App() {
             infracoes={infracoes}
             registrosSaude={registrosSaude}
             lembretesConfigs={lembretesSaude}
+            lembretesRemedios={lembretesRemedios}
+            onOpenLembretesRemedios={() => setIsLembretesRemediosModalOpen(true)}
+            onSaveLembretesRemedios={handleSaveLembretesRemedios}
             alimentos={alimentos}
             exercicios={exercicios}
             consumosCafe={consumosCafe}
@@ -1170,6 +1237,7 @@ export default function App() {
         notification={activeToast}
         onClose={() => setActiveToast(null)}
         onNavigate={handleNavigateFromNotification}
+        onSnooze={handleSnoozeNotification}
       />
 
       {/* Notification Center Modal */}
@@ -1181,6 +1249,7 @@ export default function App() {
         onDismissAll={handleDismissAllNotifications}
         onNavigate={handleNavigateFromNotification}
         onRefreshNotifications={checkNotifications}
+        onSnooze={handleSnoozeNotification}
       />
 
       {/* Lembretes de Finanças Modal */}
@@ -1190,6 +1259,14 @@ export default function App() {
         configs={lembretesFinancas}
         lancamentos={lancamentos}
         onSaveConfigs={handleSaveConfigLembretesFinancas}
+      />
+
+      {/* Lembretes de Remédios Modal (27_Lembretes_Remedios) */}
+      <LembretesRemediosModal
+        isOpen={isLembretesRemediosModalOpen}
+        onClose={() => setIsLembretesRemediosModalOpen(false)}
+        remedios={lembretesRemedios}
+        onSaveRemedios={handleSaveLembretesRemedios}
       />
 
       {/* Security & Biometrics Modal */}
