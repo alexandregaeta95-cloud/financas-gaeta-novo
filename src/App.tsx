@@ -1110,6 +1110,9 @@ export default function App() {
             lancamentos={lancamentos}
             registrosSaude={registrosSaude}
             exercicios={exercicios}
+            consumosCafe={consumosCafe}
+            consumosAgua={consumosAgua}
+            configAgua={configAgua}
             alturaUsuario={alturaUsuario}
             lembretesConfigs={lembretesSaude}
             consultas={consultas}

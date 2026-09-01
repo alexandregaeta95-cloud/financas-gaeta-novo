@@ -50,6 +50,7 @@ import { ExerciciosView } from "./ExerciciosView";
 import { RegistroExercicioModal } from "./RegistroExercicioModal";
 import { SaudeRelatorioModal } from "./SaudeRelatorioModal";
 import { exportReceitaPDF, agruparReceitasPorPrescricao, GrupoReceitaMedica } from "../utils/receitaPdf";
+import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
 
@@ -1576,17 +1577,18 @@ export const SaudeInfracoesView: React.FC<Props> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Veículo</label>
-                  <select
+                  <ComboBox
                     value={infracaoForm.Veículo}
-                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Veículo: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                  >
-                    {veiculos.map((v) => (
-                      <option key={v.Id} value={v.Modelo}>
-                        {v.Modelo} ({v.Placa})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setInfracaoForm({ ...infracaoForm, Veículo: val })}
+                    options={veiculos.map((v) => ({
+                      value: v.Modelo,
+                      label: v.Modelo,
+                      hint: v.Placa ? `(${v.Placa})` : undefined,
+                    }))}
+                    placeholder="Selecione o veículo..."
+                    showVoice={true}
+                    uppercase={false}
+                  />
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Valor (R$)</label>
@@ -1677,6 +1679,9 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         onClose={() => setIsRelatorioModalOpen(false)}
         registrosSaude={registrosSaude}
         exercicios={exercicios}
+        consumosCafe={consumosCafe}
+        consumosAgua={consumosAgua}
+        configAgua={configAgua}
         alturaUsuario={alturaUsuario}
         lembretesConfigs={lembretesConfigs}
         consultas={consultas}

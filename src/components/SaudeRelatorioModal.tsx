@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Stethoscope,
   Pill,
+  Coffee,
 } from "lucide-react";
 import {
   RegistroSaude,
@@ -28,6 +29,9 @@ import {
   LembreteSaudeConfig,
   ConsultaMedica,
   ReceitaMedica,
+  ConsumoCafe,
+  ConsumoAgua,
+  ConfigAgua,
 } from "../types";
 import { formatDateBR } from "../utils/formatters";
 import { calcularImc } from "../utils/imc";
@@ -38,6 +42,9 @@ interface Props {
   onClose: () => void;
   registrosSaude: RegistroSaude[];
   exercicios: ExercicioRegistro[];
+  consumosCafe?: ConsumoCafe[];
+  consumosAgua?: ConsumoAgua[];
+  configAgua?: ConfigAgua;
   alturaUsuario?: number;
   lembretesConfigs?: LembreteSaudeConfig[];
   consultas?: ConsultaMedica[];
@@ -51,6 +58,9 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
   onClose,
   registrosSaude = [],
   exercicios = [],
+  consumosCafe = [],
+  consumosAgua = [],
+  configAgua,
   alturaUsuario,
   lembretesConfigs = [],
   consultas = [],
@@ -144,6 +154,26 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
       return isNaN(d.getTime()) || d >= dateThreshold;
     });
   }, [exercicios, dateThreshold]);
+
+  // Filtered coffee consumptions
+  const filteredConsumosCafe = useMemo(() => {
+    if (!dateThreshold) return consumosCafe;
+    return consumosCafe.filter((c) => {
+      if (!c.data) return true;
+      const d = new Date(c.data);
+      return isNaN(d.getTime()) || d >= dateThreshold;
+    });
+  }, [consumosCafe, dateThreshold]);
+
+  // Filtered water consumptions
+  const filteredConsumosAgua = useMemo(() => {
+    if (!dateThreshold) return consumosAgua;
+    return consumosAgua.filter((a) => {
+      if (!a.data) return true;
+      const d = new Date(a.data);
+      return isNaN(d.getTime()) || d >= dateThreshold;
+    });
+  }, [consumosAgua, dateThreshold]);
 
   // -------------------------------------------------------------
   // 1. PESO & IMC STATS
@@ -341,6 +371,84 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
     };
   }, [filteredExercicios]);
 
+  // -------------------------------------------------------------
+  // 5. CONSUMO DE CAFÉ STATS
+  // -------------------------------------------------------------
+  const cafeStats = useMemo(() => {
+    if (filteredConsumosCafe.length === 0) return null;
+
+    const totalRegistros = filteredConsumosCafe.length;
+    const totalXicaras = filteredConsumosCafe.reduce(
+      (acc, curr) => acc + (Number(curr.quantidade) || 0),
+      0
+    );
+    const totalCalorias = filteredConsumosCafe.reduce(
+      (acc, curr) => acc + (Number(curr.calorias) || 0),
+      0
+    );
+    const uniqueDays = new Set(
+      filteredConsumosCafe.map((c) => c.data).filter(Boolean)
+    ).size;
+    const mediaPorDia =
+      uniqueDays > 0 ? (totalXicaras / uniqueDays).toFixed(1) : totalXicaras.toString();
+
+    const sorted = [...filteredConsumosCafe].sort(
+      (a, b) =>
+        new Date(`${a.data} ${a.hora || "00:00"}`).getTime() -
+        new Date(`${b.data} ${b.hora || "00:00"}`).getTime()
+    );
+    const latest = sorted[sorted.length - 1];
+
+    return {
+      totalRegistros,
+      totalXicaras,
+      totalCalorias,
+      mediaPorDia,
+      uniqueDays,
+      latestDate: latest ? `${latest.data}${latest.hora ? ` ${latest.hora}` : ""}` : null,
+      sortedList: sorted,
+    };
+  }, [filteredConsumosCafe]);
+
+  // -------------------------------------------------------------
+  // 6. CONSUMO DE ÁGUA STATS
+  // -------------------------------------------------------------
+  const aguaStats = useMemo(() => {
+    if (filteredConsumosAgua.length === 0) return null;
+
+    const totalRegistros = filteredConsumosAgua.length;
+    const totalMl = filteredConsumosAgua.reduce(
+      (acc, curr) => acc + (Number(curr.quantidadeMl) || 0),
+      0
+    );
+    const uniqueDays = new Set(
+      filteredConsumosAgua.map((a) => a.data).filter(Boolean)
+    ).size;
+    const mediaMlDia = uniqueDays > 0 ? Math.round(totalMl / uniqueDays) : totalMl;
+    const metaDiaria = configAgua?.metaDiariaMl || 0;
+    const pctMeta = metaDiaria > 0 ? Math.round((mediaMlDia / metaDiaria) * 100) : null;
+
+    const sorted = [...filteredConsumosAgua].sort(
+      (a, b) =>
+        new Date(`${a.data} ${a.hora || "00:00"}`).getTime() -
+        new Date(`${b.data} ${b.hora || "00:00"}`).getTime()
+    );
+    const latest = sorted[sorted.length - 1];
+
+    return {
+      totalRegistros,
+      totalMl,
+      totalLitros: (totalMl / 1000).toFixed(1),
+      mediaMlDia,
+      mediaLitrosDia: (mediaMlDia / 1000).toFixed(1),
+      metaDiaria,
+      pctMeta,
+      uniqueDays,
+      latestDate: latest ? `${latest.data}${latest.hora ? ` ${latest.hora}` : ""}` : null,
+      sortedList: sorted,
+    };
+  }, [filteredConsumosAgua, configAgua]);
+
   if (!isOpen) return null;
 
   const handlePrint = () => {
@@ -517,8 +625,8 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* 4 Top KPI Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 print-section-break">
+          {/* 6 Top KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 print-section-break">
             {/* KPI 1: Peso / IMC */}
             <div className="print-card p-4 bg-slate-950/70 border border-slate-800 rounded-2xl flex flex-col justify-between">
               <div className="flex items-center justify-between">
@@ -595,6 +703,46 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
                   {exerciciosStats
                     ? `${exerciciosStats.totalTreinos} sessões (${exerciciosStats.totalCalorias} kcal)`
                     : "Sem treinos no período"}
+                </div>
+              </div>
+            </div>
+
+            {/* KPI 5: Café */}
+            <div className="print-card p-4 bg-slate-950/70 border border-slate-800 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 print-text-muted uppercase">
+                  Consumo de Café
+                </span>
+                <Coffee className="w-4 h-4 text-amber-500 print:text-amber-700" />
+              </div>
+              <div className="mt-2">
+                <div className="text-xl sm:text-2xl font-black text-white print-text-dark">
+                  {cafeStats ? `${cafeStats.totalXicaras} xícaras` : "--"}
+                </div>
+                <div className="text-[11px] font-medium text-amber-400 print:text-amber-700 mt-0.5">
+                  {cafeStats
+                    ? `Média: ${cafeStats.mediaPorDia} xíc/dia${cafeStats.totalCalorias > 0 ? ` (${cafeStats.totalCalorias} kcal)` : ""}`
+                    : "Sem registros no período"}
+                </div>
+              </div>
+            </div>
+
+            {/* KPI 6: Água */}
+            <div className="print-card p-4 bg-slate-950/70 border border-slate-800 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400 print-text-muted uppercase">
+                  Ingestão de Água
+                </span>
+                <Droplets className="w-4 h-4 text-cyan-400 print:text-cyan-700" />
+              </div>
+              <div className="mt-2">
+                <div className="text-xl sm:text-2xl font-black text-white print-text-dark">
+                  {aguaStats ? `${aguaStats.totalLitros} L` : "--"}
+                </div>
+                <div className="text-[11px] font-medium text-cyan-400 print:text-cyan-700 mt-0.5">
+                  {aguaStats
+                    ? `Média: ${aguaStats.mediaLitrosDia} L/dia${aguaStats.pctMeta !== null ? ` (${aguaStats.pctMeta}% da meta)` : ""}`
+                    : "Sem registros no período"}
                 </div>
               </div>
             </div>
@@ -978,14 +1126,170 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
           </div>
 
           {/* ========================================================= */}
-          {/* SEÇÃO 5: CONSULTAS E HISTÓRICO MÉDICO */}
+          {/* SEÇÃO 5: CONSUMO DE CAFÉ (24_Consumo_Cafe) */}
+          {/* ========================================================= */}
+          <div className="print-card p-5 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-4 print-section-break">
+            <div className="flex items-center justify-between border-b border-slate-800 print:border-slate-300 pb-3">
+              <h3 className="font-bold text-white print-text-dark text-sm uppercase tracking-wider flex items-center gap-2">
+                <Coffee className="w-4 h-4 text-amber-500 print:text-amber-700" />
+                5. Consumo de Café & Cafeína
+              </h3>
+              <span className="text-[11px] text-slate-400 print-text-muted">
+                {cafeStats ? `${cafeStats.totalRegistros} registros` : "Nenhum registro"}
+              </span>
+            </div>
+
+            {cafeStats ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="p-3 bg-slate-900 print:bg-slate-100 rounded-xl border border-slate-800/80 print:border-slate-200">
+                    <span className="text-[10px] text-slate-400 print-text-muted block">Total de Xícaras</span>
+                    <strong className="text-base text-white print-text-dark">{cafeStats.totalXicaras} xícaras</strong>
+                  </div>
+                  <div className="p-3 bg-slate-900 print:bg-slate-100 rounded-xl border border-slate-800/80 print:border-slate-200">
+                    <span className="text-[10px] text-slate-400 print-text-muted block">Média por Dia Ativo</span>
+                    <strong className="text-base text-amber-400 print:text-amber-700">{cafeStats.mediaPorDia} xíc / dia</strong>
+                  </div>
+                  <div className="p-3 bg-slate-900 print:bg-slate-100 rounded-xl border border-slate-800/80 print:border-slate-200">
+                    <span className="text-[10px] text-slate-400 print-text-muted block">Calorias Extras (Leite/Açúcar)</span>
+                    <strong className="text-base text-slate-200 print-text-dark">
+                      {cafeStats.totalCalorias > 0 ? `${cafeStats.totalCalorias} kcal` : "0 kcal"}
+                    </strong>
+                  </div>
+                  <div className="p-3 bg-slate-900 print:bg-slate-100 rounded-xl border border-slate-800/80 print:border-slate-200">
+                    <span className="text-[10px] text-slate-400 print-text-muted block">Último Registro</span>
+                    <strong className="text-base text-slate-200 print-text-dark">
+                      {cafeStats.latestDate ? formatDateBR(cafeStats.latestDate.substring(0, 10)) : "--"}
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Tabela de Consumo de Café */}
+                <div className="overflow-x-auto">
+                  <table className="print-table w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 bg-slate-900/60 print:bg-slate-100 text-slate-400 print-text-dark">
+                        <th className="py-2 px-3 font-semibold">Data / Hora</th>
+                        <th className="py-2 px-3 font-semibold">Quantidade</th>
+                        <th className="py-2 px-3 font-semibold">Calorias Extras</th>
+                        <th className="py-2 px-3 font-semibold">Observações / Tipo</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50 print:divide-slate-200">
+                      {cafeStats.sortedList.slice(-6).reverse().map((cf) => (
+                        <tr key={cf.id} className="hover:bg-slate-900/30">
+                          <td className="py-2 px-3 font-mono text-slate-300 print-text-dark">
+                            {formatDateBR(cf.data)} {cf.hora ? `às ${cf.hora}` : ""}
+                          </td>
+                          <td className="py-2 px-3 font-bold text-white print-text-dark">
+                            {cf.quantidade} {Number(cf.quantidade) === 1 ? "xícara" : "xícaras"}
+                          </td>
+                          <td className="py-2 px-3 font-mono text-amber-400 print:text-amber-700">
+                            {cf.calorias ? `${cf.calorias} kcal` : "-"}
+                          </td>
+                          <td className="py-2 px-3 text-slate-400 print-text-muted">
+                            {cf.observacoes || "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 print-text-muted italic">
+                Nenhum registro de consumo de café encontrado no período selecionado.
+              </p>
+            )}
+          </div>
+
+          {/* ========================================================= */}
+          {/* SEÇÃO 6: CONSUMO DE ÁGUA & HIDRATAÇÃO (25_Consumo_Agua) */}
+          {/* ========================================================= */}
+          <div className="print-card p-5 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-4 print-section-break">
+            <div className="flex items-center justify-between border-b border-slate-800 print:border-slate-300 pb-3">
+              <h3 className="font-bold text-white print-text-dark text-sm uppercase tracking-wider flex items-center gap-2">
+                <Droplets className="w-4 h-4 text-cyan-400 print:text-cyan-700" />
+                6. Hidratação & Consumo de Água
+              </h3>
+              <span className="text-[11px] text-slate-400 print-text-muted">
+                {aguaStats ? `${aguaStats.totalRegistros} registros` : "Nenhum registro"}
+              </span>
+            </div>
+
+            {aguaStats ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="p-3 bg-slate-900 print:bg-slate-100 rounded-xl border border-slate-800/80 print:border-slate-200">
+                    <span className="text-[10px] text-slate-400 print-text-muted block">Volume Total Ingerido</span>
+                    <strong className="text-base text-cyan-400 print:text-cyan-700">
+                      {aguaStats.totalLitros} L <span className="text-xs font-normal text-slate-400">({aguaStats.totalMl.toLocaleString()} ml)</span>
+                    </strong>
+                  </div>
+                  <div className="p-3 bg-slate-900 print:bg-slate-100 rounded-xl border border-slate-800/80 print:border-slate-200">
+                    <span className="text-[10px] text-slate-400 print-text-muted block">Média por Dia Ativo</span>
+                    <strong className="text-base text-white print-text-dark">
+                      {aguaStats.mediaLitrosDia} L / dia <span className="text-xs font-normal text-slate-400">({aguaStats.mediaMlDia} ml)</span>
+                    </strong>
+                  </div>
+                  <div className="p-3 bg-slate-900 print:bg-slate-100 rounded-xl border border-slate-800/80 print:border-slate-200">
+                    <span className="text-[10px] text-slate-400 print-text-muted block">Atingimento da Meta Diária</span>
+                    <strong className={`text-base ${aguaStats.pctMeta !== null && aguaStats.pctMeta >= 100 ? "text-emerald-400 print:text-emerald-700" : "text-amber-400 print:text-amber-700"}`}>
+                      {aguaStats.pctMeta !== null ? `${aguaStats.pctMeta}% atingido` : "--"}
+                    </strong>
+                  </div>
+                  <div className="p-3 bg-slate-900 print:bg-slate-100 rounded-xl border border-slate-800/80 print:border-slate-200">
+                    <span className="text-[10px] text-slate-400 print-text-muted block">Meta Diária Configurada</span>
+                    <strong className="text-base text-slate-200 print-text-dark">
+                      {aguaStats.metaDiaria > 0 ? `${(aguaStats.metaDiaria / 1000).toFixed(1)} L (${aguaStats.metaDiaria} ml)` : "Não configurada"}
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Tabela de Consumo de Água */}
+                <div className="overflow-x-auto">
+                  <table className="print-table w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 bg-slate-900/60 print:bg-slate-100 text-slate-400 print-text-dark">
+                        <th className="py-2 px-3 font-semibold">Data / Hora</th>
+                        <th className="py-2 px-3 font-semibold">Volume (ml / Litros)</th>
+                        <th className="py-2 px-3 font-semibold">Observações / Recipiente</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50 print:divide-slate-200">
+                      {aguaStats.sortedList.slice(-6).reverse().map((ag) => (
+                        <tr key={ag.id} className="hover:bg-slate-900/30">
+                          <td className="py-2 px-3 font-mono text-slate-300 print-text-dark">
+                            {formatDateBR(ag.data)} {ag.hora ? `às ${ag.hora}` : ""}
+                          </td>
+                          <td className="py-2 px-3 font-bold text-cyan-400 print:text-cyan-700">
+                            {ag.quantidadeMl} ml <span className="text-[10px] text-slate-400 print-text-muted font-normal">({(ag.quantidadeMl / 1000).toFixed(2)} L)</span>
+                          </td>
+                          <td className="py-2 px-3 text-slate-400 print-text-muted">
+                            {ag.observacoes || "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 print-text-muted italic">
+                Nenhum registro de consumo de água encontrado no período selecionado.
+              </p>
+            )}
+          </div>
+
+          {/* ========================================================= */}
+          {/* SEÇÃO 7: CONSULTAS E HISTÓRICO MÉDICO */}
           {/* ========================================================= */}
           {(consultas.length > 0 || receitas.length > 0) && (
             <div className="print-card p-5 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-4 print-section-break">
               <div className="flex items-center justify-between border-b border-slate-800 print:border-slate-300 pb-3">
                 <h3 className="font-bold text-white print-text-dark text-sm uppercase tracking-wider flex items-center gap-2">
                   <Stethoscope className="w-4 h-4 text-emerald-400 print:text-emerald-700" />
-                  5. Consultas & Medicamentos Registrados
+                  7. Consultas & Medicamentos Registrados
                 </h3>
               </div>
 

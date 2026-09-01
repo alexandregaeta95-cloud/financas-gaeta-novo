@@ -23,6 +23,9 @@ import {
   LembreteSaudeConfig,
   ConsultaMedica,
   ReceitaMedica,
+  ConsumoCafe,
+  ConsumoAgua,
+  ConfigAgua,
 } from "../types";
 import { MetasRelatorioModal } from "./MetasRelatorioModal";
 import { SaudeRelatorioModal } from "./SaudeRelatorioModal";
@@ -33,6 +36,9 @@ interface Props {
   lancamentos: Lancamento[];
   registrosSaude: RegistroSaude[];
   exercicios: ExercicioRegistro[];
+  consumosCafe?: ConsumoCafe[];
+  consumosAgua?: ConsumoAgua[];
+  configAgua?: ConfigAgua;
   alturaUsuario?: number;
   lembretesConfigs?: LembreteSaudeConfig[];
   consultas?: ConsultaMedica[];
@@ -63,6 +69,9 @@ export const RelatoriosView: React.FC<Props> = ({
   lancamentos = [],
   registrosSaude = [],
   exercicios = [],
+  consumosCafe = [],
+  consumosAgua = [],
+  configAgua,
   alturaUsuario,
   lembretesConfigs = [],
   consultas = [],
@@ -348,6 +357,9 @@ export const RelatoriosView: React.FC<Props> = ({
           onClose={() => setIsSaudeReportOpen(false)}
           registrosSaude={registrosSaude}
           exercicios={exercicios}
+          consumosCafe={consumosCafe}
+          consumosAgua={consumosAgua}
+          configAgua={configAgua}
           alturaUsuario={alturaUsuario}
           lembretesConfigs={lembretesConfigs}
           consultas={consultas}

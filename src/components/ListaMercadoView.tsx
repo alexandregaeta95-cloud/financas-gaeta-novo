@@ -614,18 +614,19 @@ export const ListaMercadoView: React.FC<Props> = ({
           {/* Campo Conta */}
           <div>
             <label className="text-slate-400 block mb-1 font-medium">Conta</label>
-            <select
+            <ComboBox
               value={checkoutConta}
-              onChange={(e) => setCheckoutConta(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-semibold focus:outline-hidden focus:border-emerald-500"
-            >
-              <option value="">Selecione uma conta...</option>
-              {contas.map((c) => (
-                <option key={c.Id || c.Nome} value={c.Nome}>
-                  {c.Nome} {c.Tipo ? `(${c.Tipo})` : ""}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setCheckoutConta(val)}
+              options={contas.map((c) => ({
+                value: c.Nome,
+                label: c.Nome,
+                hint: c.Tipo ? `(${c.Tipo})` : undefined,
+              }))}
+              placeholder="Selecione uma conta..."
+              showVoice={true}
+              uppercase={false}
+              inputClassName="font-semibold focus:border-emerald-500"
+            />
           </div>
 
           {/* Campo Status */}

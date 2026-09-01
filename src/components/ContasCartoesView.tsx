@@ -831,18 +831,19 @@ export const ContasCartoesView: React.FC<Props> = ({
 
               <div>
                 <label className="text-slate-400 block mb-1">Vincular à Conta Bancária (opcional)</label>
-                <select
+                <ComboBox
                   value={cartaoForm.Banco_ID || ""}
-                  onChange={(e) => setCartaoForm({ ...cartaoForm, Banco_ID: e.target.value.toUpperCase() })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
-                >
-                  <option value="">NENHUMA (INDEPENDENTE)</option>
-                  {contas.map((c) => (
-                    <option key={c.Id} value={c.Nome.toUpperCase()}>
-                      {c.Nome.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setCartaoForm({ ...cartaoForm, Banco_ID: val })}
+                  options={contas.map((c) => ({
+                    value: c.Nome.toUpperCase(),
+                    label: c.Nome.toUpperCase(),
+                    hint: c.Tipo ? c.Tipo.toUpperCase() : undefined,
+                  }))}
+                  placeholder="NENHUMA (INDEPENDENTE)"
+                  uppercase={true}
+                  allowClear={true}
+                  showVoice={true}
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">

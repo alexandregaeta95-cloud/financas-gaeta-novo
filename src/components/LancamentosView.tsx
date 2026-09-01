@@ -2019,36 +2019,38 @@ export const LancamentosView: React.FC<Props> = ({
                       <label className="block text-slate-400 text-[11px] mb-1">
                         Conta Bancária de Saída (Origem)
                       </label>
-                      <select
+                      <ComboBox
                         value={formData.Conta || ""}
-                        onChange={(e) => setFormData({ ...formData, Conta: e.target.value.toUpperCase() })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-indigo-500"
-                      >
-                        <option value="">Selecione a conta de saída...</option>
-                        {contas.map((c) => (
-                          <option key={c.Id || c.Nome} value={c.Nome.toUpperCase()}>
-                            {c.Nome.toUpperCase()} {c.Tipo ? `(${c.Tipo})` : ""}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(val) => setFormData({ ...formData, Conta: val })}
+                        options={contas.map((c) => ({
+                          value: c.Nome.toUpperCase(),
+                          label: c.Nome.toUpperCase(),
+                          hint: c.Tipo ? `(${c.Tipo})` : undefined,
+                        }))}
+                        placeholder="Selecione a conta de saída..."
+                        uppercase={true}
+                        showVoice={true}
+                        inputClassName="focus:border-indigo-500"
+                      />
                     </div>
                     <div>
                       <label className="block text-slate-400 text-[11px] mb-1">
                         Cartão de Crédito Quitado (Destino)
                       </label>
-                      <select
+                      <ComboBox
                         required
                         value={formData.Cartao || ""}
-                        onChange={(e) => setFormData({ ...formData, Cartao: e.target.value.toUpperCase() })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase font-bold text-xs focus:outline-none focus:border-indigo-500"
-                      >
-                        <option value="">Selecione o cartão de crédito...</option>
-                        {cartoes.map((card) => (
-                          <option key={card.Id || card.Nome} value={card.Nome.toUpperCase()}>
-                            {card.Nome.toUpperCase()} ({card.Bandeira || "CARTÃO"})
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(val) => setFormData({ ...formData, Cartao: val })}
+                        options={(cartoes || []).map((card) => ({
+                          value: card.Nome.toUpperCase(),
+                          label: card.Nome.toUpperCase(),
+                          hint: card.Bandeira ? `(${card.Bandeira})` : "(CARTÃO)",
+                        }))}
+                        placeholder="Selecione o cartão de crédito..."
+                        uppercase={true}
+                        showVoice={true}
+                        inputClassName="font-bold focus:border-indigo-500"
+                      />
                     </div>
                   </div>
                 </div>
@@ -2056,50 +2058,46 @@ export const LancamentosView: React.FC<Props> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-400 text-xs mb-1">Conta Bancária / Débito</label>
-                    <select
+                    <ComboBox
                       value={formData.Conta || ""}
-                      onChange={(e) => setFormData({ ...formData, Conta: e.target.value.toUpperCase() })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-emerald-500"
-                    >
-                      <option value="">Selecione uma conta...</option>
-                      {contas.map((c) => (
-                        <option key={c.Id || c.Nome} value={c.Nome.toUpperCase()}>
-                          {c.Nome.toUpperCase()} {c.Tipo ? `(${c.Tipo})` : ""}
-                        </option>
-                      ))}
-                      {formData.Conta && !contas.some((c) => c.Nome.toUpperCase() === (formData.Conta || "").toUpperCase()) && (
-                        <option value={formData.Conta.toUpperCase()}>{formData.Conta.toUpperCase()}</option>
-                      )}
-                    </select>
+                      onChange={(val) => setFormData({ ...formData, Conta: val })}
+                      options={contas.map((c) => ({
+                        value: c.Nome.toUpperCase(),
+                        label: c.Nome.toUpperCase(),
+                        hint: c.Tipo ? `(${c.Tipo})` : undefined,
+                      }))}
+                      placeholder="Selecione uma conta..."
+                      uppercase={true}
+                      showVoice={true}
+                      inputClassName="focus:border-emerald-500"
+                    />
                   </div>
 
-                  {(formData.Forma_Pagamento === "CARTÃO DE CRÉDITO" || cartoes.length > 0) && (
+                  {(formData.Forma_Pagamento === "CARTÃO DE CRÉDITO" || (cartoes && cartoes.length > 0)) && (
                     <div>
                       <label className="block text-slate-400 text-xs mb-1">
                         Cartão de Crédito {formData.Forma_Pagamento === "CARTÃO DE CRÉDITO" ? "(Obrigatório)" : "(Opcional)"}
                       </label>
-                      <select
+                      <ComboBox
                         value={formData.Cartao || ""}
-                        onChange={(e) => {
-                          const val = e.target.value.toUpperCase();
+                        onChange={(val) => {
                           setFormData((prev) => ({
                             ...prev,
                             Cartao: val,
                             Forma_Pagamento: val ? "CARTÃO DE CRÉDITO" : prev.Forma_Pagamento,
                           }));
                         }}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:outline-none focus:border-emerald-500"
-                      >
-                        <option value="">Nenhum (Usar Conta Bancária)</option>
-                        {cartoes.map((card) => (
-                          <option key={card.Id || card.Nome} value={card.Nome.toUpperCase()}>
-                            {card.Nome.toUpperCase()} ({card.Bandeira || "CARTÃO"})
-                          </option>
-                        ))}
-                        {formData.Cartao && !cartoes.some((c) => c.Nome.toUpperCase() === (formData.Cartao || "").toUpperCase()) && (
-                          <option value={formData.Cartao.toUpperCase()}>{formData.Cartao.toUpperCase()}</option>
-                        )}
-                      </select>
+                        options={(cartoes || []).map((card) => ({
+                          value: card.Nome.toUpperCase(),
+                          label: card.Nome.toUpperCase(),
+                          hint: card.Bandeira ? `(${card.Bandeira})` : "(CARTÃO)",
+                        }))}
+                        placeholder="Nenhum (Usar Conta Bancária)"
+                        uppercase={true}
+                        showVoice={true}
+                        allowClear={true}
+                        inputClassName="focus:border-emerald-500"
+                      />
                     </div>
                   )}
                 </div>
@@ -2126,10 +2124,10 @@ export const LancamentosView: React.FC<Props> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="min-w-0">
                       <label className="block text-slate-300 text-[11px] font-medium mb-1">Veículo</label>
-                      <select
+                      <ComboBox
                         value={formData.Veiculo || ""}
-                        onChange={(e) => {
-                          const selectedVeicName = e.target.value;
+                        onChange={(val) => {
+                          const selectedVeicName = val;
                           const selectedVeic = veiculos.find(
                             (v) =>
                               v.Modelo === selectedVeicName ||
@@ -2146,18 +2144,16 @@ export const LancamentosView: React.FC<Props> = ({
                                 : prev.Km_Atual,
                           }));
                         }}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500"
-                      >
-                        <option value="">Selecione o veículo...</option>
-                        {veiculos.map((v) => (
-                          <option key={v.Id || v.Placa} value={v.Modelo}>
-                            {v.Modelo} {v.Placa ? `(${v.Placa})` : ""} {v.Motorista ? `• ${v.Motorista}` : ""}
-                          </option>
-                        ))}
-                        {formData.Veiculo && !veiculos.some((v) => v.Modelo === formData.Veiculo) && (
-                          <option value={formData.Veiculo}>{formData.Veiculo}</option>
-                        )}
-                      </select>
+                        options={veiculos.map((v) => ({
+                          value: v.Modelo,
+                          label: v.Modelo,
+                          hint: [v.Placa ? `(${v.Placa})` : "", v.Motorista ? `• ${v.Motorista}` : ""].filter(Boolean).join(" "),
+                        }))}
+                        placeholder="Selecione o veículo..."
+                        uppercase={false}
+                        showVoice={true}
+                        inputClassName="focus:border-amber-500"
+                      />
                     </div>
 
                     <div className="min-w-0">

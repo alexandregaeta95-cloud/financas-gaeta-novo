@@ -1577,25 +1577,31 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
                 <div>
                   <label className="text-slate-300 text-xs font-medium block mb-1">Veículo</label>
-                  <select
+                  <ComboBox
                     value={servicoForm.Veiculo}
-                    onChange={(e) => {
-                      const selModelo = e.target.value;
-                      const selectedVeic = veiculos.find((v) => v.Modelo === selModelo);
+                    onChange={(val) => {
+                      const selModelo = val;
+                      const selectedVeic = veiculos.find(
+                        (v) =>
+                          v.Modelo === selModelo ||
+                          v.Placa === selModelo
+                      );
                       setServicoForm((prev) => ({ ...prev, Veiculo: selModelo }));
                       if (selectedVeic?.Km_Atual && (!servicoKmDisplay || servicoKmDisplay === "0")) {
                         setServicoKmDisplay(String(selectedVeic.Km_Atual));
                         setServicoForm((prev) => ({ ...prev, KM: selectedVeic.Km_Atual }));
                       }
                     }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:border-emerald-500 outline-hidden"
-                  >
-                    {veiculos.map((v) => (
-                      <option key={v.Id} value={v.Modelo}>
-                        {v.Modelo} ({v.Placa})
-                      </option>
-                    ))}
-                  </select>
+                    options={veiculos.map((v) => ({
+                      value: v.Modelo,
+                      label: v.Modelo,
+                      hint: v.Placa ? `(${v.Placa})` : undefined,
+                    }))}
+                    placeholder="Selecione o veículo..."
+                    showVoice={true}
+                    uppercase={false}
+                    inputClassName="focus:border-emerald-500"
+                  />
                 </div>
               </div>
 
@@ -1794,11 +1800,15 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1 font-medium">Veículo</label>
-                  <select
+                  <ComboBox
                     value={manutencaoForm.Veículo}
-                    onChange={(e) => {
-                      const selModelo = e.target.value;
-                      const selVeic = veiculos.find((v) => v.Modelo === selModelo);
+                    onChange={(val) => {
+                      const selModelo = val;
+                      const selVeic = veiculos.find(
+                        (v) =>
+                          v.Modelo === selModelo ||
+                          v.Placa === selModelo
+                      );
                       setManutencaoForm((prev) => ({
                         ...prev,
                         Veículo: selModelo,
@@ -1806,14 +1816,19 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                         KM_Alvo: prev.Frequência_KM ? (selVeic?.Km_Atual || 0) + prev.Frequência_KM : prev.KM_Alvo,
                       }));
                     }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-medium focus:border-emerald-500 outline-hidden"
-                  >
-                    {veiculos.map((v) => (
-                      <option key={v.Id} value={v.Modelo}>
-                        {v.Modelo} ({v.Placa}) • {Number(v.Km_Atual || 0).toLocaleString()} KM
-                      </option>
-                    ))}
-                  </select>
+                    options={veiculos.map((v) => ({
+                      value: v.Modelo,
+                      label: v.Modelo,
+                      hint: [
+                        v.Placa ? `(${v.Placa})` : "",
+                        v.Km_Atual ? `• ${Number(v.Km_Atual).toLocaleString()} KM` : "",
+                      ].filter(Boolean).join(" "),
+                    }))}
+                    placeholder="Selecione o veículo..."
+                    showVoice={true}
+                    uppercase={false}
+                    inputClassName="focus:border-emerald-500"
+                  />
                 </div>
 
                 <div>
