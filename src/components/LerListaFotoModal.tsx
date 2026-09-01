@@ -788,6 +788,7 @@ export const LerListaFotoModal: React.FC<LerListaFotoModalProps> = ({
                                 min="0.1"
                                 step="any"
                                 value={it.quantidade}
+                                onFocus={(e) => e.target.select()}
                                 onChange={(e) =>
                                   handleUpdateItemField(it.id, "quantidade", e.target.value)
                                 }

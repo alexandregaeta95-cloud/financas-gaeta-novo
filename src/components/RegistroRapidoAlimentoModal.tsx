@@ -200,6 +200,7 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
               step="1"
               placeholder="Ex: 180 (deixe em branco se não souber)"
               value={calorias}
+              onFocus={(e) => e.target.select()}
               onChange={(e) => setCalorias(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
             />
@@ -273,6 +274,7 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
                     min="0"
                     placeholder="0"
                     value={proteinas}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setProteinas(e.target.value)}
                     className="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-white focus:outline-none focus:border-teal-500"
                   />
@@ -286,6 +288,7 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
                     min="0"
                     placeholder="0"
                     value={carboidratos}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setCarboidratos(e.target.value)}
                     className="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-white focus:outline-none focus:border-amber-500"
                   />
@@ -299,6 +302,7 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
                     min="0"
                     placeholder="0"
                     value={gorduras}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setGorduras(e.target.value)}
                     className="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-white focus:outline-none focus:border-rose-500"
                   />

@@ -776,6 +776,7 @@ export const ContasCartoesView: React.FC<Props> = ({
                     max="31"
                     required
                     value={cartaoForm.Dia_Fechamento ?? cartaoForm.Fechamento ?? 10}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setCartaoForm({ ...cartaoForm, Dia_Fechamento: Number(e.target.value), Fechamento: Number(e.target.value) })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"
                   />
@@ -789,6 +790,7 @@ export const ContasCartoesView: React.FC<Props> = ({
                     max="31"
                     required
                     value={cartaoForm.Dia_Vencimento ?? cartaoForm.Vencimento ?? 20}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setCartaoForm({ ...cartaoForm, Dia_Vencimento: Number(e.target.value), Vencimento: Number(e.target.value) })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"
                   />

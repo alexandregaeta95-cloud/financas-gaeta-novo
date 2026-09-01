@@ -1595,6 +1595,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                     step="0.01"
                     required
                     value={infracaoForm.Valor}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setInfracaoForm({ ...infracaoForm, Valor: Number(e.target.value) })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold"
                   />

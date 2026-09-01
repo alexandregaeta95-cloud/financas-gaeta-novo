@@ -390,6 +390,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                     required
                     placeholder="Ex: 78.5"
                     value={pesoValor}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setPesoValor(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-amber-400 focus:outline-none focus:border-amber-500 pr-12"
                   />
@@ -463,6 +464,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                       required
                       placeholder="Ex: 120"
                       value={pressaoSistolica}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setPressaoSistolica(e.target.value)}
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-rose-400 focus:outline-none focus:border-rose-500 pr-14"
                     />
@@ -485,6 +487,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                       required
                       placeholder="Ex: 80"
                       value={pressaoDiastolica}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setPressaoDiastolica(e.target.value)}
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-rose-300 focus:outline-none focus:border-rose-500 pr-14"
                     />
@@ -511,6 +514,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                     max="250"
                     placeholder="Ex: 72"
                     value={pressaoBpm}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setPressaoBpm(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-rose-300 focus:outline-none focus:border-rose-500 pr-14"
                   />
@@ -552,6 +556,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                       required
                       placeholder="Ex: 95"
                       value={glicemiaValor}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setGlicemiaValor(e.target.value)}
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-bold text-emerald-400 focus:outline-none focus:border-emerald-500 pr-16"
                     />

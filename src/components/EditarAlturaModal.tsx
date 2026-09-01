@@ -114,6 +114,7 @@ export const EditarAlturaModal: React.FC<Props> = ({
                   step="1"
                   required
                   value={altura}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setAltura(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-center text-xl font-black text-amber-400 focus:outline-none focus:border-amber-500"
                 />

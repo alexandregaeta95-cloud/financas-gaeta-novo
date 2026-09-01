@@ -587,6 +587,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
                   min="1"
                   max="100"
                   value={metaForm.Alerta_Porcentagem || 80}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setMetaForm({ ...metaForm, Alerta_Porcentagem: Number(e.target.value) })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
                 />

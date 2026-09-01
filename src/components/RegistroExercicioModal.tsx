@@ -264,6 +264,7 @@ export const RegistroExercicioModal: React.FC<Props> = ({
               step="1"
               placeholder="Ex: 45"
               value={duracaoMinutos}
+              onFocus={(e) => e.target.select()}
               onChange={(e) => setDuracaoMinutos(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors font-mono"
             />
@@ -338,6 +339,7 @@ export const RegistroExercicioModal: React.FC<Props> = ({
                 step="1"
                 placeholder="Ex: 350 (opcional)"
                 value={calorias}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => setCalorias(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors font-mono"
               />

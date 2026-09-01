@@ -624,6 +624,7 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
                   <input
                     type="number"
                     value={form["Raio_(M)"]}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setForm({ ...form, "Raio_(M)": Number(e.target.value) })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"
                   />
@@ -637,6 +638,7 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
                     type="number"
                     step="any"
                     value={form.Latitude}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setForm({ ...form, Latitude: Number(e.target.value) })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"
                   />
@@ -647,6 +649,7 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
                     type="number"
                     step="any"
                     value={form.Longitude}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => setForm({ ...form, Longitude: Number(e.target.value) })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"
                   />

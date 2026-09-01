@@ -2270,6 +2270,7 @@ export const LancamentosView: React.FC<Props> = ({
                         type="number"
                         placeholder="Ex: 85200"
                         value={formData.Km_Atual || ""}
+                        onFocus={(e) => e.target.select()}
                         onChange={(e) =>
                           setFormData({ ...formData, Km_Atual: parseFloat(e.target.value) || 0 })
                         }
