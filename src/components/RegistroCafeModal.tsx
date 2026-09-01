@@ -65,7 +65,6 @@ export const RegistroCafeModal: React.FC<Props> = ({
   const [carboidratos, setCarboidratos] = useState<string>("");
   const [gorduras, setGorduras] = useState<string>("");
   const [observacoes, setObservacoes] = useState<string>("");
-  const [showMacros, setShowMacros] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,14 +96,6 @@ export const RegistroCafeModal: React.FC<Props> = ({
             : ""
         );
         setObservacoes(initialData.observacoes || "");
-        setShowMacros(
-          Boolean(
-            (initialData.calorias && initialData.calorias > 0) ||
-            (initialData.proteinas && initialData.proteinas > 0) ||
-            (initialData.carboidratos && initialData.carboidratos > 0) ||
-            (initialData.gorduras && initialData.gorduras > 0)
-          )
-        );
       } else {
         const now = new Date();
         const year = now.getFullYear();
@@ -121,7 +112,6 @@ export const RegistroCafeModal: React.FC<Props> = ({
         setCarboidratos("");
         setGorduras("");
         setObservacoes("");
-        setShowMacros(false);
       }
       setError(null);
       setIsSaving(false);
@@ -133,7 +123,6 @@ export const RegistroCafeModal: React.FC<Props> = ({
   const quantidade = parseInt(quantidadeInput, 10) || 0;
 
   const handleApplyPreset = (preset: MacroPreset) => {
-    setShowMacros(true);
     setCalorias(preset.cal > 0 ? String(preset.cal) : "0");
     setProteinas(preset.prot > 0 ? String(preset.prot) : "0");
     setCarboidratos(preset.carb > 0 ? String(preset.carb) : "0");
@@ -332,20 +321,16 @@ export const RegistroCafeModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Seção Opcional de Macros / Calorias */}
-          <div className="bg-slate-950/60 border border-slate-800/90 rounded-xl p-3 space-y-2.5">
+          {/* Seção de Macros & Calorias (Opcional) */}
+          <div className="bg-slate-950/60 border border-slate-800/90 rounded-xl p-3.5 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5 text-orange-400" />
-                Calorias & Macros (Opcional)
+                Calorias & Macronutrientes por Café (Opcional)
               </label>
-              <button
-                type="button"
-                onClick={() => setShowMacros((prev) => !prev)}
-                className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold"
-              >
-                {showMacros ? "Ocultar" : "+ Adicionar Macros (Açúcar/Leite)"}
-              </button>
+              <span className="text-[10px] text-slate-400 font-normal">
+                Preencha o valor por unidade
+              </span>
             </div>
 
             {/* Presets Rápidos de Macros */}
@@ -355,116 +340,113 @@ export const RegistroCafeModal: React.FC<Props> = ({
                   key={p.label}
                   type="button"
                   onClick={() => handleApplyPreset(p)}
-                  className="px-2 py-0.5 text-[10px] rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-amber-300 transition-colors flex items-center gap-1"
+                  className="px-2.5 py-1 text-[11px] rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
                 >
-                  <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                  <Sparkles className="w-3 h-3 text-amber-400" />
                   <span>{p.label}</span>
                 </button>
               ))}
             </div>
 
-            {showMacros && (
-              <div className="space-y-2 pt-1 animate-in fade-in duration-150">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {/* Calorias */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
-                      <Flame className="w-3 h-3 text-orange-400" />
-                      Calorias / un (kcal)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="1000"
-                      step="1"
-                      placeholder="0"
-                      value={calorias}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setCalorias(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-orange-400 font-bold text-center focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
+            {/* Grid dos 4 Campos Numéricos com Auto-Select no foco */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              {/* Calorias */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5 text-orange-400" />
+                  Calorias (kcal)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="1000"
+                  step="1"
+                  placeholder="0"
+                  value={calorias}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setCalorias(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-2.5 text-xs text-orange-400 font-bold text-center focus:outline-none focus:border-orange-500"
+                />
+              </div>
 
-                  {/* Proteínas */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
-                      <Dumbbell className="w-3 h-3 text-blue-400" />
-                      Proteínas / un (g)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      placeholder="0"
-                      value={proteinas}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setProteinas(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-blue-400 font-bold text-center focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
+              {/* Proteínas */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+                  <Dumbbell className="w-3.5 h-3.5 text-blue-400" />
+                  Proteínas (g)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  placeholder="0"
+                  value={proteinas}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setProteinas(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-2.5 text-xs text-blue-400 font-bold text-center focus:outline-none focus:border-blue-500"
+                />
+              </div>
 
-                  {/* Carbos */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
-                      <Wheat className="w-3 h-3 text-amber-400" />
-                      Carbos / un (g)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      placeholder="0"
-                      value={carboidratos}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setCarboidratos(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-amber-400 font-bold text-center focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
+              {/* Carboidratos */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+                  <Wheat className="w-3.5 h-3.5 text-amber-400" />
+                  Carbos (g)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  placeholder="0"
+                  value={carboidratos}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setCarboidratos(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-2.5 text-xs text-amber-400 font-bold text-center focus:outline-none focus:border-amber-500"
+                />
+              </div>
 
-                  {/* Gorduras */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
-                      <Droplet className="w-3 h-3 text-rose-400" />
-                      Gorduras / un (g)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      placeholder="0"
-                      value={gorduras}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => setGorduras(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg py-1.5 px-2.5 text-xs text-rose-400 font-bold text-center focus:outline-none focus:border-rose-500"
-                    />
-                  </div>
-                </div>
+              {/* Gorduras */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+                  <Droplet className="w-3.5 h-3.5 text-rose-400" />
+                  Gorduras (g)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  placeholder="0"
+                  value={gorduras}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setGorduras(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-2.5 text-xs text-rose-400 font-bold text-center focus:outline-none focus:border-rose-500"
+                />
+              </div>
+            </div>
 
-                {/* Total preview when quantidade > 1 */}
-                {quantidade > 1 && (calorias || proteinas || carboidratos || gorduras) && (
-                  <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[11px] text-amber-300 flex items-center justify-between flex-wrap gap-1">
-                    <span className="text-slate-300">
-                      Total ({quantidade} cafés):
+            {/* Total preview when quantidade > 1 */}
+            {quantidade > 1 && (Number(calorias) > 0 || Number(proteinas) > 0 || Number(carboidratos) > 0 || Number(gorduras) > 0) && (
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs text-amber-300 flex items-center justify-between flex-wrap gap-2">
+                <span className="text-slate-300 font-medium">
+                  Total multiplicado ({quantidade} cafés):
+                </span>
+                <div className="font-bold flex items-center gap-2">
+                  {calorias.trim() !== "" && Number(calorias) > 0 && (
+                    <span className="text-orange-400">
+                      🔥 {Math.round(Number(calorias) * quantidade)} kcal
                     </span>
-                    <div className="font-bold flex items-center gap-1.5">
-                      {calorias.trim() !== "" && Number(calorias) > 0 && (
-                        <span className="text-orange-400">
-                          🔥 {Math.round(Number(calorias) * quantidade)} kcal
-                        </span>
-                      )}
-                      {(Number(proteinas) > 0 || Number(carboidratos) > 0 || Number(gorduras) > 0) && (
-                        <span className="text-slate-300 font-mono text-[10px]">
-                          ({Number(proteinas) > 0 ? `P: ${(Number(proteinas) * quantidade).toFixed(1)}g ` : ""}
-                          {Number(carboidratos) > 0 ? `C: ${(Number(carboidratos) * quantidade).toFixed(1)}g ` : ""}
-                          {Number(gorduras) > 0 ? `G: ${(Number(gorduras) * quantidade).toFixed(1)}g` : ""})
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
+                  )}
+                  {(Number(proteinas) > 0 || Number(carboidratos) > 0 || Number(gorduras) > 0) && (
+                    <span className="text-slate-300 font-mono text-[11px]">
+                      ({Number(proteinas) > 0 ? `P: ${(Number(proteinas) * quantidade).toFixed(1)}g ` : ""}
+                      {Number(carboidratos) > 0 ? `C: ${(Number(carboidratos) * quantidade).toFixed(1)}g ` : ""}
+                      {Number(gorduras) > 0 ? `G: ${(Number(gorduras) * quantidade).toFixed(1)}g` : ""})
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>
