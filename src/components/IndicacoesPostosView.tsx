@@ -1,10 +1,58 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Fuel, Trophy, TrendingDown, Gauge, MapPin, Sparkles } from "lucide-react";
 import { Lancamento } from "../types";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
 
 interface Props {
   lancamentos: Lancamento[];
+}
+
+function parseDateForSort(val: any, horaVal?: any): number {
+  if (!val) return 0;
+  let d: Date | null = null;
+  if (val instanceof Date) {
+    d = isNaN(val.getTime()) ? null : val;
+  } else {
+    const s = String(val).trim();
+    if (s) {
+      // DD/MM/YYYY or DD-MM-YYYY
+      const brMatch = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+      if (brMatch) {
+        const day = parseInt(brMatch[1], 10);
+        const month = parseInt(brMatch[2], 10) - 1;
+        const year = parseInt(brMatch[3], 10);
+        d = new Date(year, month, day);
+      } else {
+        // YYYY-MM-DD
+        const isoMatch = s.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+        if (isoMatch) {
+          const year = parseInt(isoMatch[1], 10);
+          const month = parseInt(isoMatch[2], 10) - 1;
+          const day = parseInt(isoMatch[3], 10);
+          d = new Date(year, month, day);
+        } else {
+          const parsed = new Date(s);
+          if (!isNaN(parsed.getTime())) d = parsed;
+        }
+      }
+    }
+  }
+
+  if (!d) return 0;
+  let time = d.getTime();
+
+  if (horaVal) {
+    const hStr = String(horaVal).trim();
+    const hMatch = hStr.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+    if (hMatch) {
+      const hours = parseInt(hMatch[1], 10) || 0;
+      const minutes = parseInt(hMatch[2], 10) || 0;
+      const seconds = parseInt(hMatch[3], 10) || 0;
+      time += (hours * 3600 + minutes * 60 + seconds) * 1000;
+    }
+  }
+
+  return time;
 }
 
 function isValidPostoName(val: any): boolean {
@@ -113,7 +161,7 @@ function isFuelLancamento(l: any): boolean {
   const tipo = String(l.Tipo || l.tipo || "").trim().toUpperCase();
   const cat = String(l.Categoria || l.categoria || "").trim().toUpperCase();
   const status = String(l.Status || l.status || "").trim().toUpperCase();
-  if (status === "EXCLUÍDO" || status === "EXCLUIDO" || status === "DELETED") return false;
+  if (status === "EXCLUÍDO" || status === "EXCLUIDO" || status === "DELETED" || status === "CANCELADO") return false;
 
   return (
     tipo === "ABASTECIMENTO" ||
@@ -128,94 +176,144 @@ function isFuelLancamento(l: any): boolean {
 }
 
 export const IndicacoesPostosView: React.FC<Props> = ({ lancamentos }) => {
-  // Filter all fueling entries with resilient criteria
-  const fuelEntries = lancamentos.filter(isFuelLancamento);
+  // Filter all active fueling entries with resilient criteria
+  const fuelEntries = useMemo(() => {
+    return lancamentos.filter(isFuelLancamento);
+  }, [lancamentos]);
 
-  // Group by Posto
-  const statsByPosto: Record<
-    string,
-    {
-      nome: string;
-      count: number;
-      totalLitros: number;
-      totalValor: number;
-      mediaKmLList: number[];
-      precoLitroList: number[];
-    }
-  > = {};
+  // Calculate dynamic stats grouped by Posto with live odometer delta calculation
+  const rankedByEconomy = useMemo(() => {
+    // 1. Group active fuel entries by vehicle identity
+    const fuelEntriesByVehicle: Record<string, Lancamento[]> = {};
 
-  fuelEntries.forEach((entry) => {
-    const postoName = getPostoName(entry);
+    fuelEntries.forEach((entry) => {
+      const veicKey = String(
+        entry.Veiculo ||
+        (entry as any).veiculo ||
+        entry.Descricao_Do_Veiculo ||
+        (entry as any).Placa ||
+        (entry as any).placa ||
+        "VEICULO_PADRAO"
+      ).trim().toUpperCase();
 
-    if (!statsByPosto[postoName]) {
-      statsByPosto[postoName] = {
-        nome: postoName,
-        count: 0,
-        totalLitros: 0,
-        totalValor: 0,
-        mediaKmLList: [],
-        precoLitroList: [],
+      if (!fuelEntriesByVehicle[veicKey]) {
+        fuelEntriesByVehicle[veicKey] = [];
+      }
+      fuelEntriesByVehicle[veicKey].push(entry);
+    });
+
+    // 2. Stats grouped by Posto
+    const statsByPosto: Record<
+      string,
+      {
+        nome: string;
+        count: number;
+        totalLitros: number;
+        totalValor: number;
+        mediaKmLList: number[];
+        precoLitroList: number[];
+      }
+    > = {};
+
+    // 3. For each vehicle, sort fuelings chronologically (oldest to newest) and calculate dynamic Km/L between consecutive fuelings
+    Object.values(fuelEntriesByVehicle).forEach((vehicleEntries) => {
+      const sorted = [...vehicleEntries].sort((a, b) => {
+        const timeA = parseDateForSort(a.Data ?? (a as any).data, a.Hora ?? (a as any).hora);
+        const timeB = parseDateForSort(b.Data ?? (b as any).data, b.Hora ?? (b as any).hora);
+        if (timeA !== timeB) return timeA - timeB;
+
+        const kmA = parseCurrency(a.Km_Atual ?? (a as any).kmAtual ?? (a as any).KM ?? (a as any).km);
+        const kmB = parseCurrency(b.Km_Atual ?? (b as any).kmAtual ?? (b as any).KM ?? (b as any).km);
+        if (kmA !== kmB) return kmA - kmB;
+
+        const createA = parseDateForSort(a.Data_Criacao ?? (a as any).dataCriacao);
+        const createB = parseDateForSort(b.Data_Criacao ?? (b as any).dataCriacao);
+        if (createA !== createB) return createA - createB;
+
+        return String(a.Id || "").localeCompare(String(b.Id || ""));
+      });
+
+      for (let i = 0; i < sorted.length; i++) {
+        const entry = sorted[i];
+        const postoName = getPostoName(entry);
+
+        if (!statsByPosto[postoName]) {
+          statsByPosto[postoName] = {
+            nome: postoName,
+            count: 0,
+            totalLitros: 0,
+            totalValor: 0,
+            mediaKmLList: [],
+            precoLitroList: [],
+          };
+        }
+
+        const st = statsByPosto[postoName];
+        const litros = parseCurrency(entry.Litros ?? (entry as any).litros ?? 0);
+        const valor = parseCurrency(entry.Valor ?? (entry as any).valor ?? (entry as any).Valor_Total ?? 0);
+        const price = parseCurrency(
+          entry.Preco_Litro ??
+          (entry as any)["Preço_Litro"] ??
+          (entry as any).preco_litro ??
+          (entry as any).precoLitro ??
+          (litros > 0 && valor > 0 ? valor / litros : 0)
+        );
+
+        st.count += 1;
+        st.totalLitros += litros;
+        st.totalValor += valor;
+        if (price > 0) st.precoLitroList.push(price);
+
+        // Recalcula Km/L dinamicamente comparando o odômetro consecutivo atual com o anterior existente
+        if (i > 0) {
+          const prevEntry = sorted[i - 1];
+          const currentKm = parseCurrency(entry.Km_Atual ?? (entry as any).kmAtual ?? (entry as any).KM ?? (entry as any).km);
+          const prevKm = parseCurrency(prevEntry.Km_Atual ?? (prevEntry as any).kmAtual ?? (prevEntry as any).KM ?? (prevEntry as any).km);
+
+          if (currentKm > 0 && prevKm > 0 && currentKm > prevKm && litros > 0) {
+            const kmPercorrido = currentKm - prevKm;
+            const dynamicMediaKmL = kmPercorrido / litros;
+            // Validação de sanidade (evita discrepâncias extremas de digitação)
+            if (dynamicMediaKmL > 0 && dynamicMediaKmL <= 100) {
+              st.mediaKmLList.push(dynamicMediaKmL);
+            }
+          }
+        }
+      }
+    });
+
+    // 4. Calculate averages per Posto
+    const postosList = Object.values(statsByPosto).map((st) => {
+      const avgKmL =
+        st.mediaKmLList.length > 0
+          ? st.mediaKmLList.reduce((a, b) => a + b, 0) / st.mediaKmLList.length
+          : 0;
+
+      const avgPrice =
+        st.precoLitroList.length > 0
+          ? st.precoLitroList.reduce((a, b) => a + b, 0) / st.precoLitroList.length
+          : st.totalLitros > 0
+          ? st.totalValor / st.totalLitros
+          : 0;
+
+      return {
+        ...st,
+        avgKmL,
+        avgPrice,
       };
-    }
+    });
 
-    const st = statsByPosto[postoName];
-    const litros = parseCurrency(entry.Litros ?? (entry as any).litros ?? 0);
-    const valor = parseCurrency(entry.Valor ?? (entry as any).valor ?? (entry as any).Valor_Total ?? 0);
-    const media = parseCurrency(
-      (entry as any)["Média_(Km/L)"] ??
-      (entry as any)["Media_(Km/L)"] ??
-      (entry as any).Media_KmL ??
-      (entry as any).media_km_l ??
-      (entry as any).mediaKmL ??
-      0
-    );
-    const price = parseCurrency(
-      entry.Preco_Litro ??
-      (entry as any)["Preço_Litro"] ??
-      (entry as any).preco_litro ??
-      (entry as any).precoLitro ??
-      (litros > 0 && valor > 0 ? valor / litros : 0)
-    );
-
-    st.count += 1;
-    st.totalLitros += litros;
-    st.totalValor += valor;
-
-    if (media > 0) st.mediaKmLList.push(media);
-    if (price > 0) st.precoLitroList.push(price);
-  });
-
-  // Calculate averages
-  const postosList = Object.values(statsByPosto).map((st) => {
-    const avgKmL =
-      st.mediaKmLList.length > 0
-        ? st.mediaKmLList.reduce((a, b) => a + b, 0) / st.mediaKmLList.length
-        : 0;
-
-    const avgPrice =
-      st.precoLitroList.length > 0
-        ? st.precoLitroList.reduce((a, b) => a + b, 0) / st.precoLitroList.length
-        : st.totalLitros > 0
-        ? st.totalValor / st.totalLitros
-        : 0;
-
-    return {
-      ...st,
-      avgKmL,
-      avgPrice,
-    };
-  });
-
-  // Sort by Best KmL descending, and lowest price ascending
-  const rankedByEconomy = [...postosList].sort((a, b) => {
-    if (b.avgKmL > 0 && a.avgKmL > 0 && b.avgKmL !== a.avgKmL) {
-      return b.avgKmL - a.avgKmL;
-    }
-    if (a.avgPrice > 0 && b.avgPrice > 0 && a.avgPrice !== b.avgPrice) {
-      return a.avgPrice - b.avgPrice;
-    }
-    return b.count - a.count;
-  });
+    // 5. Sort by Best KmL descending, and lowest price ascending
+    return [...postosList].sort((a, b) => {
+      if (b.avgKmL > 0 && a.avgKmL > 0 && b.avgKmL !== a.avgKmL) {
+        return b.avgKmL - a.avgKmL;
+      }
+      if (a.avgPrice > 0 && b.avgPrice > 0 && a.avgPrice !== b.avgPrice) {
+        return a.avgPrice - b.avgPrice;
+      }
+      return b.count - a.count;
+    });
+  }, [fuelEntries]);
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
@@ -324,3 +422,4 @@ export const IndicacoesPostosView: React.FC<Props> = ({ lancamentos }) => {
     </div>
   );
 };
+
