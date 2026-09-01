@@ -270,7 +270,24 @@ export const IndicacoesPostosView: React.FC<Props> = ({ lancamentos }) => {
           const currentKm = parseCurrency(entry.Km_Atual ?? (entry as any).kmAtual ?? (entry as any).KM ?? (entry as any).km);
           const prevKm = parseCurrency(prevEntry.Km_Atual ?? (prevEntry as any).kmAtual ?? (prevEntry as any).KM ?? (prevEntry as any).km);
 
-          if (currentKm > 0 && prevKm > 0 && currentKm > prevKm && litros > 0) {
+          // O cálculo "km percorrido ÷ litros" só é válido no método cheio-a-cheio:
+          // exige que TANTO o abastecimento atual quanto o anterior tenham sido tanque cheio.
+          // Registros antigos sem esse campo preenchido são tratados como cheio (padrão histórico
+          // do app - ver LancamentosView.tsx, que usa "SIM" como default); só exclui quando
+          // o campo foi explicitamente marcado como parcial (NÃO/NAO/FALSE/N).
+          const isParcial = (value: unknown) =>
+            ["NÃO", "NAO", "FALSE", "N"].includes(String(value || "").trim().toUpperCase());
+          const isTanqueCheioAtual = !isParcial(entry.Completou_O_Tanque);
+          const isTanqueCheioAnterior = !isParcial(prevEntry.Completou_O_Tanque);
+
+          if (
+            currentKm > 0 &&
+            prevKm > 0 &&
+            currentKm > prevKm &&
+            litros > 0 &&
+            isTanqueCheioAtual &&
+            isTanqueCheioAnterior
+          ) {
             const kmPercorrido = currentKm - prevKm;
             const dynamicMediaKmL = kmPercorrido / litros;
             // Validação de sanidade (evita discrepâncias extremas de digitação)
