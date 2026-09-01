@@ -86,7 +86,7 @@ export const ConfigAguaModal: React.FC<Props> = ({
         {/* Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-emerald-400">
               <Settings className="w-5 h-5" />
             </div>
             <div>
@@ -118,15 +118,15 @@ export const ConfigAguaModal: React.FC<Props> = ({
           <div className="space-y-2 p-3.5 bg-slate-950/60 border border-slate-800/80 rounded-xl">
             <label className="text-xs font-semibold text-slate-200 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <GlassWater className="w-4 h-4 text-cyan-400" />
+                <GlassWater className="w-4 h-4 text-emerald-400" />
                 Tamanho do Copo / Garrafa Padrão
               </span>
-              <span className="text-xs font-bold text-cyan-400">
+              <span className="text-xs font-bold text-emerald-400">
                 {tamanhoCopoMl} ml ({tamanhoCopoMl >= 1000 ? `${tamanhoCopoMl / 1000} L` : `${tamanhoCopoMl} ml`})
               </span>
             </label>
             <p className="text-[11px] text-slate-400">
-              Define o volume somado automaticamente no botão de 1 clique (ex: <strong className="text-cyan-300">+{tamanhoCopoMl}ml</strong>).
+              Define o volume somado automaticamente no botão de 1 clique (ex: <strong className="text-emerald-300">+{tamanhoCopoMl}ml</strong>).
             </p>
 
             <div className="pt-1">
@@ -139,7 +139,7 @@ export const ConfigAguaModal: React.FC<Props> = ({
                 placeholder="Ex: 500"
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => setTamanhoCopoInput(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 px-3 text-center text-lg font-bold text-cyan-400 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 px-3 text-center text-lg font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
                 required
               />
             </div>
@@ -153,7 +153,7 @@ export const ConfigAguaModal: React.FC<Props> = ({
                   onClick={() => setTamanhoCopoInput(String(ml))}
                   className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${
                     tamanhoCopoMl === ml
-                      ? "bg-cyan-500/25 border-cyan-500/50 text-cyan-300 shadow-sm"
+                      ? "bg-slate-800 border-emerald-500/50 text-emerald-300 shadow-sm"
                       : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
                   }`}
                 >
@@ -213,13 +213,13 @@ export const ConfigAguaModal: React.FC<Props> = ({
           </div>
 
           {/* Helper Card */}
-          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-start gap-2.5 text-xs text-blue-300">
-            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+          <div className="p-3 bg-slate-800/80 border border-slate-700 rounded-xl flex items-start gap-2.5 text-xs text-slate-300">
+            <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-blue-200">
+              <p className="font-semibold text-white">
                 Equivalência diária:
               </p>
-              <p className="text-[11px] text-blue-300/90 mt-0.5">
+              <p className="text-[11px] text-slate-300 mt-0.5">
                 Para atingir sua meta de <strong className="text-white">{metaDiariaMl} ml</strong>, você precisará tomar aproximadamente <strong className="text-white">{coposPorDia} vezes</strong> o seu recipiente de <strong className="text-white">{tamanhoCopoMl} ml</strong> ao longo do dia.
               </p>
             </div>
@@ -238,7 +238,7 @@ export const ConfigAguaModal: React.FC<Props> = ({
             <button
               type="submit"
               disabled={isSaving}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-cyan-950/40 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-950/40 disabled:opacity-50"
             >
               {isSaving ? (
                 <span>Salvando...</span>

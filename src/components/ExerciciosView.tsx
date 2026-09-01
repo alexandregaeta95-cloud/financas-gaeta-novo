@@ -47,9 +47,9 @@ export const ExerciciosView: React.FC<Props> = ({
     const t = tipo.toUpperCase();
     if (t.includes("MUSCULA")) {
       return {
-        bg: "bg-indigo-500/10 text-indigo-300 border-indigo-500/20",
+        bg: "bg-slate-800 text-slate-200 border-slate-700",
         icon: "🏋️",
-        accent: "text-indigo-400",
+        accent: "text-slate-300",
       };
     }
     if (t.includes("CORRIDA")) {
@@ -68,16 +68,16 @@ export const ExerciciosView: React.FC<Props> = ({
     }
     if (t.includes("CICLISMO") || t.includes("BICICLETA") || t.includes("BIKE")) {
       return {
-        bg: "bg-cyan-500/10 text-cyan-300 border-cyan-500/20",
+        bg: "bg-slate-800 text-slate-200 border-slate-700",
         icon: "🚴",
-        accent: "text-cyan-400",
+        accent: "text-slate-300",
       };
     }
     if (t.includes("NATA")) {
       return {
-        bg: "bg-blue-500/10 text-blue-300 border-blue-500/20",
+        bg: "bg-slate-800 text-slate-200 border-slate-700",
         icon: "🏊",
-        accent: "text-blue-400",
+        accent: "text-slate-300",
       };
     }
     if (t.includes("FUNCIONAL") || t.includes("CROSSFIT")) {
@@ -89,20 +89,20 @@ export const ExerciciosView: React.FC<Props> = ({
     }
     if (t.includes("PILATES") || t.includes("ALONGA") || t.includes("YOGA")) {
       return {
-        bg: "bg-teal-500/10 text-teal-300 border-teal-500/20",
+        bg: "bg-slate-800 text-slate-200 border-slate-700",
         icon: "🧘",
-        accent: "text-teal-400",
+        accent: "text-slate-300",
       };
     }
     if (t.includes("FUTEBOL") || t.includes("FUT")) {
       return {
-        bg: "bg-lime-500/10 text-lime-300 border-lime-500/20",
+        bg: "bg-slate-800 text-slate-200 border-slate-700",
         icon: "⚽",
-        accent: "text-lime-400",
+        accent: "text-slate-300",
       };
     }
     return {
-      bg: "bg-slate-500/10 text-slate-300 border-slate-500/20",
+      bg: "bg-slate-800 text-slate-300 border-slate-700",
       icon: "🎯",
       accent: "text-slate-400",
     };
@@ -347,12 +347,12 @@ export const ExerciciosView: React.FC<Props> = ({
         </div>
 
         {/* Tempo Total no Período */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg relative overflow-hidden hover:border-teal-500/30 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg relative overflow-hidden hover:border-slate-700 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
               Tempo Total
             </span>
-            <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/30 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-center">
               <Timer className="w-4 h-4" />
             </div>
           </div>
@@ -369,12 +369,12 @@ export const ExerciciosView: React.FC<Props> = ({
         </div>
 
         {/* Média por Sessão */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg relative overflow-hidden hover:border-indigo-500/30 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg relative overflow-hidden hover:border-slate-700 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
               Média / Sessão
             </span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-center">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
@@ -383,7 +383,7 @@ export const ExerciciosView: React.FC<Props> = ({
               <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                 {stats.mediaMinutos}
               </span>
-              <span className="text-xs text-indigo-300 font-bold">min/treino</span>
+              <span className="text-xs text-slate-300 font-bold">min/treino</span>
             </div>
             <p className="text-[10px] text-slate-400 mt-0.5">
               {stats.totalCalorias > 0
@@ -420,7 +420,7 @@ export const ExerciciosView: React.FC<Props> = ({
           {/* Action Button: Registrar Treino */}
           <button
             onClick={onOpenRegistroModal}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-950/40 shrink-0"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-950/40 shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Registrar Treino</span>
@@ -553,7 +553,7 @@ export const ExerciciosView: React.FC<Props> = ({
                               ? "bg-rose-500/10 text-rose-300 border-rose-500/20"
                               : item.intensidade === "MODERADO"
                               ? "bg-amber-500/10 text-amber-300 border-amber-500/20"
-                              : "bg-teal-500/10 text-teal-300 border-teal-500/20"
+                              : "bg-slate-800 text-slate-300 border-slate-700"
                           }`}
                         >
                           {item.intensidade}

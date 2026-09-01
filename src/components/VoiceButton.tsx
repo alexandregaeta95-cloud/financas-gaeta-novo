@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { useVoiceRecognition } from "../hooks/useVoiceRecognition";
+import { isNextFieldCommand, focusNextField } from "../utils/voiceNavigation";
 
 export interface VoiceButtonProps {
   onTranscript: (text: string) => void;
@@ -9,6 +10,7 @@ export interface VoiceButtonProps {
   size?: "xs" | "sm" | "md";
   title?: string;
   disabled?: boolean;
+  fieldRef?: React.RefObject<HTMLElement>;
 }
 
 export const VoiceButton: React.FC<VoiceButtonProps> = ({
@@ -18,14 +20,18 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
   size = "sm",
   title = "Ditar por voz (Português)",
   disabled = false,
+  fieldRef,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   const handleResult = (recognizedText: string, isFinal: boolean) => {
-    if (recognizedText) {
-      const formatted = uppercase ? recognizedText.toUpperCase() : recognizedText;
-      onTranscript(formatted);
+    if (!recognizedText) return;
+    if (isFinal && isNextFieldCommand(recognizedText) && fieldRef?.current) {
+      focusNextField(fieldRef.current);
+      return;
     }
+    const formatted = uppercase ? recognizedText.toUpperCase() : recognizedText;
+    onTranscript(formatted);
   };
 
   const { isListening, isSupported, toggleListening, error } = useVoiceRecognition({

@@ -208,7 +208,7 @@ export const EditarAlturaModal: React.FC<Props> = ({
             <button
               type="submit"
               disabled={isSubmitting || !isValid}
-              className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-2 shadow-lg shadow-amber-950/40"
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-2 shadow-lg shadow-emerald-950/40"
             >
               <Check className="w-4 h-4" />
               <span>{isSubmitting ? "Salvando..." : "Salvar Altura"}</span>

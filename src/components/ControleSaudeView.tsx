@@ -267,8 +267,8 @@ export const ControleSaudeView: React.FC<Props> = ({
       bgBadge = "bg-emerald-500/15 border-emerald-500/30 text-emerald-300";
     } else if (sis <= 129 && dia <= 84) {
       classificacao = "Normal";
-      colorClass = "text-teal-400";
-      bgBadge = "bg-teal-500/15 border-teal-500/30 text-teal-300";
+      colorClass = "text-emerald-400";
+      bgBadge = "bg-emerald-500/15 border-emerald-500/30 text-emerald-300";
     } else if (sis <= 139 || dia <= 89) {
       classificacao = "Pré-Hipertensão";
       colorClass = "text-amber-400";
@@ -535,7 +535,7 @@ export const ControleSaudeView: React.FC<Props> = ({
           onClick={() => setActiveTab("dicas")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
             activeTab === "dicas"
-              ? "bg-indigo-500/20 border border-indigo-500/50 text-indigo-300 shadow-xs"
+              ? "bg-slate-800 border border-slate-600 text-slate-200 shadow-xs"
               : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
           }`}
         >
@@ -1031,7 +1031,7 @@ export const ControleSaudeView: React.FC<Props> = ({
 
               <div className="bg-slate-800/70 border border-slate-700/60 p-4 rounded-xl">
                 <div className="text-xs text-slate-400 font-medium">Média Diastólica (Mín)</div>
-                <div className="text-2xl font-black text-indigo-400 mt-1">
+                <div className="text-2xl font-black text-slate-200 mt-1">
                   {pressaoStats.avgDia}{" "}
                   <span className="text-xs font-semibold text-slate-400">mmHg</span>
                 </div>
@@ -1051,14 +1051,14 @@ export const ControleSaudeView: React.FC<Props> = ({
           {/* Reference Classification Guide Banner */}
           <div className="p-3.5 bg-slate-850 border border-slate-800 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
-              <Info className="w-4 h-4 text-indigo-400" />
+              <Info className="w-4 h-4 text-slate-400" />
               <span>Diretrizes de Pressão Arterial:</span>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-[11px]">
               <span className="text-emerald-400 font-medium">
                 • <strong>Ótima:</strong> &lt; 120 e &lt; 80
               </span>
-              <span className="text-teal-400 font-medium">
+              <span className="text-emerald-400 font-medium">
                 • <strong>Normal:</strong> 120-129 e/ou 80-84
               </span>
               <span className="text-amber-400 font-medium">
@@ -1120,7 +1120,7 @@ export const ControleSaudeView: React.FC<Props> = ({
                       }
                     />
                     <ReferenceLine y={120} stroke="#10b981" strokeDasharray="3 3" label={{ value: "Ref. 120", fill: "#10b981", fontSize: 10 }} />
-                    <ReferenceLine y={80} stroke="#6366f1" strokeDasharray="3 3" label={{ value: "Ref. 80", fill: "#6366f1", fontSize: 10 }} />
+                    <ReferenceLine y={80} stroke="#94a3b8" strokeDasharray="3 3" label={{ value: "Ref. 80", fill: "#94a3b8", fontSize: 10 }} />
                     <Line
                       type="monotone"
                       dataKey="valorPrincipal"
@@ -1134,10 +1134,10 @@ export const ControleSaudeView: React.FC<Props> = ({
                       type="monotone"
                       dataKey="valorSecundario"
                       name="valorSecundario"
-                      stroke="#818cf8"
+                      stroke="#94a3b8"
                       strokeWidth={2.5}
-                      dot={{ fill: "#818cf8", r: 4, stroke: "#0f172a", strokeWidth: 2 }}
-                      activeDot={{ r: 6, fill: "#c7d2fe" }}
+                      dot={{ fill: "#94a3b8", r: 4, stroke: "#0f172a", strokeWidth: 2 }}
+                      activeDot={{ r: 6, fill: "#cbd5e1" }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -1176,7 +1176,7 @@ export const ControleSaudeView: React.FC<Props> = ({
                       badge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
                     } else if (sis <= 129 && dia <= 84) {
                       label = "Normal";
-                      badge = "bg-teal-500/15 text-teal-300 border-teal-500/30";
+                      badge = "bg-slate-800 text-slate-300 border-slate-700";
                     } else if (sis <= 139 || dia <= 89) {
                       label = "Pré-Hipertensão";
                       badge = "bg-amber-500/15 text-amber-300 border-amber-500/30";
@@ -1219,7 +1219,7 @@ export const ControleSaudeView: React.FC<Props> = ({
                             <div className="flex items-baseline gap-1 mt-0.5">
                               <span className="text-base font-black text-rose-400">{reg.Valor_Principal}</span>
                               <span className="text-slate-500">/</span>
-                              <span className="text-base font-black text-indigo-400">{reg.Valor_Secundario || 0}</span>
+                              <span className="text-base font-black text-slate-300">{reg.Valor_Secundario || 0}</span>
                               <span className="text-[10px] text-slate-400 ml-0.5">mmHg</span>
                             </div>
                             {reg.Batimentos_Bpm ? (
@@ -1272,7 +1272,7 @@ export const ControleSaudeView: React.FC<Props> = ({
                           badge = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
                         } else if (sis <= 129 && dia <= 84) {
                           label = "Normal";
-                          badge = "bg-teal-500/15 text-teal-300 border-teal-500/30";
+                          badge = "bg-slate-800 text-slate-300 border-slate-700";
                         } else if (sis <= 139 || dia <= 89) {
                           label = "Pré-Hipertensão";
                           badge = "bg-amber-500/15 text-amber-300 border-amber-500/30";
@@ -1298,7 +1298,7 @@ export const ControleSaudeView: React.FC<Props> = ({
                                   {reg.Valor_Principal}
                                 </span>
                                 <span className="text-slate-500 mx-1">/</span>
-                                <span className="text-sm font-black text-indigo-400">
+                                <span className="text-sm font-black text-slate-300">
                                   {reg.Valor_Secundario || 0}
                                 </span>
                                 <span className="text-[11px] text-slate-400 ml-1">mmHg</span>
@@ -1378,7 +1378,7 @@ export const ControleSaudeView: React.FC<Props> = ({
 
               <div className="bg-slate-800/70 border border-slate-700/60 p-4 rounded-xl">
                 <div className="text-xs text-slate-400 font-medium">Média em Jejum</div>
-                <div className="text-2xl font-black text-teal-400 mt-1">
+                <div className="text-2xl font-black text-emerald-400 mt-1">
                   {glicemiaStats.avgJejum ? `${glicemiaStats.avgJejum}` : "—"}{" "}
                   <span className="text-xs font-semibold text-slate-400">mg/dL</span>
                 </div>
@@ -1387,7 +1387,7 @@ export const ControleSaudeView: React.FC<Props> = ({
 
               <div className="bg-slate-800/70 border border-slate-700/60 p-4 rounded-xl">
                 <div className="text-xs text-slate-400 font-medium">Média Pós-Refeição</div>
-                <div className="text-2xl font-black text-indigo-400 mt-1">
+                <div className="text-2xl font-black text-slate-200 mt-1">
                   {glicemiaStats.avgPos ? `${glicemiaStats.avgPos}` : "—"}{" "}
                   <span className="text-xs font-semibold text-slate-400">mg/dL</span>
                 </div>
@@ -1420,7 +1420,7 @@ export const ControleSaudeView: React.FC<Props> = ({
               <span className="text-rose-400 font-medium">
                 • <strong>Glicemia Elevada (Diabetes):</strong> ≥ 126 mg/dL em jejum
               </span>
-              <span className="text-teal-400 font-medium">
+              <span className="text-slate-300 font-medium">
                 • <strong>Pós-Prandial (2h após comer):</strong> &lt; 140 mg/dL
               </span>
             </div>
@@ -1745,8 +1745,8 @@ export const ControleSaudeView: React.FC<Props> = ({
             {/* 1. Hidratação */}
             <div className="bg-slate-850 border border-slate-800 p-5 rounded-2xl space-y-3">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/20">
-                  <Droplets className="w-5 h-5" />
+                <div className="p-2.5 rounded-xl bg-slate-800 text-slate-200 border border-slate-700">
+                  <Droplets className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-white">Hidratação Inteligente</h4>
@@ -1755,19 +1755,19 @@ export const ControleSaudeView: React.FC<Props> = ({
               </div>
               <ul className="space-y-2 text-xs text-slate-300">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span>
                     <strong>Meta diária:</strong> Recomenda-se cerca de 35 ml de água por kg de peso corporal (ex: 70 kg ≈ 2,4 litros diários).
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span>
                     Distribua a ingestão ao longo de todo o dia, evitando grandes volumes logo antes de dormir.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span>
                     A boa hidratação auxilia no equilíbrio do volume plasmático e previne picos falsos de viscosidade sanguínea.
                   </span>
@@ -1844,8 +1844,8 @@ export const ControleSaudeView: React.FC<Props> = ({
             {/* 4. Sono & Recuperação */}
             <div className="bg-slate-850 border border-slate-800 p-5 rounded-2xl space-y-3">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
-                  <Moon className="w-5 h-5" />
+                <div className="p-2.5 rounded-xl bg-slate-800 text-slate-200 border border-slate-700">
+                  <Moon className="w-5 h-5 text-slate-300" />
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-white">Higiene do Sono & Estresse</h4>
@@ -1854,19 +1854,19 @@ export const ControleSaudeView: React.FC<Props> = ({
               </div>
               <ul className="space-y-2 text-xs text-slate-300">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                   <span>
                     <strong>Duração ideal:</strong> 7 a 9 horas de sono de qualidade por noite para permitir o reparo celular e equilíbrio da pressão noturna.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                   <span>
                     Reduza telas azuis e luzes fortes 60 minutos antes de se deitar para otimizar a liberação natural de melatonina.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                   <span>
                     Privação de sono eleva o cortisol matinal, o que pode aumentar a resistência à insulina e a pressão sistólica.
                   </span>

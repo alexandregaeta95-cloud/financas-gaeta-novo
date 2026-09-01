@@ -124,7 +124,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
         {/* Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-emerald-400">
               <Droplets className="w-5 h-5" />
             </div>
             <div>
@@ -156,10 +156,10 @@ export const RegistroAguaModal: React.FC<Props> = ({
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <GlassWater className="w-3.5 h-3.5 text-cyan-400" />
+                <GlassWater className="w-3.5 h-3.5 text-emerald-400" />
                 Quantidade em Mililitros (ml)
               </span>
-              <span className="text-[11px] text-cyan-400 font-bold">
+              <span className="text-[11px] text-emerald-400 font-bold">
                 {currentQtdNumber >= 1000
                   ? `${(currentQtdNumber / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })} L (${currentQtdNumber} ml)`
                   : `${currentQtdNumber} ml`}
@@ -185,7 +185,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
                 placeholder="Ex: 750"
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => setQuantidadeInput(e.target.value)}
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-center text-lg font-bold text-cyan-400 focus:outline-none focus:border-cyan-500"
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-center text-lg font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
                 required
               />
 
@@ -207,7 +207,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
                   onClick={() => setQuantidadeInput(String(vol))}
                   className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${
                     currentQtdNumber === vol
-                      ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-300"
+                      ? "bg-slate-800 border-emerald-500/50 text-emerald-300"
                       : "bg-slate-800/60 border-slate-700/60 text-slate-400 hover:text-slate-200"
                   }`}
                 >
@@ -228,7 +228,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
                 type="date"
                 value={data}
                 onChange={(e) => setData(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-emerald-500"
                 required
               />
             </div>
@@ -242,7 +242,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
                 type="time"
                 value={hora}
                 onChange={(e) => setHora(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white focus:outline-none focus:border-emerald-500"
                 required
               />
             </div>
@@ -259,7 +259,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
               placeholder="Ex: Garrafa térmica, Copo, Água com gás..."
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
 
             {/* Sugestões rápidas */}
@@ -294,7 +294,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
             <button
               type="submit"
               disabled={isSaving}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-cyan-950/40 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-950/40 disabled:opacity-50"
             >
               {isSaving ? (
                 <span>Salvando...</span>

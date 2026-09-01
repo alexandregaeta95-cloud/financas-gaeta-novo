@@ -462,7 +462,7 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-emerald-950/40 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-emerald-950/40 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>Imprimir / Salvar PDF</span>
@@ -564,7 +564,7 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
                 <span className="text-[11px] font-bold text-slate-400 print-text-muted uppercase">
                   Glicemia Média
                 </span>
-                <Droplets className="w-4 h-4 text-cyan-400 print:text-cyan-700" />
+                <Droplets className="w-4 h-4 text-emerald-400 print:text-emerald-700" />
               </div>
               <div className="mt-2">
                 <div className="text-xl sm:text-2xl font-black text-white print-text-dark">
@@ -573,7 +573,7 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
                     mg/dL
                   </span>
                 </div>
-                <div className="text-[11px] font-medium text-cyan-400 print:text-cyan-700 mt-0.5">
+                <div className="text-[11px] font-medium text-emerald-400 print:text-emerald-700 mt-0.5">
                   {glicemiaStats?.avgJejum ? `Jejum: ~${glicemiaStats.avgJejum} mg/dL` : "Acompanhamento"}
                 </div>
               </div>
@@ -790,7 +790,7 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
           <div className="print-card p-5 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-4 print-section-break">
             <div className="flex items-center justify-between border-b border-slate-800 print:border-slate-300 pb-3">
               <h3 className="font-bold text-white print-text-dark text-sm uppercase tracking-wider flex items-center gap-2">
-                <Droplets className="w-4 h-4 text-cyan-400 print:text-cyan-700" />
+                <Droplets className="w-4 h-4 text-emerald-400 print:text-emerald-700" />
                 3. Monitoramento Glicêmico (Glicose)
               </h3>
               <span className="text-[11px] text-slate-400 print-text-muted">
@@ -815,7 +815,7 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
                   </div>
                   <div className="p-3 bg-slate-900 print:bg-slate-100 rounded-xl border border-slate-800/80 print:border-slate-200">
                     <span className="text-[10px] text-slate-400 print-text-muted block">Média Pós-Refeição (&lt; 140)</span>
-                    <strong className="text-base text-cyan-400 print:text-cyan-700">
+                    <strong className="text-base text-slate-200 print-text-dark">
                       {glicemiaStats.avgPos ? `${glicemiaStats.avgPos} mg/dL` : "--"}
                     </strong>
                   </div>
@@ -984,7 +984,7 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
             <div className="print-card p-5 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-4 print-section-break">
               <div className="flex items-center justify-between border-b border-slate-800 print:border-slate-300 pb-3">
                 <h3 className="font-bold text-white print-text-dark text-sm uppercase tracking-wider flex items-center gap-2">
-                  <Stethoscope className="w-4 h-4 text-indigo-400 print:text-indigo-700" />
+                  <Stethoscope className="w-4 h-4 text-emerald-400 print:text-emerald-700" />
                   5. Consultas & Medicamentos Registrados
                 </h3>
               </div>
@@ -993,7 +993,7 @@ export const SaudeRelatorioModal: React.FC<Props> = ({
                 {/* Consultas */}
                 <div className="space-y-2">
                   <span className="text-[11px] font-bold text-slate-300 print-text-dark uppercase tracking-wider flex items-center gap-1.5">
-                    <Stethoscope className="w-3.5 h-3.5 text-indigo-400" />
+                    <Stethoscope className="w-3.5 h-3.5 text-emerald-400" />
                     Últimas Consultas Médicas
                   </span>
                   {consultas.length > 0 ? (

@@ -74,6 +74,7 @@ export const VoiceTextArea: React.FC<VoiceTextAreaProps> = ({
           uppercase={uppercase}
           disabled={disabled}
           size="sm"
+          fieldRef={textareaRef}
         />
       </div>
     </div>

@@ -381,7 +381,7 @@ export const ListaMercadoView: React.FC<Props> = ({
           <p className="text-xs text-slate-400">
             Aba <code className="text-emerald-400 font-mono">16_Lista_De_Mercado</code>
             {generalReminderDate && (
-              <span className="ml-2 inline-flex items-center gap-1 text-teal-400 font-medium">
+              <span className="ml-2 inline-flex items-center gap-1 text-emerald-400 font-medium">
                 • Lembrete agendado: {generalReminderDate} às {generalReminderTime}
               </span>
             )}
@@ -391,7 +391,7 @@ export const ListaMercadoView: React.FC<Props> = ({
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => setIsReadPhotoModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 hover:to-teal-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
             title="Tirar foto ou enviar imagem de uma lista de compras para extrair itens com IA"
           >
             <Camera className="w-3.5 h-3.5 text-emerald-400" />
@@ -400,7 +400,7 @@ export const ListaMercadoView: React.FC<Props> = ({
 
           <button
             onClick={() => setIsGeneralReminderModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-semibold rounded-xl transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-xl transition-colors"
           >
             <Clock className="w-3.5 h-3.5" />
             <span>{generalReminderDate ? "⏰ Lembrete Agendado" : "⏰ Agendar Ida ao Mercado"}</span>
@@ -498,7 +498,7 @@ export const ListaMercadoView: React.FC<Props> = ({
                         {item.Item}
                       </span>
                       {!isBought && item.Data_Lembrete && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20 text-[10px] font-semibold">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-semibold">
                           <Clock className="w-2.5 h-2.5" />
                           <span>
                             {item.Data_Lembrete}
@@ -801,8 +801,8 @@ export const ListaMercadoView: React.FC<Props> = ({
 
               {/* Lembrete de Compra deste Item */}
               <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
-                <div className="flex items-center gap-1.5 text-teal-400 font-semibold text-xs">
-                  <Clock className="w-4 h-4" />
+                <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-xs">
+                  <Clock className="w-4 h-4 text-emerald-400" />
                   <span>Lembrete de Compra (Opcional)</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -865,7 +865,7 @@ export const ListaMercadoView: React.FC<Props> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs text-xs">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-teal-400">
+              <div className="flex items-center gap-2 text-emerald-400">
                 <Clock className="w-5 h-5" />
                 <h3 className="font-bold text-base text-white">Agendar Ida ao Mercado</h3>
               </div>
@@ -929,7 +929,7 @@ export const ListaMercadoView: React.FC<Props> = ({
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
                   >
                     Salvar Lembrete
                   </button>

@@ -184,7 +184,7 @@ export const ContadorAguaWidget: React.FC<Props> = ({
             className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner transition-colors ${
               metaAtingida
                 ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
-                : "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400"
+                : "bg-slate-800 border border-slate-700 text-emerald-400"
             }`}
           >
             <Droplets className="w-6 h-6" />
@@ -192,14 +192,14 @@ export const ContadorAguaWidget: React.FC<Props> = ({
 
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-cyan-400/90">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Hidratação Diária
               </span>
               <span
                 className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${
                   metaAtingida
                     ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                    : "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+                    : "bg-slate-800 text-emerald-400 border-slate-700"
                 }`}
               >
                 {metaAtingida ? "🎉 Meta Atingida!" : `💧 ${percentualHoje}% da meta`}
@@ -208,7 +208,7 @@ export const ContadorAguaWidget: React.FC<Props> = ({
 
             <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
               <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                <span className={metaAtingida ? "text-emerald-400 font-extrabold" : "text-cyan-400 font-extrabold"}>
+                <span className={metaAtingida ? "text-emerald-400 font-extrabold" : "text-white font-extrabold"}>
                   {aguaHojeMl.toLocaleString("pt-BR")} ml
                 </span>{" "}
                 <span className="text-slate-400 text-sm sm:text-base font-semibold">
@@ -228,7 +228,7 @@ export const ContadorAguaWidget: React.FC<Props> = ({
           <button
             onClick={() => handleQuickAdd(tamanhoCopoMl)}
             disabled={isQuickAdding}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-cyan-950/40 disabled:opacity-50"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-950/40 disabled:opacity-50"
             title={`Registrar ${tamanhoCopoMl}ml de água agora`}
           >
             <span className="text-base leading-none">💧</span>
@@ -243,7 +243,7 @@ export const ContadorAguaWidget: React.FC<Props> = ({
             <button
               onClick={() => handleQuickAdd(250)}
               disabled={isQuickAdding}
-              className="hidden sm:inline-flex items-center justify-center px-2.5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 text-xs font-semibold rounded-xl transition-colors shrink-0"
+              className="hidden sm:inline-flex items-center justify-center px-2.5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-colors shrink-0"
               title="Registrar copo de 250ml"
             >
               +250ml
@@ -256,14 +256,14 @@ export const ContadorAguaWidget: React.FC<Props> = ({
             className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-medium rounded-xl transition-colors shrink-0"
             title="Registrar água com horário ou quantidade customizada"
           >
-            <Plus className="w-3.5 h-3.5 text-cyan-400" />
+            <Plus className="w-3.5 h-3.5 text-emerald-400" />
             <span>Ajustar</span>
           </button>
 
           {/* Settings button (cup size & daily goal) */}
           <button
             onClick={() => setIsConfigModalOpen(true)}
-            className="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-cyan-400 rounded-xl transition-colors shrink-0"
+            className="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-emerald-400 rounded-xl transition-colors shrink-0"
             title="Configurar tamanho do copo/garrafa e meta diária de água"
           >
             <Settings className="w-4 h-4" />
@@ -288,7 +288,7 @@ export const ContadorAguaWidget: React.FC<Props> = ({
       <div className="space-y-1.5 pt-1">
         <div className="flex items-center justify-between text-[11px]">
           <span className="text-slate-400 flex items-center gap-1">
-            <Target className="w-3.5 h-3.5 text-cyan-400" />
+            <Target className="w-3.5 h-3.5 text-emerald-400" />
             Progresso de Hoje: <strong className="text-slate-200">{percentualHoje}%</strong>
           </span>
           <span className="text-slate-400">
@@ -299,7 +299,7 @@ export const ContadorAguaWidget: React.FC<Props> = ({
               </span>
             ) : (
               <span>
-                Faltam <strong className="text-cyan-300">{(metaDiariaMl - aguaHojeMl).toLocaleString("pt-BR")} ml</strong> para a meta
+                Faltam <strong className="text-emerald-300">{(metaDiariaMl - aguaHojeMl).toLocaleString("pt-BR")} ml</strong> para a meta
               </span>
             )}
           </span>
@@ -309,8 +309,8 @@ export const ContadorAguaWidget: React.FC<Props> = ({
           <div
             className={`h-full transition-all duration-500 rounded-full relative ${
               metaAtingida
-                ? "bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 shadow-lg shadow-emerald-950/50"
-                : "bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-500"
+                ? "bg-emerald-500 shadow-lg shadow-emerald-950/50"
+                : "bg-emerald-600"
             }`}
             style={{ width: `${Math.min(100, Math.max(percentualHoje > 0 ? 4 : 0, percentualHoje))}%` }}
           />
@@ -337,7 +337,7 @@ export const ContadorAguaWidget: React.FC<Props> = ({
                   onClick={() => setPeriodoFilter(tab.id)}
                   className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all ${
                     periodoFilter === tab.id
-                      ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-sm"
+                      ? "bg-slate-800 text-emerald-300 border-emerald-500/40 shadow-sm"
                       : "bg-slate-800/50 text-slate-400 border-transparent hover:bg-slate-800 hover:text-slate-200"
                   }`}
                 >
@@ -349,7 +349,7 @@ export const ContadorAguaWidget: React.FC<Props> = ({
             {/* Total water in period */}
             <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
               <span>Total no período:</span>
-              <strong className="text-cyan-400 font-bold">
+              <strong className="text-emerald-400 font-bold">
                 {formatVolume(totalAguaPeriodoMl)}
               </strong>
               <span>({filteredList.length} registros)</span>
@@ -365,7 +365,7 @@ export const ContadorAguaWidget: React.FC<Props> = ({
               </p>
               <button
                 onClick={() => handleQuickAdd(tamanhoCopoMl)}
-                className="mt-2 inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-semibold"
+                className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Registrar primeiro copo de {tamanhoCopoMl}ml agora
@@ -381,11 +381,11 @@ export const ContadorAguaWidget: React.FC<Props> = ({
                 return (
                   <div
                     key={item.id}
-                    className="p-2.5 bg-slate-950/60 hover:bg-slate-950 border border-slate-800/80 hover:border-cyan-500/30 rounded-xl flex items-center justify-between gap-2 transition-colors group"
+                    className="p-2.5 bg-slate-950/60 hover:bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-xl flex items-center justify-between gap-2 transition-colors group"
                   >
                     {/* Time & Info */}
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center font-bold text-xs shrink-0">
+                      <div className="w-7 h-7 rounded-lg bg-slate-800 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">
                         💧
                       </div>
                       <div className="min-w-0">
@@ -393,7 +393,7 @@ export const ContadorAguaWidget: React.FC<Props> = ({
                           <span className="text-xs font-bold text-white">
                             {vol >= 1000 ? `${(vol / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })} L` : `${vol} ml`}
                           </span>
-                          <span className="text-[11px] font-mono text-cyan-400 font-medium">
+                          <span className="text-[11px] font-mono text-emerald-400 font-medium">
                             {item.hora || "--:--"}
                           </span>
                         </div>
@@ -434,7 +434,7 @@ export const ContadorAguaWidget: React.FC<Props> = ({
                         <>
                           <button
                             onClick={() => handleOpenEdit(item)}
-                            className="p-1 text-slate-500 hover:text-cyan-400 hover:bg-slate-800 rounded-md transition-colors"
+                            className="p-1 text-slate-500 hover:text-emerald-400 hover:bg-slate-800 rounded-md transition-colors"
                             title="Editar registro"
                           >
                             <Edit2 className="w-3.5 h-3.5" />

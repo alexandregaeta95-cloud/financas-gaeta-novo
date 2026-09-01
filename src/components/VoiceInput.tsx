@@ -73,6 +73,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
           uppercase={uppercase}
           disabled={disabled}
           size="sm"
+          fieldRef={inputRef}
         />
       </div>
     </div>
