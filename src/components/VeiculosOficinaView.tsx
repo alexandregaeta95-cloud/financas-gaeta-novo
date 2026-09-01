@@ -1619,6 +1619,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     inputMode="numeric"
                     placeholder="Ex: 85200"
                     value={servicoKmDisplay}
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
                     onChange={(e) => {
                       const raw = e.target.value.replace(/\D/g, "");
                       setServicoKmDisplay(raw);
@@ -1656,6 +1658,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                       inputMode="numeric"
                       placeholder="0,00"
                       value={servicoValorDisplay}
+                      onFocus={(e) => e.target.select()}
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
                       onChange={(e) => {
                         const { numeric, formatted } = formatCurrencyInput(e.target.value);
                         setServicoValorDisplay(formatted);
@@ -1692,6 +1696,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                       inputMode="numeric"
                       placeholder="0,00"
                       value={servicoValorPagoDisplay}
+                      onFocus={(e) => e.target.select()}
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
                       onChange={(e) => {
                         const { numeric, formatted } = formatCurrencyInput(e.target.value);
                         setServicoValorPagoDisplay(formatted);
