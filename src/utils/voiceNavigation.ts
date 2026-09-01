@@ -20,6 +20,27 @@ export function isNextFieldCommand(text: string): boolean {
   return commands.includes(normalized);
 }
 
+const TRAILING_COMMAND_WORDS = ["proximo", "avancar", "avanca"];
+
+export function extractNextFieldCommand(rawText: string): { cleanText: string; hasCommand: boolean } {
+  const trimmed = rawText.trim();
+  if (isNextFieldCommand(trimmed)) {
+    return { cleanText: "", hasCommand: true };
+  }
+  const words = trimmed.split(/\s+/);
+  if (words.length > 1) {
+    const lastWordNormalized = words[words.length - 1]
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[.,!?]/g, "");
+    if (TRAILING_COMMAND_WORDS.includes(lastWordNormalized)) {
+      return { cleanText: words.slice(0, -1).join(" ").trim(), hasCommand: true };
+    }
+  }
+  return { cleanText: trimmed, hasCommand: false };
+}
+
 export function focusNextField(current: HTMLElement | null): void {
   if (!current) return;
   const container = current.closest("form") || document.body;

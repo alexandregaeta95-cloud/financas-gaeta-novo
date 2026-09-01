@@ -1720,7 +1720,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 <VoiceTextArea
                   placeholder="Ex: Trocadas pastilhas dianteiras e fluido de freio DOT4..."
                   value={servicoForm.Observações || ""}
-                  onChange={(val) => setServicoForm({ ...servicoForm, Observações: val })}
+                  onChange={(e) => setServicoForm({ ...servicoForm, Observações: e.target.value })}
                   rows={2}
                 />
               </div>
@@ -2184,7 +2184,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 <VoiceTextArea
                   placeholder="Ex: Calibrar dianteiros 32 psi e traseiros 30 psi. Óleo sintético 5W30..."
                   value={manutencaoForm.Observações || ""}
-                  onChange={(val) => setManutencaoForm({ ...manutencaoForm, Observações: val })}
+                  onChange={(e) => setManutencaoForm({ ...manutencaoForm, Observações: e.target.value })}
                   rows={2}
                 />
               </div>

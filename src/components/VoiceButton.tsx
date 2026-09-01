@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { useVoiceRecognition } from "../hooks/useVoiceRecognition";
-import { isNextFieldCommand, focusNextField } from "../utils/voiceNavigation";
+import { isNextFieldCommand, focusNextField, extractNextFieldCommand } from "../utils/voiceNavigation";
 
 export interface VoiceButtonProps {
   onTranscript: (text: string) => void;
@@ -26,8 +26,22 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
 
   const handleResult = (recognizedText: string, isFinal: boolean) => {
     if (!recognizedText) return;
-    if (isFinal && isNextFieldCommand(recognizedText) && fieldRef?.current) {
-      focusNextField(fieldRef.current);
+    if (!isFinal) {
+      if (!isNextFieldCommand(recognizedText)) {
+        const formatted = uppercase ? recognizedText.toUpperCase() : recognizedText;
+        onTranscript(formatted);
+      }
+      return;
+    }
+    const { cleanText, hasCommand } = extractNextFieldCommand(recognizedText);
+    if (hasCommand) {
+      if (cleanText) {
+        const formatted = uppercase ? cleanText.toUpperCase() : cleanText;
+        onTranscript(formatted);
+      }
+      if (fieldRef?.current) {
+        setTimeout(() => focusNextField(fieldRef!.current), 0);
+      }
       return;
     }
     const formatted = uppercase ? recognizedText.toUpperCase() : recognizedText;
