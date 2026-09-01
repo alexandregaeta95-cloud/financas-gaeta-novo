@@ -308,7 +308,7 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
                 <input
                   type="text"
                   value={formNome}
-                  onChange={(e) => setFormNome(e.target.value)}
+                  onChange={(e) => setFormNome(e.target.value.toUpperCase())}
                   placeholder="Ex: Losartana 50mg, Dipirona 1g, Ômega 3..."
                   required
                   className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 placeholder:text-slate-600"

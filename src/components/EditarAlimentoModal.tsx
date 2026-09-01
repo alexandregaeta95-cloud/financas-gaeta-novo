@@ -128,7 +128,7 @@ export const EditarAlimentoModal: React.FC<Props> = ({
                 type="text"
                 required
                 value={nomePrato}
-                onChange={(e) => setNomePrato(e.target.value)}
+                onChange={(e) => setNomePrato(e.target.value.toUpperCase())}
                 placeholder="Ex: Frango com Batata Doce"
                 className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
               />
@@ -234,7 +234,7 @@ export const EditarAlimentoModal: React.FC<Props> = ({
             <VoiceInput
               type="text"
               value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
+              onChange={(e) => setObservacoes(e.target.value.toUpperCase())}
               placeholder="Ex: Almoço pós-treino, sem tempero industrializado..."
               className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
             />
@@ -266,7 +266,7 @@ export const EditarAlimentoModal: React.FC<Props> = ({
                     type="text"
                     placeholder="Nome do item (ex: Arroz)"
                     value={it.item}
-                    onChange={(e) => handleItemChange(idx, "item", e.target.value)}
+                    onChange={(e) => handleItemChange(idx, "item", e.target.value.toUpperCase())}
                     className="flex-1 bg-transparent border-0 text-white text-xs focus:outline-none"
                   />
                   <input
