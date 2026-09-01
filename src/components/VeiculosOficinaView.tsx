@@ -1613,6 +1613,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                   value={servicoForm.Descrição}
                   onChange={(val) => setServicoForm({ ...servicoForm, Descrição: val })}
                   options={servicosDisponiveis}
+                  showVoice
                 />
               </div>
 
@@ -1645,6 +1646,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     value={servicoForm.Oficina_Nome}
                     onChange={(val) => setServicoForm({ ...servicoForm, Oficina_Nome: val })}
                     options={oficinasDisponiveis}
+                    showVoice
                   />
                 </div>
               </div>
@@ -1849,6 +1851,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     value={manutencaoForm.Descrição}
                     onChange={(val) => setManutencaoForm({ ...manutencaoForm, Descrição: val })}
                     options={servicosDisponiveis}
+                    showVoice
                   />
                 </div>
               </div>
@@ -2163,6 +2166,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     value={manutencaoForm.Oficina_Nome}
                     onChange={(val) => setManutencaoForm({ ...manutencaoForm, Oficina_Nome: val })}
                     options={oficinasDisponiveis}
+                    showVoice
                   />
                 </div>
               </div>

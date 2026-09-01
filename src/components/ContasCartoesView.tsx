@@ -617,6 +617,7 @@ export const ContasCartoesView: React.FC<Props> = ({
                   value={contaForm.Nome}
                   onChange={(val) => setContaForm({ ...contaForm, Nome: val })}
                   options={BANCOS_SUGESTOES}
+                  showVoice
                 />
               </div>
 
@@ -737,6 +738,7 @@ export const ContasCartoesView: React.FC<Props> = ({
                     onChange={(val) => setCartaoForm({ ...cartaoForm, Bandeira: val })}
                     options={BANDEIRAS_SUGESTOES}
                     placeholder="Selecione ou digite..."
+                    showVoice
                   />
                 </div>
 

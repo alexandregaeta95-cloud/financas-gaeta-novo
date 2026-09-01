@@ -1875,6 +1875,7 @@ export const LancamentosView: React.FC<Props> = ({
                     options={categoriasDisponiveis}
                     placeholder="Selecione ou digite..."
                     required
+                    showVoice
                   />
                 </div>
 

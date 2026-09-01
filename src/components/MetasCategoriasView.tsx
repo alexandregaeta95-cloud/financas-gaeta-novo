@@ -523,6 +523,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
                   value={metaForm.Categoria || ""}
                   onChange={(val) => setMetaForm({ ...metaForm, Categoria: val })}
                   options={categoriasDisponiveis}
+                  showVoice
                 />
               </div>
 
