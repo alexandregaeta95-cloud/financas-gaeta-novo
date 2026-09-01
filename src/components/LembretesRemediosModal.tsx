@@ -19,6 +19,8 @@ import {
 import { LembreteRemedio } from "../types";
 import { formatarHora } from "../utils/formatters";
 import { testAlarmSound } from "../services/alarmSoundService";
+import { VoiceInput } from "./VoiceInput";
+import { VoiceTextArea } from "./VoiceTextArea";
 
 interface LembretesRemediosModalProps {
   isOpen: boolean;
@@ -305,13 +307,14 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Nome do Medicamento & Dosagem <span className="text-rose-400">*</span>
                 </label>
-                <input
+                <VoiceInput
                   type="text"
                   value={formNome}
                   onChange={(e) => setFormNome(e.target.value.toUpperCase())}
                   placeholder="Ex: Losartana 50mg, Dipirona 1g, Ômega 3..."
                   required
-                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 placeholder:text-slate-600"
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 placeholder:text-slate-600 uppercase"
+                  uppercase
                 />
               </div>
 
@@ -557,12 +560,13 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
                   <Info className="w-3.5 h-3.5 text-slate-400" />
                   <span>Instruções / Como tomar (Opcional)</span>
                 </label>
-                <textarea
+                <VoiceTextArea
                   value={formInstrucoes}
-                  onChange={(e) => setFormInstrucoes(e.target.value)}
+                  onChange={(e) => setFormInstrucoes(e.target.value.toUpperCase())}
                   placeholder="Ex: Tomar em jejum com água; tomar 1 comprimido após o almoço..."
                   rows={2}
-                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500 placeholder:text-slate-600 resize-none"
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-emerald-500 placeholder:text-slate-600 resize-none uppercase"
+                  uppercase
                 />
               </div>
 

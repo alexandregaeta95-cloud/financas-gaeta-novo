@@ -324,10 +324,18 @@ export const LancamentosView: React.FC<Props> = ({
   const defaultVeic = veiculos[0];
   const defaultMotorista = defaultVeic?.Motorista ? defaultVeic.Motorista.trim() : "";
 
+  // Helper to get current system time in HH:mm format
+  const getCurrentTimeHHMM = (): string => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
+
   // Form State
   const [formData, setFormData] = useState<Partial<Lancamento>>({
     Data: new Date().toISOString().split("T")[0],
-    Hora: "",
+    Hora: getCurrentTimeHHMM(),
     Tipo: initialFuelingMode ? "ABASTECIMENTO" : "DESPESA",
     Categoria: initialFuelingMode ? "ABASTECIMENTO" : "Alimentação",
     Descricao: "",
@@ -445,6 +453,7 @@ export const LancamentosView: React.FC<Props> = ({
       const defM = defV?.Motorista ? defV.Motorista.trim() : "";
       setFormData({
         Data: new Date().toISOString().split("T")[0],
+        Hora: getCurrentTimeHHMM(),
         Tipo: initialFuelingMode ? "ABASTECIMENTO" : "DESPESA",
         Categoria: initialFuelingMode ? "ABASTECIMENTO" : "Alimentação",
         Descricao: "",
@@ -481,7 +490,7 @@ export const LancamentosView: React.FC<Props> = ({
     const defM = defV?.Motorista ? defV.Motorista.trim() : "";
     setFormData({
       Data: new Date().toISOString().split("T")[0],
-      Hora: "",
+      Hora: getCurrentTimeHHMM(),
       Tipo: isFuel ? "ABASTECIMENTO" : "DESPESA",
       Categoria: isFuel ? "ABASTECIMENTO" : "Alimentação",
       Descricao: "",
@@ -2323,14 +2332,15 @@ export const LancamentosView: React.FC<Props> = ({
                         </button>
                       </div>
                       <div className="relative">
-                        <input
+                        <VoiceInput
                           type="text"
                           placeholder="Ex: -23.55052,-46.633308 ou Av. Brasil"
                           value={formData.Localizacao_Do_Posto || ""}
                           onChange={(e) => setFormData({ ...formData, Localizacao_Do_Posto: e.target.value.toUpperCase() })}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-8 text-white text-xs uppercase focus:outline-none focus:border-amber-500"
+                          className="pl-8 bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs uppercase focus:outline-none focus:border-amber-500"
+                          uppercase
                         />
-                        <MapPin className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3 pointer-events-none" />
+                        <MapPin className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3 pointer-events-none z-10" />
                       </div>
                     </div>
                   </div>
@@ -2338,12 +2348,12 @@ export const LancamentosView: React.FC<Props> = ({
                   {/* Comprovante */}
                   <div>
                     <label className="block text-slate-300 text-[11px] font-medium mb-1">Comprovante (URL / Foto)</label>
-                    <input
+                    <VoiceInput
                       type="text"
                       placeholder="Ex: https://..."
                       value={formData.Comprovante_Url || ""}
                       onChange={(e) => setFormData({ ...formData, Comprovante_Url: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500 normal-case font-mono"
+                      className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500 normal-case font-mono"
                     />
                   </div>
 

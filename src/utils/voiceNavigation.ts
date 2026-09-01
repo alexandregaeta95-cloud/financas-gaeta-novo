@@ -20,7 +20,16 @@ export function isNextFieldCommand(text: string): boolean {
   return commands.includes(normalized);
 }
 
-const TRAILING_COMMAND_WORDS = ["proximo", "avancar", "avanca"];
+const TRAILING_SINGLE_WORD_COMMANDS = ["avancar", "avanca"];
+
+function normalizeWord(w: string): string {
+  return w
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[.,!?]/g, "")
+    .trim();
+}
 
 export function extractNextFieldCommand(rawText: string): { cleanText: string; hasCommand: boolean } {
   const trimmed = rawText.trim();
@@ -28,16 +37,30 @@ export function extractNextFieldCommand(rawText: string): { cleanText: string; h
     return { cleanText: "", hasCommand: true };
   }
   const words = trimmed.split(/\s+/);
-  if (words.length > 1) {
-    const lastWordNormalized = words[words.length - 1]
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[.,!?]/g, "");
-    if (TRAILING_COMMAND_WORDS.includes(lastWordNormalized)) {
-      return { cleanText: words.slice(0, -1).join(" ").trim(), hasCommand: true };
+
+  // Verifica se as duas últimas palavras formam "próximo campo"
+  if (words.length >= 2) {
+    const secondToLast = normalizeWord(words[words.length - 2]);
+    const last = normalizeWord(words[words.length - 1]);
+    if (secondToLast === "proximo" && last === "campo") {
+      return {
+        cleanText: words.slice(0, -2).join(" ").trim(),
+        hasCommand: true,
+      };
     }
   }
+
+  // Verifica se a última palavra é "avançar" ou "avança"
+  if (words.length > 1) {
+    const lastWordNormalized = normalizeWord(words[words.length - 1]);
+    if (TRAILING_SINGLE_WORD_COMMANDS.includes(lastWordNormalized)) {
+      return {
+        cleanText: words.slice(0, -1).join(" ").trim(),
+        hasCommand: true,
+      };
+    }
+  }
+
   return { cleanText: trimmed, hasCommand: false };
 }
 
