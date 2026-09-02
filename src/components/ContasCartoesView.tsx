@@ -124,10 +124,9 @@ export const ContasCartoesView: React.FC<Props> = ({
       Ultima_Fatura_Paga: faturaKey,
     };
 
-    await onSaveCartao(updatedCartao);
-
-    // Atualiza o estado do modal para refletir imediatamente a alteração
+    // Atualiza o modal imediatamente (otimista), salva em segundo plano
     setHistoricoFaturasCartao(updatedCartao);
+    onSaveCartao(updatedCartao);
   };
 
   // Calculate dynamic current month spent sum for each card using calculateCardBalance
