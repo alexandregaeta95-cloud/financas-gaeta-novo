@@ -82,22 +82,22 @@ var HEADERS_BY_SHEET = {
   "7_Receitas_Médicas": ["Id", "Medicamento", "Dosagem", "Frequência", "Médico", "Data_Emissão", "Data_Validade", "Data_Vencimento", "Instruções", "Especialidade", "Observação", "Arquivo_Anexo", "Ativa"],
   "8_Infracoes": ["Id", "Protocolo", "Título", "Veículo", "Placa", "Data", "Descrição", "Valor", "Pontos", "Status", "Localização", "Observação"],
   "9_Veiculos": ["Id", "Descrição", "Motorista", "Placa", "Renavam", "Chassi", "Marca", "Modelo", "Ano", "Ano_Fabricação", "Combustível", "KM_Atual", "Ativo"],
-  "10_Metas_De_Categoria": ["Id", "Categoria", "Valor_Meta", "Mes_Ano", "Alerta_Porcentagem"],
-  "11_Categorias_Customizadas": ["Id", "Nome", "Tipo", "Icone", "Cor_Hex"],
-  "12_Analises": ["Id", "Metrica", "Valor", "Data_Atualizacao", "Detalhes"],
-  "13_Perfil": ["Id", "Nome", "Email", "Chave_Pix", "Moeda", "Ultima_Sincronizacao"],
-  "14_Oficina": ["Id", "Data", "Descrição", "KM", "Valor_A_PG", "Valor_Pago", "Oficina_Nome", "Comprovante_Url", "Observações", "VeiculoID", "Veiculo"],
+  "10_Metas_De_Categoria": ["Id", "Categoria", "Valor_Meta", "Mes_Ano", "Alerta_Porcentagem", "Status"],
+  "11_Categorias_Customizadas": ["Id", "Nome", "Tipo", "Icone", "Cor_Hex", "Status"],
+  "12_Analises": ["Id", "Metrica", "Valor", "Data_Atualizacao", "Detalhes", "Status"],
+  "13_Perfil": ["Id", "Nome", "Email", "Chave_Pix", "Moeda", "Ultima_Sincronizacao", "Status"],
+  "14_Oficina": ["Id", "Data", "Descrição", "KM", "Valor_A_PG", "Valor_Pago", "Oficina_Nome", "Comprovante_Url", "Observações", "VeiculoID", "Veiculo", "Status"],
   "15_Manutenções_Agendadas": ["Id", "Veículo", "Descrição", "Tipo_Agendamento", "Data_Alvo", "KM_Alvo", "Recorrente", "Frequência_Meses", "Frequência_KM", "Status", "Prioridade", "Oficina_Nome", "Observações"],
-  "16_Lista_De_Mercado": ["Id", "Item", "Categoria", "Quantidade", "Unidade", "Valor_Unitário", "Valor_Total", "Preco_Estimado", "Data_Pedido", "Data_Compra", "Comprado", "Observação"],
-  "17_Zonas_De_Risco": ["Id", "Nome_Local", "Bairro_Cidade", "Nivel_Risco", "Tipo_Ocorrencia", "Observacoes", "Latitude", "Longitude", "Raio_(M)", "Ativo", "Mensagem_De_Alerta", "Data_Registro"],
+  "16_Lista_De_Mercado": ["Id", "Item", "Categoria", "Quantidade", "Unidade", "Valor_Unitário", "Valor_Total", "Preco_Estimado", "Data_Pedido", "Data_Compra", "Comprado", "Observação", "Status"],
+  "17_Zonas_De_Risco": ["Id", "Nome_Local", "Bairro_Cidade", "Nivel_Risco", "Tipo_Ocorrencia", "Observacoes", "Latitude", "Longitude", "Raio_(M)", "Ativo", "Mensagem_De_Alerta", "Data_Registro", "Status"],
   "18_Cartões_De_Crédito": ["Id", "Nome", "Bandeira", "Limite_Total", "Dia_Fechamento", "Dia_Vencimento", "Cor_Hex", "Ativo"],
-  "19_Agenda_E_Compromissos": ["Id", "Titulo", "Data", "Hora", "Descrição", "Cor_De_Identificação", "Efeito_Alerta_(Piscando)", "Lembrete_Ativo", "Dias_De_Antecedência", "Concluído", "Categoria"],
-  "20_Controle_Saude": ["Id", "Tipo_Registro", "Data_Hora", "Valor_Principal", "Valor_Secundario", "Batimentos_Bpm", "Contexto", "Observacoes", "Data_Criacao"],
-  "21_Analise_Alimentos": ["Id", "Data", "Data_Hora", "Nome_Prato", "Calorias_Estimadas", "Proteinas_Estimadas", "Carboidratos_Estimados", "Gorduras_Estimadas", "Classificacao_Geral", "Itens_Identificados", "Dicas_Nutricionais", "Observacoes", "Data_Criacao"],
+  "19_Agenda_E_Compromissos": ["Id", "Titulo", "Data", "Hora", "Descrição", "Cor_De_Identificação", "Efeito_Alerta_(Piscando)", "Lembrete_Ativo", "Dias_De_Antecedência", "Concluído", "Categoria", "Status"],
+  "20_Controle_Saude": ["Id", "Tipo_Registro", "Data_Hora", "Valor_Principal", "Valor_Secundario", "Batimentos_Bpm", "Contexto", "Observacoes", "Data_Criacao", "Status"],
+  "21_Analise_Alimentos": ["Id", "Data", "Data_Hora", "Nome_Prato", "Calorias_Estimadas", "Proteinas_Estimadas", "Carboidratos_Estimados", "Gorduras_Estimadas", "Classificacao_Geral", "Itens_Identificados", "Dicas_Nutricionais", "Observacoes", "Data_Criacao", "Status"],
   "22_Config_Lembretes_Saude": ["Id", "Tipo", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Dias_Semana", "Ultima_Atualizacao"],
-  "23_Exercicios": ["Id", "Data", "Hora", "Tipo_Exercicio", "Duracao_Minutos", "Calorias_Queimadas", "Intensidade", "Observacoes", "Data_Criacao"],
-  "24_Consumo_Cafe": ["Id", "Data", "Hora", "Quantidade", "Calorias", "Proteinas", "Carboidratos", "Gorduras", "Observacoes", "Data_Criacao"],
-  "25_Consumo_Agua": ["Id", "Data", "Hora", "Quantidade_Ml", "Meta_Diaria_Ml", "Tamanho_Copo_Ml", "Observacoes", "Data_Criacao"],
+  "23_Exercicios": ["Id", "Data", "Hora", "Tipo_Exercicio", "Duracao_Minutos", "Calorias_Queimadas", "Intensidade", "Observacoes", "Data_Criacao", "Status"],
+  "24_Consumo_Cafe": ["Id", "Data", "Hora", "Quantidade", "Calorias", "Proteinas", "Carboidratos", "Gorduras", "Observacoes", "Data_Criacao", "Status"],
+  "25_Consumo_Agua": ["Id", "Data", "Hora", "Quantidade_Ml", "Meta_Diaria_Ml", "Tamanho_Copo_Ml", "Observacoes", "Data_Criacao", "Status"],
   "26_Config_Lembretes_Financas": ["Id", "Tipo", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Dias_Semana", "Som_Alarme", "Ultima_Atualizacao"],
   "27_Lembretes_Remedios": ["Id", "Nome", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Som_Alarme", "Instrucoes", "Data_Cadastro"]
 };
@@ -541,12 +541,20 @@ function writeSheetRecords(ss, sheetName, items, action) {
       }
     }
 
-    var rowArray = headers.map(function(header) {
+    var rowArray = headers.map(function(header, idx) {
       if (item[header] !== undefined && item[header] !== null) return item[header];
       var target = cleanStr(header);
       for (var key in item) {
         if (cleanStr(key) === target && item[key] !== undefined && item[key] !== null) {
           return item[key];
+        }
+      }
+      // Preserva o valor já existente na planilha quando o item não trouxe esse campo
+      // (evita apagar dados em atualizações parciais, como exclusão que só envia o Id)
+      if (targetRow) {
+        var existingRow = data[targetRow - 1];
+        if (existingRow && existingRow[idx] !== undefined && existingRow[idx] !== null && existingRow[idx] !== "") {
+          return existingRow[idx];
         }
       }
       return "";
