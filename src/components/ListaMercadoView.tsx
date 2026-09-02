@@ -286,12 +286,15 @@ export const ListaMercadoView: React.FC<Props> = ({
   const handleToggleBought = async (item: ItemMercado) => {
     const isBought = item.Comprado === true || item.Comprado === "SIM";
     const estVal = parseCurrency(item.Preco_Estimado ?? item.Valor_Estimado ?? 0);
+    const now = new Date();
+    const horaAtual = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     await onSaveItem({
       ...item,
       Preco_Estimado: estVal,
       Valor_Estimado: estVal,
       Comprado: !isBought,
-      Data_Compra: !isBought ? new Date().toISOString().split("T")[0] : "",
+      Data_Compra: !isBought ? now.toISOString().split("T")[0] : "",
+      Hora: !isBought ? horaAtual : "",
     });
   };
 
