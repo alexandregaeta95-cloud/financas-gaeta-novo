@@ -167,6 +167,8 @@ export const ListaMercadoView: React.FC<Props> = ({
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickInput.trim()) return;
+    const now = new Date();
+    const horaAtual = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     const item: ItemMercado = {
       Id: generateNewId("MERC"),
       Item: quickInput.trim().toUpperCase(),
@@ -176,6 +178,7 @@ export const ListaMercadoView: React.FC<Props> = ({
       Preco_Estimado: 0,
       Valor_Estimado: 0,
       Comprado: false,
+      Hora: horaAtual,
     };
     await onSaveItem(item);
     setQuickInput("");
@@ -215,6 +218,8 @@ export const ListaMercadoView: React.FC<Props> = ({
       setValorEstDisplay(unitPrice > 0 ? formatCurrency(unitPrice) : "");
     } else {
       setEditingItem(null);
+      const now = new Date();
+      const horaAtual = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       setForm({
         Item: "",
         Categoria: "MERCADO",
@@ -228,6 +233,7 @@ export const ListaMercadoView: React.FC<Props> = ({
         Lembrete_Ativo: false,
         Comprado: false,
         Observação: "",
+        Hora: horaAtual,
       });
       setValorEstDisplay("");
     }
@@ -257,6 +263,7 @@ export const ListaMercadoView: React.FC<Props> = ({
       Data_Compra: form.Data_Compra || "",
       Data_Lembrete: form.Data_Lembrete || "",
       Hora_Lembrete: form.Hora_Lembrete || "",
+      Hora: form.Hora || "",
       Lembrete_Ativo: form.Data_Lembrete ? (form.Lembrete_Ativo ? "SIM" : "NÃO") : undefined,
       Comprado: form.Comprado === true || form.Comprado === "SIM",
       Observação: form.Observação || "",
@@ -330,9 +337,12 @@ export const ListaMercadoView: React.FC<Props> = ({
 
     setIsFinalizando(true);
     try {
+      const now = new Date();
+      const horaAtual = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       const novoLancamento: Lancamento = {
         Id: generateNewId("LANC"),
-        Data: new Date().toISOString().split("T")[0],
+        Data: now.toISOString().split("T")[0],
+        Hora: horaAtual,
         Tipo: "Despesa",
         Categoria: "SUPERMERCADO",
         Descricao: descricaoConcatenada,
@@ -343,7 +353,7 @@ export const ListaMercadoView: React.FC<Props> = ({
         Observacoes: checkoutObservacoes.trim() || undefined,
       };
 
-      await onSaveLancamento(novoLancamento);
+      onSaveLancamento(novoLancamento);
 
       setFinalizadoSuccess(true);
       setTimeout(() => setFinalizadoSuccess(false), 5000);
@@ -361,7 +371,7 @@ export const ListaMercadoView: React.FC<Props> = ({
           "Compra finalizada com sucesso e registrada na aba 1_Lancamentos!\n\nDeseja limpar a lista de compras atual?"
         );
         if (querLimpar) {
-          await onClearLista();
+          onClearLista();
         }
       }
     } catch (err: any) {

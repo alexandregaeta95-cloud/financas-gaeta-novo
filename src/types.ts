@@ -261,6 +261,7 @@ export interface ItemMercado {
   Data_Compra?: string;
   Data_Lembrete?: string; // YYYY-MM-DD
   Hora_Lembrete?: string; // HH:mm
+  Hora?: string; // HH:mm
   Lembrete_Ativo?: "SIM" | "NÃO" | boolean;
   Comprado: boolean | "SIM" | "NÃO";
   Observação?: string;
