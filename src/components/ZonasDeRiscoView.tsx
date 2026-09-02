@@ -225,14 +225,9 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
     if (!window.confirm(`Deseja realmente excluir a zona de risco "${nome}"?`)) {
       return;
     }
-    setIsDeleting(true);
-    try {
-      if (onDeleteZona) {
-        await onDeleteZona(editingZona.Id);
-      }
-      setIsModalOpen(false);
-    } finally {
-      setIsDeleting(false);
+    setIsModalOpen(false);
+    if (onDeleteZona) {
+      onDeleteZona(editingZona.Id);
     }
   };
 

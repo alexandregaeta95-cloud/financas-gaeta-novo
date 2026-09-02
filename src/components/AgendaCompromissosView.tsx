@@ -331,23 +331,17 @@ export const AgendaCompromissosView: React.FC<Props> = ({
               </button>
               <button
                 type="button"
-                onClick={async () => {
+                onClick={() => {
                   if (!deleteConfirm) return;
-                  setIsDeleting(true);
-                  try {
-                    await onDeleteCompromisso(deleteConfirm.id);
-                    setDeleteConfirm(null);
-                  } catch (err) {
-                    console.error("Erro ao excluir compromisso:", err);
-                  } finally {
-                    setIsDeleting(false);
-                  }
+                  const target = deleteConfirm;
+                  setDeleteConfirm(null);
+                  onDeleteCompromisso(target.id);
                 }}
                 disabled={isDeleting}
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-rose-950/40"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>{isDeleting ? "Excluindo..." : "Confirmar Exclusão"}</span>
+                <span>Confirmar Exclusão</span>
               </button>
             </div>
           </div>
