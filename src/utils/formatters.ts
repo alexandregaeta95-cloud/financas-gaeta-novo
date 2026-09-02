@@ -1203,6 +1203,82 @@ export function calculateAccountCurrentBalance(
 }
 
 /**
+ * Verifica se um lançamento está vinculado a um cartão de crédito específico
+ */
+export function isLancamentoVinculadoAoCartao(
+  lancamento: Lancamento,
+  cartao: CartaoCredito
+): boolean {
+  if (!lancamento || !cartao) return false;
+
+  const norm = (val: unknown) =>
+    String(val || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^A-Z0-9\s]/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toUpperCase();
+
+  const targetCardName = norm(cartao.Nome);
+  const targetCardId = norm(cartao.Id);
+  const targetBandeira = norm(cartao.Bandeira);
+
+  if (!targetCardName && !targetCardId) {
+    return false;
+  }
+
+  // Extrai palavras-chave significativas do nome do cartão (ex: "NUBANK", "MASTERCARD", "BLACK")
+  const targetKeywords = targetCardName
+    .split(" ")
+    .filter((w) => w.length >= 3 && w !== "CARTAO" && w !== "CREDITO" && w !== "DEBITO" && w !== "CARD" && w !== "BANCO");
+
+  const rawL = lancamento as unknown as Record<string, unknown>;
+  const itemCard = norm(lancamento.Cartao || rawL.Cartão_Id || rawL.Cartão || rawL.Cartao_Id || rawL.Cartão_Nome || rawL.Cartao_Nome);
+  const itemConta = norm(lancamento.Conta || rawL.Conta_Bancaria);
+  const itemForma = norm(lancamento.Forma_Pagamento || rawL.Forma_De_Pagamento);
+  const itemDesc = norm(lancamento.Descricao || rawL.Descrição);
+  const itemObs = norm(lancamento.Observacoes || rawL.Observações);
+
+  // Verificação flexível de vínculo com o cartão:
+  // 1. Vínculo direto pelo campo Cartão / Cartão_Id
+  if (itemCard) {
+    if (
+      itemCard === targetCardName ||
+      (targetCardId && itemCard === targetCardId) ||
+      (targetCardName && (itemCard.includes(targetCardName) || targetCardName.includes(itemCard))) ||
+      (targetKeywords.length > 0 && targetKeywords.some((kw) => itemCard.includes(kw)))
+    ) {
+      return true;
+    }
+  }
+
+  // 2. Vínculo pelo campo Conta (se o usuário selecionou o cartão na coluna Conta)
+  if (itemConta) {
+    if (
+      itemConta === targetCardName ||
+      (targetCardId && itemConta === targetCardId) ||
+      (targetCardName && (itemConta.includes(targetCardName) || targetCardName.includes(itemConta))) ||
+      (targetKeywords.length > 0 && targetKeywords.some((kw) => itemConta.includes(kw)))
+    ) {
+      return true;
+    }
+  }
+
+  // 3. Vínculo por Forma de Pagamento = CARTÃO DE CRÉDITO com menção no texto
+  if (itemForma.includes("CARTAO") || itemForma.includes("CREDITO")) {
+    if (
+      (targetKeywords.length > 0 && targetKeywords.some((kw) => itemForma.includes(kw) || itemDesc.includes(kw) || itemObs.includes(kw))) ||
+      (targetBandeira && (itemDesc.includes(targetBandeira) || itemForma.includes(targetBandeira)))
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Calculates dynamic balance, current invoice spent, and available limit for a credit card
  * based on its total limit and active (non-excluded) transactions linked to this card.
  *
@@ -1236,18 +1312,6 @@ export function calculateCardBalance(
       .toUpperCase();
 
   const totalLimit = parseCurrency(cartao.Limite_Total ?? cartao.Limite ?? 0);
-  const targetCardName = norm(cartao.Nome);
-  const targetCardId = norm(cartao.Id);
-  const targetBandeira = norm(cartao.Bandeira);
-
-  if (!targetCardName && !targetCardId) {
-    return { totalLimit, currentSpent: 0, availableLimit: totalLimit, expensesTotal: 0, paymentsTotal: 0 };
-  }
-
-  // Extrai palavras-chave significativas do nome do cartão (ex: "NUBANK", "MASTERCARD", "BLACK")
-  const targetKeywords = targetCardName
-    .split(" ")
-    .filter((w) => w.length >= 3 && w !== "CARTAO" && w !== "CREDITO" && w !== "DEBITO" && w !== "CARD" && w !== "BANCO");
 
   let expensesTotal = 0;
   let paymentsTotal = 0;
@@ -1258,54 +1322,14 @@ export function calculateCardBalance(
       return;
     }
 
-    const rawL = l as unknown as Record<string, unknown>;
-    const itemCard = norm(l.Cartao || rawL.Cartão_Id || rawL.Cartão || rawL.Cartao_Id || rawL.Cartão_Nome || rawL.Cartao_Nome);
-    const itemConta = norm(l.Conta || rawL.Conta_Bancaria);
-    const itemForma = norm(l.Forma_Pagamento || rawL.Forma_De_Pagamento);
-    const itemDesc = norm(l.Descricao || rawL.Descrição);
-    const itemObs = norm(l.Observacoes || rawL.Observações);
-    const tipo = norm(l.Tipo);
-    const cat = norm(l.Categoria);
-
-    // Verificação flexível de vínculo com o cartão:
-    // 1. Vínculo direto pelo campo Cartão / Cartão_Id
-    let isLinked = false;
-    if (itemCard) {
-      if (
-        itemCard === targetCardName ||
-        (targetCardId && itemCard === targetCardId) ||
-        (targetCardName && (itemCard.includes(targetCardName) || targetCardName.includes(itemCard))) ||
-        (targetKeywords.length > 0 && targetKeywords.some((kw) => itemCard.includes(kw)))
-      ) {
-        isLinked = true;
-      }
-    }
-
-    // 2. Vínculo pelo campo Conta (se o usuário selecionou o cartão na coluna Conta)
-    if (!isLinked && itemConta) {
-      if (
-        itemConta === targetCardName ||
-        (targetCardId && itemConta === targetCardId) ||
-        (targetCardName && (itemConta.includes(targetCardName) || targetCardName.includes(itemConta))) ||
-        (targetKeywords.length > 0 && targetKeywords.some((kw) => itemConta.includes(kw)))
-      ) {
-        isLinked = true;
-      }
-    }
-
-    // 3. Vínculo por Forma de Pagamento = CARTÃO DE CRÉDITO com menção no texto
-    if (!isLinked && (itemForma.includes("CARTAO") || itemForma.includes("CREDITO"))) {
-      if (
-        (targetKeywords.length > 0 && targetKeywords.some((kw) => itemForma.includes(kw) || itemDesc.includes(kw) || itemObs.includes(kw))) ||
-        (targetBandeira && (itemDesc.includes(targetBandeira) || itemForma.includes(targetBandeira)))
-      ) {
-        isLinked = true;
-      }
-    }
-
-    if (!isLinked) {
+    if (!isLancamentoVinculadoAoCartao(l, cartao)) {
       return;
     }
+
+    const rawL = l as unknown as Record<string, unknown>;
+    const itemDesc = norm(l.Descricao || rawL.Descrição);
+    const tipo = norm(l.Tipo);
+    const cat = norm(l.Categoria);
 
     const valor = parseCurrency(l.Valor ?? 0);
     const status = norm(l.Status);

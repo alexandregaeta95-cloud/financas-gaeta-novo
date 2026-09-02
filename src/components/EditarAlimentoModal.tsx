@@ -262,12 +262,14 @@ export const EditarAlimentoModal: React.FC<Props> = ({
                   key={idx}
                   className="flex items-center gap-2 p-2 bg-slate-950 border border-slate-800 rounded-xl text-xs"
                 >
-                  <input
+                  <VoiceInput
                     type="text"
                     placeholder="Nome do item (ex: Arroz)"
                     value={it.item}
                     onChange={(e) => handleItemChange(idx, "item", e.target.value.toUpperCase())}
-                    className="flex-1 bg-transparent border-0 text-white text-xs focus:outline-none"
+                    className="bg-transparent border-0 text-white text-xs focus:outline-none"
+                    containerClassName="flex-1"
+                    uppercase
                   />
                   <input
                     type="text"

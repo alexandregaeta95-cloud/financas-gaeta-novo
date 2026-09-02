@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { createWorker } from "tesseract.js";
 import { ItemMercado } from "../types";
+import { VoiceInput } from "./VoiceInput";
 
 export interface ItemExtraido {
   id: string;
@@ -770,12 +771,13 @@ export const LerListaFotoModal: React.FC<LerListaFotoModalProps> = ({
                               className="rounded border-slate-700 text-emerald-600 focus:ring-emerald-500 bg-slate-900 w-4 h-4 cursor-pointer"
                             />
                             {/* Item Name Input (Always in UPPERCASE) */}
-                            <input
+                            <VoiceInput
                               type="text"
                               value={it.item}
                               onChange={(e) => handleUpdateItemField(it.id, "item", e.target.value)}
                               placeholder="NOME DO ITEM"
-                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-emerald-500 uppercase tracking-wide"
+                              className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-emerald-500 uppercase tracking-wide"
+                              uppercase
                             />
                           </div>
 

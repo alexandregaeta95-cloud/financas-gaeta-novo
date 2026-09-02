@@ -6,10 +6,13 @@ import {
   Edit2,
   Trash2,
   X,
+  FileText,
+  Receipt,
 } from "lucide-react";
 import { ContaBancaria, CartaoCredito, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency, formatCurrencyInput, calculateCardBalance } from "../utils/formatters";
+import { getFaturasPorCartao } from "../utils/faturaCartao";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 
@@ -103,6 +106,9 @@ export const ContasCartoesView: React.FC<Props> = ({
     Cor_Hex: "#1E293B",
     Ativo: "SIM",
   });
+
+  // Histórico de Faturas Modal State
+  const [historicoFaturasCartao, setHistoricoFaturasCartao] = useState<CartaoCredito | null>(null);
 
   // Calculate dynamic current month spent sum for each card using calculateCardBalance
   const calculateCardSpent = (cartaoName: string) => {
@@ -490,6 +496,19 @@ export const ContasCartoesView: React.FC<Props> = ({
                       </div>
                     </div>
 
+                    {/* Botão Ver Histórico de Faturas */}
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setHistoricoFaturasCartao(card)}
+                        className="text-xs text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1.5 transition-colors py-0.5"
+                        title="Ver histórico de faturas deste cartão"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Ver Histórico de Faturas</span>
+                      </button>
+                    </div>
+
                     {/* Limit Progress Bar */}
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
@@ -864,6 +883,115 @@ export const ContasCartoesView: React.FC<Props> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Histórico de Faturas */}
+      {historicoFaturasCartao && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs text-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-5 shadow-2xl space-y-4 text-slate-200 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">
+                    Histórico de Faturas
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {historicoFaturasCartao.Nome} • Fechamento dia {historicoFaturasCartao.Dia_Fechamento ?? historicoFaturasCartao.Fechamento ?? 10} • Vencimento dia {historicoFaturasCartao.Dia_Vencimento ?? historicoFaturasCartao.Vencimento ?? 20}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoricoFaturasCartao(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                title="Fechar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Lista de Faturas */}
+            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+              {(() => {
+                const faturas = getFaturasPorCartao(historicoFaturasCartao, lancamentos);
+                if (faturas.length === 0) {
+                  return (
+                    <div className="p-8 text-center text-slate-500 text-xs">
+                      Nenhum lançamento vinculado a este cartão encontrado.
+                    </div>
+                  );
+                }
+                return faturas.map((fat) => {
+                  const dataVencStr = !isNaN(fat.vencimento.getTime())
+                    ? fat.vencimento.toLocaleDateString("pt-BR")
+                    : "";
+                  return (
+                    <div
+                      key={fat.faturaKey}
+                      className="bg-slate-950 border border-slate-800/80 rounded-xl p-3 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-xs">
+                            {fat.label}
+                          </span>
+                          <span
+                            className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                              fat.fechada
+                                ? "bg-slate-800 text-slate-400 border-slate-700"
+                                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                            }`}
+                          >
+                            {fat.fechada ? "Fechada" : "Em Aberto"}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400">
+                          Vencimento: <strong className="text-slate-300">{dataVencStr}</strong>
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 text-[11px] pt-1.5 border-t border-slate-900">
+                        <div>
+                          <span className="text-slate-500 text-[10px] block">Total Gasto</span>
+                          <span className="font-semibold text-slate-300">
+                            R$ {formatCurrency(fat.totalGasto)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 text-[10px] block">Total Pago</span>
+                          <span className="font-semibold text-slate-400">
+                            R$ {formatCurrency(fat.totalPago)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 text-[10px] block">Saldo da Fatura</span>
+                          <span className={`font-bold ${fat.saldo > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                            R$ {formatCurrency(fat.saldo)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-2 flex justify-end border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setHistoricoFaturasCartao(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
           </div>
         </div>
       )}
