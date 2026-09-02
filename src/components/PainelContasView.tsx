@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Fuel,
   Car,
+  Receipt,
 } from "lucide-react";
 import { Lancamento } from "../types";
 import { ModuleView } from "./Navigation";
@@ -199,7 +200,15 @@ export const PainelContasView: React.FC<Props> = ({
 
       {/* Quick Action Shortcuts Grid */}
       {onNavigate && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
+          <button
+            onClick={() => onNavigate("lancamentos")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-sky-300 font-semibold rounded-xl text-xs border border-sky-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <Receipt className="w-4 h-4 shrink-0" />
+            <span className="truncate">Finanças</span>
+          </button>
+
           <button
             onClick={() => onNavigate("indicadores")}
             className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-teal-300 font-semibold rounded-xl text-xs border border-teal-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
