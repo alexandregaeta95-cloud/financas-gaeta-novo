@@ -9,6 +9,7 @@ export interface FaturaResumo {
   totalPago: number;
   saldo: number;
   fechada: boolean;
+  paga: boolean;
 }
 
 /**
@@ -99,15 +100,22 @@ export function getFaturasPorCartao(
     porFatura.set(key, atual);
   });
 
-  const resultado: FaturaResumo[] = Array.from(porFatura.entries()).map(([faturaKey, { gasto, pago }]) => ({
-    faturaKey,
-    label: getFaturaLabel(faturaKey),
-    vencimento: getFaturaVencimento(faturaKey, diaVencimento),
-    totalGasto: gasto,
-    totalPago: pago,
-    saldo: Math.max(0, gasto - pago),
-    fechada: faturaKey < faturaAtualKey,
-  }));
+  const resultado: FaturaResumo[] = Array.from(porFatura.entries()).map(([faturaKey, { gasto, pago }]) => {
+    const saldo = Math.max(0, gasto - pago);
+    const ultimaFaturaPaga = String(cartao.Ultima_Fatura_Paga || "");
+    const paga = (ultimaFaturaPaga !== "" && faturaKey <= ultimaFaturaPaga) || saldo <= 0;
+
+    return {
+      faturaKey,
+      label: getFaturaLabel(faturaKey),
+      vencimento: getFaturaVencimento(faturaKey, diaVencimento),
+      totalGasto: gasto,
+      totalPago: pago,
+      saldo,
+      fechada: faturaKey < faturaAtualKey,
+      paga,
+    };
+  });
 
   return resultado.sort((a, b) => b.faturaKey.localeCompare(a.faturaKey));
 }

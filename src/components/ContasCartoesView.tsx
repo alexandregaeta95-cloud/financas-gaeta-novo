@@ -8,6 +8,8 @@ import {
   X,
   FileText,
   Receipt,
+  Check,
+  Clock,
 } from "lucide-react";
 import { ContaBancaria, CartaoCredito, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
@@ -109,6 +111,24 @@ export const ContasCartoesView: React.FC<Props> = ({
 
   // Histórico de Faturas Modal State
   const [historicoFaturasCartao, setHistoricoFaturasCartao] = useState<CartaoCredito | null>(null);
+
+  const handleMarcarFaturaPaga = async (cartao: CartaoCredito, faturaKey: string, faturaLabel: string, saldo: number) => {
+    const valorFmt = formatCurrency(saldo);
+    const msg = `Deseja marcar a fatura de ${faturaLabel} (Saldo: R$ ${valorFmt}) do cartão ${cartao.Nome} como PAGA?\n\nIsso atualizará todas as faturas até este mês como pagas.`;
+    if (!window.confirm(msg)) {
+      return;
+    }
+
+    const updatedCartao: CartaoCredito = {
+      ...cartao,
+      Ultima_Fatura_Paga: faturaKey,
+    };
+
+    await onSaveCartao(updatedCartao);
+
+    // Atualiza o estado do modal para refletir imediatamente a alteração
+    setHistoricoFaturasCartao(updatedCartao);
+  };
 
   // Calculate dynamic current month spent sum for each card using calculateCardBalance
   const calculateCardSpent = (cartaoName: string) => {
@@ -228,6 +248,7 @@ export const ContasCartoesView: React.FC<Props> = ({
       Dia_Vencimento: diaVenc,
       Cor_Hex: corHex,
       Ativo: isAtivo ? "SIM" : "NÃO",
+      Ultima_Fatura_Paga: cartaoForm.Ultima_Fatura_Paga || editingCartao?.Ultima_Fatura_Paga || "",
       // Aliases para compatibilidade
       Limite: limTotal,
       Fechamento: diaFech,
@@ -941,22 +962,28 @@ export const ContasCartoesView: React.FC<Props> = ({
                           <span className="font-bold text-white text-xs">
                             {fat.label}
                           </span>
-                          <span
-                            className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
-                              fat.fechada
-                                ? "bg-slate-800 text-slate-400 border-slate-700"
-                                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                            }`}
-                          >
-                            {fat.fechada ? "Fechada" : "Em Aberto"}
-                          </span>
+                          {fat.paga ? (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 flex items-center gap-1">
+                              <Check className="w-3 h-3" />
+                              Paga
+                            </span>
+                          ) : fat.fechada ? (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold border bg-amber-500/10 text-amber-400 border-amber-500/30 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              Pendente
+                            </span>
+                          ) : (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold border bg-blue-500/10 text-blue-400 border-blue-500/30">
+                              Em Aberto
+                            </span>
+                          )}
                         </div>
                         <span className="text-[11px] text-slate-400">
                           Vencimento: <strong className="text-slate-300">{dataVencStr}</strong>
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 text-[11px] pt-1.5 border-t border-slate-900">
+                      <div className="grid grid-cols-3 gap-2 text-[11px] pt-1.5 border-t border-slate-900 items-end">
                         <div>
                           <span className="text-slate-500 text-[10px] block">Total Gasto</span>
                           <span className="font-semibold text-slate-300">
@@ -976,6 +1003,27 @@ export const ContasCartoesView: React.FC<Props> = ({
                           </span>
                         </div>
                       </div>
+
+                      {/* Botão Marcar como Paga se a fatura estiver Fechada e Pendente */}
+                      {fat.fechada && !fat.paga && (
+                        <div className="pt-2 border-t border-slate-900/80 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleMarcarFaturaPaga(
+                                historicoFaturasCartao,
+                                fat.faturaKey,
+                                fat.label,
+                                fat.saldo
+                              )
+                            }
+                            className="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 transition-all shadow-xs"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Marcar como Paga</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 });

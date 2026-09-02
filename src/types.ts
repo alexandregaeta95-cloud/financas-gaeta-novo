@@ -295,6 +295,7 @@ export interface CartaoCredito {
   Dia_Vencimento: number; // Dia do mês
   Cor_Hex?: string;
   Ativo: boolean | "SIM" | "NÃO";
+  Ultima_Fatura_Paga?: string;
   // Compatibilidade e cálculos dinâmicos
   Limite?: number;
   Fechamento?: number;
