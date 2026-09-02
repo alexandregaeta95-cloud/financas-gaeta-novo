@@ -382,7 +382,13 @@ export const MetasCategoriasView: React.FC<Props> = ({
                   className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between gap-2 hover:border-slate-700 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0">
+                    <div
+                      className={`p-2 rounded-lg border shrink-0 ${
+                        String(cat.Tipo || "").toUpperCase() === "RECEITA"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                          : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                      }`}
+                    >
                       <Tag className="w-3.5 h-3.5" />
                     </div>
                     <div>
