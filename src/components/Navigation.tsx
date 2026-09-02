@@ -20,6 +20,7 @@ import {
   TrendingUp,
   BarChart3,
   FileText,
+  AudioLines,
 } from "lucide-react";
 import { useAlarmSound } from "../hooks/useAlarmSound";
 
@@ -82,12 +83,12 @@ export const Navigation: React.FC<Props> = ({
       {/* Desktop Header Navbar */}
       <header className="hidden lg:flex items-center justify-between px-6 py-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md font-bold text-lg">
-            FG
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md">
+            <AudioLines className="w-5 h-5" />
           </div>
           <div>
             <h1 className="font-bold text-base text-white tracking-tight leading-none">
-              Finanças Gaeta
+              Diz Aí
             </h1>
             <p className="text-[11px] text-slate-400">Sistema Integrado de Gestão</p>
           </div>
@@ -160,10 +161,10 @@ export const Navigation: React.FC<Props> = ({
       {/* Mobile Top Header Banner */}
       <div className="flex lg:hidden items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">
-            FG
+          <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white">
+            <AudioLines className="w-4 h-4" />
           </div>
-          <span className="font-bold text-sm text-white">Finanças Gaeta</span>
+          <span className="font-bold text-sm text-white">Diz Aí</span>
         </div>
 
         <div className="flex items-center gap-2">

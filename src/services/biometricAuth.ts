@@ -154,13 +154,13 @@ export async function registerBiometrics(
     const creationOptions: PublicKeyCredentialCreationOptions = {
       challenge,
       rp: {
-        name: "Finanças Gaeta",
+        name: "Diz Aí",
         id: window.location.hostname === "localhost" ? undefined : window.location.hostname,
       },
       user: {
         id: userId,
         name: "usuario@financasgaeta.app",
-        displayName: "Finanças Gaeta",
+        displayName: "Diz Aí",
       },
       pubKeyCredParams: [
         { alg: -7, type: "public-key" }, // ES256

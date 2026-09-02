@@ -482,7 +482,7 @@ export const SegurancaModal: React.FC<Props> = ({
           <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2.5">
             <span className="font-semibold text-white text-xs flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              Como funciona a segurança no Finanças Gaeta:
+              Como funciona a segurança no Diz Aí:
             </span>
             <ul className="text-xs text-slate-400 space-y-2 list-disc list-inside">
               <li>

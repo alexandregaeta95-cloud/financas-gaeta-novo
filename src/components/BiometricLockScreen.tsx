@@ -122,7 +122,7 @@ export const BiometricLockScreen: React.FC<Props> = ({ onUnlock }) => {
               ? "Acesso Liberado!"
               : usePinMode
               ? "Autenticação por PIN"
-              : "Finanças Gaeta Protegido"}
+              : "Diz Aí Protegido"}
           </h2>
           <p className="text-xs text-slate-400 max-w-xs mx-auto">
             {unlockSuccess
