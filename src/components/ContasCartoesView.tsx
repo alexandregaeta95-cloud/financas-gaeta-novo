@@ -181,8 +181,8 @@ export const ContasCartoesView: React.FC<Props> = ({
       Limite: parseCurrency(contaForm.Limite),
       Ativa: contaForm.Ativa !== false,
     };
-    await onSaveConta(item);
     setIsContaModalOpen(false);
+    onSaveConta(item);
   };
 
   // Save Cartão
@@ -257,8 +257,8 @@ export const ContasCartoesView: React.FC<Props> = ({
       Gasto: spent,
     };
 
-    await onSaveCartao(item);
     setIsCartaoModalOpen(false);
+    onSaveCartao(item);
   };
 
   return (

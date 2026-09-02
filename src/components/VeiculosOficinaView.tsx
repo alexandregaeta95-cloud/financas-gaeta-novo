@@ -1834,17 +1834,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-400 font-medium">Descrição da Manutenção</label>
-                    <VoiceInput
-                      onTranscript={(text) =>
-                        setManutencaoForm((prev) => ({
-                          ...prev,
-                          Descrição: prev.Descrição ? `${prev.Descrição} ${text}` : text,
-                        }))
-                      }
-                    />
-                  </div>
+                  <label className="text-slate-400 font-medium block mb-1">Descrição da Manutenção</label>
                   <ComboBox
                     required
                     placeholder="Ex: Calibrar Pneus, Troca de Óleo..."

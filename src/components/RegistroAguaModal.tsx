@@ -258,7 +258,7 @@ export const RegistroAguaModal: React.FC<Props> = ({
               type="text"
               placeholder="Ex: Garrafa térmica, Copo, Água com gás..."
               value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
+              onChange={(e) => setObservacoes(e.target.value.toUpperCase())}
               className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
 

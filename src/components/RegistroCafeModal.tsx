@@ -461,7 +461,7 @@ export const RegistroCafeModal: React.FC<Props> = ({
               type="text"
               placeholder="Ex: Expresso, Coado, Com leite, Sem açúcar..."
               value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
+              onChange={(e) => setObservacoes(e.target.value.toUpperCase())}
               className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
 
