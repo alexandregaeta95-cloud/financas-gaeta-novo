@@ -368,8 +368,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
       Status: consultaForm.Status || "Agendada",
       Observação: consultaForm.Observação || "",
     };
-    await onSaveConsulta(item);
     setIsConsultaModalOpen(false);
+    onSaveConsulta(item);
   };
 
   const handleOpenReceita = (r?: ReceitaMedica, defaults?: Partial<ReceitaMedica>) => {
@@ -466,8 +466,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
       Observacoes: obsVal,
       Ativa: isAtiva,
     };
-    await onSaveReceita(item);
     setIsReceitaModalOpen(false);
+    onSaveReceita(item);
   };
 
   const handleOpenInfracao = (inf?: Infracao) => {
@@ -509,8 +509,8 @@ export const SaudeInfracoesView: React.FC<Props> = ({
       Localização: infracaoForm.Localização || "",
       Observação: infracaoForm.Observação || "",
     };
-    await onSaveInfracao(item);
     setIsInfracaoModalOpen(false);
+    onSaveInfracao(item);
   };
 
   return (

@@ -104,8 +104,8 @@ export const AgendaCompromissosView: React.FC<Props> = ({
       Concluído: form.Concluído === true || form.Concluído === "SIM",
       Categoria: form.Categoria != null ? String(form.Categoria).trim() : "GERAL",
     };
-    await onSaveCompromisso(item);
     setIsModalOpen(false);
+    onSaveCompromisso(item);
   };
 
   // Toggle Concluído

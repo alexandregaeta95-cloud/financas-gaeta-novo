@@ -212,8 +212,8 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
         Observação: "",
         Observacoes: "",
       };
-      await onSaveZona(item);
       setIsQuickModalOpen(false);
+      onSaveZona(item);
     } finally {
       setIsQuickSaving(false);
     }
@@ -261,8 +261,8 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
       Observação: obs,
       Observacoes: obs,
     };
-    await onSaveZona(item);
     setIsModalOpen(false);
+    onSaveZona(item);
   };
 
   return (

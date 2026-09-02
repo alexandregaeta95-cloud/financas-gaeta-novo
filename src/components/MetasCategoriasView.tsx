@@ -169,8 +169,8 @@ export const MetasCategoriasView: React.FC<Props> = ({
       Mes_Ano: `${selectedYear}-${selectedMonth}`,
       Alerta_Porcentagem: parseCurrency(metaForm.Alerta_Porcentagem) || 80,
     };
-    await onSaveMeta(item);
     setIsMetaModalOpen(false);
+    onSaveMeta(item);
   };
 
   const handleSaveCatSubmit = async (e: React.FormEvent) => {
@@ -182,8 +182,8 @@ export const MetasCategoriasView: React.FC<Props> = ({
       Icone: catForm.Icone || "Tag",
       Cor_Hex: catForm.Cor_Hex || "#10b981",
     };
-    await onSaveCategoria(item);
     setIsCatModalOpen(false);
+    onSaveCategoria(item);
   };
 
   return (
