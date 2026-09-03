@@ -11,7 +11,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   ChevronRight,
-  Fingerprint,
   ShieldCheck,
   BarChart3,
   FileText,
@@ -251,23 +250,6 @@ export const Dashboard: React.FC<Props> = ({
             {abastecimentos.length} abastecimentos registrados
           </p>
         </div>
-      </div>
-
-      {/* Quick Action Buttons */}
-      <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
-        {onOpenSecurity && (
-          <button
-            onClick={onOpenSecurity}
-            className={`w-full flex items-center justify-center gap-2 p-3 sm:p-3.5 rounded-xl text-xs sm:text-sm font-semibold border transition-all active:scale-95 text-center cursor-pointer ${
-              isBiometricsActive
-                ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
-            }`}
-          >
-            <Fingerprint className="w-4 h-4 shrink-0" />
-            <span className="truncate">{isBiometricsActive ? "Biometria" : "Segurança"}</span>
-          </button>
-        )}
       </div>
 
       {/* Vehicle Overview Section */}

@@ -46,21 +46,6 @@ export const SyncStatusBanner: React.FC<Props> = ({
       </div>
 
       <div className="flex items-center gap-2">
-        {onOpenSecurity && (
-          <button
-            onClick={onOpenSecurity}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors text-xs font-medium border ${
-              isBiometricsActive
-                ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
-            }`}
-            title="Configurações de Segurança e Biometria"
-          >
-            <Fingerprint className="w-3.5 h-3.5" />
-            <span>{isBiometricsActive ? "Biometria Ativa" : "Segurança"}</span>
-          </button>
-        )}
-
         <button
           onClick={onSyncNow}
           disabled={syncState.isSyncing}
@@ -68,14 +53,6 @@ export const SyncStatusBanner: React.FC<Props> = ({
         >
           <RefreshCw className={`w-3.5 h-3.5 ${syncState.isSyncing ? "animate-spin text-emerald-400" : ""}`} />
           {syncState.isSyncing ? "Sincronizando..." : "Sincronizar"}
-        </button>
-
-        <button
-          onClick={onOpenSetup}
-          className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-md transition-colors text-xs font-medium"
-        >
-          <Settings className="w-3.5 h-3.5" />
-          <span>Configurar Script</span>
         </button>
       </div>
     </div>

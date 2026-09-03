@@ -21,6 +21,7 @@ import {
   BarChart3,
   FileText,
   AudioLines,
+  Settings,
 } from "lucide-react";
 import { useAlarmSound } from "../hooks/useAlarmSound";
 
@@ -39,7 +40,8 @@ export type ModuleView =
   | "saude"
   | "agenda"
   | "zonas_risco"
-  | "lista_mercado";
+  | "lista_mercado"
+  | "configuracoes";
 
 interface Props {
   activeView: ModuleView;
@@ -76,6 +78,7 @@ export const Navigation: React.FC<Props> = ({
     { id: "agenda", label: "Agenda", icon: CalendarDays },
     { id: "zonas_risco", label: "Zonas Risco", icon: ShieldAlert },
     { id: "lista_mercado", label: "Mercado", icon: ShoppingBag },
+    { id: "configuracoes", label: "Configurações", icon: Settings },
   ];
 
   return (
@@ -126,35 +129,6 @@ export const Navigation: React.FC<Props> = ({
               <span className="hidden sm:inline">Parar Alarme</span>
             </button>
           )}
-
-          {onOpenSecurity && (
-            <button
-              onClick={onOpenSecurity}
-              className={`p-2 rounded-xl border transition-all shadow-xs ${
-                isBiometricsActive
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                  : "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200"
-              }`}
-              title={isBiometricsActive ? "Segurança: Biometria Ativa" : "Configurar Biometria & PIN"}
-            >
-              <Fingerprint className="w-4 h-4" />
-            </button>
-          )}
-
-          {onOpenNotifications && (
-            <button
-              onClick={onOpenNotifications}
-              className="relative p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all shadow-xs"
-              title="Central de Notificações"
-            >
-              <Bell className="w-4 h-4" />
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 bg-rose-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center animate-pulse shadow-md">
-                  {notificationCount > 9 ? "9+" : notificationCount}
-                </span>
-              )}
-            </button>
-          )}
         </div>
       </header>
 
@@ -175,35 +149,6 @@ export const Navigation: React.FC<Props> = ({
               title="Alarme sonoro ativo! Clique para parar."
             >
               <VolumeX className="w-4 h-4" />
-            </button>
-          )}
-
-          {onOpenSecurity && (
-            <button
-              onClick={onOpenSecurity}
-              className={`p-2 rounded-xl border transition-all ${
-                isBiometricsActive
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                  : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white"
-              }`}
-              title="Segurança & Biometria"
-            >
-              <Fingerprint className="w-4 h-4" />
-            </button>
-          )}
-
-          {onOpenNotifications && (
-            <button
-              onClick={onOpenNotifications}
-              className="relative p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition-all"
-              title="Central de Notificações"
-            >
-              <Bell className="w-4 h-4" />
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-500 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center animate-pulse">
-                  {notificationCount > 9 ? "9+" : notificationCount}
-                </span>
-              )}
             </button>
           )}
         </div>

@@ -22,6 +22,7 @@ import { PainelContasView } from "./components/PainelContasView";
 import { AnaliseCorridasView } from "./components/AnaliseCorridasView";
 import { IndicadoresView } from "./components/IndicadoresView";
 import { RelatoriosView } from "./components/RelatoriosView";
+import { ConfiguracoesGeraisView } from "./components/ConfiguracoesGeraisView";
 import { NotificationCenterModal } from "./components/NotificationCenterModal";
 import { NotificationToast } from "./components/NotificationToast";
 import { BiometricLockScreen } from "./components/BiometricLockScreen";
@@ -1288,6 +1289,16 @@ export default function App() {
                 }
               }
             }}
+          />
+        )}
+
+        {activeView === "configuracoes" && (
+          <ConfiguracoesGeraisView
+            onOpenSetup={() => setIsSetupModalOpen(true)}
+            onOpenSecurity={() => setIsSecurityModalOpen(true)}
+            onOpenNotifications={() => setIsNotificationCenterOpen(true)}
+            isBiometricsActive={isBiometricsActive}
+            notificationCount={notifications.filter((n) => !n.read).length}
           />
         )}
       </main>
