@@ -141,6 +141,7 @@ export interface ReceitaMedica {
 export interface Infracao {
   Id: string;
   Protocolo?: string; // Número do Auto de Infração
+  Auto_Infracao?: string;
   Título?: string;
   Veículo: string;
   Placa?: string;
@@ -161,6 +162,13 @@ export interface Infracao {
   Data_Termino_Defesa?: string;
   Data_Termino_Recurso?: string;
   Data_Vencimento_Desconto?: string;
+  Numero_Renainf?: string;
+  Codigo_Infracao?: string;
+  Latitude?: number;
+  Longitude?: number;
+  Data_Notificacao_Autuacao?: string;
+  Data_Limite_Identificacao_Condutor?: string;
+  Status_Pagamento?: "PAGO" | "PENDENTE";
 }
 
 // 9. Veículos

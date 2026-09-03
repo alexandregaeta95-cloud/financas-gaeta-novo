@@ -410,6 +410,35 @@ export function evaluateAllNotifications({
     }
   });
 
+  // C5. Infrações - Prazo de Identificação do Condutor
+  infracoes.forEach((inf) => {
+    if (!inf.Data_Limite_Identificacao_Condutor) return;
+    const diff = getDiffInDaysFromToday(inf.Data_Limite_Identificacao_Condutor);
+    if (diff === null) return;
+
+    if (diff === 0) {
+      list.push({
+        id: `infracao_${inf.Id}_condutor_hoje`,
+        type: "veiculos",
+        title: "🚨 Prazo pra Identificar Condutor Vence Hoje!",
+        message: `${inf.Veículo || "Veículo"} (${inf.Placa || ""}): prazo limite para indicação do condutor infrator vence hoje.`,
+        targetView: "veiculos",
+        severity: "urgent",
+        timestamp: now,
+      });
+    } else if (diff > 0 && diff <= 5) {
+      list.push({
+        id: `infracao_${inf.Id}_condutor_prox`,
+        type: "veiculos",
+        title: `🚨 Prazo pra Identificar Condutor (${diff === 1 ? "Amanhã" : `em ${diff} dias`})`,
+        message: `${inf.Veículo || "Veículo"} (${inf.Placa || ""}): prazo para indicação do condutor vence em ${inf.Data_Limite_Identificacao_Condutor}.`,
+        targetView: "veiculos",
+        severity: "warning",
+        timestamp: now,
+      });
+    }
+  });
+
   // D. Lembretes Diários de Saúde (Pressão Arterial e Glicemia - Aba 22)
   const nowDate = new Date();
   const currentHour = nowDate.getHours();
