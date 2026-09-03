@@ -254,15 +254,7 @@ export const Dashboard: React.FC<Props> = ({
       </div>
 
       {/* Quick Action Buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-        <button
-          onClick={() => onNavigate("lancamentos")}
-          className="w-full flex items-center justify-center gap-2 p-3 sm:p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs sm:text-sm transition-all shadow-md active:scale-95 text-center cursor-pointer"
-        >
-          <PlusCircle className="w-4 h-4 shrink-0" />
-          <span className="truncate">Novo Lançamento</span>
-        </button>
-
+      <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
         {onOpenSecurity && (
           <button
             onClick={onOpenSecurity}

@@ -12,6 +12,11 @@ import {
   Fuel,
   Car,
   Receipt,
+  PlusCircle,
+  Target,
+  CalendarClock,
+  ShieldAlert,
+  ShoppingCart,
 } from "lucide-react";
 import { Lancamento } from "../types";
 import { ModuleView } from "./Navigation";
@@ -198,9 +203,20 @@ export const PainelContasView: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* Highlight Action Button */}
+      {onNavigate && (
+        <button
+          onClick={() => onNavigate("lancamentos")}
+          className="w-full flex items-center justify-center gap-2 p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition-all shadow-md active:scale-95 text-center cursor-pointer"
+        >
+          <PlusCircle className="w-4 h-4 shrink-0" />
+          <span>Novo Lançamento</span>
+        </button>
+      )}
+
       {/* Quick Action Shortcuts Grid */}
       {onNavigate && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3">
           <button
             onClick={() => onNavigate("lancamentos")}
             className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-sky-300 font-semibold rounded-xl text-xs border border-sky-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
@@ -243,10 +259,42 @@ export const PainelContasView: React.FC<Props> = ({
 
           <button
             onClick={() => onNavigate("veiculos")}
-            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 transition-all shadow-xs active:scale-95 text-center cursor-pointer col-span-2 sm:col-span-1"
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
           >
             <Car className="w-4 h-4 shrink-0" />
             <span className="truncate">Veículos</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("metas")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-violet-300 font-semibold rounded-xl text-xs border border-violet-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <Target className="w-4 h-4 shrink-0" />
+            <span className="truncate">Metas</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("agenda")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-pink-300 font-semibold rounded-xl text-xs border border-pink-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <CalendarClock className="w-4 h-4 shrink-0" />
+            <span className="truncate">Agenda</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("zonas_risco")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-rose-300 font-semibold rounded-xl text-xs border border-rose-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <ShieldAlert className="w-4 h-4 shrink-0" />
+            <span className="truncate">Zonas de Risco</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("lista_mercado")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-lime-300 font-semibold rounded-xl text-xs border border-lime-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <ShoppingCart className="w-4 h-4 shrink-0" />
+            <span className="truncate">Mercado</span>
           </button>
         </div>
       )}
