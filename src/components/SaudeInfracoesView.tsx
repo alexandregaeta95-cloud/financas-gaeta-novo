@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Stethoscope,
   FileText,
-  AlertOctagon,
   Plus,
   Edit2,
   Trash2,
@@ -27,7 +26,6 @@ import {
 import {
   ConsultaMedica,
   ReceitaMedica,
-  Infracao,
   Veiculo,
   AlimentoAnaliseResult,
   RegistroSaude,
@@ -57,7 +55,6 @@ import { VoiceTextArea } from "./VoiceTextArea";
 interface Props {
   consultas: ConsultaMedica[];
   receitas: ReceitaMedica[];
-  infracoes: Infracao[];
   registrosSaude?: RegistroSaude[];
   lembretesConfigs?: LembreteSaudeConfig[];
   lembretesRemedios?: LembreteRemedio[];
@@ -73,7 +70,6 @@ interface Props {
   onSaveLembretesRemedios?: (remedios: LembreteRemedio[]) => Promise<void> | void;
   onSaveConsulta: (consulta: ConsultaMedica) => Promise<void>;
   onSaveReceita: (receita: ReceitaMedica) => Promise<void>;
-  onSaveInfracao: (infracao: Infracao) => Promise<void>;
   onSaveRegistroSaude?: (registro: RegistroSaude) => Promise<void>;
   onSaveLembretesConfigs?: (configs: LembreteSaudeConfig[]) => Promise<void> | void;
   onSaveAlimento?: (alimento: AlimentoAnaliseResult) => Promise<void>;
@@ -84,7 +80,6 @@ interface Props {
   onSaveConfigAgua?: (config: ConfigAgua) => Promise<void> | void;
   onDeleteConsulta: (id: string) => Promise<void>;
   onDeleteReceita: (id: string) => Promise<void>;
-  onDeleteInfracao: (id: string) => Promise<void>;
   onDeleteRegistroSaude?: (id: string) => Promise<void>;
   onDeleteAlimento?: (id: string) => Promise<void>;
   onDeleteExercicio?: (id: string) => Promise<void> | void;
@@ -94,7 +89,6 @@ interface Props {
 export const SaudeInfracoesView: React.FC<Props> = ({
   consultas,
   receitas,
-  infracoes,
   registrosSaude = [],
   lembretesConfigs = [],
   lembretesRemedios = [],
@@ -110,7 +104,6 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   onSaveLembretesRemedios,
   onSaveConsulta,
   onSaveReceita,
-  onSaveInfracao,
   onSaveRegistroSaude,
   onSaveLembretesConfigs,
   onSaveAlimento,
@@ -121,20 +114,19 @@ export const SaudeInfracoesView: React.FC<Props> = ({
   onSaveConfigAgua,
   onDeleteConsulta,
   onDeleteReceita,
-  onDeleteInfracao,
   onDeleteRegistroSaude,
   onDeleteAlimento,
   onDeleteExercicio,
   onDeleteCafe,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    "consultas" | "receitas" | "infracoes" | "alimentos" | "controle_saude" | "exercicios"
+    "consultas" | "receitas" | "alimentos" | "controle_saude" | "exercicios"
   >("consultas");
 
   // Delete Confirmation State
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
-    type: "consulta" | "receita" | "infracao" | "alimento" | "saude" | "exercicio";
+    type: "consulta" | "receita" | "alimento" | "saude" | "exercicio";
     id: string;
     title: string;
     subtitle?: string;
@@ -295,22 +287,6 @@ export const SaudeInfracoesView: React.FC<Props> = ({
     Ativa: true,
   });
 
-  // Infracao Modal State
-  const [isInfracaoModalOpen, setIsInfracaoModalOpen] = useState(false);
-  const [editingInfracao, setEditingInfracao] = useState<Infracao | null>(null);
-  const [infracaoForm, setInfracaoForm] = useState<Partial<Infracao>>({
-    Protocolo: "MULT-2026-098",
-    Título: "Excesso de Velocidade até 20%",
-    Veículo: veiculos[0]?.Modelo || "Polo TSI",
-    Placa: veiculos[0]?.Placa || "GAE-2026",
-    Data: new Date().toISOString().split("T")[0],
-    Descrição: "Transitar em velocidade superior à máxima permitida em até 20%",
-    Valor: 130.16,
-    Pontos: 4,
-    Status: "EM_ANALISE",
-    Localização: "Av. Paulista, 1000 - SP",
-    Observação: "Aguardando prazo para recurso",
-  });
 
   // Alerts logic for medical appointments (2 days before)
   const now = new Date();
@@ -470,48 +446,6 @@ export const SaudeInfracoesView: React.FC<Props> = ({
     onSaveReceita(item);
   };
 
-  const handleOpenInfracao = (inf?: Infracao) => {
-    if (inf) {
-      setEditingInfracao(inf);
-      setInfracaoForm({ ...inf });
-    } else {
-      setEditingInfracao(null);
-      setInfracaoForm({
-        Protocolo: "MULT-2026-098",
-        Título: "Excesso de Velocidade até 20%",
-        Veículo: veiculos[0]?.Modelo || "Polo TSI",
-        Placa: veiculos[0]?.Placa || "GAE-2026",
-        Data: new Date().toISOString().split("T")[0],
-        Descrição: "Transitar em velocidade superior à máxima permitida em até 20%",
-        Valor: 130.16,
-        Pontos: 4,
-        Status: "EM_ANALISE",
-        Localização: "Av. Paulista, 1000 - SP",
-        Observação: "Aguardando prazo para recurso",
-      });
-    }
-    setIsInfracaoModalOpen(true);
-  };
-
-  const handleSaveInfracaoSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const item: Infracao = {
-      Id: editingInfracao?.Id || generateNewId("MULTA"),
-      Protocolo: infracaoForm.Protocolo || "",
-      Título: infracaoForm.Título || "Infração de Trânsito",
-      Veículo: infracaoForm.Veículo || "Veículo",
-      Placa: infracaoForm.Placa || "",
-      Data: infracaoForm.Data || new Date().toISOString().split("T")[0],
-      Descrição: infracaoForm.Descrição || "",
-      Valor: parseCurrency(infracaoForm.Valor),
-      Pontos: parseCurrency(infracaoForm.Pontos),
-      Status: infracaoForm.Status || "EM_ANALISE",
-      Localização: infracaoForm.Localização || "",
-      Observação: infracaoForm.Observação || "",
-    };
-    setIsInfracaoModalOpen(false);
-    onSaveInfracao(item);
-  };
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
@@ -520,12 +454,11 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
             <Stethoscope className="w-5 h-5 text-emerald-400" />
-            Saúde & Infrações de Trânsito
+            Saúde & Consultas Médicas
           </h2>
           <p className="text-xs text-slate-400">
-            Abas <code className="text-emerald-400 font-mono">6_Consultas_Médicas</code>,{" "}
-            <code className="text-emerald-400 font-mono">7_Receitas_Médicas</code>,{" "}
-            <code className="text-emerald-400 font-mono">8_Infracoes</code>
+            Abas <code className="text-emerald-400 font-mono">6_Consultas_Médicas</code> e{" "}
+            <code className="text-emerald-400 font-mono">7_Receitas_Médicas</code>
           </p>
         </div>
 
@@ -591,17 +524,6 @@ export const SaudeInfracoesView: React.FC<Props> = ({
             )}
           </button>
 
-          <button
-            onClick={() => setActiveTab("infracoes")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeTab === "infracoes"
-                ? "bg-emerald-600 text-white shadow-xs font-bold"
-                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-            }`}
-          >
-            <AlertOctagon className="w-3.5 h-3.5" />
-            <span>Infrações ({infracoes.length})</span>
-          </button>
 
           <button
             onClick={() => setActiveTab("alimentos")}
@@ -1036,98 +958,6 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 3. INFRAÇÕES */}
-      {activeTab === "infracoes" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-slate-400">
-              Histórico de multas e recursos de trânsito (Aba 8_Infracoes)
-            </span>
-            <button
-              onClick={() => handleOpenInfracao()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Registrar Infração</span>
-            </button>
-          </div>
-
-          {infracoes.length === 0 ? (
-            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
-              Nenhuma infração cadastrada ainda.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {infracoes.map((inf, idx) => (
-                <div
-                  key={`${inf.Id || 'inf'}-${idx}`}
-                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400">
-                        <AlertOctagon className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-white text-base leading-tight">
-                          {inf.Título || inf.Descrição}
-                        </h3>
-                        <p className="text-xs text-slate-400 font-mono">
-                          Protocolo: {inf.Protocolo || "—"} • Veículo: {inf.Veículo} ({inf.Placa})
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleOpenInfracao(inf)}
-                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-                        title="Editar Infração"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() =>
-                          setDeleteConfirm({
-                            isOpen: true,
-                            type: "infracao",
-                            id: inf.Id,
-                            title: inf.Título || inf.Descrição,
-                            subtitle: `Veículo: ${inf.Veículo} (${inf.Placa}) • Valor: R$ ${formatCurrency(inf.Valor)} • Protocolo: ${inf.Protocolo || "—"}`,
-                          })
-                        }
-                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        title="Excluir Infração"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Valor da Multa</span>
-                      <span className="font-bold text-rose-400">R$ {formatCurrency(inf.Valor)}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Pontuação</span>
-                      <span className="font-semibold text-amber-400">{inf.Pontos || 0} pts</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] block">Status</span>
-                      <span className="font-bold text-emerald-400">{inf.Status}</span>
-                    </div>
-                  </div>
-
-                  {inf.Localização && (
-                    <p className="text-xs text-slate-400">📍 Location: {inf.Localização}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* 4. ALIMENTOS & NUTRIÇÃO (HISTÓRICO IA - ABA 21, 24, 25) */}
       {activeTab === "alimentos" && (
@@ -1197,8 +1027,6 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                     ? "Excluir Consulta Médica"
                     : deleteConfirm.type === "receita"
                     ? "Excluir Receita Médica"
-                    : deleteConfirm.type === "infracao"
-                    ? "Excluir Infração de Trânsito"
                     : deleteConfirm.type === "saude"
                     ? "Excluir Registro de Saúde"
                     : "Excluir Análise de Alimento"}
@@ -1240,8 +1068,6 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                     onDeleteConsulta(target.id);
                   } else if (target.type === "receita") {
                     onDeleteReceita(target.id);
-                  } else if (target.type === "infracao") {
-                    onDeleteInfracao(target.id);
                   } else if (target.type === "alimento") {
                     if (onDeleteAlimento) onDeleteAlimento(target.id);
                   } else if (target.type === "saude") {
@@ -1539,80 +1365,6 @@ export const SaudeInfracoesView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Modal Infração */}
-      {isInfracaoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs text-xs">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-base text-white">Registrar Infração de Trânsito</h3>
-              <button onClick={() => setIsInfracaoModalOpen(false)}>
-                <X className="w-5 h-5 text-slate-400 hover:text-white" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveInfracaoSubmit} className="space-y-3">
-              <div>
-                <label className="text-slate-400 block mb-1">Título / Infração</label>
-                <VoiceInput
-                  type="text"
-                  required
-                  placeholder="Ex: Avanço de sinal vermelho"
-                  value={infracaoForm.Título}
-                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Título: e.target.value.toUpperCase() })}
-                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
-                  uppercase
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-400 block mb-1">Veículo</label>
-                  <ComboBox
-                    value={infracaoForm.Veículo}
-                    onChange={(val) => setInfracaoForm({ ...infracaoForm, Veículo: val })}
-                    options={veiculos.map((v) => ({
-                      value: v.Modelo,
-                      label: v.Modelo,
-                      hint: v.Placa ? `(${v.Placa})` : undefined,
-                    }))}
-                    placeholder="Selecione o veículo..."
-                    showVoice={true}
-                    uppercase={false}
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">Valor (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={infracaoForm.Valor}
-                    onFocus={(e) => e.target.select()}
-                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Valor: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIsInfracaoModalOpen(false)}
-                  className="px-4 py-2 text-slate-400 hover:text-white"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
-                >
-                  Salvar Infração
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Quick Manual Food / Meal Modal */}
       <RegistroRapidoAlimentoModal

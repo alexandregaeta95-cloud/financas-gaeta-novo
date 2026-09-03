@@ -1183,12 +1183,15 @@ export default function App() {
             veiculos={veiculos}
             servicos={servicos}
             manutencoes={manutencoes}
+            infracoes={infracoes}
             onSaveVeiculo={(v) => handleSaveGeneric(SHEET_NAMES.VEICULOS, v, setVeiculos)}
             onSaveServico={(s) => handleSaveGeneric(SHEET_NAMES.OFICINA, s, setServicos)}
             onSaveManutencao={(m) => handleSaveGeneric(SHEET_NAMES.MANUTENCOES_AGENDADAS, m, setManutencoes)}
+            onSaveInfracao={(inf) => handleSaveGeneric(SHEET_NAMES.INFRACOES, inf, setInfracoes)}
             onDeleteVeiculo={(id) => handleDeleteGeneric(SHEET_NAMES.VEICULOS, id, setVeiculos)}
             onDeleteServico={(id) => handleDeleteGeneric(SHEET_NAMES.OFICINA, id, setServicos)}
             onDeleteManutencao={(id) => handleDeleteGeneric(SHEET_NAMES.MANUTENCOES_AGENDADAS, id, setManutencoes)}
+            onDeleteInfracao={(id) => handleDeleteGeneric(SHEET_NAMES.INFRACOES, id, setInfracoes)}
           />
         )}
 
@@ -1220,7 +1223,6 @@ export default function App() {
           <SaudeInfracoesView
             consultas={consultas}
             receitas={receitas}
-            infracoes={infracoes}
             registrosSaude={registrosSaude}
             lembretesConfigs={lembretesSaude}
             lembretesRemedios={lembretesRemedios}
@@ -1236,7 +1238,6 @@ export default function App() {
             onSaveAltura={handleSaveAltura}
             onSaveConsulta={(c) => handleSaveGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, c, setConsultas)}
             onSaveReceita={(r) => handleSaveGeneric(SHEET_NAMES.RECEITAS_MEDICAS, r, setReceitas)}
-            onSaveInfracao={(inf) => handleSaveGeneric(SHEET_NAMES.INFRACOES, inf, setInfracoes)}
             onSaveRegistroSaude={(reg) => handleSaveGeneric(SHEET_NAMES.CONTROLE_SAUDE, reg, setRegistrosSaude)}
             onSaveLembretesConfigs={handleSaveLembretesConfigs}
             onSaveAlimento={(alim) => handleSaveGeneric(SHEET_NAMES.ANALISE_ALIMENTOS, alim, setAlimentos)}
@@ -1247,7 +1248,6 @@ export default function App() {
             onSaveConfigAgua={handleSaveConfigAgua}
             onDeleteConsulta={(id) => handleDeleteGeneric(SHEET_NAMES.CONSULTAS_MEDICAS, id, setConsultas)}
             onDeleteReceita={(id) => handleDeleteGeneric(SHEET_NAMES.RECEITAS_MEDICAS, id, setReceitas)}
-            onDeleteInfracao={(id) => handleDeleteGeneric(SHEET_NAMES.INFRACOES, id, setInfracoes)}
             onDeleteRegistroSaude={(id) => handleDeleteGeneric(SHEET_NAMES.CONTROLE_SAUDE, id, setRegistrosSaude)}
             onDeleteAlimento={(id) => handleDeleteGeneric(SHEET_NAMES.ANALISE_ALIMENTOS, id, setAlimentos)}
             onDeleteExercicio={(id) => handleDeleteGeneric(SHEET_NAMES.EXERCICIOS, id, setExercicios)}
