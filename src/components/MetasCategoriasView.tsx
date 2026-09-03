@@ -136,6 +136,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
         ...m,
         Valor_Meta: numericVal,
         Mes_Ano: `${y}-${mo}`,
+        Tipo_Meta: m.Tipo_Meta || "Mensal",
       });
     } else {
       setEditingMeta(null);
@@ -150,6 +151,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
         Valor_Meta: 800,
         Mes_Ano: `${y}-${mo}`,
         Alerta_Porcentagem: 80,
+        Tipo_Meta: "Mensal",
       });
     }
     setIsMetaModalOpen(true);
@@ -168,6 +170,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
       Valor_Meta: parseCurrency(metaForm.Valor_Meta),
       Mes_Ano: `${selectedYear}-${selectedMonth}`,
       Alerta_Porcentagem: parseCurrency(metaForm.Alerta_Porcentagem) || 80,
+      Tipo_Meta: metaForm.Tipo_Meta || "Mensal",
     };
     setIsMetaModalOpen(false);
     onSaveMeta(item);
@@ -277,7 +280,9 @@ export const MetasCategoriasView: React.FC<Props> = ({
                       <div>
                         <h3 className="font-bold text-white text-base">{m.Categoria}</h3>
                         <span className="text-[10px] text-slate-400 font-mono">
-                          Mês Referência: {m.Mes_Ano || "Atual"}
+                          {m.Tipo_Meta === "Quitacao"
+                            ? `Quitação prevista: ${m.Mes_Ano || "Atual"}`
+                            : `Mês Referência: ${m.Mes_Ano || "Atual"}`}
                         </span>
                       </div>
 
@@ -310,7 +315,9 @@ export const MetasCategoriasView: React.FC<Props> = ({
                     {/* Progress Bar */}
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-400">Gasto Realizado:</span>
+                        <span className="text-slate-400">
+                          {m.Tipo_Meta === "Quitacao" ? "Total Pago:" : "Gasto Realizado:"}
+                        </span>
                         <strong className={isOver ? "text-rose-400 font-bold" : isNear ? "text-amber-400 font-bold" : "text-white font-semibold"}>
                           R$ {formatCurrency(spent)}{" "}
                           <span className="text-slate-400 font-normal">/ R$ {formatCurrency(target)}</span>
@@ -528,7 +535,11 @@ export const MetasCategoriasView: React.FC<Props> = ({
               </div>
 
               <div>
-                <label className="text-slate-400 block mb-1">Valor Meta Mensal (R$)</label>
+                <label className="text-slate-400 block mb-1">
+                  {metaForm.Tipo_Meta === "Quitacao"
+                    ? "Valor Total do Financiamento (R$)"
+                    : "Valor Meta Mensal (R$)"}
+                </label>
                 <div className="relative flex items-center">
                   <span className="absolute left-3 text-slate-400 font-semibold text-xs select-none">
                     R$
@@ -549,9 +560,40 @@ export const MetasCategoriasView: React.FC<Props> = ({
                 </div>
               </div>
 
+              {/* Seletor Tipo de Meta */}
+              <div>
+                <label className="text-slate-400 block mb-1">Tipo de Meta</label>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 border border-slate-800 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setMetaForm({ ...metaForm, Tipo_Meta: "Mensal" })}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                      (metaForm.Tipo_Meta || "Mensal") === "Mensal"
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    Meta Mensal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMetaForm({ ...metaForm, Tipo_Meta: "Quitacao" })}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                      metaForm.Tipo_Meta === "Quitacao"
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    Meta de Quitação (Financiamento)
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Mês de Referência</label>
+                  <label className="text-slate-400 block mb-1">
+                    {metaForm.Tipo_Meta === "Quitacao" ? "Data Prevista de Quitação" : "Mês de Referência"}
+                  </label>
                   <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}

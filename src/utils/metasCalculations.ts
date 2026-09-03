@@ -210,6 +210,28 @@ export function calculateSpentForCategoryAndMonth(
 }
 
 /**
+ * Soma TODOS os lançamentos pagos de uma categoria, sem filtro de mês/ano.
+ * Usado para Metas de Quitação (financiamentos), onde o valor total já pago importa,
+ * não só o gasto de um mês específico.
+ */
+export function calculateTotalPaidForCategory(
+  category: string,
+  lancamentos: Lancamento[]
+): number {
+  return lancamentos
+    .filter((l) => {
+      const t = String(l.Tipo || "").trim().toUpperCase();
+      return t === "DESPESA" || t === "ABASTECIMENTO";
+    })
+    .filter((l) => {
+      const s = String(l.Status || "").trim().toUpperCase();
+      return s === "PAGO" || s === "PAID" || s === "QUITADO" || s === "LIQUIDADO";
+    })
+    .filter((l) => categoriesMatch(category, l.Categoria, l.Tipo))
+    .reduce((acc, curr) => acc + parseCurrency(curr.Valor_Pago || curr.Valor), 0);
+}
+
+/**
  * Calculates actual spent amount for a specific MetaCategoria instance.
  */
 export function getSpentForMeta(
@@ -217,6 +239,10 @@ export function getSpentForMeta(
   lancamentos: Lancamento[],
   overrideYM?: { year: number; month: number }
 ): number {
+  if (meta.Tipo_Meta === "Quitacao") {
+    return calculateTotalPaidForCategory(meta.Categoria, lancamentos);
+  }
+
   const now = new Date();
   const targetYM =
     overrideYM ||

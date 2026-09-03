@@ -175,9 +175,10 @@ export interface MetaCategoria {
   Id: string;
   Categoria: string;
   Valor_Meta: number;
-  Mes_Ano?: string; // YYYY-MM
+  Mes_Ano?: string; // YYYY-MM - usado como teto mensal OU como data-limite de quitação
   Alerta_Porcentagem?: number; // e.g. 80 for 80%
   Observação?: string;
+  Tipo_Meta?: "Mensal" | "Quitacao"; // NOVO: define o modo de cálculo
 }
 
 // 11. Categorias Customizadas
