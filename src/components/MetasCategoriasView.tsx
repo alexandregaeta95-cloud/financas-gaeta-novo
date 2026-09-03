@@ -280,7 +280,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
                       <div>
                         <h3 className="font-bold text-white text-base">{m.Categoria}</h3>
                         <span className="text-[10px] text-slate-400 font-mono">
-                          {m.Tipo_Meta === "Quitacao"
+                          {String(m.Tipo_Meta || "").trim().toUpperCase() === "QUITACAO"
                             ? `Quitação prevista: ${m.Mes_Ano || "Atual"}`
                             : `Mês Referência: ${m.Mes_Ano || "Atual"}`}
                         </span>
@@ -316,7 +316,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
                         <span className="text-slate-400">
-                          {m.Tipo_Meta === "Quitacao" ? "Total Pago:" : "Gasto Realizado:"}
+                          {String(m.Tipo_Meta || "").trim().toUpperCase() === "QUITACAO" ? "Total Pago:" : "Gasto Realizado:"}
                         </span>
                         <strong className={isOver ? "text-rose-400 font-bold" : isNear ? "text-amber-400 font-bold" : "text-white font-semibold"}>
                           R$ {formatCurrency(spent)}{" "}
@@ -536,7 +536,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
 
               <div>
                 <label className="text-slate-400 block mb-1">
-                  {metaForm.Tipo_Meta === "Quitacao"
+                  {String(metaForm.Tipo_Meta || "").trim().toUpperCase() === "QUITACAO"
                     ? "Valor Total do Financiamento (R$)"
                     : "Valor Meta Mensal (R$)"}
                 </label>
@@ -568,7 +568,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
                     type="button"
                     onClick={() => setMetaForm({ ...metaForm, Tipo_Meta: "Mensal" })}
                     className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
-                      (metaForm.Tipo_Meta || "Mensal") === "Mensal"
+                      String(metaForm.Tipo_Meta || "").trim().toUpperCase() !== "QUITACAO"
                         ? "bg-emerald-600 text-white shadow-xs"
                         : "text-slate-400 hover:text-white"
                     }`}
@@ -579,7 +579,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
                     type="button"
                     onClick={() => setMetaForm({ ...metaForm, Tipo_Meta: "Quitacao" })}
                     className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
-                      metaForm.Tipo_Meta === "Quitacao"
+                      String(metaForm.Tipo_Meta || "").trim().toUpperCase() === "QUITACAO"
                         ? "bg-emerald-600 text-white shadow-xs"
                         : "text-slate-400 hover:text-white"
                     }`}
@@ -592,7 +592,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">
-                    {metaForm.Tipo_Meta === "Quitacao" ? "Data Prevista de Quitação" : "Mês de Referência"}
+                    {String(metaForm.Tipo_Meta || "").trim().toUpperCase() === "QUITACAO" ? "Data Prevista de Quitação" : "Mês de Referência"}
                   </label>
                   <select
                     value={selectedMonth}

@@ -239,7 +239,7 @@ export function getSpentForMeta(
   lancamentos: Lancamento[],
   overrideYM?: { year: number; month: number }
 ): number {
-  if (meta.Tipo_Meta === "Quitacao") {
+  if (String(meta.Tipo_Meta || "").trim().toUpperCase() === "QUITACAO") {
     return calculateTotalPaidForCategory(meta.Categoria, lancamentos);
   }
 
