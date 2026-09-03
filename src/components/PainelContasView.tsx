@@ -168,7 +168,7 @@ export const PainelContasView: React.FC<Props> = ({
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
             <Clock className="w-5 h-5 text-emerald-400" />
-            Painel de Contas (A Vencer / Vencidas / Pagas)
+            Vencimentos (A Vencer / Vencidas / Pagas)
           </h2>
           <p className="text-xs text-slate-400">
             Visão agrupada e inteligente de todos os lançamentos financeiros da aba <code className="text-emerald-400 font-mono">1_Lancamentos</code>.
