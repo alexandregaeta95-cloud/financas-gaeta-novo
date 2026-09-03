@@ -314,13 +314,100 @@ export function evaluateAllNotifications({
 
     list.push({
       id: `infracao_${inf.Id}_pendente`,
-      type: "saude",
+      type: "veiculos",
       title: "🚨 Infração de Trânsito Pendente",
       message: `${inf.Veículo || "Veículo"}: ${inf.Descrição} - R$ ${formatCurrency(inf.Valor || 0)} (${inf.Pontos || 0} pts)`,
-      targetView: "saude",
+      targetView: "veiculos",
       severity: "warning",
       timestamp: now,
     });
+  });
+
+  // C2. Infrações - Prazo de Defesa
+  infracoes.forEach((inf) => {
+    if (!inf.Data_Termino_Defesa) return;
+    const diff = getDiffInDaysFromToday(inf.Data_Termino_Defesa);
+    if (diff === null) return;
+
+    if (diff === 0) {
+      list.push({
+        id: `infracao_${inf.Id}_defesa_hoje`,
+        type: "veiculos",
+        title: "🚨 Prazo de Defesa Vence Hoje!",
+        message: `${inf.Veículo || "Veículo"} (${inf.Placa || ""}): prazo para apresentar defesa da infração vence hoje.`,
+        targetView: "veiculos",
+        severity: "urgent",
+        timestamp: now,
+      });
+    } else if (diff > 0 && diff <= 5) {
+      list.push({
+        id: `infracao_${inf.Id}_defesa_prox`,
+        type: "veiculos",
+        title: `🚨 Prazo de Defesa (${diff === 1 ? "Amanhã" : `em ${diff} dias`})`,
+        message: `${inf.Veículo || "Veículo"} (${inf.Placa || ""}): prazo para defesa vence em ${inf.Data_Termino_Defesa}.`,
+        targetView: "veiculos",
+        severity: "warning",
+        timestamp: now,
+      });
+    }
+  });
+
+  // C3. Infrações - Prazo de Recurso
+  infracoes.forEach((inf) => {
+    if (!inf.Data_Termino_Recurso) return;
+    const diff = getDiffInDaysFromToday(inf.Data_Termino_Recurso);
+    if (diff === null) return;
+
+    if (diff === 0) {
+      list.push({
+        id: `infracao_${inf.Id}_recurso_hoje`,
+        type: "veiculos",
+        title: "🚨 Prazo de Recurso Vence Hoje!",
+        message: `${inf.Veículo || "Veículo"} (${inf.Placa || ""}): prazo para apresentar recurso vence hoje.`,
+        targetView: "veiculos",
+        severity: "urgent",
+        timestamp: now,
+      });
+    } else if (diff > 0 && diff <= 5) {
+      list.push({
+        id: `infracao_${inf.Id}_recurso_prox`,
+        type: "veiculos",
+        title: `🚨 Prazo de Recurso (${diff === 1 ? "Amanhã" : `em ${diff} dias`})`,
+        message: `${inf.Veículo || "Veículo"} (${inf.Placa || ""}): prazo para recurso vence em ${inf.Data_Termino_Recurso}.`,
+        targetView: "veiculos",
+        severity: "warning",
+        timestamp: now,
+      });
+    }
+  });
+
+  // C4. Infrações - Vencimento do Desconto
+  infracoes.forEach((inf) => {
+    if (!inf.Data_Vencimento_Desconto) return;
+    const diff = getDiffInDaysFromToday(inf.Data_Vencimento_Desconto);
+    if (diff === null) return;
+
+    if (diff === 0) {
+      list.push({
+        id: `infracao_${inf.Id}_desconto_hoje`,
+        type: "veiculos",
+        title: "💰 Desconto da Multa Vence Hoje!",
+        message: `${inf.Veículo || "Veículo"} (${inf.Placa || ""}): último dia pra pagar com desconto.`,
+        targetView: "veiculos",
+        severity: "urgent",
+        timestamp: now,
+      });
+    } else if (diff > 0 && diff <= 5) {
+      list.push({
+        id: `infracao_${inf.Id}_desconto_prox`,
+        type: "veiculos",
+        title: `💰 Desconto da Multa (${diff === 1 ? "Amanhã" : `em ${diff} dias`})`,
+        message: `${inf.Veículo || "Veículo"} (${inf.Placa || ""}): desconto vence em ${inf.Data_Vencimento_Desconto}.`,
+        targetView: "veiculos",
+        severity: "warning",
+        timestamp: now,
+      });
+    }
   });
 
   // D. Lembretes Diários de Saúde (Pressão Arterial e Glicemia - Aba 22)

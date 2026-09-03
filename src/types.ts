@@ -140,17 +140,27 @@ export interface ReceitaMedica {
 // 8. Infrações (Multas)
 export interface Infracao {
   Id: string;
-  Protocolo?: string;
+  Protocolo?: string; // Número do Auto de Infração
   Título?: string;
   Veículo: string;
   Placa?: string;
-  Data: string;
+  Data: string; // Data da Infração
+  Hora_Infracao?: string; // Hora da Infração
   Descrição: string;
   Valor: number;
   Pontos?: number;
   Status: "EM_ANALISE" | "APROVADO" | "NEGADO" | "Pago" | "Pendente";
   Localização?: string;
   Observação?: string;
+  Data_Cadastro?: string;
+  Hora_Cadastro?: string;
+  Condutor?: string;
+  Orgao_Autuador?: string;
+  Orgao_Competente?: string;
+  Data_Notificacao_Penalidade?: string;
+  Data_Termino_Defesa?: string;
+  Data_Termino_Recurso?: string;
+  Data_Vencimento_Desconto?: string;
 }
 
 // 9. Veículos

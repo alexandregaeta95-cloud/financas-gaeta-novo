@@ -138,6 +138,13 @@ function getDiffInDaysFromToday(dateStr?: string | null): number | null {
   return Math.round((today.getTime() - d.getTime()) / (1000 * 3600 * 24));
 }
 
+function getCurrentTimeHHMM(): string {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
 export const VeiculosOficinaView: React.FC<Props> = ({
   veiculos,
   servicos,
@@ -181,12 +188,20 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     Veículo: veiculos[0]?.Modelo || "Polo TSI",
     Placa: veiculos[0]?.Placa || "GAE-2026",
     Data: new Date().toISOString().split("T")[0],
+    Hora_Infracao: "14:30",
     Descrição: "Transitar em velocidade superior à máxima permitida em até 20%",
     Valor: 130.16,
     Pontos: 4,
     Status: "EM_ANALISE",
     Localização: "Av. Paulista, 1000 - SP",
     Observação: "Aguardando prazo para recurso",
+    Condutor: "",
+    Orgao_Autuador: "",
+    Orgao_Competente: "",
+    Data_Notificacao_Penalidade: "",
+    Data_Termino_Defesa: "",
+    Data_Termino_Recurso: "",
+    Data_Vencimento_Desconto: "",
   });
 
   // Veículo Modal State
@@ -601,12 +616,20 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         Veículo: veiculos[0]?.Modelo || "Polo TSI",
         Placa: veiculos[0]?.Placa || "GAE-2026",
         Data: new Date().toISOString().split("T")[0],
+        Hora_Infracao: getCurrentTimeHHMM(),
         Descrição: "Transitar em velocidade superior à máxima permitida em até 20%",
         Valor: 130.16,
         Pontos: 4,
         Status: "EM_ANALISE",
         Localização: "Av. Paulista, 1000 - SP",
         Observação: "Aguardando prazo para recurso",
+        Condutor: veiculos[0]?.Motorista ? veiculos[0].Motorista.toUpperCase() : "",
+        Orgao_Autuador: "",
+        Orgao_Competente: "",
+        Data_Notificacao_Penalidade: "",
+        Data_Termino_Defesa: "",
+        Data_Termino_Recurso: "",
+        Data_Vencimento_Desconto: "",
       });
     }
     setIsInfracaoModalOpen(true);
@@ -615,19 +638,35 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   const handleSaveInfracaoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!onSaveInfracao) return;
+    const isNew = !editingInfracao;
+    const todayStr = new Date().toISOString().split("T")[0];
+    const timeStr = getCurrentTimeHHMM();
+
+    const selectedVeic = veiculos.find((v) => v.Modelo === infracaoForm.Veículo || v.Placa === infracaoForm.Placa);
+
     const item: Infracao = {
       Id: editingInfracao?.Id || generateNewId("MULTA"),
       Protocolo: infracaoForm.Protocolo || "",
       Título: infracaoForm.Título || "Infração de Trânsito",
       Veículo: infracaoForm.Veículo || "Veículo",
-      Placa: infracaoForm.Placa || "",
-      Data: infracaoForm.Data || new Date().toISOString().split("T")[0],
-      Descrição: infracaoForm.Descrição || "",
+      Placa: selectedVeic?.Placa || infracaoForm.Placa || "",
+      Data: infracaoForm.Data || todayStr,
+      Hora_Infracao: infracaoForm.Hora_Infracao || "",
+      Descrição: infracaoForm.Descrição || infracaoForm.Título || "",
       Valor: parseCurrency(infracaoForm.Valor),
       Pontos: parseCurrency(infracaoForm.Pontos),
       Status: infracaoForm.Status || "EM_ANALISE",
       Localização: infracaoForm.Localização || "",
       Observação: infracaoForm.Observação || "",
+      Data_Cadastro: isNew ? todayStr : (editingInfracao?.Data_Cadastro || todayStr),
+      Hora_Cadastro: isNew ? timeStr : (editingInfracao?.Hora_Cadastro || timeStr),
+      Condutor: infracaoForm.Condutor || "",
+      Orgao_Autuador: infracaoForm.Orgao_Autuador || "",
+      Orgao_Competente: infracaoForm.Orgao_Competente || "",
+      Data_Notificacao_Penalidade: infracaoForm.Data_Notificacao_Penalidade || "",
+      Data_Termino_Defesa: infracaoForm.Data_Termino_Defesa || "",
+      Data_Termino_Recurso: infracaoForm.Data_Termino_Recurso || "",
+      Data_Vencimento_Desconto: infracaoForm.Data_Vencimento_Desconto || "",
     };
     setIsInfracaoModalOpen(false);
     onSaveInfracao(item);
@@ -2399,9 +2438,11 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       {/* Modal Infração */}
       {isInfracaoModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs text-xs">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-slate-200 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl text-slate-200 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-base text-white">Registrar Infração de Trânsito</h3>
+              <h3 className="font-bold text-base text-white">
+                {editingInfracao ? "Editar Infração de Trânsito" : "Registrar Infração de Trânsito"}
+              </h3>
               <button onClick={() => setIsInfracaoModalOpen(false)}>
                 <X className="w-5 h-5 text-slate-400 hover:text-white cursor-pointer" />
               </button>
@@ -2426,7 +2467,14 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                   <label className="text-slate-400 block mb-1">Veículo</label>
                   <ComboBox
                     value={infracaoForm.Veículo}
-                    onChange={(val) => setInfracaoForm({ ...infracaoForm, Veículo: val })}
+                    onChange={(val) => {
+                      const vMatch = veiculos.find((v) => v.Modelo === val || v.Placa === val);
+                      setInfracaoForm({
+                        ...infracaoForm,
+                        Veículo: val,
+                        Placa: vMatch?.Placa || infracaoForm.Placa,
+                      });
+                    }}
                     options={veiculos.map((v) => ({
                       value: v.Modelo,
                       label: v.Modelo,
@@ -2449,6 +2497,174 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold"
                   />
                 </div>
+              </div>
+
+              {/* Data e Hora da Infração */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Data da Infração</label>
+                  <input
+                    type="date"
+                    required
+                    value={infracaoForm.Data || ""}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Data: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Hora da Infração</label>
+                  <input
+                    type="time"
+                    value={infracaoForm.Hora_Infracao || ""}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Hora_Infracao: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Condutor */}
+              <div>
+                <label className="text-slate-400 block mb-1">Condutor</label>
+                <VoiceInput
+                  type="text"
+                  placeholder="Nome do Condutor"
+                  value={infracaoForm.Condutor || ""}
+                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Condutor: e.target.value.toUpperCase() })}
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
+                />
+              </div>
+
+              {/* Órgão Autuador e Órgão Competente */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Órgão Autuador</label>
+                  <VoiceInput
+                    type="text"
+                    placeholder="Ex: DETRAN-SP, PRF"
+                    value={infracaoForm.Orgao_Autuador || ""}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Orgao_Autuador: e.target.value.toUpperCase() })}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    uppercase
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Órgão Competente</label>
+                  <VoiceInput
+                    type="text"
+                    placeholder="Ex: JARI, CET"
+                    value={infracaoForm.Orgao_Competente || ""}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Orgao_Competente: e.target.value.toUpperCase() })}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    uppercase
+                  />
+                </div>
+              </div>
+
+              {/* Data de Notificação da Penalidade e Vencimento do Desconto */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Data Notificação Penalidade</label>
+                  <input
+                    type="date"
+                    value={infracaoForm.Data_Notificacao_Penalidade || ""}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Data_Notificacao_Penalidade: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Data Vencimento Desconto</label>
+                  <input
+                    type="date"
+                    value={infracaoForm.Data_Vencimento_Desconto || ""}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Data_Vencimento_Desconto: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Prazos: Defesa e Recurso */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Data Término Defesa</label>
+                  <input
+                    type="date"
+                    value={infracaoForm.Data_Termino_Defesa || ""}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Data_Termino_Defesa: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Data Término Recurso</label>
+                  <input
+                    type="date"
+                    value={infracaoForm.Data_Termino_Recurso || ""}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Data_Termino_Recurso: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Auto / Protocolo, Pontos, Status */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Auto / Protocolo</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: MULT-2026"
+                    value={infracaoForm.Protocolo || ""}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Protocolo: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Pontos</label>
+                  <input
+                    type="number"
+                    value={infracaoForm.Pontos ?? 0}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Pontos: Number(e.target.value) })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Status</label>
+                  <select
+                    value={infracaoForm.Status || "EM_ANALISE"}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Status: e.target.value as any })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  >
+                    <option value="EM_ANALISE">Em Análise</option>
+                    <option value="Pendente">Pendente</option>
+                    <option value="APROVADO">Aprovado</option>
+                    <option value="NEGADO">Negado</option>
+                    <option value="Pago">Pago</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Localização */}
+              <div>
+                <label className="text-slate-400 block mb-1">Localização</label>
+                <VoiceInput
+                  type="text"
+                  placeholder="Ex: Av. Paulista, 1000 - SP"
+                  value={infracaoForm.Localização || ""}
+                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Localização: e.target.value })}
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                />
+              </div>
+
+              {/* Observação */}
+              <div>
+                <label className="text-slate-400 block mb-1">Observação</label>
+                <textarea
+                  rows={2}
+                  placeholder="Observações adicionais..."
+                  value={infracaoForm.Observação || ""}
+                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Observação: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white resize-none"
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
