@@ -617,22 +617,25 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       setEditingInfracao(inf);
       setInfracaoForm({ ...inf });
     } else {
+      const now = new Date();
+      const horaAtual = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
       setEditingInfracao(null);
       setInfracaoForm({
-        Protocolo: "MULT-2026-098",
-        Auto_Infracao: "AIT-000000000",
-        Título: "Excesso de Velocidade até 20%",
-        Veículo: veiculos[0]?.Modelo || "Polo TSI",
-        Placa: veiculos[0]?.Placa || "GAE-2026",
+        Protocolo: "",
+        Auto_Infracao: "",
+        Título: "",
+        Veículo: "",
+        Placa: "",
         Data: new Date().toISOString().split("T")[0],
-        Hora_Infracao: getCurrentTimeHHMM(),
-        Descrição: "Transitar em velocidade superior à máxima permitida em até 20%",
-        Valor: 130.16,
-        Pontos: 4,
+        Hora_Infracao: horaAtual,
+        Descrição: "",
+        Valor: 0,
+        Pontos: 0,
         Status: "EM_ANALISE",
-        Localização: "Av. Paulista, 1000 - SP",
-        Observação: "Aguardando prazo para recurso",
-        Condutor: veiculos[0]?.Motorista ? veiculos[0].Motorista.toUpperCase() : "",
+        Localização: "",
+        Observação: "",
+        Condutor: "",
         Orgao_Autuador: "",
         Orgao_Competente: "",
         Data_Notificacao_Penalidade: "",
