@@ -2499,12 +2499,13 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Placa</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     placeholder="ABC-1234"
                     value={infracaoForm.Placa || ""}
                     onChange={(e) => setInfracaoForm({ ...infracaoForm, Placa: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase font-mono"
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase font-mono"
+                    uppercase
                   />
                 </div>
               </div>
@@ -2512,12 +2513,13 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               {/* 2. Número do RENAINF */}
               <div>
                 <label className="text-slate-400 block mb-1">Número do RENAINF</label>
-                <input
+                <VoiceInput
                   type="text"
                   placeholder="Ex: 00000000000"
                   value={infracaoForm.Numero_Renainf || ""}
-                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Numero_Renainf: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Numero_Renainf: e.target.value.toUpperCase() })}
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
                 />
               </div>
 
@@ -2678,22 +2680,24 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Auto de Infração</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     placeholder="Ex: AIT-000000000"
                     value={infracaoForm.Auto_Infracao || ""}
-                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Auto_Infracao: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Auto_Infracao: e.target.value.toUpperCase() })}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    uppercase
                   />
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Protocolo</label>
-                  <input
+                  <VoiceInput
                     type="text"
                     placeholder="Ex: PROT-2026-098"
                     value={infracaoForm.Protocolo || ""}
-                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Protocolo: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Protocolo: e.target.value.toUpperCase() })}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    uppercase
                   />
                 </div>
               </div>
@@ -2701,12 +2705,13 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               {/* Código da Infração */}
               <div>
                 <label className="text-slate-400 block mb-1">Código da Infração</label>
-                <input
+                <VoiceInput
                   type="text"
                   placeholder="Ex: 745-5-0"
                   value={infracaoForm.Codigo_Infracao || ""}
-                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Codigo_Infracao: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Codigo_Infracao: e.target.value.toUpperCase() })}
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
                 />
               </div>
 
