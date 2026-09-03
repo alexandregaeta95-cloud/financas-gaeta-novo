@@ -2509,28 +2509,16 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* 2 & 3. Número do RENAINF e Código da Infração */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-400 block mb-1">Número do RENAINF</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: 00000000000"
-                    value={infracaoForm.Numero_Renainf || ""}
-                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Numero_Renainf: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">Código da Infração</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: 745-5-0"
-                    value={infracaoForm.Codigo_Infracao || ""}
-                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Codigo_Infracao: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                  />
-                </div>
+              {/* 2. Número do RENAINF */}
+              <div>
+                <label className="text-slate-400 block mb-1">Número do RENAINF</label>
+                <input
+                  type="text"
+                  placeholder="Ex: 00000000000"
+                  value={infracaoForm.Numero_Renainf || ""}
+                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Numero_Renainf: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                />
               </div>
 
               {/* 4 & 5. Órgão Autuador e Órgão Competente */}
@@ -2708,6 +2696,18 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
                   />
                 </div>
+              </div>
+
+              {/* Código da Infração */}
+              <div>
+                <label className="text-slate-400 block mb-1">Código da Infração</label>
+                <input
+                  type="text"
+                  placeholder="Ex: 745-5-0"
+                  value={infracaoForm.Codigo_Infracao || ""}
+                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Codigo_Infracao: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                />
               </div>
 
               {/* 15. Título / Infração */}
