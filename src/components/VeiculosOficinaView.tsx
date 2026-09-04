@@ -2526,7 +2526,33 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 />
               </div>
 
-              {/* 4 & 5. Órgão Autuador e Órgão Competente */}
+              {/* 3. Auto de Infração + Código da Infração */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Auto de Infração</label>
+                  <VoiceInput
+                    type="text"
+                    placeholder="Ex: AIT-000000000"
+                    value={infracaoForm.Auto_Infracao || ""}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Auto_Infracao: e.target.value.toUpperCase() })}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    uppercase
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Código da Infração</label>
+                  <VoiceInput
+                    type="text"
+                    placeholder="Ex: 745-5-0"
+                    value={infracaoForm.Codigo_Infracao || ""}
+                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Codigo_Infracao: e.target.value.toUpperCase() })}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                    uppercase
+                  />
+                </div>
+              </div>
+
+              {/* 4. Órgão Autuador + Órgão Competente */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Órgão Autuador</label>
@@ -2552,7 +2578,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* 6. Localização + Latitude + Longitude */}
+              {/* 5. Localização */}
               <div>
                 <label className="text-slate-400 block mb-1">Localização</label>
                 <VoiceInput
@@ -2563,6 +2589,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                   className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
                 />
               </div>
+
+              {/* 6. Latitude + Longitude */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Latitude (opcional)</label>
@@ -2590,7 +2618,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* 7. Data do Cometimento + Hora do Cometimento */}
+              {/* 7. Data e Hora do Cometimento */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Data do Cometimento</label>
@@ -2613,7 +2641,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* 8 & 9. Data da Notificação da Autuação e Data Término para Apresentação da Defesa */}
+              {/* 8. Data da Notificação da Autuação + Data Término para Apresentação da Defesa */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Data da Notificação da Autuação</label>
@@ -2635,7 +2663,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* 10 & 11. Data Limite para Identificação do Condutor e Data da Notificação da Penalidade */}
+              {/* 9. Data Limite Identificação Condutor + Data Notificação Penalidade */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Data Limite para Identificação do Condutor</label>
@@ -2657,7 +2685,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* 12 & 13. Data Término para Apresentação de Recurso e Data do Vencimento do Desconto */}
+              {/* 10. Data Término Recurso + Data Vencimento Desconto */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Data Término para Apresentação de Recurso</label>
@@ -2679,46 +2707,20 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* 14 & 15. Auto de Infração e Protocolo */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-400 block mb-1">Auto de Infração</label>
-                  <VoiceInput
-                    type="text"
-                    placeholder="Ex: AIT-000000000"
-                    value={infracaoForm.Auto_Infracao || ""}
-                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Auto_Infracao: e.target.value.toUpperCase() })}
-                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
-                    uppercase
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">Protocolo</label>
-                  <VoiceInput
-                    type="text"
-                    placeholder="Ex: PROT-2026-098"
-                    value={infracaoForm.Protocolo || ""}
-                    onChange={(e) => setInfracaoForm({ ...infracaoForm, Protocolo: e.target.value.toUpperCase() })}
-                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
-                    uppercase
-                  />
-                </div>
-              </div>
-
-              {/* Código da Infração */}
+              {/* 11. Protocolo */}
               <div>
-                <label className="text-slate-400 block mb-1">Código da Infração</label>
+                <label className="text-slate-400 block mb-1">Protocolo</label>
                 <VoiceInput
                   type="text"
-                  placeholder="Ex: 745-5-0"
-                  value={infracaoForm.Codigo_Infracao || ""}
-                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Codigo_Infracao: e.target.value.toUpperCase() })}
+                  placeholder="Ex: PROT-2026-098"
+                  value={infracaoForm.Protocolo || ""}
+                  onChange={(e) => setInfracaoForm({ ...infracaoForm, Protocolo: e.target.value.toUpperCase() })}
                   className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
                   uppercase
                 />
               </div>
 
-              {/* 15. Título / Infração */}
+              {/* 12. Título / Infração */}
               <div>
                 <label className="text-slate-400 block mb-1">Título / Infração</label>
                 <VoiceInput
@@ -2732,19 +2734,19 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 />
               </div>
 
-              {/* 16. Descrição */}
+              {/* 13. Descrição */}
               <div>
                 <label className="text-slate-400 block mb-1">Descrição</label>
-                <textarea
+                <VoiceTextArea
                   rows={2}
                   placeholder="Descrição da infração..."
                   value={infracaoForm.Descrição || ""}
                   onChange={(e) => setInfracaoForm({ ...infracaoForm, Descrição: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white resize-none"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white resize-none"
                 />
               </div>
 
-              {/* 17, 18. Valor e Pontos */}
+              {/* 14. Valor + Pontos */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Valor (R$)</label>
@@ -2770,7 +2772,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* 19, 20. Status de Pagamento e Status */}
+              {/* 15. Status de Pagamento + Status */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Status de Pagamento</label>
@@ -2799,19 +2801,19 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* 21. Observação */}
+              {/* 16. Observação */}
               <div>
                 <label className="text-slate-400 block mb-1">Observação</label>
-                <textarea
+                <VoiceTextArea
                   rows={2}
                   placeholder="Observações adicionais..."
                   value={infracaoForm.Observação || ""}
                   onChange={(e) => setInfracaoForm({ ...infracaoForm, Observação: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white resize-none"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white resize-none"
                 />
               </div>
 
-              {/* 22. Condutor */}
+              {/* 17. Condutor */}
               <div>
                 <label className="text-slate-400 block mb-1">Condutor</label>
                 <VoiceInput
