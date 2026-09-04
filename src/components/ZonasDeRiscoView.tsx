@@ -118,6 +118,9 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
         }
 
         setActiveAlertZone(triggeredZone);
+        if (!triggeredZone) {
+          stopAlarmLoop();
+        }
       },
       (err) => {
         setGeoError("Permissão de GPS negada ou indisponível.");

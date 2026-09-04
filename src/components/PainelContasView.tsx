@@ -12,11 +12,11 @@ import {
   Fuel,
   Car,
   Receipt,
-  PlusCircle,
   Target,
   CalendarClock,
   ShieldAlert,
   ShoppingCart,
+  HeartPulse,
 } from "lucide-react";
 import { Lancamento } from "../types";
 import { ModuleView } from "./Navigation";
@@ -203,17 +203,6 @@ export const PainelContasView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Highlight Action Button */}
-      {onNavigate && (
-        <button
-          onClick={() => onNavigate("lancamentos")}
-          className="w-full flex items-center justify-center gap-2 p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition-all shadow-md active:scale-95 text-center cursor-pointer"
-        >
-          <PlusCircle className="w-4 h-4 shrink-0" />
-          <span>Novo Lançamento</span>
-        </button>
-      )}
-
       {/* Quick Action Shortcuts Grid */}
       {onNavigate && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3">
@@ -295,6 +284,14 @@ export const PainelContasView: React.FC<Props> = ({
           >
             <ShoppingCart className="w-4 h-4 shrink-0" />
             <span className="truncate">Mercado</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("saude")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-red-300 font-semibold rounded-xl text-xs border border-red-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <HeartPulse className="w-4 h-4 shrink-0" />
+            <span className="truncate">Saúde</span>
           </button>
         </div>
       )}

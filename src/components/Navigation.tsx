@@ -74,7 +74,7 @@ export const Navigation: React.FC<Props> = ({
     { id: "veiculos", label: "Veículos", icon: Car },
     { id: "contas", label: "Bancos & Cartões", icon: CreditCard },
     { id: "metas", label: "Metas", icon: Target },
-    { id: "saude", label: "Saúde & Multas", icon: HeartPulse },
+    { id: "saude", label: "Saúde", icon: HeartPulse },
     { id: "agenda", label: "Agenda", icon: CalendarDays },
     { id: "zonas_risco", label: "Zonas Risco", icon: ShieldAlert },
     { id: "lista_mercado", label: "Mercado", icon: ShoppingBag },

@@ -491,6 +491,30 @@ export const SaudeInfracoesView: React.FC<Props> = ({
       <div className="w-full overflow-x-auto pb-1 -mt-1 touch-pan-x">
         <div className="inline-flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800/90 shadow-xs min-w-full sm:min-w-0">
           <button
+            onClick={() => setActiveTab("alimentos")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "alimentos"
+                ? "bg-emerald-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <Utensils className="w-3.5 h-3.5" />
+            <span>Alimentos IA ({alimentos.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("controle_saude")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "controle_saude"
+                ? "bg-emerald-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>Controle de Saúde ({registrosSaude.length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab("consultas")}
             className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === "consultas"
@@ -522,31 +546,6 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                 {alertReceitas.length}
               </span>
             )}
-          </button>
-
-
-          <button
-            onClick={() => setActiveTab("alimentos")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeTab === "alimentos"
-                ? "bg-emerald-600 text-white shadow-xs font-bold"
-                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-            }`}
-          >
-            <Utensils className="w-3.5 h-3.5" />
-            <span>Alimentos IA ({alimentos.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("controle_saude")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeTab === "controle_saude"
-                ? "bg-emerald-600 text-white shadow-xs font-bold"
-                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5" />
-            <span>Controle de Saúde ({registrosSaude.length})</span>
           </button>
 
           <button
