@@ -7,6 +7,10 @@
  * - Deterministic ID generation.
  */
 
+import { Capacitor } from "@capacitor/core";
+
+const API_BASE_URL = Capacitor.isNativePlatform() ? "https://dizai.aelt-tecnologia.com.br" : "";
+
 import { ApiResponse, SHEET_NAMES, SheetNameKey } from "../types";
 import {
   parseCurrency,
@@ -230,7 +234,7 @@ export async function fetchSheetData<T = any>(
       query.set("targetUrl", targetUrl);
     }
 
-    const response = await fetch(`/api/proxy?${query.toString()}`, {
+    const response = await fetch(`${API_BASE_URL}/api/proxy?${query.toString()}`, {
       method: "GET",
       headers: {
         "Accept": "application/json",
@@ -1392,7 +1396,7 @@ export async function saveSheetRecords<T = any>(
   });
 
   try {
-    const response = await fetch("/api/proxy", {
+    const response = await fetch(`${API_BASE_URL}/api/proxy`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1461,7 +1465,7 @@ export async function testAppsScriptConnection(testUrl?: string): Promise<{
       query.set("targetUrl", testUrl);
     }
 
-    const res = await fetch(`/api/proxy?${query.toString()}`);
+    const res = await fetch(`${API_BASE_URL}/api/proxy?${query.toString()}`);
     if (!res.ok) {
       const errJson = await res.json().catch(() => ({}));
       return {
