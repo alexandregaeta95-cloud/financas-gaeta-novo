@@ -840,10 +840,15 @@ export const LancamentosView: React.FC<Props> = ({
         const parcelValue = Number((finalValor / N).toFixed(2));
         const diff = Number((finalValor - parcelValue * N).toFixed(2));
 
+        const valorPagoBase = finalValorPago > 0 ? finalValorPago : finalValor;
+        const parcelValuePago = Number((valorPagoBase / N).toFixed(2));
+        const diffPago = Number((valorPagoBase - parcelValuePago * N).toFixed(2));
+
         for (let i = 0; i < N; i++) {
           const itemDate = addMonthsToDate(baseDate, i);
           const isFirst = i === 0;
           const currentParcelValue = isFirst ? Number((parcelValue + diff).toFixed(2)) : parcelValue;
+          const currentParcelValuePago = isFirst ? Number((parcelValuePago + diffPago).toFixed(2)) : parcelValuePago;
           const itemStatus = isFirst ? chosenStatus : "PENDENTE";
           const isItemPago = itemStatus === "PAGO";
           itemsToSave.push({
@@ -854,7 +859,7 @@ export const LancamentosView: React.FC<Props> = ({
             Subcategoria: formData.Subcategoria || "",
             Descricao: `${baseDesc} (${i + 1}/${N})`,
             Valor: currentParcelValue,
-            Valor_Pago: isItemPago ? currentParcelValue : 0,
+            Valor_Pago: isItemPago ? currentParcelValuePago : 0,
             Conta: formData.Conta || "",
             Cartao: formData.Cartao || "",
             Forma_Pagamento: formData.Forma_Pagamento || "PIX",
