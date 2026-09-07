@@ -103,7 +103,8 @@ function isFuelItem(l: any): boolean {
 
 function isExcludedItem(l: any): boolean {
   const status = (l.Status || l.status || "").toString().toUpperCase();
-  return status === "EXCLUÍDO" || status === "EXCLUIDO" || status === "DELETED";
+  const cat = (l.Categoria || l.categoria || "").toString().toUpperCase();
+  return status === "EXCLUÍDO" || status === "EXCLUIDO" || status === "DELETED" || cat === "TRANSFERÊNCIA";
 }
 
 export const Dashboard: React.FC<Props> = ({

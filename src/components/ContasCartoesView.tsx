@@ -10,6 +10,7 @@ import {
   Receipt,
   Check,
   Clock,
+  ArrowLeftRight,
 } from "lucide-react";
 import { ContaBancaria, CartaoCredito, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
@@ -17,6 +18,7 @@ import { parseCurrency, formatCurrency, formatCurrencyInput, calculateCardBalanc
 import { getFaturasPorCartao } from "../utils/faturaCartao";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
+import { VoiceTextArea } from "./VoiceTextArea";
 
 const BANCOS_SUGESTOES = [
   "ITAÚ",
@@ -55,6 +57,7 @@ interface Props {
   onSaveCartao: (cartao: CartaoCredito) => Promise<void>;
   onDeleteConta: (id: string) => Promise<void>;
   onDeleteCartao: (id: string) => Promise<void>;
+  onSaveLancamento?: (lancamento: Lancamento) => Promise<void>;
 }
 
 export const ContasCartoesView: React.FC<Props> = ({
@@ -65,6 +68,7 @@ export const ContasCartoesView: React.FC<Props> = ({
   onSaveCartao,
   onDeleteConta,
   onDeleteCartao,
+  onSaveLancamento,
 }) => {
   const [activeTab, setActiveTab] = useState<"contas" | "cartoes">("contas");
 
@@ -111,6 +115,120 @@ export const ContasCartoesView: React.FC<Props> = ({
 
   // Histórico de Faturas Modal State
   const [historicoFaturasCartao, setHistoricoFaturasCartao] = useState<CartaoCredito | null>(null);
+
+  // Transfer Modal State
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [transferValorDisplay, setTransferValorDisplay] = useState<string>("");
+  const [transferSuccessToast, setTransferSuccessToast] = useState<string | null>(null);
+  const [transferForm, setTransferForm] = useState({
+    Conta_Origem: "",
+    Conta_Destino: "",
+    Valor: 0,
+    Data: new Date().toISOString().split("T")[0],
+    Observacao: "",
+  });
+
+  const handleOpenTransfer = () => {
+    const defaultOrigem = contas[0]?.Nome ? String(contas[0].Nome).toUpperCase() : "";
+    const defaultDestino = contas.length > 1 && contas[1]?.Nome ? String(contas[1].Nome).toUpperCase() : "";
+    setTransferForm({
+      Conta_Origem: defaultOrigem,
+      Conta_Destino: defaultDestino,
+      Valor: 0,
+      Data: new Date().toISOString().split("T")[0],
+      Observacao: "",
+    });
+    setTransferValorDisplay("");
+    setIsTransferModalOpen(true);
+  };
+
+  const handleSaveTransferSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const cleanStr = (s: any) =>
+      String(s || "")
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase();
+
+    const contaOrigemNome = String(transferForm.Conta_Origem || "").trim().toUpperCase();
+    const contaDestinoNome = String(transferForm.Conta_Destino || "").trim().toUpperCase();
+    const valorTransferencia = parseCurrency(transferForm.Valor);
+
+    if (!contaOrigemNome || !contaDestinoNome) {
+      alert("Por favor, selecione ou informe as contas de origem e destino.");
+      return;
+    }
+
+    if (cleanStr(contaOrigemNome) === cleanStr(contaDestinoNome)) {
+      alert("A Conta de Origem deve ser diferente da Conta de Destino.");
+      return;
+    }
+
+    if (valorTransferencia <= 0) {
+      alert("O valor da transferência deve ser maior que zero.");
+      return;
+    }
+
+    // Se a "Conta de Destino" digitada não corresponder a nenhuma conta já existente, cria uma nova conta automaticamente
+    const contaDestinoExistente = contas.find(
+      (c) => cleanStr(c.Nome) === cleanStr(contaDestinoNome)
+    );
+
+    if (!contaDestinoExistente) {
+      const novaConta: ContaBancaria = {
+        Id: generateNewId("CONTA"),
+        Nome: contaDestinoNome,
+        Saldo_Inicial: 0,
+        Saldo_Atual: 0,
+        Tipo: "Caixinha",
+        Ativa: true,
+      };
+      onSaveConta(novaConta);
+    }
+
+    // Criar 2 lançamentos via onSaveLancamento
+    if (onSaveLancamento) {
+      const dataAtual = transferForm.Data || new Date().toISOString().split("T")[0];
+      const idBase = generateNewId("TRANSF");
+
+      onSaveLancamento({
+        Id: idBase + "_SAIDA",
+        Data: dataAtual,
+        Tipo: "Despesa",
+        Categoria: "TRANSFERÊNCIA",
+        Conta: contaOrigemNome,
+        Valor: valorTransferencia,
+        Valor_Pago: valorTransferencia,
+        Status: "PAGO",
+        Descricao: `Transferência para ${contaDestinoNome}`,
+        Descrição: `Transferência para ${contaDestinoNome}`,
+        Observacoes: transferForm.Observacao || "",
+      } as unknown as Lancamento);
+
+      onSaveLancamento({
+        Id: idBase + "_ENTRADA",
+        Data: dataAtual,
+        Tipo: "Receita",
+        Categoria: "TRANSFERÊNCIA",
+        Conta: contaDestinoNome,
+        Valor: valorTransferencia,
+        Valor_Pago: valorTransferencia,
+        Status: "PAGO",
+        Descricao: `Transferência de ${contaOrigemNome}`,
+        Descrição: `Transferência de ${contaOrigemNome}`,
+        Observacoes: transferForm.Observacao || "",
+      } as unknown as Lancamento);
+    }
+
+    // Fechar o modal imediatamente (padrão otimista, sem await travando a tela)
+    setIsTransferModalOpen(false);
+    setTransferSuccessToast(`Transferência de R$ ${formatCurrency(valorTransferencia)} registrada com sucesso!`);
+    setTimeout(() => {
+      setTransferSuccessToast(null);
+    }, 4000);
+  };
 
   const handleMarcarFaturaPaga = async (cartao: CartaoCredito, faturaKey: string, faturaLabel: string, saldo: number) => {
     const valorFmt = formatCurrency(saldo);
@@ -304,17 +422,29 @@ export const ContasCartoesView: React.FC<Props> = ({
       {/* 1. CONTAS BANCÁRIAS */}
       {activeTab === "contas" && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
             <span className="text-xs text-slate-400">
               Contas para liquidação de lançamentos
             </span>
-            <button
-              onClick={() => handleOpenConta()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nova Conta Bancária</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleOpenTransfer()}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
+                title="Transferir entre Contas"
+              >
+                <ArrowLeftRight className="w-4 h-4" />
+                <span>Transferir entre Contas</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenConta()}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nova Conta Bancária</span>
+              </button>
+            </div>
           </div>
 
           {contas.length === 0 ? (
@@ -1034,6 +1164,138 @@ export const ContasCartoesView: React.FC<Props> = ({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal Transferência entre Contas */}
+      {isTransferModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs text-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-sky-500/10 text-sky-400 rounded-xl">
+                  <ArrowLeftRight className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-base text-white">
+                  Transferir entre Contas
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTransferModalOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTransferSubmit} className="space-y-3">
+              <div>
+                <label className="text-slate-400 block mb-1 font-medium">Conta de Origem</label>
+                <ComboBox
+                  required
+                  placeholder="Selecione a conta de origem..."
+                  value={transferForm.Conta_Origem}
+                  onChange={(val) => setTransferForm((prev) => ({ ...prev, Conta_Origem: val }))}
+                  options={contas.map((c) => c.Nome)}
+                  uppercase
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1 font-medium">Conta de Destino</label>
+                <ComboBox
+                  required
+                  placeholder="Selecione ou digite nova conta..."
+                  value={transferForm.Conta_Destino}
+                  onChange={(val) => setTransferForm((prev) => ({ ...prev, Conta_Destino: val }))}
+                  options={contas.map((c) => c.Nome)}
+                  showVoice
+                  uppercase
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1 font-medium">Valor (R$)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-slate-500 font-bold">R$</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      required
+                      placeholder="0,00"
+                      value={transferValorDisplay}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                        setTransferValorDisplay(formatted);
+                        setTransferForm((prev) => ({
+                          ...prev,
+                          Valor: numeric,
+                        }));
+                      }}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-10 text-white font-bold text-sm focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 block mb-1 font-medium">Data</label>
+                  <input
+                    type="date"
+                    required
+                    value={transferForm.Data}
+                    onChange={(e) => setTransferForm((prev) => ({ ...prev, Data: e.target.value }))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono text-xs focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1 font-medium">Observação (Opcional)</label>
+                <VoiceTextArea
+                  value={transferForm.Observacao}
+                  onChange={(e) => setTransferForm((prev) => ({ ...prev, Observacao: e.target.value }))}
+                  placeholder="Observações sobre a transferência..."
+                  rows={2}
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsTransferModalOpen(false)}
+                  className="px-4 py-2 text-slate-400 hover:text-white rounded-xl transition-colors text-xs cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl transition-colors shadow-md flex items-center gap-1.5 text-xs cursor-pointer"
+                >
+                  <ArrowLeftRight className="w-4 h-4" />
+                  <span>Confirmar Transferência</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Toast de Sucesso da Transferência */}
+      {transferSuccessToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-emerald-600 text-white px-4 py-3 rounded-2xl shadow-xl border border-emerald-500/50 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <Check className="w-5 h-5 shrink-0" />
+          <span className="text-xs font-semibold">{transferSuccessToast}</span>
+          <button
+            type="button"
+            onClick={() => setTransferSuccessToast(null)}
+            className="text-emerald-200 hover:text-white ml-2 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>
