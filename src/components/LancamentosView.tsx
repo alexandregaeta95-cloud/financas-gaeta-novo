@@ -1954,6 +1954,15 @@ export const LancamentosView: React.FC<Props> = ({
                     onChange={(e) => {
                       const newStatus = e.target.value;
                       const isNowPago = newStatus === "PAGO";
+                      const isRecorrenteOuParcelado = isContaFixa || isParcelado;
+
+                      if (isRecorrenteOuParcelado) {
+                        // Em modo Parcelado/Conta Fixa, o Valor Pago fica independente do Status
+                        // (o usuário pode digitar o valor com desconto mesmo estando Pendente)
+                        setFormData((prev) => ({ ...prev, Status: newStatus }));
+                        return;
+                      }
+
                       setFormData((prev) => ({
                         ...prev,
                         Status: newStatus,
@@ -1991,10 +2000,11 @@ export const LancamentosView: React.FC<Props> = ({
                       onChange={(e) => {
                         const { numeric, formatted } = formatCurrencyInput(e.target.value);
                         setValorPagoDisplay(formatted);
+                        const isRecorrenteOuParcelado = isContaFixa || isParcelado;
                         setFormData((prev) => ({
                           ...prev,
                           Valor_Pago: numeric,
-                          Status: numeric > 0 ? "Pago" : prev.Status,
+                          Status: isRecorrenteOuParcelado ? prev.Status : (numeric > 0 ? "Pago" : prev.Status),
                         }));
                       }}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-10 text-white font-bold text-xs focus:outline-none focus:border-emerald-500"
