@@ -799,7 +799,7 @@ export const LancamentosView: React.FC<Props> = ({
             Subcategoria: formData.Subcategoria || "",
             Descricao: baseDesc,
             Valor: finalValor,
-            Valor_Pago: isItemPago ? (finalValorPago || finalValor) : 0,
+            Valor_Pago: finalValorPago || finalValor,
             Conta: formData.Conta || "",
             Cartao: formData.Cartao || "",
             Forma_Pagamento: formData.Forma_Pagamento || "PIX",
@@ -878,7 +878,7 @@ export const LancamentosView: React.FC<Props> = ({
             Subcategoria: formData.Subcategoria || "",
             Descricao: `${baseDesc} (${i + 1}/${N})`,
             Valor: currentParcelValue,
-            Valor_Pago: isItemPago ? currentParcelValuePago : 0,
+            Valor_Pago: currentParcelValuePago,
             Conta: formData.Conta || "",
             Cartao: formData.Cartao || "",
             Forma_Pagamento: formData.Forma_Pagamento || "PIX",
@@ -2539,9 +2539,12 @@ export const LancamentosView: React.FC<Props> = ({
                                 Valor de cada Parcela
                               </label>
                               <div className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-indigo-400">
-                                {numParcelas > 0 && parseCurrency(formData.Valor) > 0
-                                  ? `R$ ${formatCurrency(parseCurrency(formData.Valor) / numParcelas)} /mês`
-                                  : "R$ 0,00"}
+                                {(() => {
+                                  const valorRef = parseCurrency(formData.Valor_Pago) > 0 ? parseCurrency(formData.Valor_Pago) : parseCurrency(formData.Valor);
+                                  return numParcelas > 0 && valorRef > 0
+                                    ? `R$ ${formatCurrency(valorRef / numParcelas)} /mês`
+                                    : "R$ 0,00";
+                                })()}
                               </div>
                             </div>
                           </div>
