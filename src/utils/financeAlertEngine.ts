@@ -89,9 +89,8 @@ export function getIntervalosPeriodos(referencia: Date = new Date()) {
  */
 export function getValorEfetivo(l: Lancamento): number {
   if (!l) return 0;
-  const pago = parseCurrency(l.Valor_Pago);
-  if (pago > 0) return pago;
-  return parseCurrency(l.Valor);
+  const vp = parseCurrency((l as any).Valor_Pago ?? 0);
+  return vp > 0 ? vp : parseCurrency(l.Valor ?? 0);
 }
 
 /**

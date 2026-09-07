@@ -250,7 +250,8 @@ export const IndicacoesPostosView: React.FC<Props> = ({ lancamentos }) => {
 
         const st = statsByPosto[postoName];
         const litros = parseCurrency(entry.Litros ?? (entry as any).litros ?? 0);
-        const valor = parseCurrency(entry.Valor ?? (entry as any).valor ?? (entry as any).Valor_Total ?? 0);
+        const vp = parseCurrency((entry as any).Valor_Pago ?? (entry as any)["Valor Pago"] ?? (entry as any)["Valor_Pago"] ?? 0);
+        const valor = vp > 0 ? vp : parseCurrency(entry.Valor ?? (entry as any).valor ?? (entry as any).Valor_Total ?? 0);
         const price = parseCurrency(
           entry.Preco_Litro ??
           (entry as any)["Preço_Litro"] ??

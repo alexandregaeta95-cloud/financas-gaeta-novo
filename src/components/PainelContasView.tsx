@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Lancamento } from "../types";
 import { ModuleView } from "./Navigation";
-import { parseCurrency, formatCurrency, isLancamentoExcluded } from "../utils/formatters";
+import { parseCurrency, formatCurrency, isLancamentoExcluded, getLancamentoValorReal } from "../utils/formatters";
 
 type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
 
@@ -148,9 +148,9 @@ export const PainelContasView: React.FC<Props> = ({
   });
 
   // Sums
-  const totalPagas = pagas.reduce((acc, curr) => acc + parseCurrency(curr.Valor), 0);
-  const totalVencidas = vencidas.reduce((acc, curr) => acc + parseCurrency(curr.Valor), 0);
-  const totalAVencer = aVencer.reduce((acc, curr) => acc + parseCurrency(curr.Valor), 0);
+  const totalPagas = pagas.reduce((acc, curr) => acc + getLancamentoValorReal(curr), 0);
+  const totalVencidas = vencidas.reduce((acc, curr) => acc + getLancamentoValorReal(curr), 0);
+  const totalAVencer = aVencer.reduce((acc, curr) => acc + getLancamentoValorReal(curr), 0);
   const grandTotal = totalPagas + totalVencidas + totalAVencer || 1;
 
   // Percentages for chart bar
@@ -162,7 +162,7 @@ export const PainelContasView: React.FC<Props> = ({
     await onSaveLancamento({
       ...l,
       Status: "Pago",
-      Valor_Pago: l.Valor,
+      Valor_Pago: getLancamentoValorReal(l),
     });
   };
 
@@ -447,7 +447,7 @@ export const PainelContasView: React.FC<Props> = ({
 
                   <div className="flex items-center gap-3">
                     <span className="font-extrabold text-rose-400 text-sm font-mono">
-                      R$ {formatCurrency(l.Valor)}
+                      R$ {formatCurrency(getLancamentoValorReal(l))}
                     </span>
                     <button
                       onClick={() => handleMarkAsPaid(l)}
@@ -486,7 +486,7 @@ export const PainelContasView: React.FC<Props> = ({
 
                   <div className="flex items-center gap-3">
                     <span className="font-extrabold text-amber-400 text-sm font-mono">
-                      R$ {formatCurrency(l.Valor)}
+                      R$ {formatCurrency(getLancamentoValorReal(l))}
                     </span>
                     <button
                       onClick={() => handleMarkAsPaid(l)}
@@ -523,7 +523,7 @@ export const PainelContasView: React.FC<Props> = ({
                     </p>
                   </div>
                   <span className="font-bold text-emerald-400 font-mono">
-                    R$ {formatCurrency(l.Valor)}
+                    R$ {formatCurrency(getLancamentoValorReal(l))}
                   </span>
                 </div>
               ))

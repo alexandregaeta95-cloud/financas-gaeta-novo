@@ -31,7 +31,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Lancamento } from "../types";
-import { parseCurrency, formatCurrency, isLancamentoExcluded, formatDateBR } from "../utils/formatters";
+import { parseCurrency, formatCurrency, isLancamentoExcluded, formatDateBR, getLancamentoValorReal } from "../utils/formatters";
 
 type PeriodFilterType = "CURRENT_MONTH" | "LAST_MONTH" | "LAST_30_DAYS" | "CURRENT_YEAR" | "ALL" | "CUSTOM";
 type PlatformFilterType = "ALL" | "UBER" | "99";
@@ -208,7 +208,7 @@ export const AnaliseCorridasView: React.FC<Props> = ({
     const uniqueDaysWorked = new Set<string>();
 
     filteredRuns.forEach((r) => {
-      const val = parseCurrency(r.Valor);
+      const val = getLancamentoValorReal(r);
       const plat = getPlatformType(r);
       totalGeral += val;
 
@@ -269,7 +269,7 @@ export const AnaliseCorridasView: React.FC<Props> = ({
       const d = parseDateSafely(r.Data);
       if (!d) return;
       const dayIdx = d.getDay();
-      const val = parseCurrency(r.Valor);
+      const val = getLancamentoValorReal(r);
       const plat = getPlatformType(r);
 
       const target = stats.find((s) => s.dayIndex === dayIdx);
@@ -380,7 +380,7 @@ export const AnaliseCorridasView: React.FC<Props> = ({
 
     filteredRuns.forEach((r) => {
       const shiftId = getShiftFromHour(r.Hora);
-      const val = parseCurrency(r.Valor);
+      const val = getLancamentoValorReal(r);
       const plat = getPlatformType(r);
 
       const target = shifts.find((s) => s.id === shiftId);
@@ -412,12 +412,14 @@ export const AnaliseCorridasView: React.FC<Props> = ({
     const term = searchTerm.toLowerCase();
     return filteredRuns.filter((r) => {
       const desc = String(r.Descricao || "").toLowerCase();
-      const val = String(r.Valor || "");
+      const valReal = String(getLancamentoValorReal(r));
+      const valOriginal = String(r.Valor || "");
       const data = String(r.Data || "");
       const hora = String(r.Hora || "");
       return (
         desc.includes(term) ||
-        val.includes(term) ||
+        valReal.includes(term) ||
+        valOriginal.includes(term) ||
         data.includes(term) ||
         hora.includes(term)
       );
@@ -1048,7 +1050,7 @@ export const AnaliseCorridasView: React.FC<Props> = ({
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right">
                         <div className="font-extrabold text-emerald-400 text-sm font-mono">
-                          + R$ {formatCurrency(parseCurrency(r.Valor))}
+                          + R$ {formatCurrency(getLancamentoValorReal(r))}
                         </div>
                       </div>
 

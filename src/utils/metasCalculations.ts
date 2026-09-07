@@ -1,5 +1,5 @@
 import { MetaCategoria, Lancamento } from "../types";
-import { parseCurrency } from "./formatters";
+import { parseCurrency, getLancamentoValorReal } from "./formatters";
 
 /**
  * Normalizes text removing accents, diacritics, extra spaces, and uppercase.
@@ -206,7 +206,7 @@ export function calculateSpentForCategoryAndMonth(
       if (!lYM) return false;
       return lYM.year === targetYear && lYM.month === targetMonth;
     })
-    .reduce((acc, curr) => acc + parseCurrency(curr.Valor), 0);
+    .reduce((acc, curr) => acc + getLancamentoValorReal(curr), 0);
 }
 
 /**
@@ -228,7 +228,7 @@ export function calculateTotalPaidForCategory(
       return s === "PAGO" || s === "PAID" || s === "QUITADO" || s === "LIQUIDADO";
     })
     .filter((l) => categoriesMatch(category, l.Categoria, l.Tipo))
-    .reduce((acc, curr) => acc + parseCurrency(curr.Valor_Pago || curr.Valor), 0);
+    .reduce((acc, curr) => acc + getLancamentoValorReal(curr), 0);
 }
 
 /**

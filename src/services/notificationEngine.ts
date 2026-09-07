@@ -16,7 +16,7 @@ import {
   RegistroSaude,
   MetaCategoria,
 } from "../types";
-import { formatCurrency, formatarHora } from "../utils/formatters";
+import { formatCurrency, formatarHora, getLancamentoValorReal } from "../utils/formatters";
 import { calcularAlertasFinanceiros, getIntervalosPeriodos } from "../utils/financeAlertEngine";
 import { isCycleCompleted, isNotificationSnoozed } from "./snoozeService";
 
@@ -993,7 +993,7 @@ export function evaluateAllNotifications({
     const diff = getDiffInDaysFromToday(l.Data);
     if (diff === null) return;
 
-    const valorFmt = formatCurrency(l.Valor || 0);
+    const valorFmt = formatCurrency(getLancamentoValorReal(l));
 
     if (diff === 0) {
       list.push({

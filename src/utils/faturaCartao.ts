@@ -1,5 +1,5 @@
 import { CartaoCredito, Lancamento } from "../types";
-import { parseCurrency, isLancamentoExcluded, isLancamentoVinculadoAoCartao } from "./formatters";
+import { parseCurrency, isLancamentoExcluded, isLancamentoVinculadoAoCartao, getLancamentoValorReal } from "./formatters";
 
 export interface FaturaResumo {
   faturaKey: string;
@@ -73,7 +73,7 @@ export function getFaturasPorCartao(
     const key = getFaturaKey(dataLanc, diaFechamento);
     const atual = porFatura.get(key) || { gasto: 0, pago: 0 };
 
-    const valor = parseCurrency(l.Valor ?? 0);
+    const valorReal = getLancamentoValorReal(l);
     const valorPago = parseCurrency((l as any).Valor_Pago ?? 0);
     const status = String(l.Status || "").toUpperCase();
     const tipo = String(l.Tipo || "").toUpperCase();
@@ -91,10 +91,10 @@ export function getFaturasPorCartao(
         status.includes("REALIZADO") || status.includes("CONCLUIDO") ||
         status.includes("LIQUIDADO") || valorPago > 0;
       if (isPaid) {
-        atual.pago += valorPago > 0 ? valorPago : valor;
+        atual.pago += valorReal;
       }
     } else {
-      atual.gasto += valor;
+      atual.gasto += valorReal;
     }
 
     porFatura.set(key, atual);

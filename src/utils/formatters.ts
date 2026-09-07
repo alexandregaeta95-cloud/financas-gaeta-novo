@@ -109,6 +109,16 @@ export function formatCurrency(val: any): string {
 }
 
 /**
+ * Retorna o valor financeiro real de um lançamento:
+ * se Valor_Pago estiver preenchido e for > 0, usa Valor_Pago; caso contrário, usa Valor.
+ */
+export function getLancamentoValorReal(item: any): number {
+  if (!item) return 0;
+  const vp = parseCurrency(item.Valor_Pago ?? item["Valor Pago"] ?? item["Valor_Pago"] ?? 0);
+  return vp > 0 ? vp : parseCurrency(item.Valor ?? item.valor ?? 0);
+}
+
+/**
  * Format currency with R$ prefix (e.g. "R$ 73,26")
  */
 export function formatCurrencyWithSymbol(val: any): string {
@@ -1335,9 +1345,9 @@ export function calculateCardBalance(
     const tipo = norm(l.Tipo);
     const cat = norm(l.Categoria);
 
-    const valor = parseCurrency(l.Valor ?? 0);
+    const valorPago = parseCurrency((l as any).Valor_Pago ?? 0);
+    const valor = valorPago > 0 ? valorPago : parseCurrency(l.Valor ?? 0);
     const status = norm(l.Status);
-    const valorPago = parseCurrency(l.Valor_Pago ?? 0);
 
     const isPagamentoFatura =
       cat.includes("PAGAMENTO DE FATURA") ||

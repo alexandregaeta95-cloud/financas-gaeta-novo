@@ -1057,7 +1057,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               {filteredServicos.map((s, idx) => {
                 const sId = String(s.Id || `serv-${idx}`);
                 const isExpanded = expandedServicoId === sId;
-                const valor = parseCurrency(s.Valor_Pago) || parseCurrency(s.Valor_A_PG);
+                const vp = parseCurrency(s.Valor_Pago ?? 0);
+                const valor = vp > 0 ? vp : (parseCurrency(s.Valor_A_PG ?? 0) || parseCurrency(s.Valor ?? 0));
 
                 return (
                   <div

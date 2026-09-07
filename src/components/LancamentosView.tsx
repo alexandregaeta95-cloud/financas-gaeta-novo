@@ -1626,7 +1626,7 @@ export const LancamentosView: React.FC<Props> = ({
                           isReceita ? "text-teal-400" : "text-white"
                         }`}
                       >
-                        {isReceita ? "+" : "-"} R$ {formatCurrency(item.Valor)}
+                        {isReceita ? "+" : "-"} R$ {formatCurrency(parseCurrency(item.Valor_Pago) > 0 ? item.Valor_Pago : item.Valor)}
                       </span>
                     </div>
 

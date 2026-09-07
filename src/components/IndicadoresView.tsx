@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { ModuleView } from "./Navigation";
 import { Lancamento } from "../types";
-import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { parseCurrency, formatCurrency, getLancamentoValorReal } from "../utils/formatters";
 
 interface Props {
   onNavigate: (view: ModuleView) => void;
@@ -63,7 +63,7 @@ export const IndicadoresView: React.FC<Props> = ({ onNavigate, lancamentos = [] 
         desc.includes("UBER") ||
         desc.includes("99")
       ) {
-        totalCorridas += parseCurrency(l.Valor);
+        totalCorridas += getLancamentoValorReal(l);
         countUber99++;
       }
     });
