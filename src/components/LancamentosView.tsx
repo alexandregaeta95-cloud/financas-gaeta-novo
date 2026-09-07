@@ -613,7 +613,7 @@ export const LancamentosView: React.FC<Props> = ({
       if (isFuel) {
         if (finalValor > 0 && precoLitro > 0 && (litros === 0 || !litros)) {
           litros = Number((finalValor / precoLitro).toFixed(2));
-        } else if (litros > 0 && precoLitro > 0 && finalValor === 0) {
+        } else if (litros > 0 && precoLitro > 0 && finalValor === 0 && !valorDisplay) {
           finalValor = Number((litros * precoLitro).toFixed(2));
         }
       }
