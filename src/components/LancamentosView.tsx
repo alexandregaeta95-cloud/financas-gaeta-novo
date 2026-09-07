@@ -35,6 +35,7 @@ import { parseCurrency, formatCurrency, formatCurrencyInput, isLancamentoExclude
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
+import { getFaturaKey, getFaturaVencimento } from "../utils/faturaCartao";
 
 interface Props {
   lancamentos: Lancamento[];
@@ -836,6 +837,24 @@ export const LancamentosView: React.FC<Props> = ({
         const N = Math.max(2, Math.min(72, numParcelas || 2));
         const itemsToSave: Lancamento[] = [];
         const baseDate = formData.Data || new Date().toISOString().split("T")[0];
+        const cartaoSelecionado = formData.Cartao ? cartoes.find((c) => c.Nome === formData.Cartao) : null;
+        const diaFechamentoCartao = cartaoSelecionado ? Number(cartaoSelecionado.Dia_Fechamento ?? (cartaoSelecionado as any).Fechamento ?? 10) || 10 : null;
+        const diaVencimentoCartao = cartaoSelecionado ? Number(cartaoSelecionado.Dia_Vencimento ?? (cartaoSelecionado as any).Vencimento ?? 20) || 20 : null;
+        const faturaKeyBase = cartaoSelecionado ? getFaturaKey(baseDate, diaFechamentoCartao!) : null;
+
+        const getParcelaDate = (i: number): string => {
+          if (cartaoSelecionado && faturaKeyBase && diaVencimentoCartao) {
+            const [anoStr, mesStr] = faturaKeyBase.split("-");
+            let ano = Number(anoStr);
+            let mes = Number(mesStr) - 1 + i;
+            ano += Math.floor(mes / 12);
+            mes = ((mes % 12) + 12) % 12;
+            const targetKey = `${ano}-${String(mes + 1).padStart(2, "0")}`;
+            return getFaturaVencimento(targetKey, diaVencimentoCartao).toISOString().split("T")[0];
+          }
+          return addMonthsToDate(baseDate, i);
+        };
+
         const baseDesc = formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : "PARCELADO");
         const parcelValue = Number((finalValor / N).toFixed(2));
         const diff = Number((finalValor - parcelValue * N).toFixed(2));
@@ -845,7 +864,7 @@ export const LancamentosView: React.FC<Props> = ({
         const diffPago = Number((valorPagoBase - parcelValuePago * N).toFixed(2));
 
         for (let i = 0; i < N; i++) {
-          const itemDate = addMonthsToDate(baseDate, i);
+          const itemDate = getParcelaDate(i);
           const isFirst = i === 0;
           const currentParcelValue = isFirst ? Number((parcelValue + diff).toFixed(2)) : parcelValue;
           const currentParcelValuePago = isFirst ? Number((parcelValuePago + diffPago).toFixed(2)) : parcelValuePago;
