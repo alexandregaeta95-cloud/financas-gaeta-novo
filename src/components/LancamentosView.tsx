@@ -688,6 +688,17 @@ export const LancamentosView: React.FC<Props> = ({
         : "PENDENTE";
       const isChosenPago = chosenStatus === "PAGO";
 
+      const isCartaoPayment = String(formData.Forma_Pagamento || "").toUpperCase().includes("CRÉDITO") || String(formData.Forma_Pagamento || "").toUpperCase().includes("CREDITO");
+      const cartaoSelecionadoStatus = isCartaoPayment && formData.Cartao ? cartoes.find((c) => c.Nome === formData.Cartao) : null;
+      const diaFechamentoStatus = cartaoSelecionadoStatus ? Number(cartaoSelecionadoStatus.Dia_Fechamento ?? (cartaoSelecionadoStatus as any).Fechamento ?? 10) || 10 : 10;
+
+      const getStatusPorFatura = (dataItem: string): "PAGO" | "PENDENTE" => {
+        if (!cartaoSelecionadoStatus) return chosenStatus as "PAGO" | "PENDENTE";
+        const faturaKeyItem = getFaturaKey(dataItem, diaFechamentoStatus);
+        const ultimaPaga = String(cartaoSelecionadoStatus.Ultima_Fatura_Paga || "");
+        return ultimaPaga && faturaKeyItem <= ultimaPaga ? "PAGO" : "PENDENTE";
+      };
+
       const nowCreationTimestamp = new Date().toLocaleString("pt-BR");
 
       if (editingItem && !isContaFixa && !isParcelado) {
@@ -704,7 +715,7 @@ export const LancamentosView: React.FC<Props> = ({
           Conta: formData.Conta || "",
           Cartao: formData.Cartao || "",
           Forma_Pagamento: formData.Forma_Pagamento || "PIX",
-          Status: chosenStatus,
+          Status: isCartaoPayment ? getStatusPorFatura(formData.Data || new Date().toISOString().split("T")[0]) : chosenStatus,
           Observacoes: formData.Observacoes || "",
           Nao_Contabilizar: formData.Nao_Contabilizar || "NÃO",
           Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
@@ -758,7 +769,7 @@ export const LancamentosView: React.FC<Props> = ({
           Conta: formData.Conta || "",
           Cartao: formData.Cartao || "",
           Forma_Pagamento: formData.Forma_Pagamento || "PIX",
-          Status: chosenStatus,
+          Status: isCartaoPayment ? getStatusPorFatura(formData.Data || new Date().toISOString().split("T")[0]) : chosenStatus,
           Observacoes: formData.Observacoes || "",
           Nao_Contabilizar: formData.Nao_Contabilizar || "NÃO",
           Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
@@ -789,7 +800,7 @@ export const LancamentosView: React.FC<Props> = ({
         for (let i = 0; i < 12; i++) {
           const itemDate = addMonthsToDate(baseDate, i);
           const isFirst = i === 0;
-          const itemStatus = isFirst ? chosenStatus : "PENDENTE";
+          const itemStatus = isCartaoPayment ? getStatusPorFatura(itemDate) : (isFirst ? chosenStatus : "PENDENTE");
           const isItemPago = itemStatus === "PAGO";
           itemsToSave.push({
             Id: generateNewId("LANC"),
@@ -868,7 +879,7 @@ export const LancamentosView: React.FC<Props> = ({
           const isFirst = i === 0;
           const currentParcelValue = isFirst ? Number((parcelValue + diff).toFixed(2)) : parcelValue;
           const currentParcelValuePago = isFirst ? Number((parcelValuePago + diffPago).toFixed(2)) : parcelValuePago;
-          const itemStatus = isFirst ? chosenStatus : "PENDENTE";
+          const itemStatus = isCartaoPayment ? getStatusPorFatura(itemDate) : (isFirst ? chosenStatus : "PENDENTE");
           const isItemPago = itemStatus === "PAGO";
           itemsToSave.push({
             Id: generateNewId("LANC"),
@@ -2003,6 +2014,11 @@ export const LancamentosView: React.FC<Props> = ({
                     <option value="PENDENTE">Pendente</option>
                     <option value="PAGO">Pago</option>
                   </select>
+                  {(String(formData.Forma_Pagamento || "").toUpperCase().includes("CRÉDITO") || String(formData.Forma_Pagamento || "").toUpperCase().includes("CREDITO")) && (
+                    <p className="text-[10px] text-indigo-300 mt-1">
+                      ℹ️ No Cartão de Crédito, o status é definido automaticamente pela Fatura (veja em Contas & Cartões).
+                    </p>
+                  )}
                 </div>
 
                 <div>
