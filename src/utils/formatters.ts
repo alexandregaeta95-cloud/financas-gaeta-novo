@@ -1179,7 +1179,11 @@ export function calculateAccountCurrentBalance(
       return;
     }
 
-    const valor = parseCurrency(l.Valor ?? 0);
+    const naoContabilizar = String(l.Nao_Contabilizar || "").trim().toUpperCase() === "SIM";
+    if (naoContabilizar) return;
+
+    const valorPago = parseCurrency((l as any).Valor_Pago ?? 0);
+    const valor = valorPago > 0 ? valorPago : parseCurrency(l.Valor ?? 0);
     const tipo = String(l.Tipo || "").trim().toUpperCase();
     const cat = String(l.Categoria || "").trim().toUpperCase();
 

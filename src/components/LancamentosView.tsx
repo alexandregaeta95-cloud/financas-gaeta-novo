@@ -510,6 +510,7 @@ export const LancamentosView: React.FC<Props> = ({
       Localizacao_Do_Posto: "",
       Comprovante_Url: "",
       Tipo_Combustivel: isFuel ? "GASOLINA COMUM" : "",
+      Nao_Contabilizar: "NÃO",
     });
     setValorDisplay("");
     setValorPagoDisplay("");
@@ -545,6 +546,7 @@ export const LancamentosView: React.FC<Props> = ({
       Tipo_Combustivel:
         rawFuelType ||
         (item.Categoria === "ABASTECIMENTO" || item.Tipo === "Abastecimento" ? "GASOLINA COMUM" : ""),
+      Nao_Contabilizar: item.Nao_Contabilizar || "NÃO",
     });
     const valorNum = parseCurrency(item.Valor);
     setValorDisplay(valorNum > 0 ? formatCurrency(valorNum) : "");
@@ -698,11 +700,12 @@ export const LancamentosView: React.FC<Props> = ({
           Descricao: formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : ""),
           Valor: finalValor,
           Valor_Pago: isChosenPago ? (finalValorPago || finalValor) : 0,
-          Conta: formData.Conta || (contas[0]?.Nome || ""),
+          Conta: formData.Conta || "",
           Cartao: formData.Cartao || "",
           Forma_Pagamento: formData.Forma_Pagamento || "PIX",
           Status: chosenStatus,
           Observacoes: formData.Observacoes || "",
+          Nao_Contabilizar: formData.Nao_Contabilizar || "NÃO",
           Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
           Km_Atual: kmAtual,
           Litros: isFuel ? litros : undefined,
@@ -751,11 +754,12 @@ export const LancamentosView: React.FC<Props> = ({
           Descricao: formData.Descricao || (isFuel ? `Abastecimento - ${formData.Veiculo || 'Veículo'}` : ""),
           Valor: finalValor,
           Valor_Pago: isChosenPago ? (finalValorPago || finalValor) : 0,
-          Conta: formData.Conta || (contas[0]?.Nome || ""),
+          Conta: formData.Conta || "",
           Cartao: formData.Cartao || "",
           Forma_Pagamento: formData.Forma_Pagamento || "PIX",
           Status: chosenStatus,
           Observacoes: formData.Observacoes || "",
+          Nao_Contabilizar: formData.Nao_Contabilizar || "NÃO",
           Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
           Km_Atual: kmAtual,
           Litros: isFuel ? litros : undefined,
@@ -795,11 +799,12 @@ export const LancamentosView: React.FC<Props> = ({
             Descricao: baseDesc,
             Valor: finalValor,
             Valor_Pago: isItemPago ? (finalValorPago || finalValor) : 0,
-            Conta: formData.Conta || (contas[0]?.Nome || ""),
+            Conta: formData.Conta || "",
             Cartao: formData.Cartao || "",
             Forma_Pagamento: formData.Forma_Pagamento || "PIX",
             Status: itemStatus,
             Observacoes: formData.Observacoes ? `${formData.Observacoes} [Conta Fixa Mensal] [REC:${seriesId}]` : `[Conta Fixa Mensal] [REC:${seriesId}]`,
+            Nao_Contabilizar: formData.Nao_Contabilizar || "NÃO",
             Recorrencia_Id: seriesId,
             Parcela_Info: `${i + 1}/12`,
             Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
@@ -846,11 +851,12 @@ export const LancamentosView: React.FC<Props> = ({
             Descricao: `${baseDesc} (${i + 1}/${N})`,
             Valor: currentParcelValue,
             Valor_Pago: isItemPago ? currentParcelValue : 0,
-            Conta: formData.Conta || (contas[0]?.Nome || ""),
+            Conta: formData.Conta || "",
             Cartao: formData.Cartao || "",
             Forma_Pagamento: formData.Forma_Pagamento || "PIX",
             Status: itemStatus,
             Observacoes: formData.Observacoes ? `${formData.Observacoes} [Parcelado ${i + 1}/${N}] [REC:${seriesId}]` : `[Parcelado ${i + 1}/${N}] [REC:${seriesId}]`,
+            Nao_Contabilizar: formData.Nao_Contabilizar || "NÃO",
             Recorrencia_Id: seriesId,
             Parcela_Info: `${i + 1}/${N}`,
             Veiculo: isFuel ? (formData.Veiculo || veiculos[0]?.Modelo || "") : undefined,
@@ -2008,6 +2014,22 @@ export const LancamentosView: React.FC<Props> = ({
                 </div>
               </div>
 
+              {/* Checkbox Não Contabilizar */}
+              <div className="flex items-center gap-2 bg-slate-900/60 border border-amber-500/30 rounded-xl p-3">
+                <input
+                  type="checkbox"
+                  id="nao_contabilizar"
+                  checked={formData.Nao_Contabilizar === "SIM"}
+                  onChange={(e) =>
+                    setFormData({ ...formData, Nao_Contabilizar: e.target.checked ? "SIM" : "NÃO" })
+                  }
+                  className="w-4 h-4 accent-amber-500 cursor-pointer"
+                />
+                <label htmlFor="nao_contabilizar" className="text-amber-300 text-xs cursor-pointer">
+                  Não é meu gasto (outra pessoa pagou) — não contar nas minhas finanças
+                </label>
+              </div>
+
               {/* Se a categoria for explicitamente Pagamento de Fatura */}
               {(String(formData.Categoria || "").trim().toUpperCase() === "PAGAMENTO DE FATURA" ||
                 String(formData.Categoria || "").trim().toUpperCase() === "PAGAMENTO FATURA" ||
@@ -2041,6 +2063,7 @@ export const LancamentosView: React.FC<Props> = ({
                         uppercase={true}
                         showVoice={true}
                         inputClassName="focus:border-indigo-500"
+                        required={formData.Nao_Contabilizar !== "SIM"}
                       />
                     </div>
                     <div>
@@ -2067,7 +2090,9 @@ export const LancamentosView: React.FC<Props> = ({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-400 text-xs mb-1">Conta Bancária / Débito</label>
+                    <label className="block text-slate-400 text-xs mb-1">
+                      Conta Bancária / Débito {formData.Nao_Contabilizar === "SIM" ? "(Opcional)" : "(Obrigatório)"}
+                    </label>
                     <ComboBox
                       value={formData.Conta || ""}
                       onChange={(val) => setFormData({ ...formData, Conta: val })}
@@ -2080,6 +2105,7 @@ export const LancamentosView: React.FC<Props> = ({
                       uppercase={true}
                       showVoice={true}
                       inputClassName="focus:border-emerald-500"
+                      required={formData.Nao_Contabilizar !== "SIM"}
                     />
                   </div>
 

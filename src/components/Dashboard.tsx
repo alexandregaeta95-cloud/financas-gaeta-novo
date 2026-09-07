@@ -104,7 +104,8 @@ function isFuelItem(l: any): boolean {
 function isExcludedItem(l: any): boolean {
   const status = (l.Status || l.status || "").toString().toUpperCase();
   const cat = (l.Categoria || l.categoria || "").toString().toUpperCase();
-  return status === "EXCLUÍDO" || status === "EXCLUIDO" || status === "DELETED" || cat === "TRANSFERÊNCIA";
+  const naoContabilizar = String(l.Nao_Contabilizar || "").trim().toUpperCase() === "SIM";
+  return status === "EXCLUÍDO" || status === "EXCLUIDO" || status === "DELETED" || cat === "TRANSFERÊNCIA" || naoContabilizar;
 }
 
 export const Dashboard: React.FC<Props> = ({
@@ -130,11 +131,17 @@ export const Dashboard: React.FC<Props> = ({
 
   const totalReceitas = activeLancamentos
     .filter((l) => isReceitaItem(l))
-    .reduce((acc, curr) => acc + parseCurrency(curr.Valor ?? (curr as any)["Valor"] ?? 0), 0);
+    .reduce((acc, curr) => {
+      const vp = parseCurrency((curr as any).Valor_Pago ?? 0);
+      return acc + (vp > 0 ? vp : parseCurrency(curr.Valor ?? 0));
+    }, 0);
 
   const totalDespesas = activeLancamentos
     .filter((l) => !isReceitaItem(l))
-    .reduce((acc, curr) => acc + parseCurrency(curr.Valor ?? (curr as any)["Valor"] ?? 0), 0);
+    .reduce((acc, curr) => {
+      const vp = parseCurrency((curr as any).Valor_Pago ?? 0);
+      return acc + (vp > 0 ? vp : parseCurrency(curr.Valor ?? 0));
+    }, 0);
 
   const saldoLiquido = totalReceitas - totalDespesas;
 

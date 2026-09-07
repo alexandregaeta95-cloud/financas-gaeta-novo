@@ -55,6 +55,7 @@ export interface Lancamento {
   Parcela_Info?: string;
   Data_Criacao?: string; // Timestamp automático de criação (ex: 29/08/2026 17:40:00)
   Data_Hora?: string;
+  Nao_Contabilizar?: "SIM" | "NÃO";
 }
 
 // 4. Abastecimentos (Mirror read-only view)
