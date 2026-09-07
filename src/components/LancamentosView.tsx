@@ -825,6 +825,10 @@ export const LancamentosView: React.FC<Props> = ({
           });
         }
 
+        if (editingItem) {
+          onDeleteLancamento(editingItem.Id, true);
+        }
+
         onSaveLancamento(itemsToSave);
       } else if (isParcelado) {
         // Parcelado: divide valor total em N parcelas mensais (a primeira parcela respeita o Status escolhido pelo usuário)
@@ -875,6 +879,10 @@ export const LancamentosView: React.FC<Props> = ({
             Tipo_Combustivel: isFuel ? (formData.Tipo_Combustivel || "GASOLINA COMUM") : undefined,
             Data_Criacao: nowCreationTimestamp,
           });
+        }
+
+        if (editingItem) {
+          onDeleteLancamento(editingItem.Id, true);
         }
 
         onSaveLancamento(itemsToSave);
@@ -2414,8 +2422,8 @@ export const LancamentosView: React.FC<Props> = ({
               {/* Advanced Section Body (Expandable) */}
               {showAdvancedModalFields && (
                 <div className="space-y-4 pt-1 animate-in fade-in duration-150">
-                  {/* Opções de Recorrência / Parcelamento (Apenas para novos lançamentos) */}
-                  {!editingItem && (
+                  {/* Opções de Recorrência / Parcelamento (Apenas para novos lançamentos ou edição de lançamento simples) */}
+                  {(!editingItem || !editingItem.Recorrencia_Id) && (
                     <div className="p-3.5 sm:p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3">
                       <span className="text-xs font-semibold text-slate-300 block">
                         Recorrência & Parcelamento (Opcional)
