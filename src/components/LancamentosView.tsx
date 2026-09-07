@@ -689,7 +689,7 @@ export const LancamentosView: React.FC<Props> = ({
 
       const nowCreationTimestamp = new Date().toLocaleString("pt-BR");
 
-      if (editingItem) {
+      if (editingItem && !isContaFixa && !isParcelado) {
         const itemToSave: Lancamento = {
           Id: editingItem.Id,
           Data: formData.Data || new Date().toISOString().split("T")[0],
