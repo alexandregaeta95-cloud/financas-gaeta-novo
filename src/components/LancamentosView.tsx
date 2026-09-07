@@ -2218,7 +2218,7 @@ export const LancamentosView: React.FC<Props> = ({
                           const lit = parseFloat(cleanVal) || 0;
                           const prc = Number(formData.Preco_Litro || 0);
                           
-                          if (lit > 0 && prc > 0 && (!formData.Valor || formData.Valor === 0)) {
+                          if (lit > 0 && prc > 0 && (!formData.Valor || formData.Valor === 0) && !valorDisplay) {
                             const total = Number((lit * prc).toFixed(2));
                             setValorDisplay(formatCurrency(total));
                             setFormData((prev) => ({
