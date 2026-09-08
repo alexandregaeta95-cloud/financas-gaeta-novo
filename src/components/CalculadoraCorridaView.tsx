@@ -49,7 +49,10 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
         body: JSON.stringify({ origem, destino }),
       });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || "Erro ao calcular rota.");
+      if (!resp.ok) {
+        const detalheTexto = data.detalhe ? ` | Detalhe: ${JSON.stringify(data.detalhe)}` : "";
+        throw new Error((data.error || "Erro ao calcular rota.") + detalheTexto);
+      }
       setResultado(data);
     } catch (err: any) {
       console.error("Erro detalhado:", err);
