@@ -1,9 +1,26 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { ShieldAlert, MapPin, Plus, Edit2, Trash2, X, Navigation, Volume2, VolumeX, BellRing, Zap, Loader2 } from "lucide-react";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { ZonaDeRisco } from "../types";
 import { generateNewId } from "../services/api";
 import { VoiceInput } from "./VoiceInput";
 import { playAlertBeepSound, startAlarmLoop, stopAlarmLoop } from "../services/alarmSoundService";
+
+interface BackgroundGeolocationPlugin {
+  addWatcher(
+    options: {
+      backgroundMessage?: string;
+      backgroundTitle?: string;
+      requestPermissions?: boolean;
+      stale?: boolean;
+      distanceFilter?: number;
+    },
+    callback: (location: { latitude: number; longitude: number } | undefined, error: any) => void
+  ): Promise<string>;
+  removeWatcher(options: { id: string }): Promise<void>;
+}
+
+const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
 
 const DEFAULT_TIPOS_OCORRENCIA = [
   "ASSALTO",
@@ -88,47 +105,89 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
 
   // Start GPS Geolocation Tracking
   useEffect(() => {
-    if (!("geolocation" in navigator)) {
-      setGeoError("Navegador não suporta geolocalização.");
-      return;
-    }
+    const checkZones = (lat: number, lng: number) => {
+      const coords = { lat, lng };
+      setUserLocation(coords);
 
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setUserLocation(coords);
-
-        // Check against active zones
-        let triggeredZone: ZonaDeRisco | null = null;
-        for (const z of zonas) {
-          const isActive = z.Ativo === true || z.Ativo === "SIM";
-          if (isActive && z.Latitude && z.Longitude) {
-            const dist = getDistanceMeters(
-              coords.lat,
-              coords.lng,
-              Number(z.Latitude),
-              Number(z.Longitude)
-            );
-            const radius = Number(z["Raio_(M)"]) || 300;
-            if (dist <= radius) {
-              triggeredZone = z;
-              break;
-            }
+      let triggeredZone: ZonaDeRisco | null = null;
+      for (const z of zonas) {
+        const isActive = z.Ativo === true || z.Ativo === "SIM";
+        if (isActive && z.Latitude && z.Longitude) {
+          const dist = getDistanceMeters(
+            coords.lat,
+            coords.lng,
+            Number(z.Latitude),
+            Number(z.Longitude)
+          );
+          const radius = Number(z["Raio_(M)"]) || 300;
+          if (dist <= radius) {
+            triggeredZone = z;
+            break;
           }
         }
+      }
 
-        setActiveAlertZone(triggeredZone);
-        if (!triggeredZone) {
-          stopAlarmLoop();
+      setActiveAlertZone(triggeredZone);
+      if (!triggeredZone) {
+        stopAlarmLoop();
+      }
+    };
+
+    if (Capacitor.isNativePlatform()) {
+      // App instalado: usa o plugin de GPS em segundo plano
+      let watcherId: string | null = null;
+
+      BackgroundGeolocation.addWatcher(
+        {
+          backgroundMessage: "Monitorando Zonas de Risco em segundo plano",
+          backgroundTitle: "Diz Aí - Zona de Risco Ativa",
+          requestPermissions: true,
+          stale: false,
+          distanceFilter: 30,
+        },
+        (location, error) => {
+          if (error) {
+            console.warn("Erro no GPS em segundo plano:", error);
+            setGeoError("Permissão de GPS negada ou indisponível.");
+            return;
+          }
+          if (location) {
+            checkZones(location.latitude, location.longitude);
+          }
         }
-      },
-      (err) => {
-        setGeoError("Permissão de GPS negada ou indisponível.");
-      },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
-    );
+      )
+        .then((id) => {
+          watcherId = id;
+        })
+        .catch((err) => {
+          console.warn("Falha ao iniciar GPS em segundo plano:", err);
+          setGeoError("Não foi possível iniciar o monitoramento em segundo plano.");
+        });
 
-    return () => navigator.geolocation.clearWatch(watchId);
+      return () => {
+        if (watcherId) {
+          BackgroundGeolocation.removeWatcher({ id: watcherId }).catch(() => {});
+        }
+      };
+    } else {
+      // Site no navegador: mantém o GPS comum de sempre
+      if (!("geolocation" in navigator)) {
+        setGeoError("Navegador não suporta geolocalização.");
+        return;
+      }
+
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          checkZones(pos.coords.latitude, pos.coords.longitude);
+        },
+        (err) => {
+          setGeoError("Permissão de GPS negada ou indisponível.");
+        },
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+      );
+
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
   }, [zonas]);
 
   // Periodic Sound Alert Loop while inside an active risk zone
