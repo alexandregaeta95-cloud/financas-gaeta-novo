@@ -117,6 +117,9 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
     { coords: null, texto: "" },
   ]);
 
+  const rotaPathRef = React.useRef<SVGPathElement>(null);
+  const [marcadoresParadas, setMarcadoresParadas] = useState<{ x: number; y: number }[]>([]);
+
   const adicionarParada = () => {
     setPontos((prev) => {
       const novo = [...prev];
@@ -145,6 +148,24 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
     distanciaKm: number;
     duracaoMinutos: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (!rotaPathRef.current) return;
+    const numParadas = pontos.length - 2;
+    if (numParadas <= 0) {
+      setMarcadoresParadas([]);
+      return;
+    }
+    const path = rotaPathRef.current;
+    const totalLength = path.getTotalLength();
+    const novosMarcadores: { x: number; y: number }[] = [];
+    for (let i = 1; i <= numParadas; i++) {
+      const fracao = i / (numParadas + 1);
+      const ponto = path.getPointAtLength(totalLength * fracao);
+      novosMarcadores.push({ x: ponto.x, y: ponto.y });
+    }
+    setMarcadoresParadas(novosMarcadores);
+  }, [pontos.length, resultado]);
 
   const [esperaAtiva, setEsperaAtiva] = useState(false);
   const [inicioEspera, setInicioEspera] = useState<number | null>(null);
@@ -339,6 +360,28 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
               <span className="text-[10px] text-slate-400 block">Tempo Estimado</span>
               <span className="text-lg font-bold text-white">{resultado.duracaoMinutos} min</span>
             </div>
+          </div>
+
+          <div className="bg-slate-950 rounded-xl overflow-hidden py-2">
+            <svg width="100%" viewBox="0 0 380 100" style={{ display: "block" }}>
+              <defs>
+                <path id="rotaAnim" d="M 40 75 Q 130 25 190 55 T 340 25" fill="none" />
+              </defs>
+              <path ref={rotaPathRef} d="M 40 75 Q 130 25 190 55 T 340 25" fill="none" stroke="#1e293b" strokeWidth="5" strokeLinecap="round" />
+              <path d="M 40 75 Q 130 25 190 55 T 340 25" fill="none" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 6" strokeLinecap="round" />
+              <circle cx="40" cy="75" r="6" fill="#10b981" />
+              <circle cx="340" cy="25" r="6" fill="#f43f5e" />
+              {marcadoresParadas.map((m, idx) => (
+                <circle key={idx} cx={m.x} cy={m.y} r="5" fill="#f43f5e" stroke="#0f172a" strokeWidth="1" />
+              ))}
+              <g>
+                <animateMotion dur="3.5s" repeatCount="indefinite" rotate="auto">
+                  <mpath href="#rotaAnim" />
+                </animateMotion>
+                <circle r="10" fill="#0f172a" stroke="#22d3ee" strokeWidth="1.2" />
+                <text x="0" y="4" textAnchor="middle" fontSize="11">🚗</text>
+              </g>
+            </svg>
           </div>
 
           <div className="space-y-2 pt-2 border-t border-slate-800">
