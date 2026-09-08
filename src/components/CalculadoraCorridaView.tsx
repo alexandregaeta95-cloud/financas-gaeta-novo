@@ -186,6 +186,13 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
     setSegundosEsperaAoVivo(0);
   };
 
+  const zerarEspera = () => {
+    setEsperaAtiva(false);
+    setInicioEspera(null);
+    setSegundosEsperaAcumulados(0);
+    setSegundosEsperaAoVivo(0);
+  };
+
   const formatarTempo = (totalSegundos: number) => {
     const min = Math.floor(totalSegundos / 60);
     const seg = totalSegundos % 60;
@@ -306,17 +313,28 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
                 {formatarTempo(segundosEsperaAcumulados + (esperaAtiva ? segundosEsperaAoVivo : 0))}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={esperaAtiva ? pararEspera : iniciarEspera}
-              className={`w-full py-2 rounded-lg text-xs font-bold transition-colors ${
-                esperaAtiva
-                  ? "bg-rose-600 hover:bg-rose-500 text-white"
-                  : "bg-amber-600 hover:bg-amber-500 text-white"
-              }`}
-            >
-              {esperaAtiva ? "⏸ Parar Espera" : "▶ Iniciar Espera"}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={esperaAtiva ? pararEspera : iniciarEspera}
+                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${
+                  esperaAtiva
+                    ? "bg-rose-600 hover:bg-rose-500 text-white"
+                    : "bg-amber-600 hover:bg-amber-500 text-white"
+                }`}
+              >
+                {esperaAtiva ? "⏸ Parar Espera" : "▶ Iniciar Espera"}
+              </button>
+              {!esperaAtiva && segundosEsperaAcumulados > 0 && (
+                <button
+                  type="button"
+                  onClick={zerarEspera}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition-colors"
+                >
+                  Zerar
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-between items-center pt-3 border-t border-slate-700">
