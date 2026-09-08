@@ -252,6 +252,38 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
     }
   });
 
+  // Sugestões de endereço (autocomplete) via OpenRouteService
+  app.get("/api/endereco-sugestoes", async (req, res) => {
+    try {
+      const texto = String(req.query.texto || "");
+      if (texto.length < 3) return res.json({ sugestoes: [] });
+
+      const orsKey = process.env.ORS_API_KEY;
+      if (!orsKey) return res.status(500).json({ error: "Chave do OpenRouteService não configurada." });
+
+      let url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${orsKey}&text=${encodeURIComponent(texto)}&boundary.country=BR&size=6`;
+      const lat = req.query.lat;
+      const lng = req.query.lng;
+      if (lat && lng) {
+        url += `&focus.point.lat=${lat}&focus.point.lon=${lng}`;
+      }
+
+      const resp = await fetch(url);
+      const data: any = await resp.json();
+
+      const sugestoes = (data?.features || []).map((f: any) => ({
+        label: f.properties?.label || "",
+        lat: f.geometry?.coordinates?.[1],
+        lng: f.geometry?.coordinates?.[0],
+      }));
+
+      res.json({ sugestoes });
+    } catch (err: any) {
+      console.error("Erro nas sugestões de endereço:", err);
+      res.status(500).json({ error: err?.message || "Erro ao buscar sugestões." });
+    }
+  });
+
   // Calcula rota (distância + tempo) entre dois endereços via OpenRouteService
   app.post("/api/rota", async (req, res) => {
     try {
@@ -275,8 +307,8 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
         return coords;
       }
 
-      const origemCoords = Array.isArray(origem) ? origem : await geocode(origem);
-      const destinoCoords = Array.isArray(destino) ? destino : await geocode(destino);
+      const origemCoords: [number, number] = Array.isArray(origem) ? (origem as [number, number]) : await geocode(origem);
+      const destinoCoords: [number, number] = Array.isArray(destino) ? (destino as [number, number]) : await geocode(destino);
 
       const dirResp = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", {
         method: "POST",

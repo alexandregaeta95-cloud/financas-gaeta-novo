@@ -1,8 +1,101 @@
 import React, { useState } from "react";
 import { MapPin, Loader2, Fuel, Clock, Route as RouteIcon, DollarSign } from "lucide-react";
-import { VoiceInput } from "./VoiceInput";
 import { Veiculo, Lancamento } from "../types";
 import { formatCurrency } from "../utils/formatters";
+
+function EnderecoAutocomplete({
+  label,
+  placeholder,
+  onSelect,
+}: {
+  label: string;
+  placeholder: string;
+  onSelect: (coords: [number, number], texto: string) => void;
+}) {
+  const [texto, setTexto] = useState("");
+  const [sugestoes, setSugestoes] = useState<{ label: string; lat: number; lng: number }[]>([]);
+  const [mostrando, setMostrando] = useState(false);
+  const [buscando, setBuscando] = useState(false);
+  const debounceRef = React.useRef<any>(null);
+
+  const buscarSugestoes = (valor: string) => {
+    setTexto(valor);
+    onSelect([0, 0], ""); // limpa seleção anterior ao digitar de novo
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (valor.length < 3) {
+      setSugestoes([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      setBuscando(true);
+      try {
+        let url = `/api/endereco-sugestoes?texto=${encodeURIComponent(valor)}`;
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              const resp = await fetch(`${url}&lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
+              const data = await resp.json();
+              setSugestoes(data.sugestoes || []);
+              setMostrando(true);
+              setBuscando(false);
+            },
+            async () => {
+              const resp = await fetch(url);
+              const data = await resp.json();
+              setSugestoes(data.sugestoes || []);
+              setMostrando(true);
+              setBuscando(false);
+            }
+          );
+        } else {
+          const resp = await fetch(url);
+          const data = await resp.json();
+          setSugestoes(data.sugestoes || []);
+          setMostrando(true);
+          setBuscando(false);
+        }
+      } catch (e) {
+        setBuscando(false);
+      }
+    }, 500);
+  };
+
+  return (
+    <div className="relative">
+      <label className="text-slate-400 block mb-1 text-xs">{label}</label>
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={texto}
+        onChange={(e) => buscarSugestoes(e.target.value)}
+        onFocus={() => sugestoes.length > 0 && setMostrando(true)}
+        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+      />
+      {buscando && (
+        <span className="absolute right-3 top-9 text-slate-500 text-xs">buscando...</span>
+      )}
+      {mostrando && sugestoes.length > 0 && (
+        <div className="absolute z-20 mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-xl max-h-56 overflow-y-auto">
+          {sugestoes.map((s, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => {
+                setTexto(s.label);
+                onSelect([s.lng, s.lat], s.label);
+                setMostrando(false);
+                setSugestoes([]);
+              }}
+              className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 border-b border-slate-800 last:border-0"
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Props {
   veiculos: Veiculo[];
@@ -10,8 +103,10 @@ interface Props {
 }
 
 export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos }) => {
-  const [origem, setOrigem] = useState("");
-  const [destino, setDestino] = useState("");
+  const [origemCoords, setOrigemCoords] = useState<[number, number] | null>(null);
+  const [destinoCoords, setDestinoCoords] = useState<[number, number] | null>(null);
+  const [origemTexto, setOrigemTexto] = useState("");
+  const [destinoTexto, setDestinoTexto] = useState("");
   const [valorPorKm, setValorPorKm] = useState(1.2);
   const [valorPorHora, setValorPorHora] = useState(25);
   const [loading, setLoading] = useState(false);
@@ -35,8 +130,8 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
   const precoLitroAtual = Number(ultimoPrecoLitro?.Preco_Litro) || 6.0;
 
   const handleCalcular = async () => {
-    if (!origem.trim() || !destino.trim()) {
-      setErro("Preencha origem e destino.");
+    if (!origemCoords || !destinoCoords) {
+      setErro("Selecione um endereço de origem e destino a partir das sugestões da lista.");
       return;
     }
     setLoading(true);
@@ -46,7 +141,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
       const resp = await fetch("/api/rota", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origem, destino }),
+        body: JSON.stringify({ origem: origemCoords, destino: destinoCoords }),
       });
       const data = await resp.json();
       if (!resp.ok) {
@@ -80,26 +175,22 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-        <div>
-          <label className="text-slate-400 block mb-1 text-xs">Endereço de Origem</label>
-          <VoiceInput
-            type="text"
-            placeholder="Ex: Bairro São Marcos, Campinas"
-            value={origem}
-            onChange={(e) => setOrigem(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-          />
-        </div>
-        <div>
-          <label className="text-slate-400 block mb-1 text-xs">Endereço de Destino</label>
-          <VoiceInput
-            type="text"
-            placeholder="Ex: Centro, Campinas"
-            value={destino}
-            onChange={(e) => setDestino(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-          />
-        </div>
+        <EnderecoAutocomplete
+          label="Endereço de Origem"
+          placeholder="Digite pelo menos 3 letras..."
+          onSelect={(coords, texto) => {
+            setOrigemCoords(coords[0] === 0 && coords[1] === 0 ? null : coords);
+            setOrigemTexto(texto);
+          }}
+        />
+        <EnderecoAutocomplete
+          label="Endereço de Destino"
+          placeholder="Digite pelo menos 3 letras..."
+          onSelect={(coords, texto) => {
+            setDestinoCoords(coords[0] === 0 && coords[1] === 0 ? null : coords);
+            setDestinoTexto(texto);
+          }}
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <div>
