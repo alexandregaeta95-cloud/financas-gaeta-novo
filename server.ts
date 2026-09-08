@@ -265,6 +265,9 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
       const lat = req.query.lat;
       const lng = req.query.lng;
       if (lat && lng) {
+        // Limita de verdade a resultados num raio de 60km da localização do usuário
+        url += `&boundary.circle.lat=${lat}&boundary.circle.lon=${lng}&boundary.circle.radius=60`;
+        // Mantém também a preferência de ordenação por proximidade
         url += `&focus.point.lat=${lat}&focus.point.lon=${lng}`;
       }
 
