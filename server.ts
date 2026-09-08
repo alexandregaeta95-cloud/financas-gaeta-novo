@@ -280,7 +280,7 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
         lng: f.geometry?.coordinates?.[0],
       }));
 
-      res.json({ sugestoes });
+      res.json({ sugestoes, debug: { url: url.replace(orsKey, "***"), totalRecebido: data?.features?.length ?? 0, respostaCrua: data } });
     } catch (err: any) {
       console.error("Erro nas sugestões de endereço:", err);
       res.status(500).json({ error: err?.message || "Erro ao buscar sugestões." });

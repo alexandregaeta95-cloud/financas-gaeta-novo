@@ -16,6 +16,7 @@ function EnderecoAutocomplete({
   const [sugestoes, setSugestoes] = useState<{ label: string; lat: number; lng: number }[]>([]);
   const [mostrando, setMostrando] = useState(false);
   const [buscando, setBuscando] = useState(false);
+  const [ultimoDebug, setUltimoDebug] = useState<any>(null);
   const debounceRef = React.useRef<any>(null);
 
   const buscarSugestoes = (valor: string) => {
@@ -36,6 +37,7 @@ function EnderecoAutocomplete({
               const resp = await fetch(`${url}&lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
               const data = await resp.json();
               setSugestoes(data.sugestoes || []);
+              setUltimoDebug(data.debug);
               setMostrando(true);
               setBuscando(false);
             },
@@ -43,6 +45,7 @@ function EnderecoAutocomplete({
               const resp = await fetch(url);
               const data = await resp.json();
               setSugestoes(data.sugestoes || []);
+              setUltimoDebug(data.debug);
               setMostrando(true);
               setBuscando(false);
             }
@@ -51,6 +54,7 @@ function EnderecoAutocomplete({
           const resp = await fetch(url);
           const data = await resp.json();
           setSugestoes(data.sugestoes || []);
+          setUltimoDebug(data.debug);
           setMostrando(true);
           setBuscando(false);
         }
@@ -73,6 +77,11 @@ function EnderecoAutocomplete({
       />
       {buscando && (
         <span className="absolute right-3 top-9 text-slate-500 text-xs">buscando...</span>
+      )}
+      {ultimoDebug && (
+        <div className="mt-1 text-[10px] text-amber-400 bg-slate-950 border border-amber-500/20 rounded p-2 break-all">
+          DEBUG: {JSON.stringify(ultimoDebug)}
+        </div>
       )}
       {mostrando && sugestoes.length > 0 && (
         <div className="absolute z-20 mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-xl max-h-56 overflow-y-auto">
