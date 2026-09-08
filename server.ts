@@ -252,6 +252,57 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
     }
   });
 
+  // Calcula rota (distância + tempo) entre dois endereços via OpenRouteService
+  app.post("/api/rota", async (req, res) => {
+    try {
+      const { origem, destino } = req.body;
+      if (!origem || !destino) {
+        return res.status(400).json({ error: "Origem e destino são obrigatórios." });
+      }
+
+      const orsKey = process.env.ORS_API_KEY;
+      if (!orsKey) {
+        return res.status(500).json({ error: "Chave do OpenRouteService não configurada no servidor." });
+      }
+
+      // Geocodifica um endereço em texto para coordenadas [lng, lat]
+      async function geocode(endereco: string): Promise<[number, number]> {
+        const url = `https://api.openrouteservice.org/geocode/search?api_key=${orsKey}&text=${encodeURIComponent(endereco)}&size=1`;
+        const resp = await fetch(url);
+        const data: any = await resp.json();
+        const coords = data?.features?.[0]?.geometry?.coordinates;
+        if (!coords) throw new Error(`Endereço não encontrado: ${endereco}`);
+        return coords;
+      }
+
+      const origemCoords = Array.isArray(origem) ? origem : await geocode(origem);
+      const destinoCoords = Array.isArray(destino) ? destino : await geocode(destino);
+
+      const dirResp = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", {
+        method: "POST",
+        headers: {
+          Authorization: orsKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ coordinates: [origemCoords, destinoCoords] }),
+      });
+      const dirData: any = await dirResp.json();
+
+      const summary = dirData?.routes?.[0]?.summary;
+      if (!summary) {
+        return res.status(502).json({ error: "Não foi possível calcular a rota.", detalhe: dirData });
+      }
+
+      res.json({
+        distanciaKm: Number((summary.distance / 1000).toFixed(2)),
+        duracaoMinutos: Math.round(summary.duration / 60),
+      });
+    } catch (err: any) {
+      console.error("Erro ao calcular rota:", err);
+      res.status(500).json({ error: err?.message || "Erro ao calcular rota." });
+    }
+  });
+
   // Proxy endpoint to communicate with Google Apps Script
   app.all("/api/proxy", async (req, res) => {
     try {

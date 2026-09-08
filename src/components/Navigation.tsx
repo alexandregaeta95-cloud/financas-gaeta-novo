@@ -22,6 +22,7 @@ import {
   FileText,
   AudioLines,
   Settings,
+  Route,
 } from "lucide-react";
 import { useAlarmSound } from "../hooks/useAlarmSound";
 
@@ -41,6 +42,7 @@ export type ModuleView =
   | "agenda"
   | "zonas_risco"
   | "lista_mercado"
+  | "calculadora_corrida"
   | "configuracoes";
 
 interface Props {
@@ -69,6 +71,7 @@ export const Navigation: React.FC<Props> = ({
     { id: "relatorios", label: "Relatórios", icon: FileText },
     { id: "lancamentos", label: "Finanças", icon: Receipt },
     { id: "analise_corridas", label: "Uber/99", icon: TrendingUp },
+    { id: "calculadora_corrida", label: "Corrida", icon: Route },
     { id: "abastecimentos", label: "Abastecer", icon: Fuel },
     { id: "indicacoes_postos", label: "Postos", icon: Fuel },
     { id: "veiculos", label: "Veículos", icon: Car },
@@ -93,7 +96,7 @@ export const Navigation: React.FC<Props> = ({
             <h1 className="font-bold text-base text-white tracking-tight leading-none">
               Diz Aí
             </h1>
-            <p className="text-[11px] text-slate-400">TESTE 123 - Sistema Integrado de Gestão</p>
+            <p className="text-[11px] text-slate-400">Sistema Integrado de Gestão</p>
           </div>
         </div>
 

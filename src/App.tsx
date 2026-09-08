@@ -20,6 +20,7 @@ import { ListaMercadoView } from "./components/ListaMercadoView";
 import { IndicacoesPostosView } from "./components/IndicacoesPostosView";
 import { PainelContasView } from "./components/PainelContasView";
 import { AnaliseCorridasView } from "./components/AnaliseCorridasView";
+import { CalculadoraCorridaView } from "./components/CalculadoraCorridaView";
 import { IndicadoresView } from "./components/IndicadoresView";
 import { RelatoriosView } from "./components/RelatoriosView";
 import { ConfiguracoesGeraisView } from "./components/ConfiguracoesGeraisView";
@@ -1153,6 +1154,10 @@ export default function App() {
               setActiveView("lancamentos");
             }}
           />
+        )}
+
+        {activeView === "calculadora_corrida" && (
+          <CalculadoraCorridaView veiculos={veiculos} lancamentos={lancamentos} />
         )}
 
         {activeView === "painel_contas" && (
