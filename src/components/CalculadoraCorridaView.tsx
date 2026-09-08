@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MapPin, Loader2, Fuel, Clock, Route as RouteIcon, DollarSign } from "lucide-react";
 import { Veiculo, Lancamento } from "../types";
 import { formatCurrency } from "../utils/formatters";
@@ -116,6 +116,19 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
     duracaoMinutos: number;
   } | null>(null);
 
+  const [esperaAtiva, setEsperaAtiva] = useState(false);
+  const [inicioEspera, setInicioEspera] = useState<number | null>(null);
+  const [segundosEsperaAcumulados, setSegundosEsperaAcumulados] = useState(0);
+  const [segundosEsperaAoVivo, setSegundosEsperaAoVivo] = useState(0);
+
+  useEffect(() => {
+    if (!esperaAtiva || !inicioEspera) return;
+    const interval = setInterval(() => {
+      setSegundosEsperaAoVivo(Math.floor((Date.now() - inicioEspera) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [esperaAtiva, inicioEspera]);
+
   // Calcula Km/L médio a partir dos abastecimentos registrados
   const abastecimentos = lancamentos.filter(
     (l) => (l.Categoria === "ABASTECIMENTO" || l.Tipo === "ABASTECIMENTO") && Number((l as any).Media_KmL) > 0
@@ -157,9 +170,32 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
     }
   };
 
+  const iniciarEspera = () => {
+    setInicioEspera(Date.now());
+    setEsperaAtiva(true);
+    setSegundosEsperaAoVivo(0);
+  };
+
+  const pararEspera = () => {
+    if (inicioEspera) {
+      const decorrido = Math.floor((Date.now() - inicioEspera) / 1000);
+      setSegundosEsperaAcumulados((prev) => prev + decorrido);
+    }
+    setEsperaAtiva(false);
+    setInicioEspera(null);
+    setSegundosEsperaAoVivo(0);
+  };
+
+  const formatarTempo = (totalSegundos: number) => {
+    const min = Math.floor(totalSegundos / 60);
+    const seg = totalSegundos % 60;
+    return `${String(min).padStart(2, "0")}:${String(seg).padStart(2, "0")}`;
+  };
+
   const custoCombustivel = resultado ? (resultado.distanciaKm / mediaKmL) * precoLitroAtual : 0;
   const valorKmTotal = resultado ? resultado.distanciaKm * valorPorKm : 0;
-  const valorTempoTotal = resultado ? (resultado.duracaoMinutos / 60) * valorPorHora : 0;
+  const tempoTotalMinutos = resultado ? resultado.duracaoMinutos + segundosEsperaAcumulados / 60 : 0;
+  const valorTempoTotal = resultado ? (tempoTotalMinutos / 60) * valorPorHora : 0;
   const totalSugerido = custoCombustivel + valorKmTotal + valorTempoTotal;
 
   return (
@@ -256,9 +292,31 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
               <span className="text-white font-semibold">R$ {formatCurrency(valorKmTotal)}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-slate-400 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Tempo</span>
+              <span className="text-slate-400 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Tempo (viagem + espera)</span>
               <span className="text-white font-semibold">R$ {formatCurrency(valorTempoTotal)}</span>
             </div>
+          </div>
+
+          <div className="bg-slate-950 border border-amber-500/30 rounded-xl p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-amber-300 font-semibold flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" /> Tempo de Espera/Parada
+              </span>
+              <span className="text-sm font-mono font-bold text-white">
+                {formatarTempo(segundosEsperaAcumulados + (esperaAtiva ? segundosEsperaAoVivo : 0))}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={esperaAtiva ? pararEspera : iniciarEspera}
+              className={`w-full py-2 rounded-lg text-xs font-bold transition-colors ${
+                esperaAtiva
+                  ? "bg-rose-600 hover:bg-rose-500 text-white"
+                  : "bg-amber-600 hover:bg-amber-500 text-white"
+              }`}
+            >
+              {esperaAtiva ? "⏸ Parar Espera" : "▶ Iniciar Espera"}
+            </button>
           </div>
 
           <div className="flex justify-between items-center pt-3 border-t border-slate-700">

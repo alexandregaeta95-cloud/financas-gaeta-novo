@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   ShoppingCart,
   HeartPulse,
+  Route,
 } from "lucide-react";
 import { Lancamento } from "../types";
 import { ModuleView } from "./Navigation";
@@ -205,7 +206,7 @@ export const PainelContasView: React.FC<Props> = ({
 
       {/* Quick Action Shortcuts Grid */}
       {onNavigate && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3">
           <button
             onClick={() => onNavigate("lancamentos")}
             className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-sky-300 font-semibold rounded-xl text-xs border border-sky-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
@@ -292,6 +293,14 @@ export const PainelContasView: React.FC<Props> = ({
           >
             <HeartPulse className="w-4 h-4 shrink-0" />
             <span className="truncate">Saúde</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("calculadora_corrida")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-semibold rounded-xl text-xs border border-cyan-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <Route className="w-4 h-4 shrink-0" />
+            <span className="truncate">Corrida</span>
           </button>
         </div>
       )}
