@@ -120,12 +120,11 @@ export const RegistroRapidoAlimentoModal: React.FC<Props> = ({
         observacoes: observacoes.trim().toUpperCase() || undefined,
       };
 
-      await onSaveAlimento(itemToSave);
+      onSaveAlimento(itemToSave);
       onClose();
     } catch (err: any) {
       console.error("Erro ao salvar registro rápido de alimento:", err);
       setError(err?.message || "Erro ao salvar na planilha. Tente novamente.");
-    } finally {
       setIsSaving(false);
     }
   };

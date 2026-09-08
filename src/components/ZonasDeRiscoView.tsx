@@ -148,7 +148,8 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
         (location, error) => {
           if (error) {
             console.warn("Erro no GPS em segundo plano:", error);
-            setGeoError("Permissão de GPS negada ou indisponível.");
+            const detalhe = error?.message || error?.code || JSON.stringify(error) || "Erro desconhecido";
+            setGeoError(`Permissão de GPS negada ou indisponível. Detalhe: ${detalhe}`);
             return;
           }
           if (location) {
@@ -161,7 +162,8 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
         })
         .catch((err) => {
           console.warn("Falha ao iniciar GPS em segundo plano:", err);
-          setGeoError("Não foi possível iniciar o monitoramento em segundo plano.");
+          const detalhe = err?.message || err?.code || JSON.stringify(err) || "Erro desconhecido";
+          setGeoError(`Não foi possível iniciar o monitoramento em segundo plano. Detalhe: ${detalhe}`);
         });
 
       return () => {
