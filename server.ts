@@ -267,7 +267,7 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
 
       // Geocodifica um endereço em texto para coordenadas [lng, lat]
       async function geocode(endereco: string): Promise<[number, number]> {
-        const url = `https://api.openrouteservice.org/geocode/search?api_key=${orsKey}&text=${encodeURIComponent(endereco)}&size=1`;
+        const url = `https://api.openrouteservice.org/geocode/search?api_key=${orsKey}&text=${encodeURIComponent(endereco)}&boundary.country=BR&size=1`;
         const resp = await fetch(url);
         const data: any = await resp.json();
         const coords = data?.features?.[0]?.geometry?.coordinates;
