@@ -103,10 +103,31 @@ interface Props {
 }
 
 export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos }) => {
-  const [origemCoords, setOrigemCoords] = useState<[number, number] | null>(null);
-  const [destinoCoords, setDestinoCoords] = useState<[number, number] | null>(null);
-  const [origemTexto, setOrigemTexto] = useState("");
-  const [destinoTexto, setDestinoTexto] = useState("");
+  const [pontos, setPontos] = useState<{ coords: [number, number] | null; texto: string }[]>([
+    { coords: null, texto: "" },
+    { coords: null, texto: "" },
+  ]);
+
+  const adicionarParada = () => {
+    setPontos((prev) => {
+      const novo = [...prev];
+      novo.splice(prev.length - 1, 0, { coords: null, texto: "" });
+      return novo;
+    });
+  };
+
+  const removerParada = (index: number) => {
+    setPontos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const atualizarPonto = (index: number, coords: [number, number] | null, texto: string) => {
+    setPontos((prev) => {
+      const novo = [...prev];
+      novo[index] = { coords, texto };
+      return novo;
+    });
+  };
+
   const [valorPorKm, setValorPorKm] = useState(1.2);
   const [valorPorHora, setValorPorHora] = useState(25);
   const [loading, setLoading] = useState(false);
@@ -143,8 +164,9 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
   const precoLitroAtual = Number(ultimoPrecoLitro?.Preco_Litro) || 6.0;
 
   const handleCalcular = async () => {
-    if (!origemCoords || !destinoCoords) {
-      setErro("Selecione um endereço de origem e destino a partir das sugestões da lista.");
+    const coordenadasValidas = pontos.every((p) => p.coords !== null);
+    if (!coordenadasValidas) {
+      setErro("Selecione todos os endereços a partir das sugestões da lista.");
       return;
     }
     setLoading(true);
@@ -154,7 +176,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
       const resp = await fetch("/api/rota", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origem: origemCoords, destino: destinoCoords }),
+        body: JSON.stringify({ pontos: pontos.map((p) => p.coords) }),
       });
       const data = await resp.json();
       if (!resp.ok) {
@@ -218,22 +240,43 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-        <EnderecoAutocomplete
-          label="Endereço de Origem"
-          placeholder="Digite pelo menos 3 letras..."
-          onSelect={(coords, texto) => {
-            setOrigemCoords(coords[0] === 0 && coords[1] === 0 ? null : coords);
-            setOrigemTexto(texto);
-          }}
-        />
-        <EnderecoAutocomplete
-          label="Endereço de Destino"
-          placeholder="Digite pelo menos 3 letras..."
-          onSelect={(coords, texto) => {
-            setDestinoCoords(coords[0] === 0 && coords[1] === 0 ? null : coords);
-            setDestinoTexto(texto);
-          }}
-        />
+        <div className="space-y-3">
+          {pontos.map((ponto, idx) => {
+            const isOrigem = idx === 0;
+            const isDestinoFinal = idx === pontos.length - 1;
+            const rotulo = isOrigem ? "Endereço de Origem" : isDestinoFinal ? "Destino Final" : `Parada ${idx}`;
+            return (
+              <div key={idx} className="flex items-end gap-2">
+                <div className="flex-1">
+                  <EnderecoAutocomplete
+                    label={rotulo}
+                    placeholder="Digite pelo menos 3 letras..."
+                    onSelect={(coords, texto) => {
+                      atualizarPonto(idx, coords[0] === 0 && coords[1] === 0 ? null : coords, texto);
+                    }}
+                  />
+                </div>
+                {!isOrigem && !isDestinoFinal && (
+                  <button
+                    type="button"
+                    onClick={() => removerParada(idx)}
+                    className="mb-0.5 px-3 py-2.5 bg-rose-950/50 hover:bg-rose-900/50 text-rose-400 rounded-xl text-xs"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={adicionarParada}
+            className="w-full flex items-center justify-center gap-1.5 py-2 border border-dashed border-slate-700 hover:border-slate-500 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-medium transition-colors"
+          >
+            + Adicionar Parada
+          </button>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>

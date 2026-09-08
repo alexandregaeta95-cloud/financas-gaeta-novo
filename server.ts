@@ -284,12 +284,12 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
     }
   });
 
-  // Calcula rota (distância + tempo) entre dois endereços via OpenRouteService
+  // Calcula rota (distância + tempo) entre múltiplos pontos via OpenRouteService
   app.post("/api/rota", async (req, res) => {
     try {
-      const { origem, destino } = req.body;
-      if (!origem || !destino) {
-        return res.status(400).json({ error: "Origem e destino são obrigatórios." });
+      const { pontos } = req.body;
+      if (!Array.isArray(pontos) || pontos.length < 2) {
+        return res.status(400).json({ error: "É necessário pelo menos origem e destino." });
       }
 
       const orsKey = process.env.ORS_API_KEY;
@@ -297,18 +297,13 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
         return res.status(500).json({ error: "Chave do OpenRouteService não configurada no servidor." });
       }
 
-      // Geocodifica um endereço em texto para coordenadas [lng, lat]
-      async function geocode(endereco: string): Promise<[number, number]> {
-        const url = `https://api.openrouteservice.org/geocode/search?api_key=${orsKey}&text=${encodeURIComponent(endereco)}&boundary.country=BR&size=1`;
-        const resp = await fetch(url);
-        const data: any = await resp.json();
-        const coords = data?.features?.[0]?.geometry?.coordinates;
-        if (!coords) throw new Error(`Endereço não encontrado: ${endereco}`);
-        return coords;
-      }
+      const coordenadas: [number, number][] = (pontos.map((p: any) =>
+        Array.isArray(p) ? (p as [number, number]) : null
+      ).filter(Boolean) as [number, number][]);
 
-      const origemCoords: [number, number] = Array.isArray(origem) ? (origem as [number, number]) : await geocode(origem);
-      const destinoCoords: [number, number] = Array.isArray(destino) ? (destino as [number, number]) : await geocode(destino);
+      if (coordenadas.length < 2) {
+        return res.status(400).json({ error: "Coordenadas inválidas." });
+      }
 
       const dirResp = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", {
         method: "POST",
@@ -316,7 +311,7 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
           Authorization: orsKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ coordinates: [origemCoords, destinoCoords] }),
+        body: JSON.stringify({ coordinates: coordenadas }),
       });
       const dirData: any = await dirResp.json();
 
