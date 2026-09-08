@@ -1,26 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { ShieldAlert, MapPin, Plus, Edit2, Trash2, X, Navigation, Volume2, VolumeX, BellRing, Zap, Loader2 } from "lucide-react";
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
+import { BackgroundGeolocation } from "@capgo/background-geolocation";
 import { ZonaDeRisco } from "../types";
 import { generateNewId } from "../services/api";
 import { VoiceInput } from "./VoiceInput";
 import { playAlertBeepSound, startAlarmLoop, stopAlarmLoop } from "../services/alarmSoundService";
-
-interface BackgroundGeolocationPlugin {
-  addWatcher(
-    options: {
-      backgroundMessage?: string;
-      backgroundTitle?: string;
-      requestPermissions?: boolean;
-      stale?: boolean;
-      distanceFilter?: number;
-    },
-    callback: (location: { latitude: number; longitude: number } | undefined, error: any) => void
-  ): Promise<string>;
-  removeWatcher(options: { id: string }): Promise<void>;
-}
-
-const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>("BackgroundGeolocation");
 
 const DEFAULT_TIPOS_OCORRENCIA = [
   "ASSALTO",
@@ -134,10 +119,7 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
     };
 
     if (Capacitor.isNativePlatform()) {
-      // App instalado: usa o plugin de GPS em segundo plano
-      let watcherId: string | null = null;
-
-      BackgroundGeolocation.addWatcher(
+      BackgroundGeolocation.start(
         {
           backgroundMessage: "Monitorando Zonas de Risco em segundo plano",
           backgroundTitle: "Diz Aí - Zona de Risco Ativa",
@@ -145,7 +127,7 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
           stale: false,
           distanceFilter: 30,
         },
-        (location, error) => {
+        (location: any, error: any) => {
           if (error) {
             console.warn("Erro no GPS em segundo plano:", error);
             const detalhe = error?.message || error?.code || JSON.stringify(error) || "Erro desconhecido";
@@ -156,20 +138,14 @@ export const ZonasDeRiscoView: React.FC<Props> = ({ zonas, onSaveZona, onDeleteZ
             checkZones(location.latitude, location.longitude);
           }
         }
-      )
-        .then((id) => {
-          watcherId = id;
-        })
-        .catch((err) => {
-          console.warn("Falha ao iniciar GPS em segundo plano:", err);
-          const detalhe = err?.message || err?.code || JSON.stringify(err) || "Erro desconhecido";
-          setGeoError(`Não foi possível iniciar o monitoramento em segundo plano. Detalhe: ${detalhe}`);
-        });
+      ).catch((err: any) => {
+        console.warn("Falha ao iniciar GPS em segundo plano:", err);
+        const detalhe = err?.message || err?.code || JSON.stringify(err) || "Erro desconhecido";
+        setGeoError(`Não foi possível iniciar o monitoramento em segundo plano. Detalhe: ${detalhe}`);
+      });
 
       return () => {
-        if (watcherId) {
-          BackgroundGeolocation.removeWatcher({ id: watcherId }).catch(() => {});
-        }
+        BackgroundGeolocation.stop().catch(() => {});
       };
     } else {
       // Site no navegador: mantém o GPS comum de sempre

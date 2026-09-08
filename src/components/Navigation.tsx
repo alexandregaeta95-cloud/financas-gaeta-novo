@@ -93,7 +93,7 @@ export const Navigation: React.FC<Props> = ({
             <h1 className="font-bold text-base text-white tracking-tight leading-none">
               Diz Aí
             </h1>
-            <p className="text-[11px] text-slate-400">Sistema Integrado de Gestão</p>
+            <p className="text-[11px] text-slate-400">TESTE 123 - Sistema Integrado de Gestão</p>
           </div>
         </div>
 
