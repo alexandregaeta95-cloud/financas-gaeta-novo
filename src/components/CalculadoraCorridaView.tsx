@@ -52,7 +52,8 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
       if (!resp.ok) throw new Error(data.error || "Erro ao calcular rota.");
       setResultado(data);
     } catch (err: any) {
-      setErro(err?.message || "Erro ao calcular rota.");
+      console.error("Erro detalhado:", err);
+      setErro(`Erro: ${err?.message || JSON.stringify(err)}`);
     } finally {
       setLoading(false);
     }

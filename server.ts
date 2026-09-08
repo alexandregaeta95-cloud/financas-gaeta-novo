@@ -299,7 +299,7 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
       });
     } catch (err: any) {
       console.error("Erro ao calcular rota:", err);
-      res.status(500).json({ error: err?.message || "Erro ao calcular rota." });
+      res.status(500).json({ error: err?.message || "Erro ao calcular rota.", stack: err?.stack });
     }
   });
 
