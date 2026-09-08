@@ -23,7 +23,7 @@ function EnderecoAutocomplete({
     setTexto(valor);
     onSelect([0, 0], ""); // limpa seleção anterior ao digitar de novo
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (valor.length < 3) {
+    if (valor.length < 4) {
       setSugestoes([]);
       return;
     }
@@ -61,7 +61,7 @@ function EnderecoAutocomplete({
       } catch (e) {
         setBuscando(false);
       }
-    }, 500);
+    }, 900);
   };
 
   return (
