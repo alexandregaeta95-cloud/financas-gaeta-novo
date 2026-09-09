@@ -415,11 +415,14 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
               </g>
 
               <path d="M 20 180 C 60 100, 140 60, 190 110 C 220 145, 260 160, 280 130 C 300 100, 260 80, 230 100 C 200 120, 210 160, 250 170 C 300 185, 340 150, 340 110 C 340 70, 300 40, 250 50 C 200 60, 180 30, 220 20 C 270 5, 340 30, 360 70" fill="none" stroke="#dc2626" strokeWidth="9" strokeLinecap="round" strokeDasharray="5 5" />
-              <path d="M 20 180 C 60 100, 140 60, 190 110 C 220 145, 260 160, 280 130 C 300 100, 260 80, 230 100 C 200 120, 210 160, 250 170 C 300 185, 340 150, 340 110 C 340 70, 300 40, 250 50 C 200 60, 180 30, 220 20 C 270 5, 340 30, 360 70" fill="none" stroke="#0f172a" strokeWidth="6" strokeLinecap="round" />
+              <path ref={rotaPathRef} d="M 20 180 C 60 100, 140 60, 190 110 C 220 145, 260 160, 280 130 C 300 100, 260 80, 230 100 C 200 120, 210 160, 250 170 C 300 185, 340 150, 340 110 C 340 70, 300 40, 250 50 C 200 60, 180 30, 220 20 C 270 5, 340 30, 360 70" fill="none" stroke="#0f172a" strokeWidth="6" strokeLinecap="round" />
               <path d="M 20 180 C 60 100, 140 60, 190 110 C 220 145, 260 160, 280 130 C 300 100, 260 80, 230 100 C 200 120, 210 160, 250 170 C 300 185, 340 150, 340 110 C 340 70, 300 40, 250 50 C 200 60, 180 30, 220 20 C 270 5, 340 30, 360 70" fill="none" stroke="#facc15" strokeWidth="1.4" strokeDasharray="4 5" />
 
               <circle cx="20" cy="180" r="6" fill="#10b981" />
               <circle cx="360" cy="70" r="6" fill="#f43f5e" />
+              {marcadoresParadas.map((m, idx) => (
+                <circle key={idx} cx={m.x} cy={m.y} r="6" fill="#f43f5e" stroke="#0f172a" strokeWidth="1.2" />
+              ))}
 
               <g>
                 <animateMotion dur="7s" repeatCount="indefinite" rotate="auto">
