@@ -383,23 +383,50 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
           </div>
 
           <div className="bg-slate-950 rounded-xl overflow-hidden py-2">
-            <svg width="100%" viewBox="0 0 380 100" style={{ display: "block" }}>
+            <svg width="100%" viewBox="0 0 380 220" style={{ display: "block" }}>
               <defs>
-                <path id="rotaAnim" d="M 40 80 L 110 30 L 160 80 L 220 30 L 270 80 L 340 30" fill="none" />
+                <path id="rotaLongaFinal" d="M 20 180 C 60 100, 140 60, 190 110 C 220 145, 260 160, 280 130 C 300 100, 260 80, 230 100 C 200 120, 210 160, 250 170 C 300 185, 340 150, 340 110 C 340 70, 300 40, 250 50 C 200 60, 180 30, 220 20 C 270 5, 340 30, 360 70" fill="none" />
               </defs>
-              <path ref={rotaPathRef} d="M 40 80 L 110 30 L 160 80 L 220 30 L 270 80 L 340 30" fill="none" stroke="#1e293b" strokeWidth="5" strokeLinecap="round" />
-              <path d="M 40 80 L 110 30 L 160 80 L 220 30 L 270 80 L 340 30" fill="none" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 6" strokeLinecap="round" />
-              <circle cx="40" cy="80" r="6" fill="#10b981" />
-              <circle cx="340" cy="30" r="6" fill="#f43f5e" />
-              {marcadoresParadas.map((m, idx) => (
-                <circle key={idx} cx={m.x} cy={m.y} r="5" fill="#f43f5e" stroke="#0f172a" strokeWidth="1" />
-              ))}
+
+              <g opacity={0.55}>
+                <path d="M 190 20 C 190 80, 190 140, 190 200" fill="none" stroke="#e2e8f0" strokeWidth="15" strokeLinecap="round" />
+                <path d="M 190 20 C 190 80, 190 140, 190 200" fill="none" stroke="#0f172a" strokeWidth="12" strokeLinecap="round" />
+                <path d="M 190 20 C 190 80, 190 140, 190 200" fill="none" stroke="#e2e8f0" strokeWidth="1.2" strokeDasharray="4 6" />
+              </g>
+              <g opacity={0.6}>
+                <path d="M 20 20 C 100 60, 280 160, 360 200" fill="none" stroke="#e2e8f0" strokeWidth="14" strokeLinecap="round" />
+                <path d="M 20 20 C 100 60, 280 160, 360 200" fill="none" stroke="#0f172a" strokeWidth="11" strokeLinecap="round" />
+                <path d="M 20 20 C 100 60, 280 160, 360 200" fill="none" stroke="#e2e8f0" strokeWidth="1.2" strokeDasharray="4 6" />
+              </g>
+              <g opacity={0.7}>
+                <path d="M 20 200 C 100 160, 280 60, 360 20" fill="none" stroke="#e2e8f0" strokeWidth="14" strokeLinecap="round" />
+                <path d="M 20 200 C 100 160, 280 60, 360 20" fill="none" stroke="#0f172a" strokeWidth="11" strokeLinecap="round" />
+                <path d="M 20 200 C 100 160, 280 60, 360 20" fill="none" stroke="#e2e8f0" strokeWidth="1.2" strokeDasharray="4 6" />
+              </g>
+              <g opacity={0.8}>
+                <path d="M 40 110 C 120 40, 260 40, 340 110" fill="none" stroke="#e2e8f0" strokeWidth="13" strokeLinecap="round" />
+                <path d="M 40 110 C 120 40, 260 40, 340 110" fill="none" stroke="#0f172a" strokeWidth="10" strokeLinecap="round" />
+                <path d="M 40 110 C 120 40, 260 40, 340 110" fill="none" stroke="#e2e8f0" strokeWidth="1.2" strokeDasharray="4 6" />
+              </g>
+              <g opacity={0.85}>
+                <path d="M 40 130 C 120 200, 260 200, 340 130" fill="none" stroke="#e2e8f0" strokeWidth="13" strokeLinecap="round" />
+                <path d="M 40 130 C 120 200, 260 200, 340 130" fill="none" stroke="#0f172a" strokeWidth="10" strokeLinecap="round" />
+                <path d="M 40 130 C 120 200, 260 200, 340 130" fill="none" stroke="#e2e8f0" strokeWidth="1.2" strokeDasharray="4 6" />
+              </g>
+
+              <path d="M 20 180 C 60 100, 140 60, 190 110 C 220 145, 260 160, 280 130 C 300 100, 260 80, 230 100 C 200 120, 210 160, 250 170 C 300 185, 340 150, 340 110 C 340 70, 300 40, 250 50 C 200 60, 180 30, 220 20 C 270 5, 340 30, 360 70" fill="none" stroke="#dc2626" strokeWidth="9" strokeLinecap="round" strokeDasharray="5 5" />
+              <path d="M 20 180 C 60 100, 140 60, 190 110 C 220 145, 260 160, 280 130 C 300 100, 260 80, 230 100 C 200 120, 210 160, 250 170 C 300 185, 340 150, 340 110 C 340 70, 300 40, 250 50 C 200 60, 180 30, 220 20 C 270 5, 340 30, 360 70" fill="none" stroke="#0f172a" strokeWidth="6" strokeLinecap="round" />
+              <path d="M 20 180 C 60 100, 140 60, 190 110 C 220 145, 260 160, 280 130 C 300 100, 260 80, 230 100 C 200 120, 210 160, 250 170 C 300 185, 340 150, 340 110 C 340 70, 300 40, 250 50 C 200 60, 180 30, 220 20 C 270 5, 340 30, 360 70" fill="none" stroke="#facc15" strokeWidth="1.4" strokeDasharray="4 5" />
+
+              <circle cx="20" cy="180" r="6" fill="#10b981" />
+              <circle cx="360" cy="70" r="6" fill="#f43f5e" />
+
               <g>
-                <animateMotion dur="3.5s" repeatCount="indefinite" rotate="auto">
-                  <mpath href="#rotaAnim" />
+                <animateMotion dur="7s" repeatCount="indefinite" rotate="auto">
+                  <mpath href="#rotaLongaFinal" />
                 </animateMotion>
-                <circle r="10" fill="#0f172a" stroke="#22d3ee" strokeWidth="1.2" />
-                <text x="0" y="4" textAnchor="middle" fontSize="11" transform="scale(-1,1)">🚗</text>
+                <circle r="11" fill="#0f172a" stroke="#22d3ee" strokeWidth="1.4" />
+                <text x="0" y="4.5" textAnchor="middle" fontSize="13" transform="scale(-1,1)">🚗</text>
               </g>
             </svg>
           </div>
