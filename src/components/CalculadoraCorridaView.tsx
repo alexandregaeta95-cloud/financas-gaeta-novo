@@ -112,6 +112,7 @@ interface Props {
 }
 
 export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos }) => {
+  const [veiculoSelecionado, setVeiculoSelecionado] = useState<string>(veiculos[0]?.Modelo || "");
   const [pontos, setPontos] = useState<{ coords: [number, number] | null; texto: string }[]>([
     { coords: null, texto: "" },
     { coords: null, texto: "" },
@@ -182,7 +183,10 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
 
   // Calcula Km/L médio a partir dos abastecimentos registrados
   const abastecimentos = lancamentos.filter(
-    (l) => (l.Categoria === "ABASTECIMENTO" || l.Tipo === "ABASTECIMENTO") && Number((l as any).Media_KmL) > 0
+    (l) =>
+      (l.Categoria === "ABASTECIMENTO" || l.Tipo === "ABASTECIMENTO") &&
+      Number((l as any).Media_KmL) > 0 &&
+      (veiculos.length <= 1 || (l as any).Veiculo === veiculoSelecionado)
   );
   const mediaKmL =
     abastecimentos.length > 0
@@ -270,6 +274,22 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+        {veiculos.length > 1 && (
+          <div>
+            <label className="text-slate-400 block mb-1 text-xs">Veículo</label>
+            <select
+              value={veiculoSelecionado}
+              onChange={(e) => setVeiculoSelecionado(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+            >
+              {veiculos.map((v) => (
+                <option key={v.Modelo} value={v.Modelo}>
+                  {v.Modelo}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="space-y-3">
           {pontos.map((ponto, idx) => {
             const isOrigem = idx === 0;
