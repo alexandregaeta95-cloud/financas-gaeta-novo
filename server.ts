@@ -252,42 +252,46 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
     }
   });
 
-  // Sugestões de endereço (autocomplete) via OpenRouteService
+  // Sugestões de endereço (autocomplete) via Nominatim (OpenStreetMap)
   app.get("/api/endereco-sugestoes", async (req, res) => {
     try {
       const texto = String(req.query.texto || "");
-      if (texto.length < 3) return res.json({ sugestoes: [] });
+      if (texto.length < 4) return res.json({ sugestoes: [] });
 
-      const orsKey = process.env.ORS_API_KEY;
-      if (!orsKey) return res.status(500).json({ error: "Chave do OpenRouteService não configurada." });
-
-      let url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${orsKey}&text=${encodeURIComponent(texto)}&boundary.country=BR&size=6`;
       const lat = req.query.lat;
       const lng = req.query.lng;
+
+      let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(texto)}&format=json&countrycodes=br&limit=6&addressdetails=0`;
+
       if (lat && lng) {
-        // Limita de verdade a resultados num raio de 60km da localização do usuário
-        url += `&boundary.circle.lat=${lat}&boundary.circle.lon=${lng}&boundary.circle.radius=60`;
-        // Mantém também a preferência de ordenação por proximidade
-        url += `&focus.point.lat=${lat}&focus.point.lon=${lng}`;
+        const latNum = Number(lat);
+        const lngNum = Number(lng);
+        const delta = 0.5; // aproximadamente 55km de raio
+        const viewbox = `${lngNum - delta},${latNum + delta},${lngNum + delta},${latNum - delta}`;
+        url += `&viewbox=${viewbox}&bounded=1`;
       }
 
-      const resp = await fetch(url);
+      const resp = await fetch(url, {
+        headers: {
+          "User-Agent": "DizAi-App/1.0 (sistema pessoal de gestao financeira e corridas)",
+        },
+      });
       const data: any = await resp.json();
 
-      const sugestoes = (data?.features || []).map((f: any) => ({
-        label: f.properties?.label || "",
-        lat: f.geometry?.coordinates?.[1],
-        lng: f.geometry?.coordinates?.[0],
+      const sugestoes = (Array.isArray(data) ? data : []).map((item: any) => ({
+        label: item.display_name || "",
+        lat: parseFloat(item.lat),
+        lng: parseFloat(item.lon),
       }));
 
-      res.json({ sugestoes, debug: { url: url.replace(orsKey, "***"), totalRecebido: data?.features?.length ?? 0, respostaCrua: data } });
+      res.json({ sugestoes });
     } catch (err: any) {
       console.error("Erro nas sugestões de endereço:", err);
       res.status(500).json({ error: err?.message || "Erro ao buscar sugestões." });
     }
   });
 
-  // Calcula rota (distância + tempo) entre múltiplos pontos via OpenRouteService
+  // Calcula rota (distância + tempo) entre múltiplos pontos via OSRM
   app.post("/api/rota", async (req, res) => {
     try {
       const { pontos } = req.body;
@@ -295,37 +299,28 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
         return res.status(400).json({ error: "É necessário pelo menos origem e destino." });
       }
 
-      const orsKey = process.env.ORS_API_KEY;
-      if (!orsKey) {
-        return res.status(500).json({ error: "Chave do OpenRouteService não configurada no servidor." });
-      }
-
-      const coordenadas: [number, number][] = (pontos.map((p: any) =>
-        Array.isArray(p) ? (p as [number, number]) : null
-      ).filter(Boolean) as [number, number][]);
+      const coordenadas = pontos
+        .map((p: any) => (Array.isArray(p) ? p : null))
+        .filter(Boolean);
 
       if (coordenadas.length < 2) {
         return res.status(400).json({ error: "Coordenadas inválidas." });
       }
 
-      const dirResp = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", {
-        method: "POST",
-        headers: {
-          Authorization: orsKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ coordinates: coordenadas }),
-      });
-      const dirData: any = await dirResp.json();
+      const coordsStr = coordenadas.map((c: [number, number]) => `${c[0]},${c[1]}`).join(";");
+      const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=false`;
 
-      const summary = dirData?.routes?.[0]?.summary;
-      if (!summary) {
-        return res.status(502).json({ error: "Não foi possível calcular a rota.", detalhe: dirData });
+      const resp = await fetch(url);
+      const data: any = await resp.json();
+
+      const rota = data?.routes?.[0];
+      if (!rota) {
+        return res.status(502).json({ error: "Não foi possível calcular a rota.", detalhe: data });
       }
 
       res.json({
-        distanciaKm: Number((summary.distance / 1000).toFixed(2)),
-        duracaoMinutos: Math.round(summary.duration / 60),
+        distanciaKm: Number((rota.distance / 1000).toFixed(2)),
+        duracaoMinutos: Math.round(rota.duration / 60),
       });
     } catch (err: any) {
       console.error("Erro ao calcular rota:", err);
