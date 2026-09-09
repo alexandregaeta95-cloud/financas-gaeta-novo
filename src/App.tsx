@@ -56,6 +56,7 @@ import {
   LembreteSaudeConfig,
   LembreteFinancasConfig,
   LembreteRemedio,
+  HistoricoCorrida,
   ExercicioRegistro,
   ConsumoCafe,
   ConsumoAgua,
@@ -405,6 +406,9 @@ export default function App() {
     if (cached && cached.length > 0) return cached;
     return [];
   });
+  const [historicoCorridas, setHistoricoCorridas] = useState<HistoricoCorrida[]>(() =>
+    getCachedSheetData<HistoricoCorrida>(SHEET_NAMES.HISTORICO_CORRIDAS)
+  );
   const [metas, setMetas] = useState<MetaCategoria[]>(() =>
     getCachedSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
   );
@@ -715,6 +719,9 @@ export default function App() {
         .catch(() => {});
       fetchSheetData<CategoriaCustomizada>(SHEET_NAMES.CATEGORIAS_CUSTOMIZADAS)
         .then((data) => data && setCategoriasCustom(data))
+        .catch(() => {});
+      fetchSheetData<HistoricoCorrida>(SHEET_NAMES.HISTORICO_CORRIDAS)
+        .then((data) => data && setHistoricoCorridas(data))
         .catch(() => {});
 
       setSyncState({
@@ -1157,7 +1164,12 @@ export default function App() {
         )}
 
         {activeView === "calculadora_corrida" && (
-          <CalculadoraCorridaView veiculos={veiculos} lancamentos={lancamentos} />
+          <CalculadoraCorridaView
+            veiculos={veiculos}
+            lancamentos={lancamentos}
+            historicoCorridas={historicoCorridas}
+            onSaveCorrida={(c) => handleSaveGeneric(SHEET_NAMES.HISTORICO_CORRIDAS, c, setHistoricoCorridas)}
+          />
         )}
 
         {activeView === "painel_contas" && (

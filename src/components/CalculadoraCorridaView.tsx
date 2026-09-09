@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { MapPin, Loader2, Fuel, Clock, Route as RouteIcon, DollarSign } from "lucide-react";
-import { Veiculo, Lancamento } from "../types";
+import { Veiculo, Lancamento, HistoricoCorrida } from "../types";
 import { formatCurrency } from "../utils/formatters";
 
 function EnderecoAutocomplete({
@@ -100,9 +100,16 @@ function EnderecoAutocomplete({
 interface Props {
   veiculos: Veiculo[];
   lancamentos: Lancamento[];
+  historicoCorridas?: HistoricoCorrida[];
+  onSaveCorrida?: (corrida: HistoricoCorrida) => Promise<void>;
 }
 
-export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos }) => {
+export const CalculadoraCorridaView: React.FC<Props> = ({
+  veiculos,
+  lancamentos,
+  historicoCorridas = [],
+  onSaveCorrida,
+}) => {
   const [veiculoSelecionado, setVeiculoSelecionado] = useState<string>(veiculos[0]?.Modelo || "");
   const [pontos, setPontos] = useState<{ coords: [number, number] | null; texto: string }[]>([
     { coords: null, texto: "" },
@@ -217,6 +224,34 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
     } finally {
       setLoading(false);
     }
+  };
+
+  const [salvo, setSalvo] = useState(false);
+
+  const handleSalvarCorrida = () => {
+    if (!resultado || !onSaveCorrida) return;
+    const paradasTexto = pontos
+      .slice(1, -1)
+      .map((p) => p.texto)
+      .filter(Boolean)
+      .join(" → ");
+
+    onSaveCorrida({
+      Id: `CORRIDA_${Date.now()}`,
+      Data: new Date().toISOString().split("T")[0],
+      Origem: pontos[0]?.texto || "",
+      Destino: pontos[pontos.length - 1]?.texto || "",
+      Paradas: paradasTexto,
+      DistanciaKm: resultado.distanciaKm,
+      DuracaoMinutos: resultado.duracaoMinutos,
+      TempoEsperaMinutos: Math.round(segundosEsperaAcumulados / 60),
+      CustoCombustivel: Number(custoCombustivel.toFixed(2)),
+      ValorKm: Number(valorKmTotal.toFixed(2)),
+      ValorTempo: Number(valorTempoTotal.toFixed(2)),
+      ValorTotal: Number(totalSugerido.toFixed(2)),
+    });
+    setSalvo(true);
+    setTimeout(() => setSalvo(false), 3000);
   };
 
   const iniciarEspera = () => {
@@ -479,6 +514,30 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
             <span className="text-sm font-bold text-white flex items-center gap-1.5"><DollarSign className="w-4 h-4 text-emerald-400" /> Valor Sugerido</span>
             <span className="text-2xl font-extrabold text-emerald-400">R$ {formatCurrency(totalSugerido)}</span>
           </div>
+
+          <button
+            type="button"
+            onClick={handleSalvarCorrida}
+            disabled={salvo}
+            className="w-full mt-2 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-60 text-white font-semibold rounded-xl p-2.5 text-xs transition-colors"
+          >
+            {salvo ? "✓ Corrida Salva!" : "💾 Salvar Corrida no Histórico"}
+          </button>
+        </div>
+      )}
+
+      {historicoCorridas.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-bold text-white">Histórico de Corridas</h3>
+          {[...historicoCorridas].reverse().slice(0, 10).map((c) => (
+            <div key={c.Id} className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex justify-between items-center text-xs">
+              <div className="min-w-0">
+                <p className="text-white font-semibold truncate">{c.Origem} → {c.Destino}</p>
+                <p className="text-slate-400">{c.Data} · {c.DistanciaKm}km · {c.DuracaoMinutos}min</p>
+              </div>
+              <span className="text-emerald-400 font-bold shrink-0 ml-2">R$ {formatCurrency(c.ValorTotal)}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>

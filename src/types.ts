@@ -368,7 +368,24 @@ export const SHEET_NAMES = {
   CONSUMO_AGUA: "25_Consumo_Agua",
   CONFIG_LEMBRETES_FINANCAS: "26_Config_Lembretes_Financas",
   LEMBRETES_REMEDIOS: "27_Lembretes_Remedios",
+  HISTORICO_CORRIDAS: "28_Historico_Corridas",
 } as const;
+
+export interface HistoricoCorrida {
+  Id: string;
+  Data: string;
+  Origem: string;
+  Destino: string;
+  Paradas?: string;
+  DistanciaKm: number;
+  DuracaoMinutos: number;
+  TempoEsperaMinutos?: number;
+  CustoCombustivel: number;
+  ValorKm: number;
+  ValorTempo: number;
+  ValorTotal: number;
+  Observacoes?: string;
+}
 
 export interface RegistroSaude {
   Id: string;

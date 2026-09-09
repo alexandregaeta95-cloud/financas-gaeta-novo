@@ -44,7 +44,8 @@ var SHEET_NAMES = [
   "24_Consumo_Cafe",
   "25_Consumo_Agua",
   "26_Config_Lembretes_Financas",
-  "27_Lembretes_Remedios"
+  "27_Lembretes_Remedios",
+  "28_Historico_Corridas"
 ];
 
 // Mapeamento de cabeçalhos por aba
@@ -99,7 +100,8 @@ var HEADERS_BY_SHEET = {
   "24_Consumo_Cafe": ["Id", "Data", "Hora", "Quantidade", "Calorias", "Proteinas", "Carboidratos", "Gorduras", "Observacoes", "Data_Criacao", "Status"],
   "25_Consumo_Agua": ["Id", "Data", "Hora", "Quantidade_Ml", "Meta_Diaria_Ml", "Tamanho_Copo_Ml", "Observacoes", "Data_Criacao", "Status"],
   "26_Config_Lembretes_Financas": ["Id", "Tipo", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Dias_Semana", "Som_Alarme", "Ultima_Atualizacao"],
-  "27_Lembretes_Remedios": ["Id", "Nome", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Som_Alarme", "Instrucoes", "Data_Cadastro"]
+  "27_Lembretes_Remedios": ["Id", "Nome", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Som_Alarme", "Instrucoes", "Data_Cadastro"],
+  "28_Historico_Corridas": ["Id", "Data", "Origem", "Destino", "Paradas", "DistanciaKm", "DuracaoMinutos", "TempoEsperaMinutos", "CustoCombustivel", "ValorKm", "ValorTempo", "ValorTotal", "Observacoes"]
 };
 
 /**
