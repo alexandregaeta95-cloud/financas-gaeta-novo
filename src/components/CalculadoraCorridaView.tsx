@@ -365,12 +365,12 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
           <div className="bg-slate-950 rounded-xl overflow-hidden py-2">
             <svg width="100%" viewBox="0 0 380 100" style={{ display: "block" }}>
               <defs>
-                <path id="rotaAnim" d="M 40 75 Q 130 25 190 55 T 340 25" fill="none" />
+                <path id="rotaAnim" d="M 40 80 L 110 30 L 160 80 L 220 30 L 270 80 L 340 30" fill="none" />
               </defs>
-              <path ref={rotaPathRef} d="M 40 75 Q 130 25 190 55 T 340 25" fill="none" stroke="#1e293b" strokeWidth="5" strokeLinecap="round" />
-              <path d="M 40 75 Q 130 25 190 55 T 340 25" fill="none" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 6" strokeLinecap="round" />
-              <circle cx="40" cy="75" r="6" fill="#10b981" />
-              <circle cx="340" cy="25" r="6" fill="#f43f5e" />
+              <path ref={rotaPathRef} d="M 40 80 L 110 30 L 160 80 L 220 30 L 270 80 L 340 30" fill="none" stroke="#1e293b" strokeWidth="5" strokeLinecap="round" />
+              <path d="M 40 80 L 110 30 L 160 80 L 220 30 L 270 80 L 340 30" fill="none" stroke="#475569" strokeWidth="1.5" strokeDasharray="6 6" strokeLinecap="round" />
+              <circle cx="40" cy="80" r="6" fill="#10b981" />
+              <circle cx="340" cy="30" r="6" fill="#f43f5e" />
               {marcadoresParadas.map((m, idx) => (
                 <circle key={idx} cx={m.x} cy={m.y} r="5" fill="#f43f5e" stroke="#0f172a" strokeWidth="1" />
               ))}
@@ -379,7 +379,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
                   <mpath href="#rotaAnim" />
                 </animateMotion>
                 <circle r="10" fill="#0f172a" stroke="#22d3ee" strokeWidth="1.2" />
-                <text x="0" y="4" textAnchor="middle" fontSize="11">🚗</text>
+                <text x="0" y="4" textAnchor="middle" fontSize="11" transform="scale(-1,1)">🚗</text>
               </g>
             </svg>
           </div>
