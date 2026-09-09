@@ -284,15 +284,7 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
         lng: parseFloat(item.lon),
       }));
 
-      res.json({
-        sugestoes,
-        debug: {
-          url,
-          status: resp.status,
-          totalRecebido: Array.isArray(data) ? data.length : 0,
-          respostaCrua: data,
-        },
-      });
+      res.json({ sugestoes });
     } catch (err: any) {
       console.error("Erro nas sugestões de endereço:", err);
       res.status(500).json({ error: err?.message || "Erro ao buscar sugestões." });

@@ -16,7 +16,6 @@ function EnderecoAutocomplete({
   const [sugestoes, setSugestoes] = useState<{ label: string; lat: number; lng: number }[]>([]);
   const [mostrando, setMostrando] = useState(false);
   const [buscando, setBuscando] = useState(false);
-  const [ultimoDebug, setUltimoDebug] = useState<any>(null);
   const debounceRef = React.useRef<any>(null);
 
   const buscarSugestoes = (valor: string) => {
@@ -37,7 +36,6 @@ function EnderecoAutocomplete({
               const resp = await fetch(`${url}&lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
               const data = await resp.json();
               setSugestoes(data.sugestoes || []);
-              setUltimoDebug(data.debug);
               setMostrando(true);
               setBuscando(false);
             },
@@ -45,7 +43,6 @@ function EnderecoAutocomplete({
               const resp = await fetch(url);
               const data = await resp.json();
               setSugestoes(data.sugestoes || []);
-              setUltimoDebug(data.debug);
               setMostrando(true);
               setBuscando(false);
             }
@@ -54,7 +51,6 @@ function EnderecoAutocomplete({
           const resp = await fetch(url);
           const data = await resp.json();
           setSugestoes(data.sugestoes || []);
-          setUltimoDebug(data.debug);
           setMostrando(true);
           setBuscando(false);
         }
@@ -77,11 +73,6 @@ function EnderecoAutocomplete({
       />
       {buscando && (
         <span className="absolute right-3 top-9 text-slate-500 text-xs">buscando...</span>
-      )}
-      {ultimoDebug && (
-        <div className="mt-1 text-[10px] text-amber-400 bg-slate-950 border border-amber-500/20 rounded p-2 break-all">
-          DEBUG: {JSON.stringify(ultimoDebug)}
-        </div>
       )}
       {mostrando && sugestoes.length > 0 && (
         <div className="absolute z-20 mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-xl max-h-56 overflow-y-auto">
@@ -134,6 +125,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
   };
 
   const atualizarPonto = (index: number, coords: [number, number] | null, texto: string) => {
+    setErro(null);
     setPontos((prev) => {
       const novo = [...prev];
       novo[index] = { coords, texto };
@@ -198,13 +190,13 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
   const precoLitroAtual = Number(ultimoPrecoLitro?.Preco_Litro) || 6.0;
 
   const handleCalcular = async () => {
+    setErro(null);
     const coordenadasValidas = pontos.every((p) => p.coords !== null);
     if (!coordenadasValidas) {
       setErro("Selecione todos os endereços a partir das sugestões da lista.");
       return;
     }
     setLoading(true);
-    setErro(null);
     setResultado(null);
     try {
       const resp = await fetch("/api/rota", {
@@ -217,6 +209,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
         const detalheTexto = data.detalhe ? ` | Detalhe: ${JSON.stringify(data.detalhe)}` : "";
         throw new Error((data.error || "Erro ao calcular rota.") + detalheTexto);
       }
+      setErro(null);
       setResultado(data);
     } catch (err: any) {
       console.error("Erro detalhado:", err);
@@ -362,7 +355,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({ veiculos, lancamentos 
           <span>{loading ? "Calculando..." : "Calcular Corrida"}</span>
         </button>
 
-        {erro && (
+        {Boolean(erro) && (
           <div className="bg-rose-950/40 border border-rose-500/30 rounded-xl p-3 text-rose-300 text-xs">
             {erro}
           </div>
