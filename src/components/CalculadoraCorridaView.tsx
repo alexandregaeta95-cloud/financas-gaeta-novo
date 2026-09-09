@@ -227,6 +227,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
   };
 
   const [salvo, setSalvo] = useState(false);
+  const [observacoesCorrida, setObservacoesCorrida] = useState("");
 
   const handleSalvarCorrida = () => {
     if (!resultado || !onSaveCorrida) return;
@@ -249,8 +250,10 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
       ValorKm: Number(valorKmTotal.toFixed(2)),
       ValorTempo: Number(valorTempoTotal.toFixed(2)),
       ValorTotal: Number(totalSugerido.toFixed(2)),
+      Observacoes: observacoesCorrida || "",
     });
     setSalvo(true);
+    setObservacoesCorrida("");
     setTimeout(() => setSalvo(false), 3000);
   };
 
@@ -513,6 +516,17 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
           <div className="flex justify-between items-center pt-3 border-t border-slate-700">
             <span className="text-sm font-bold text-white flex items-center gap-1.5"><DollarSign className="w-4 h-4 text-emerald-400" /> Valor Sugerido</span>
             <span className="text-2xl font-extrabold text-emerald-400">R$ {formatCurrency(totalSugerido)}</span>
+          </div>
+
+          <div>
+            <label className="text-slate-400 block mb-1 text-xs">Observações (opcional)</label>
+            <textarea
+              value={observacoesCorrida}
+              onChange={(e) => setObservacoesCorrida(e.target.value)}
+              placeholder="Ex: Cliente pediu para esperar 10min no mercado..."
+              rows={2}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs resize-none"
+            />
           </div>
 
           <button
