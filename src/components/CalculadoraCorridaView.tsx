@@ -117,11 +117,6 @@ function EnderecoAutocomplete({
           ))}
         </div>
       )}
-      {ultimoDebug && (
-        <div className="mt-1 text-[10px] text-amber-400 bg-slate-950 border border-amber-500/20 rounded p-2 break-all">
-          DEBUG: {JSON.stringify(ultimoDebug)}
-        </div>
-      )}
     </div>
   );
 }
