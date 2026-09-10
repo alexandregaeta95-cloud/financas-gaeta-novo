@@ -235,9 +235,11 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
   const [observacoesCorrida, setObservacoesCorrida] = useState("");
   const [passageiro, setPassageiro] = useState("");
   const [cpfPassageiro, setCpfPassageiro] = useState("");
+  const [mostrarCpfMotorista, setMostrarCpfMotorista] = useState(false);
 
   const handleSalvarCorrida = () => {
     if (!resultado || !onSaveCorrida) return;
+    const veiculoAtual = veiculos.find((v) => v.Modelo === veiculoSelecionado) || veiculos[0];
     const paradasTexto = pontos
       .slice(1, -1)
       .map((p) => p.texto)
@@ -258,24 +260,61 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
       ValorTempo: Number(valorTempoTotal.toFixed(2)),
       ValorTotal: Number(totalSugerido.toFixed(2)),
       Observacoes: observacoesCorrida || "",
+      Veiculo: veiculoAtual?.Modelo || "",
+      Placa: veiculoAtual?.Placa || "",
+      Motorista: veiculoAtual?.Motorista || "",
+      Passageiro: passageiro || "",
+      CpfPassageiro: cpfPassageiro || "",
     });
     setSalvo(true);
     setObservacoesCorrida("");
     setTimeout(() => setSalvo(false), 3000);
   };
 
+  const handleRefazerCorrida = (corrida: HistoricoCorrida) => {
+    if (!onSaveCorrida) return;
+    onSaveCorrida({
+      ...corrida,
+      Id: `CORRIDA_${Date.now()}`,
+      Data: new Date().toISOString().split("T")[0],
+    });
+  };
+
+  const handleReimprimirRecibo = (corrida: HistoricoCorrida) => {
+    const veiculoDaCorrida = veiculos.find((v) => v.Modelo === corrida.Veiculo);
+    const motoristaDaCorrida = motoristas.find((m) => m.Nome === corrida.Motorista);
+    exportReciboCorridaPDF({
+      motorista: corrida.Motorista || "Motorista",
+      celularMotorista: motoristaDaCorrida?.Celular,
+      cpfMotorista: mostrarCpfMotorista ? motoristaDaCorrida?.CPF : undefined,
+      veiculo: corrida.Veiculo || "Veículo",
+      placa: corrida.Placa,
+      passageiro: corrida.Passageiro || undefined,
+      cpfPassageiro: corrida.CpfPassageiro || undefined,
+      origem: corrida.Origem,
+      paradas: corrida.Paradas ? corrida.Paradas.split(" → ").filter(Boolean) : [],
+      destino: corrida.Destino,
+      data: new Date(corrida.Data + "T00:00:00").toLocaleDateString("pt-BR"),
+      hora: "—",
+      distanciaKm: corrida.DistanciaKm,
+      duracaoMinutos: corrida.DuracaoMinutos,
+      tempoEsperaMinutos: corrida.TempoEsperaMinutos,
+      valorTotal: corrida.ValorTotal,
+      observacoes: corrida.Observacoes,
+    });
+  };
+
   const handleGerarRecibo = () => {
     if (!resultado) return;
     const now = new Date();
     const veiculoAtual = veiculos.find((v) => v.Modelo === veiculoSelecionado) || veiculos[0];
-    const motoristaCadastrado = motoristas?.find(
+    const motoristaAtual = motoristas?.find(
       (m) => m.Nome?.trim().toUpperCase() === veiculoAtual?.Motorista?.trim().toUpperCase()
     );
     exportReciboCorridaPDF({
-      motorista: motoristaCadastrado?.Nome || veiculoAtual?.Motorista || "Motorista",
-      celularMotorista: motoristaCadastrado?.Celular || "",
-      cpfMotorista: motoristaCadastrado?.CPF || "",
-      cnhMotorista: motoristaCadastrado?.CNH || "",
+      motorista: motoristaAtual?.Nome || veiculoAtual?.Motorista || "Motorista",
+      celularMotorista: motoristaAtual?.Celular || "",
+      cpfMotorista: mostrarCpfMotorista ? motoristaAtual?.CPF : undefined,
       passageiro: passageiro || undefined,
       cpfPassageiro: cpfPassageiro || undefined,
       veiculo: veiculoAtual?.Modelo || "Veículo",
@@ -581,6 +620,16 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
             </div>
           </div>
 
+          <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={mostrarCpfMotorista}
+              onChange={(e) => setMostrarCpfMotorista(e.target.checked)}
+              className="w-4 h-4 rounded accent-emerald-500"
+            />
+            Mostrar meu CPF no recibo
+          </label>
+
           <div>
             <label className="text-slate-400 block mb-1 text-xs">Observações (opcional)</label>
             <textarea
@@ -616,12 +665,28 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
         <div className="space-y-2">
           <h3 className="text-sm font-bold text-white">Histórico de Corridas</h3>
           {[...historicoCorridas].reverse().slice(0, 10).map((c) => (
-            <div key={c.Id} className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex justify-between items-center text-xs">
-              <div className="min-w-0">
-                <p className="text-white font-semibold truncate">{c.Origem} → {c.Destino}</p>
-                <p className="text-slate-400">{c.Data} · {c.DistanciaKm}km · {c.DuracaoMinutos}min</p>
+            <div key={c.Id} className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs">
+              <div className="flex justify-between items-center">
+                <div className="min-w-0">
+                  <p className="text-white font-semibold truncate">{c.Origem} → {c.Destino}</p>
+                  <p className="text-slate-400">{c.Data} · {c.DistanciaKm}km · {c.DuracaoMinutos}min</p>
+                </div>
+                <span className="text-emerald-400 font-bold shrink-0 ml-2">R$ {formatCurrency(c.ValorTotal)}</span>
               </div>
-              <span className="text-emerald-400 font-bold shrink-0 ml-2">R$ {formatCurrency(c.ValorTotal)}</span>
+              <div className="flex gap-1.5 mt-2">
+                <button
+                  onClick={() => handleRefazerCorrida(c)}
+                  className="flex-1 flex items-center justify-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg py-1.5 text-[10px] font-semibold"
+                >
+                  🔁 Refazer
+                </button>
+                <button
+                  onClick={() => handleReimprimirRecibo(c)}
+                  className="flex-1 flex items-center justify-center gap-1 bg-emerald-800 hover:bg-emerald-700 text-white rounded-lg py-1.5 text-[10px] font-semibold"
+                >
+                  🧾 Reimprimir
+                </button>
+              </div>
             </div>
           ))}
         </div>

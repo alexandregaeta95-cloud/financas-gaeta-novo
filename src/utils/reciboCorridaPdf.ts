@@ -70,11 +70,11 @@ export function exportReciboCorridaPDF(dados: DadosReciboCorrida): boolean {
     doc.setFontSize(10);
     doc.setTextColor(15, 23, 42);
     doc.text(dados.motorista || "Não informado", col1, y + 13);
-    if (dados.celularMotorista) {
+    if (dados.cpfMotorista) {
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
+      doc.setFontSize(7.5);
       doc.setTextColor(100, 116, 139);
-      doc.text(dados.celularMotorista, col1, y + 19);
+      doc.text(`CPF: ${dados.cpfMotorista}`, col1, y + 19);
     }
 
     doc.setFont("helvetica", "bold");

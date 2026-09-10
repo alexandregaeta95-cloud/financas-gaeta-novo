@@ -408,6 +408,11 @@ export interface HistoricoCorrida {
   ValorTempo: number;
   ValorTotal: number;
   Observacoes?: string;
+  Veiculo?: string;
+  Placa?: string;
+  Motorista?: string;
+  Passageiro?: string;
+  CpfPassageiro?: string;
 }
 
 export interface RegistroSaude {
