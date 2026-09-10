@@ -23,6 +23,7 @@ import {
   AudioLines,
   Settings,
   Route,
+  StickyNote,
 } from "lucide-react";
 import { useAlarmSound } from "../hooks/useAlarmSound";
 
@@ -40,6 +41,7 @@ export type ModuleView =
   | "metas"
   | "saude"
   | "agenda"
+  | "bloco_notas"
   | "zonas_risco"
   | "lista_mercado"
   | "calculadora_corrida"
@@ -79,6 +81,7 @@ export const Navigation: React.FC<Props> = ({
     { id: "metas", label: "Metas", icon: Target },
     { id: "saude", label: "Saúde", icon: HeartPulse },
     { id: "agenda", label: "Agenda", icon: CalendarDays },
+    { id: "bloco_notas", label: "Notas", icon: StickyNote },
     { id: "zonas_risco", label: "Zonas Risco", icon: ShieldAlert },
     { id: "lista_mercado", label: "Mercado", icon: ShoppingBag },
     { id: "configuracoes", label: "Configurações", icon: Settings },

@@ -369,7 +369,20 @@ export const SHEET_NAMES = {
   CONFIG_LEMBRETES_FINANCAS: "26_Config_Lembretes_Financas",
   LEMBRETES_REMEDIOS: "27_Lembretes_Remedios",
   HISTORICO_CORRIDAS: "28_Historico_Corridas",
+  BLOCO_NOTAS: "29_Bloco_Notas",
 } as const;
+
+export interface AnotacaoBloco {
+  Id: string;
+  Titulo: string;
+  Texto: string;
+  Data_Criacao: string;
+  Hora_Criacao: string;
+  Data_Alarme?: string;
+  Hora_Alarme?: string;
+  Alarme_Ativo?: "SIM" | "NÃO";
+  Concluido?: "SIM" | "NÃO";
+}
 
 export interface HistoricoCorrida {
   Id: string;
@@ -422,10 +435,10 @@ export interface ApiResponse<T = any> {
 // 20. Sistema de Notificações do Aplicativo
 export interface AppNotification {
   id: string;
-  type: "agenda" | "saude" | "veiculos" | "financas" | "mercado";
+  type: "agenda" | "saude" | "veiculos" | "financas" | "mercado" | "bloco_notas";
   title: string;
   message: string;
-  targetView: "agenda" | "saude" | "veiculos" | "lancamentos" | "painel_contas" | "lista_mercado" | "contas";
+  targetView: "agenda" | "saude" | "veiculos" | "lancamentos" | "painel_contas" | "lista_mercado" | "contas" | "bloco_notas";
   severity: "info" | "warning" | "urgent";
   timestamp: number;
   read?: boolean;

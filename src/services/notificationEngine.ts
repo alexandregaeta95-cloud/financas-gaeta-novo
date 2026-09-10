@@ -15,6 +15,7 @@ import {
   LembreteRemedio,
   RegistroSaude,
   MetaCategoria,
+  AnotacaoBloco,
 } from "../types";
 import { formatCurrency, formatarHora, getLancamentoValorReal } from "../utils/formatters";
 import { calcularAlertasFinanceiros, getIntervalosPeriodos } from "../utils/financeAlertEngine";
@@ -177,6 +178,7 @@ export function evaluateAllNotifications({
   registrosSaude = [],
   lembretesFinancas = [],
   lembretesRemedios = [],
+  blocoNotas = [],
 }: {
   agenda?: CompromissoAgenda[];
   consultas?: ConsultaMedica[];
@@ -193,6 +195,7 @@ export function evaluateAllNotifications({
   registrosSaude?: RegistroSaude[];
   lembretesFinancas?: LembreteFinancasConfig[];
   lembretesRemedios?: LembreteRemedio[];
+  blocoNotas?: AnotacaoBloco[];
 }): AppNotification[] {
   const list: AppNotification[] = [];
   const now = Date.now();
@@ -236,6 +239,28 @@ export function evaluateAllNotifications({
         message: `${item.Titulo} previsto para ${item.Data} ainda não foi marcado como concluído.`,
         targetView: "agenda",
         severity: "warning",
+        timestamp: now,
+      });
+    }
+  });
+
+  // X. BLOCO DE NOTAS COM ALARME
+  blocoNotas.forEach((item: any) => {
+    const isDone = item.Concluido === "SIM";
+    const temAlarme = item.Alarme_Ativo === "SIM";
+    if (isDone || !temAlarme || !item.Data_Alarme) return;
+
+    const diff = getDiffInDaysFromToday(item.Data_Alarme);
+    if (diff === null) return;
+
+    if (diff === 0) {
+      list.push({
+        id: `nota_${item.Id}_hoje`,
+        type: "bloco_notas",
+        title: "📝 Lembrete de Anotação!",
+        message: `${item.Titulo}${item.Hora_Alarme ? ` às ${item.Hora_Alarme}` : ""}`,
+        targetView: "bloco_notas",
+        severity: "urgent",
         timestamp: now,
       });
     }

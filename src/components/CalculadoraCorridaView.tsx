@@ -265,7 +265,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
     const now = new Date();
     const veiculoAtual = veiculos.find((v) => v.Modelo === veiculoSelecionado) || veiculos[0];
     exportReciboCorridaPDF({
-      motorista: perfil?.Nome || "Motorista",
+      motorista: veiculoAtual?.Motorista || "Motorista",
       veiculo: veiculoAtual?.Modelo || "Veículo",
       placa: veiculoAtual?.Placa,
       origem: pontos[0]?.texto || "",

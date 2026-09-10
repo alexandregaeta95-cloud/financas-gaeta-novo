@@ -15,6 +15,7 @@ import { ContasCartoesView } from "./components/ContasCartoesView";
 import { SaudeInfracoesView } from "./components/SaudeInfracoesView";
 import { MetasCategoriasView } from "./components/MetasCategoriasView";
 import { AgendaCompromissosView } from "./components/AgendaCompromissosView";
+import { BlocoNotasView } from "./components/BlocoNotasView";
 import { ZonasDeRiscoView } from "./components/ZonasDeRiscoView";
 import { ListaMercadoView } from "./components/ListaMercadoView";
 import { IndicacoesPostosView } from "./components/IndicacoesPostosView";
@@ -58,6 +59,7 @@ import {
   LembreteRemedio,
   HistoricoCorrida,
   ExercicioRegistro,
+  AnotacaoBloco,
   ConsumoCafe,
   ConsumoAgua,
   ConfigAgua,
@@ -409,6 +411,9 @@ export default function App() {
   const [historicoCorridas, setHistoricoCorridas] = useState<HistoricoCorrida[]>(() =>
     getCachedSheetData<HistoricoCorrida>(SHEET_NAMES.HISTORICO_CORRIDAS)
   );
+  const [anotacoes, setAnotacoes] = useState<AnotacaoBloco[]>(() =>
+    getCachedSheetData<AnotacaoBloco>(SHEET_NAMES.BLOCO_NOTAS)
+  );
   const [metas, setMetas] = useState<MetaCategoria[]>(() =>
     getCachedSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
   );
@@ -500,6 +505,7 @@ export default function App() {
       registrosSaude,
       lembretesFinancas,
       lembretesRemedios,
+      blocoNotas: anotacoes,
     });
 
     setNotifications((prev) => {
@@ -555,6 +561,7 @@ export default function App() {
     registrosSaude,
     lembretesFinancas,
     lembretesRemedios,
+    anotacoes,
   ]);
 
   // Executa verificação periódica rápida a cada 10 segundos para despertar alarmes e checar sonecas
@@ -722,6 +729,9 @@ export default function App() {
         .catch(() => {});
       fetchSheetData<HistoricoCorrida>(SHEET_NAMES.HISTORICO_CORRIDAS)
         .then((data) => data && setHistoricoCorridas(data))
+        .catch(() => {});
+      fetchSheetData<AnotacaoBloco>(SHEET_NAMES.BLOCO_NOTAS)
+        .then((data) => data && setAnotacoes(data))
         .catch(() => {});
 
       setSyncState({
@@ -1303,6 +1313,14 @@ export default function App() {
             agenda={agenda}
             onSaveCompromisso={(item) => handleSaveGeneric(SHEET_NAMES.AGENDA, item, setAgenda)}
             onDeleteCompromisso={(id) => handleDeleteGeneric(SHEET_NAMES.AGENDA, id, setAgenda)}
+          />
+        )}
+
+        {activeView === "bloco_notas" && (
+          <BlocoNotasView
+            anotacoes={anotacoes}
+            onSaveAnotacao={(a) => handleSaveGeneric(SHEET_NAMES.BLOCO_NOTAS, a, setAnotacoes)}
+            onDeleteAnotacao={(id) => handleDeleteGeneric(SHEET_NAMES.BLOCO_NOTAS, id, setAnotacoes)}
           />
         )}
 
