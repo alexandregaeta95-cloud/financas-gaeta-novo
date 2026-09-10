@@ -18,6 +18,7 @@ import {
   ShoppingCart,
   HeartPulse,
   Route,
+  CreditCard,
 } from "lucide-react";
 import { Lancamento } from "../types";
 import { ModuleView } from "./Navigation";
@@ -301,6 +302,14 @@ export const PainelContasView: React.FC<Props> = ({
           >
             <Route className="w-4 h-4 shrink-0" />
             <span className="truncate">Corrida</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("contas")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-violet-300 font-semibold rounded-xl text-xs border border-violet-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <CreditCard className="w-4 h-4 shrink-0" />
+            <span className="truncate">Bancos & Cartões</span>
           </button>
         </div>
       )}

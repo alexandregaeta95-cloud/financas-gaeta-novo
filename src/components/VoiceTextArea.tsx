@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { VoiceButton } from "./VoiceButton";
 
 export interface VoiceTextAreaProps
@@ -25,6 +25,13 @@ export const VoiceTextArea: React.FC<VoiceTextAreaProps> = ({
   ...props
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [value]);
 
   const handleTranscript = (spokenText: string) => {
     let finalSpoken = uppercase ? spokenText.toUpperCase() : spokenText;
@@ -65,7 +72,7 @@ export const VoiceTextArea: React.FC<VoiceTextAreaProps> = ({
         onChange={handleInputChange}
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full pr-9 ${uppercase ? "uppercase" : ""} ${className}`}
+        className={`w-full pr-9 overflow-hidden ${uppercase ? "uppercase" : ""} ${className}`}
         {...props}
       />
       <div className="absolute right-2 top-2 z-10">

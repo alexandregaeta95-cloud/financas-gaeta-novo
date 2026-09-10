@@ -445,7 +445,8 @@ export const AgendaCompromissosView: React.FC<Props> = ({
                   rows={2}
                   value={form.Descrição}
                   onChange={(e) => setForm({ ...form, Descrição: e.target.value.toUpperCase() })}
-                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white resize-none uppercase"
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  style={{ minHeight: "60px" }}
                   uppercase
                 />
               </div>
