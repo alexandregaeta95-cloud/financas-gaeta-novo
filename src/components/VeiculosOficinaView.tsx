@@ -218,6 +218,9 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   const [veiculoForm, setVeiculoForm] = useState<Partial<Veiculo>>({
     Descrição: "",
     Motorista: "Alexandre",
+    Celular_Motorista: "",
+    CPF_Motorista: "",
+    CNH_Motorista: "",
     Placa: "",
     Renavam: "",
     Chassi: "",
@@ -434,6 +437,9 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       setVeiculoForm({
         Descrição: "Carro de Uso Diário",
         Motorista: "Alexandre",
+        Celular_Motorista: "",
+        CPF_Motorista: "",
+        CNH_Motorista: "",
         Placa: "",
         Renavam: "",
         Chassi: "",
@@ -455,6 +461,9 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Id: editingVeiculo?.Id || generateNewId("VEIC"),
       Descrição: veiculoForm.Descrição || veiculoForm.Modelo || "Veículo",
       Motorista: veiculoForm.Motorista || "",
+      Celular_Motorista: veiculoForm.Celular_Motorista || "",
+      CPF_Motorista: veiculoForm.CPF_Motorista || "",
+      CNH_Motorista: veiculoForm.CNH_Motorista || "",
       Placa: veiculoForm.Placa || "GAE-2026",
       Renavam: veiculoForm.Renavam || "",
       Chassi: veiculoForm.Chassi || "",
@@ -1757,6 +1766,47 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     <option value="Diesel">Diesel</option>
                     <option value="Elétrico">Elétrico</option>
                   </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Celular do Motorista</label>
+                  <VoiceInput
+                    type="text"
+                    placeholder="(99) 99999-9999"
+                    value={veiculoForm.Celular_Motorista || ""}
+                    onChange={(e) => {
+                      const nums = e.target.value.replace(/\D/g, "").slice(0, 11);
+                      const formatted = nums.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+                      setVeiculoForm({ ...veiculoForm, Celular_Motorista: formatted });
+                    }}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">CPF do Motorista</label>
+                  <VoiceInput
+                    type="text"
+                    placeholder="000.000.000-00"
+                    value={veiculoForm.CPF_Motorista || ""}
+                    onChange={(e) => {
+                      const nums = e.target.value.replace(/\D/g, "").slice(0, 11);
+                      const formatted = nums.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+                      setVeiculoForm({ ...veiculoForm, CPF_Motorista: formatted });
+                    }}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">CNH do Motorista</label>
+                  <VoiceInput
+                    type="text"
+                    placeholder="Número da CNH"
+                    value={veiculoForm.CNH_Motorista || ""}
+                    onChange={(e) => setVeiculoForm({ ...veiculoForm, CNH_Motorista: e.target.value })}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
                 </div>
               </div>
 

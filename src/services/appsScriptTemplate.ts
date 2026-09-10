@@ -83,7 +83,7 @@ var HEADERS_BY_SHEET = {
   "6_Consultas_Médicas": ["Id", "Especialidade", "Médico", "Data", "Horas", "Local", "Lembrete_Ativo", "Status", "Observação"],
   "7_Receitas_Médicas": ["Id", "Medicamento", "Dosagem", "Frequência", "Médico", "Data_Emissão", "Data_Validade", "Data_Vencimento", "Instruções", "Especialidade", "Observação", "Arquivo_Anexo", "Ativa"],
   "8_Infracoes": ["Id", "Protocolo", "Título", "Veículo", "Placa", "Data", "Descrição", "Valor", "Pontos", "Status", "Localização", "Observação"],
-  "9_Veiculos": ["Id", "Descrição", "Motorista", "Placa", "Renavam", "Chassi", "Marca", "Modelo", "Ano", "Ano_Fabricação", "Combustível", "KM_Atual", "Ativo"],
+  "9_Veiculos": ["Id", "Descrição", "Motorista", "Placa", "Renavam", "Chassi", "Marca", "Modelo", "Ano", "Ano_Fabricação", "Combustível", "KM_Atual", "Ativo", "Celular_Motorista", "CPF_Motorista", "CNH_Motorista"],
   "10_Metas_De_Categoria": ["Id", "Categoria", "Valor_Meta", "Mes_Ano", "Alerta_Porcentagem", "Status"],
   "11_Categorias_Customizadas": ["Id", "Nome", "Tipo", "Icone", "Cor_Hex", "Status"],
   "12_Analises": ["Id", "Metrica", "Valor", "Data_Atualizacao", "Detalhes", "Status"],

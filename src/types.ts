@@ -177,6 +177,9 @@ export interface Veiculo {
   Id: string;
   Descrição?: string;
   Motorista?: string;
+  Celular_Motorista?: string;
+  CPF_Motorista?: string;
+  CNH_Motorista?: string;
   Placa: string;
   Renavam?: string;
   Chassi?: string;

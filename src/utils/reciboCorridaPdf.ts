@@ -2,6 +2,11 @@ import { jsPDF } from "jspdf";
 
 export interface DadosReciboCorrida {
   motorista: string;
+  celularMotorista?: string;
+  cpfMotorista?: string;
+  cnhMotorista?: string;
+  passageiro?: string;
+  cpfPassageiro?: string;
   veiculo: string;
   placa?: string;
   origem: string;
@@ -65,6 +70,12 @@ export function exportReciboCorridaPDF(dados: DadosReciboCorrida): boolean {
     doc.setFontSize(10);
     doc.setTextColor(15, 23, 42);
     doc.text(dados.motorista || "Não informado", col1, y + 13);
+    if (dados.celularMotorista) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text(dados.celularMotorista, col1, y + 19);
+    }
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
@@ -93,7 +104,35 @@ export function exportReciboCorridaPDF(dados: DadosReciboCorrida): boolean {
     doc.setFontSize(9);
     doc.text(dados.hora, col3, y + 19);
 
-    y += 34;
+    if (dados.passageiro) {
+      y += 31;
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(margin, y, contentWidth, 18, 3, 3, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text("PASSAGEIRO", col1, y + 6);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text(dados.passageiro, col1, y + 12.5);
+
+      if (dados.cpfPassageiro) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text("CPF DO PASSAGEIRO", col2, y + 6);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(15, 23, 42);
+        doc.text(dados.cpfPassageiro, col2, y + 12.5);
+      }
+      y += 24;
+    } else {
+      y += 34;
+    }
 
     // --- TRAJETO SECTION ---
     doc.setFont("helvetica", "bold");

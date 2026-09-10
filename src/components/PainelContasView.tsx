@@ -19,6 +19,7 @@ import {
   HeartPulse,
   Route,
   CreditCard,
+  StickyNote,
 } from "lucide-react";
 import { Lancamento } from "../types";
 import { ModuleView } from "./Navigation";
@@ -310,6 +311,14 @@ export const PainelContasView: React.FC<Props> = ({
           >
             <CreditCard className="w-4 h-4 shrink-0" />
             <span className="truncate">Bancos & Cartões</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate("bloco_notas")}
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold rounded-xl text-xs border border-amber-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+          >
+            <StickyNote className="w-4 h-4 shrink-0" />
+            <span className="truncate">Notas</span>
           </button>
         </div>
       )}

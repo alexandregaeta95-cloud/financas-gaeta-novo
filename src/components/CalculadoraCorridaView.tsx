@@ -231,6 +231,8 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
 
   const [salvo, setSalvo] = useState(false);
   const [observacoesCorrida, setObservacoesCorrida] = useState("");
+  const [passageiro, setPassageiro] = useState("");
+  const [cpfPassageiro, setCpfPassageiro] = useState("");
 
   const handleSalvarCorrida = () => {
     if (!resultado || !onSaveCorrida) return;
@@ -266,6 +268,9 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
     const veiculoAtual = veiculos.find((v) => v.Modelo === veiculoSelecionado) || veiculos[0];
     exportReciboCorridaPDF({
       motorista: veiculoAtual?.Motorista || "Motorista",
+      celularMotorista: veiculoAtual?.Celular_Motorista || undefined,
+      passageiro: passageiro || undefined,
+      cpfPassageiro: cpfPassageiro || undefined,
       veiculo: veiculoAtual?.Modelo || "Veículo",
       placa: veiculoAtual?.Placa,
       origem: pontos[0]?.texto || "",
@@ -540,6 +545,33 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
           <div className="flex justify-between items-center pt-3 border-t border-slate-700">
             <span className="text-sm font-bold text-white flex items-center gap-1.5"><DollarSign className="w-4 h-4 text-emerald-400" /> Valor Sugerido</span>
             <span className="text-2xl font-extrabold text-emerald-400">R$ {formatCurrency(totalSugerido)}</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label className="text-slate-400 block mb-1 text-xs">Passageiro (opcional)</label>
+              <input
+                type="text"
+                value={passageiro}
+                onChange={(e) => setPassageiro(e.target.value)}
+                placeholder="Nome do cliente"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white text-xs"
+              />
+            </div>
+            <div>
+              <label className="text-slate-400 block mb-1 text-xs">CPF do Passageiro (opcional)</label>
+              <input
+                type="text"
+                value={cpfPassageiro}
+                onChange={(e) => {
+                  const nums = e.target.value.replace(/\D/g, "").slice(0, 11);
+                  const formatted = nums.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+                  setCpfPassageiro(formatted);
+                }}
+                placeholder="000.000.000-00"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white text-xs"
+              />
+            </div>
           </div>
 
           <div>
