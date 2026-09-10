@@ -46,7 +46,8 @@ var SHEET_NAMES = [
   "26_Config_Lembretes_Financas",
   "27_Lembretes_Remedios",
   "28_Historico_Corridas",
-  "29_Bloco_Notas"
+  "29_Bloco_Notas",
+  "30_Motoristas"
 ];
 
 // Mapeamento de cabeçalhos por aba
@@ -83,7 +84,7 @@ var HEADERS_BY_SHEET = {
   "6_Consultas_Médicas": ["Id", "Especialidade", "Médico", "Data", "Horas", "Local", "Lembrete_Ativo", "Status", "Observação"],
   "7_Receitas_Médicas": ["Id", "Medicamento", "Dosagem", "Frequência", "Médico", "Data_Emissão", "Data_Validade", "Data_Vencimento", "Instruções", "Especialidade", "Observação", "Arquivo_Anexo", "Ativa"],
   "8_Infracoes": ["Id", "Protocolo", "Título", "Veículo", "Placa", "Data", "Descrição", "Valor", "Pontos", "Status", "Localização", "Observação"],
-  "9_Veiculos": ["Id", "Descrição", "Motorista", "Placa", "Renavam", "Chassi", "Marca", "Modelo", "Ano", "Ano_Fabricação", "Combustível", "KM_Atual", "Ativo", "Celular_Motorista", "CPF_Motorista", "CNH_Motorista"],
+  "9_Veiculos": ["Id", "Descrição", "Motorista", "Placa", "Renavam", "Chassi", "Marca", "Modelo", "Ano", "Ano_Fabricação", "Combustível", "KM_Atual", "Ativo"],
   "10_Metas_De_Categoria": ["Id", "Categoria", "Valor_Meta", "Mes_Ano", "Alerta_Porcentagem", "Status"],
   "11_Categorias_Customizadas": ["Id", "Nome", "Tipo", "Icone", "Cor_Hex", "Status"],
   "12_Analises": ["Id", "Metrica", "Valor", "Data_Atualizacao", "Detalhes", "Status"],
@@ -103,7 +104,8 @@ var HEADERS_BY_SHEET = {
   "26_Config_Lembretes_Financas": ["Id", "Tipo", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Dias_Semana", "Som_Alarme", "Ultima_Atualizacao"],
   "27_Lembretes_Remedios": ["Id", "Nome", "Ativo", "Horario_1", "Horario_2", "Horario_3", "Som_Alarme", "Instrucoes", "Data_Cadastro"],
   "28_Historico_Corridas": ["Id", "Data", "Origem", "Destino", "Paradas", "DistanciaKm", "DuracaoMinutos", "TempoEsperaMinutos", "CustoCombustivel", "ValorKm", "ValorTempo", "ValorTotal", "Observacoes"],
-  "29_Bloco_Notas": ["Id", "Titulo", "Texto", "Data_Criacao", "Hora_Criacao", "Data_Alarme", "Hora_Alarme", "Alarme_Ativo", "Concluido"]
+  "29_Bloco_Notas": ["Id", "Titulo", "Texto", "Data_Criacao", "Hora_Criacao", "Data_Alarme", "Hora_Alarme", "Alarme_Ativo", "Concluido"],
+  "30_Motoristas": ["Id", "Nome", "Celular", "CPF", "CNH", "Ativo"]
 };
 
 /**

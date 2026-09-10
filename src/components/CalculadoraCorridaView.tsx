@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { MapPin, Loader2, Fuel, Clock, Route as RouteIcon, DollarSign } from "lucide-react";
-import { Veiculo, Lancamento, HistoricoCorrida, PerfilUsuario } from "../types";
+import { Veiculo, Lancamento, HistoricoCorrida, PerfilUsuario, Motorista } from "../types";
 import { formatCurrency } from "../utils/formatters";
 import { exportReciboCorridaPDF } from "../utils/reciboCorridaPdf";
 
@@ -102,6 +102,7 @@ interface Props {
   veiculos: Veiculo[];
   lancamentos: Lancamento[];
   historicoCorridas?: HistoricoCorrida[];
+  motoristas?: Motorista[];
   onSaveCorrida?: (corrida: HistoricoCorrida) => Promise<void>;
   perfil?: PerfilUsuario | null;
 }
@@ -110,6 +111,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
   veiculos,
   lancamentos,
   historicoCorridas = [],
+  motoristas = [],
   onSaveCorrida,
   perfil,
 }) => {
@@ -266,9 +268,14 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
     if (!resultado) return;
     const now = new Date();
     const veiculoAtual = veiculos.find((v) => v.Modelo === veiculoSelecionado) || veiculos[0];
+    const motoristaCadastrado = motoristas?.find(
+      (m) => m.Nome?.trim().toUpperCase() === veiculoAtual?.Motorista?.trim().toUpperCase()
+    );
     exportReciboCorridaPDF({
-      motorista: veiculoAtual?.Motorista || "Motorista",
-      celularMotorista: veiculoAtual?.Celular_Motorista || undefined,
+      motorista: motoristaCadastrado?.Nome || veiculoAtual?.Motorista || "Motorista",
+      celularMotorista: motoristaCadastrado?.Celular || "",
+      cpfMotorista: motoristaCadastrado?.CPF || "",
+      cnhMotorista: motoristaCadastrado?.CNH || "",
       passageiro: passageiro || undefined,
       cpfPassageiro: cpfPassageiro || undefined,
       veiculo: veiculoAtual?.Modelo || "Veículo",

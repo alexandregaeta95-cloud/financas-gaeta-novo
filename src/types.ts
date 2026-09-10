@@ -177,9 +177,6 @@ export interface Veiculo {
   Id: string;
   Descrição?: string;
   Motorista?: string;
-  Celular_Motorista?: string;
-  CPF_Motorista?: string;
-  CNH_Motorista?: string;
   Placa: string;
   Renavam?: string;
   Chassi?: string;
@@ -373,7 +370,17 @@ export const SHEET_NAMES = {
   LEMBRETES_REMEDIOS: "27_Lembretes_Remedios",
   HISTORICO_CORRIDAS: "28_Historico_Corridas",
   BLOCO_NOTAS: "29_Bloco_Notas",
+  MOTORISTAS: "30_Motoristas",
 } as const;
+
+export interface Motorista {
+  Id: string;
+  Nome: string;
+  Celular?: string;
+  CPF?: string;
+  CNH?: string;
+  Ativo?: boolean;
+}
 
 export interface AnotacaoBloco {
   Id: string;

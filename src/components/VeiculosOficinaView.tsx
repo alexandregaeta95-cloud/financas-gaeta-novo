@@ -21,8 +21,9 @@ import {
   Sparkles,
   RefreshCw,
   AlertOctagon,
+  User,
 } from "lucide-react";
-import { Veiculo, ServicoOficina, ManutencaoAgendada, Infracao } from "../types";
+import { Veiculo, ServicoOficina, ManutencaoAgendada, Infracao, Motorista } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency, formatCurrencyInput } from "../utils/formatters";
 import { markCycleAsCompleted } from "../services/snoozeService";
@@ -88,14 +89,17 @@ interface Props {
   servicos: ServicoOficina[];
   manutencoes: ManutencaoAgendada[];
   infracoes?: Infracao[];
+  motoristas?: Motorista[];
   onSaveVeiculo: (veiculo: Veiculo) => Promise<void>;
   onSaveServico: (servico: ServicoOficina) => Promise<void>;
   onSaveManutencao: (manutencao: ManutencaoAgendada) => Promise<void>;
   onSaveInfracao?: (infracao: Infracao) => Promise<void>;
+  onSaveMotorista?: (motorista: Motorista) => Promise<void>;
   onDeleteVeiculo: (id: string) => Promise<void>;
   onDeleteServico: (id: string) => Promise<void>;
   onDeleteManutencao: (id: string) => Promise<void>;
   onDeleteInfracao?: (id: string) => Promise<void>;
+  onDeleteMotorista?: (id: string) => Promise<void>;
 }
 
 function parseDateSafely(val: any): Date | null {
@@ -150,16 +154,19 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   servicos,
   manutencoes,
   infracoes = [],
+  motoristas = [],
   onSaveVeiculo,
   onSaveServico,
   onSaveManutencao,
   onSaveInfracao,
+  onSaveMotorista,
   onDeleteVeiculo,
   onDeleteServico,
   onDeleteManutencao,
   onDeleteInfracao,
+  onDeleteMotorista,
 }) => {
-  const [activeTab, setActiveTab] = useState<"veiculos" | "oficina" | "agendadas" | "infracoes">("veiculos");
+  const [activeTab, setActiveTab] = useState<"veiculos" | "oficina" | "agendadas" | "infracoes" | "motoristas">("veiculos");
   const [expandedServicoId, setExpandedServicoId] = useState<string | null>(null);
   const [expandedManutencaoId, setExpandedManutencaoId] = useState<string | null>(null);
 
@@ -172,12 +179,23 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   // Delete Confirmation State
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
-    type: "veiculo" | "servico" | "manutencao" | "infracao";
+    type: "veiculo" | "servico" | "manutencao" | "infracao" | "motorista";
     id: string;
     title: string;
     subtitle?: string;
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Motorista Modal State
+  const [isMotoristaModalOpen, setIsMotoristaModalOpen] = useState(false);
+  const [editingMotorista, setEditingMotorista] = useState<Motorista | null>(null);
+  const [motoristaForm, setMotoristaForm] = useState<Partial<Motorista>>({
+    Nome: "",
+    Celular: "",
+    CPF: "",
+    CNH: "",
+    Ativo: true,
+  });
 
   // Infracao Modal State
   const [isInfracaoModalOpen, setIsInfracaoModalOpen] = useState(false);
@@ -218,9 +236,6 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   const [veiculoForm, setVeiculoForm] = useState<Partial<Veiculo>>({
     Descrição: "",
     Motorista: "Alexandre",
-    Celular_Motorista: "",
-    CPF_Motorista: "",
-    CNH_Motorista: "",
     Placa: "",
     Renavam: "",
     Chassi: "",
@@ -352,6 +367,19 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     });
   }, [veiculos, searchTerm]);
 
+  const filteredMotoristas = useMemo(() => {
+    return (motoristas || []).filter((m) => {
+      if (!searchTerm.trim()) return true;
+      const q = searchTerm.toLowerCase();
+      return (
+        (m.Nome || "").toLowerCase().includes(q) ||
+        (m.Celular || "").toLowerCase().includes(q) ||
+        (m.CPF || "").toLowerCase().includes(q) ||
+        (m.CNH || "").toLowerCase().includes(q)
+      );
+    });
+  }, [motoristas, searchTerm]);
+
   const filteredServicos = useMemo(() => {
     return servicos
       .filter((s) => isDateInPeriod(s.Data))
@@ -436,10 +464,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       setEditingVeiculo(null);
       setVeiculoForm({
         Descrição: "Carro de Uso Diário",
-        Motorista: "Alexandre",
-        Celular_Motorista: "",
-        CPF_Motorista: "",
-        CNH_Motorista: "",
+        Motorista: motoristas[0]?.Nome || "Alexandre",
         Placa: "",
         Renavam: "",
         Chassi: "",
@@ -461,9 +486,6 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Id: editingVeiculo?.Id || generateNewId("VEIC"),
       Descrição: veiculoForm.Descrição || veiculoForm.Modelo || "Veículo",
       Motorista: veiculoForm.Motorista || "",
-      Celular_Motorista: veiculoForm.Celular_Motorista || "",
-      CPF_Motorista: veiculoForm.CPF_Motorista || "",
-      CNH_Motorista: veiculoForm.CNH_Motorista || "",
       Placa: veiculoForm.Placa || "GAE-2026",
       Renavam: veiculoForm.Renavam || "",
       Chassi: veiculoForm.Chassi || "",
@@ -477,6 +499,41 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     };
     setIsVeiculoModalOpen(false);
     onSaveVeiculo(item);
+  };
+
+  // Open Motorista Modal
+  const handleOpenMotoristaModal = (m?: Motorista) => {
+    if (m) {
+      setEditingMotorista(m);
+      setMotoristaForm({ ...m });
+    } else {
+      setEditingMotorista(null);
+      setMotoristaForm({
+        Nome: "",
+        Celular: "",
+        CPF: "",
+        CNH: "",
+        Ativo: true,
+      });
+    }
+    setIsMotoristaModalOpen(true);
+  };
+
+  const handleSaveMotoristaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!motoristaForm.Nome?.trim()) return;
+    const item: Motorista = {
+      Id: editingMotorista?.Id || generateNewId("MOT"),
+      Nome: motoristaForm.Nome.trim().toUpperCase(),
+      Celular: motoristaForm.Celular || "",
+      CPF: motoristaForm.CPF || "",
+      CNH: motoristaForm.CNH || "",
+      Ativo: motoristaForm.Ativo ?? true,
+    };
+    setIsMotoristaModalOpen(false);
+    if (onSaveMotorista) {
+      await onSaveMotorista(item);
+    }
   };
 
   // Open Oficina Modal
@@ -800,7 +857,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 sm:flex sm:items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 w-full md:w-auto">
           <button
             onClick={() => setActiveTab("veiculos")}
             className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all text-center ${
@@ -846,6 +903,16 @@ export const VeiculosOficinaView: React.FC<Props> = ({
           >
             Infrações ({infracoes.length})
           </button>
+          <button
+            onClick={() => setActiveTab("motoristas")}
+            className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all text-center ${
+              activeTab === "motoristas"
+                ? "bg-slate-800 text-white border border-slate-700/80 shadow-xs"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            Motoristas ({filteredMotoristas.length})
+          </button>
         </div>
       </div>
 
@@ -887,7 +954,9 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                   ? "Buscar por serviço, veículo ou oficina..."
                   : activeTab === "agendadas"
                   ? "Buscar por manutenção, veículo ou oficina..."
-                  : "Buscar por infração, veículo ou placa..."
+                  : activeTab === "infracoes"
+                  ? "Buscar por infração, veículo ou placa..."
+                  : "Buscar por motorista, celular, CPF ou CNH..."
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -1590,6 +1659,101 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         </div>
       )}
 
+      {/* 5. MOTORISTAS TAB */}
+      {activeTab === "motoristas" && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center px-1">
+            <span className="text-xs text-slate-400">
+              Motoristas cadastrados ({filteredMotoristas.length})
+            </span>
+            <button
+              onClick={() => handleOpenMotoristaModal()}
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Cadastrar Motorista</span>
+            </button>
+          </div>
+
+          {filteredMotoristas.length === 0 ? (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
+              Nenhum motorista encontrado com os filtros atuais.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredMotoristas.map((m, idx) => (
+                <div
+                  key={`${m.Id || 'mot'}-${idx}`}
+                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-3 relative hover:border-slate-700/80 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-slate-800 text-indigo-400 border border-slate-700/60 shrink-0">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-base leading-tight">
+                          {m.Nome}
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {m.Celular ? m.Celular : "Sem celular cadastrado"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenMotoristaModal(m)}
+                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                        title="Editar Motorista"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() =>
+                          setDeleteConfirm({
+                            isOpen: true,
+                            type: "motorista",
+                            id: m.Id,
+                            title: m.Nome,
+                            subtitle: `CPF: ${m.CPF || "—"} • CNH: ${m.CNH || "—"}`,
+                          })
+                        }
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                        title="Excluir Motorista"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">CPF</span>
+                      <span className="font-semibold text-slate-200 font-mono">{m.CPF || "—"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">CNH</span>
+                      <span className="font-semibold text-slate-200 font-mono">{m.CNH || "—"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Celular</span>
+                      <span className="text-slate-300 font-mono">{m.Celular || "—"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Status</span>
+                      <span className={`font-semibold ${m.Ativo !== false ? "text-emerald-400" : "text-slate-500"}`}>
+                        {m.Ativo !== false ? "Ativo" : "Inativo"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteConfirm && deleteConfirm.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
@@ -1609,6 +1773,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     ? "Excluir Histórico de Oficina"
                     : deleteConfirm.type === "infracao"
                     ? "Excluir Infração de Trânsito"
+                    : deleteConfirm.type === "motorista"
+                    ? "Excluir Motorista"
                     : "Excluir Manutenção Agendada"}
                 </p>
               </div>
@@ -1651,6 +1817,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     onDeleteManutencao(id);
                   } else if (type === "infracao") {
                     if (onDeleteInfracao) onDeleteInfracao(id);
+                  } else if (type === "motorista") {
+                    if (onDeleteMotorista) onDeleteMotorista(id);
                   }
                 }}
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-rose-950/40 cursor-pointer"
@@ -1745,12 +1913,17 @@ export const VeiculosOficinaView: React.FC<Props> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 block mb-1">Motorista</label>
-                  <VoiceInput
-                    type="text"
-                    value={veiculoForm.Motorista}
-                    onChange={(e) => setVeiculoForm({ ...veiculoForm, Motorista: e.target.value.toUpperCase() })}
-                    className="bg-slate-950 border border-slate-800 rounded-xl p-2 text-white uppercase"
-                    uppercase
+                  <ComboBox
+                    value={veiculoForm.Motorista || ""}
+                    onChange={(val) => setVeiculoForm({ ...veiculoForm, Motorista: val.toUpperCase() })}
+                    options={(motoristas || []).map((m) => ({
+                      value: m.Nome,
+                      label: m.Nome,
+                      hint: m.Celular || undefined,
+                    }))}
+                    placeholder="Selecione ou digite..."
+                    showVoice={true}
+                    uppercase={true}
                   />
                 </div>
                 <div>
@@ -1766,47 +1939,6 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     <option value="Diesel">Diesel</option>
                     <option value="Elétrico">Elétrico</option>
                   </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-slate-400 block mb-1">Celular do Motorista</label>
-                  <VoiceInput
-                    type="text"
-                    placeholder="(99) 99999-9999"
-                    value={veiculoForm.Celular_Motorista || ""}
-                    onChange={(e) => {
-                      const nums = e.target.value.replace(/\D/g, "").slice(0, 11);
-                      const formatted = nums.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{1,4})$/, "$1-$2");
-                      setVeiculoForm({ ...veiculoForm, Celular_Motorista: formatted });
-                    }}
-                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">CPF do Motorista</label>
-                  <VoiceInput
-                    type="text"
-                    placeholder="000.000.000-00"
-                    value={veiculoForm.CPF_Motorista || ""}
-                    onChange={(e) => {
-                      const nums = e.target.value.replace(/\D/g, "").slice(0, 11);
-                      const formatted = nums.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-                      setVeiculoForm({ ...veiculoForm, CPF_Motorista: formatted });
-                    }}
-                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-400 block mb-1">CNH do Motorista</label>
-                  <VoiceInput
-                    type="text"
-                    placeholder="Número da CNH"
-                    value={veiculoForm.CNH_Motorista || ""}
-                    onChange={(e) => setVeiculoForm({ ...veiculoForm, CNH_Motorista: e.target.value })}
-                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                  />
                 </div>
               </div>
 
@@ -2890,6 +3022,122 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                   className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl cursor-pointer"
                 >
                   Salvar Infração
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Cadastro Motorista */}
+      {isMotoristaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 text-xs shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">
+                    {editingMotorista ? "Editar Motorista" : "Cadastrar Novo Motorista"}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Dados pessoais e funcionais do motorista
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMotoristaModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMotoristaSubmit} className="space-y-3.5">
+              <div>
+                <label className="text-slate-400 block mb-1">Nome Completo</label>
+                <VoiceInput
+                  type="text"
+                  required
+                  placeholder="Ex: ALEXANDRE SILVA"
+                  value={motoristaForm.Nome || ""}
+                  onChange={(e) => setMotoristaForm({ ...motoristaForm, Nome: e.target.value.toUpperCase() })}
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase"
+                  uppercase
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">Celular / WhatsApp</label>
+                  <VoiceInput
+                    type="text"
+                    placeholder="(99) 99999-9999"
+                    value={motoristaForm.Celular || ""}
+                    onChange={(e) => {
+                      const nums = e.target.value.replace(/\D/g, "").slice(0, 11);
+                      const formatted = nums.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+                      setMotoristaForm({ ...motoristaForm, Celular: formatted });
+                    }}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">CPF</label>
+                  <VoiceInput
+                    type="text"
+                    placeholder="000.000.000-00"
+                    value={motoristaForm.CPF || ""}
+                    onChange={(e) => {
+                      const nums = e.target.value.replace(/\D/g, "").slice(0, 11);
+                      const formatted = nums.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+                      setMotoristaForm({ ...motoristaForm, CPF: formatted });
+                    }}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">CNH</label>
+                  <VoiceInput
+                    type="text"
+                    placeholder="Número da CNH"
+                    value={motoristaForm.CNH || ""}
+                    onChange={(e) => setMotoristaForm({ ...motoristaForm, CNH: e.target.value })}
+                    className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1">Situação</label>
+                  <select
+                    value={motoristaForm.Ativo !== false ? "true" : "false"}
+                    onChange={(e) => setMotoristaForm({ ...motoristaForm, Ativo: e.target.value === "true" })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs"
+                  >
+                    <option value="true">Ativo</option>
+                    <option value="false">Inativo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsMotoristaModalOpen(false)}
+                  className="px-4 py-2 text-slate-400 hover:text-white cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl cursor-pointer"
+                >
+                  Salvar Motorista
                 </button>
               </div>
             </form>

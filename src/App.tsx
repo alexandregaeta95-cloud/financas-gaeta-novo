@@ -63,6 +63,7 @@ import {
   ConsumoCafe,
   ConsumoAgua,
   ConfigAgua,
+  Motorista,
   SHEET_NAMES,
 } from "./types";
 
@@ -143,6 +144,17 @@ export default function App() {
   const [servicos, setServicos] = useState<ServicoOficina[]>(() =>
     getCachedSheetData<ServicoOficina>(SHEET_NAMES.OFICINA)
   );
+  const [motoristas, setMotoristas] = useState<Motorista[]>(() => {
+    const cached = getCachedSheetData<Motorista>(SHEET_NAMES.MOTORISTAS);
+    if (cached.length > 0) return cached;
+    return [
+      {
+        Id: "MOT_1",
+        Nome: "ALEXANDRE",
+        Ativo: true,
+      },
+    ];
+  });
   const [manutencoes, setManutencoes] = useState<ManutencaoAgendada[]>(() =>
     getCachedSheetData<ManutencaoAgendada>(SHEET_NAMES.MANUTENCOES_AGENDADAS)
   );
@@ -639,6 +651,7 @@ export default function App() {
         fetchedCartoes,
         fetchedServicos,
         fetchedManutencoes,
+        fetchedMotoristas,
       ] = await Promise.all([
         fetchSheetData<Lancamento>(SHEET_NAMES.LANCAMENTOS).catch(() => null),
         fetchSheetData<Abastecimento>(SHEET_NAMES.ABASTECIMENTOS).catch(() => null),
@@ -647,11 +660,13 @@ export default function App() {
         fetchSheetData<CartaoCredito>(SHEET_NAMES.CARTOES_CREDITO).catch(() => null),
         fetchSheetData<ServicoOficina>(SHEET_NAMES.OFICINA).catch(() => null),
         fetchSheetData<ManutencaoAgendada>(SHEET_NAMES.MANUTENCOES_AGENDADAS).catch(() => null),
+        fetchSheetData<Motorista>(SHEET_NAMES.MOTORISTAS).catch(() => null),
       ]);
 
       if (fetchedLancamentos) setLancamentos(fetchedLancamentos);
       if (fetchedAbastecimentos) setAbastecimentos(fetchedAbastecimentos);
       if (fetchedVeiculos && fetchedVeiculos.length > 0) setVeiculos(fetchedVeiculos);
+      if (fetchedMotoristas && fetchedMotoristas.length > 0) setMotoristas(fetchedMotoristas);
       if (fetchedContas && fetchedContas.length > 0) {
         const activeLancs = fetchedLancamentos || lancamentos;
         const contasWithDynamicBalance = fetchedContas.map((c) => ({
@@ -917,7 +932,8 @@ export default function App() {
           ? "saude"
           : sheetName === SHEET_NAMES.VEICULOS ||
             sheetName === SHEET_NAMES.OFICINA ||
-            sheetName === SHEET_NAMES.MANUTENCOES_AGENDADAS
+            sheetName === SHEET_NAMES.MANUTENCOES_AGENDADAS ||
+            sheetName === SHEET_NAMES.MOTORISTAS
           ? "veiculos"
           : "lancamentos";
       showRollbackToast(
@@ -982,7 +998,8 @@ export default function App() {
           ? "saude"
           : sheetName === SHEET_NAMES.VEICULOS ||
             sheetName === SHEET_NAMES.OFICINA ||
-            sheetName === SHEET_NAMES.MANUTENCOES_AGENDADAS
+            sheetName === SHEET_NAMES.MANUTENCOES_AGENDADAS ||
+            sheetName === SHEET_NAMES.MOTORISTAS
           ? "veiculos"
           : "lancamentos";
       showRollbackToast(
@@ -1202,6 +1219,7 @@ export default function App() {
             veiculos={veiculos}
             lancamentos={lancamentos}
             historicoCorridas={historicoCorridas}
+            motoristas={motoristas}
             onSaveCorrida={(c) => handleSaveGeneric(SHEET_NAMES.HISTORICO_CORRIDAS, c, setHistoricoCorridas)}
             perfil={perfil}
           />
@@ -1236,14 +1254,17 @@ export default function App() {
             servicos={servicos}
             manutencoes={manutencoes}
             infracoes={infracoes}
+            motoristas={motoristas}
             onSaveVeiculo={(v) => handleSaveGeneric(SHEET_NAMES.VEICULOS, v, setVeiculos)}
             onSaveServico={(s) => handleSaveGeneric(SHEET_NAMES.OFICINA, s, setServicos)}
             onSaveManutencao={(m) => handleSaveGeneric(SHEET_NAMES.MANUTENCOES_AGENDADAS, m, setManutencoes)}
             onSaveInfracao={(inf) => handleSaveGeneric(SHEET_NAMES.INFRACOES, inf, setInfracoes)}
+            onSaveMotorista={(mot) => handleSaveGeneric(SHEET_NAMES.MOTORISTAS, mot, setMotoristas)}
             onDeleteVeiculo={(id) => handleDeleteGeneric(SHEET_NAMES.VEICULOS, id, setVeiculos)}
             onDeleteServico={(id) => handleDeleteGeneric(SHEET_NAMES.OFICINA, id, setServicos)}
             onDeleteManutencao={(id) => handleDeleteGeneric(SHEET_NAMES.MANUTENCOES_AGENDADAS, id, setManutencoes)}
             onDeleteInfracao={(id) => handleDeleteGeneric(SHEET_NAMES.INFRACOES, id, setInfracoes)}
+            onDeleteMotorista={(id) => handleDeleteGeneric(SHEET_NAMES.MOTORISTAS, id, setMotoristas)}
           />
         )}
 
