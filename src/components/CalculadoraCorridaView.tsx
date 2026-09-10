@@ -7,17 +7,24 @@ import { exportReciboCorridaPDF } from "../utils/reciboCorridaPdf";
 function EnderecoAutocomplete({
   label,
   placeholder,
+  value = "",
   onSelect,
 }: {
   label: string;
   placeholder: string;
+  value?: string;
   onSelect: (coords: [number, number], texto: string) => void;
 }) {
-  const [texto, setTexto] = useState("");
+  const [texto, setTexto] = useState(value);
   const [sugestoes, setSugestoes] = useState<{ label: string; lat: number; lng: number }[]>([]);
   const [mostrando, setMostrando] = useState(false);
   const [buscando, setBuscando] = useState(false);
+  const [ultimoDebug, setUltimoDebug] = useState<any>(null);
   const debounceRef = React.useRef<any>(null);
+
+  useEffect(() => {
+    setTexto(value || "");
+  }, [value]);
 
   const buscarSugestoes = (valor: string) => {
     setTexto(valor);
@@ -34,29 +41,45 @@ function EnderecoAutocomplete({
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             async (pos) => {
-              const resp = await fetch(`${url}&lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
-              const data = await resp.json();
-              setSugestoes(data.sugestoes || []);
-              setMostrando(true);
-              setBuscando(false);
+              try {
+                const resp = await fetch(`${url}&lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
+                const data = await resp.json();
+                setSugestoes(data.sugestoes || []);
+                setUltimoDebug({ ok: resp.ok, totalSugestoes: data.sugestoes?.length ?? 0, primeiro: data.sugestoes?.[0]?.label });
+                setMostrando(true);
+                setBuscando(false);
+              } catch (err: any) {
+                setBuscando(false);
+                setUltimoDebug({ erro: err?.message || String(err) });
+              }
             },
             async () => {
-              const resp = await fetch(url);
-              const data = await resp.json();
-              setSugestoes(data.sugestoes || []);
-              setMostrando(true);
-              setBuscando(false);
-            }
+              try {
+                const resp = await fetch(url);
+                const data = await resp.json();
+                setSugestoes(data.sugestoes || []);
+                setUltimoDebug({ ok: resp.ok, totalSugestoes: data.sugestoes?.length ?? 0, primeiro: data.sugestoes?.[0]?.label });
+                setMostrando(true);
+                setBuscando(false);
+              } catch (err: any) {
+                setBuscando(false);
+                setUltimoDebug({ erro: err?.message || String(err) });
+              }
+            },
+            { timeout: 2000 }
           );
         } else {
           const resp = await fetch(url);
           const data = await resp.json();
           setSugestoes(data.sugestoes || []);
+          setUltimoDebug({ ok: resp.ok, totalSugestoes: data.sugestoes?.length ?? 0, primeiro: data.sugestoes?.[0]?.label });
           setMostrando(true);
           setBuscando(false);
         }
-      } catch (e) {
+      } catch (e: any) {
+        console.error("Erro na busca de endereço:", e);
         setBuscando(false);
+        setUltimoDebug({ erro: e?.message || String(e) });
       }
     }, 900);
   };
@@ -92,6 +115,11 @@ function EnderecoAutocomplete({
               {s.label}
             </button>
           ))}
+        </div>
+      )}
+      {ultimoDebug && (
+        <div className="mt-1 text-[10px] text-amber-400 bg-slate-950 border border-amber-500/20 rounded p-2 break-all">
+          DEBUG: {JSON.stringify(ultimoDebug)}
         </div>
       )}
     </div>
@@ -272,12 +300,18 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
   };
 
   const handleRefazerCorrida = (corrida: HistoricoCorrida) => {
-    if (!onSaveCorrida) return;
-    onSaveCorrida({
-      ...corrida,
-      Id: `CORRIDA_${Date.now()}`,
-      Data: new Date().toISOString().split("T")[0],
-    });
+    const paradasArray = corrida.Paradas ? corrida.Paradas.split(" → ").filter(Boolean) : [];
+    const novosPontos = [
+      { coords: null, texto: corrida.Origem || "" },
+      ...paradasArray.map((texto) => ({ coords: null, texto })),
+      { coords: null, texto: corrida.Destino || "" },
+    ];
+    setPontos(novosPontos);
+    setPassageiro(corrida.Passageiro || "");
+    setCpfPassageiro(corrida.CpfPassageiro || "");
+    setResultado(null);
+    setSegundosEsperaAcumulados(0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleReimprimirRecibo = (corrida: HistoricoCorrida) => {
@@ -407,6 +441,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
                   <EnderecoAutocomplete
                     label={rotulo}
                     placeholder="Digite pelo menos 3 letras..."
+                    value={ponto.texto}
                     onSelect={(coords, texto) => {
                       atualizarPonto(idx, coords[0] === 0 && coords[1] === 0 ? null : coords, texto);
                     }}
@@ -433,6 +468,12 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
             + Adicionar Parada
           </button>
         </div>
+
+        {pontos.some((p) => p.texto && !p.coords) && (
+          <div className="bg-amber-950/40 border border-amber-500/30 rounded-xl p-2.5 text-amber-300 text-[11px]">
+            ⚠️ Os endereços foram preenchidos, mas você precisa selecionar cada um de novo na lista de sugestões antes de calcular (o sistema precisa confirmar a localização exata).
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div>
