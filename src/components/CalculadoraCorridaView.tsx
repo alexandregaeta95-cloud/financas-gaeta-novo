@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { MapPin, Loader2, Fuel, Clock, Route as RouteIcon, DollarSign } from "lucide-react";
-import { Veiculo, Lancamento, HistoricoCorrida } from "../types";
+import { Veiculo, Lancamento, HistoricoCorrida, PerfilUsuario } from "../types";
 import { formatCurrency } from "../utils/formatters";
+import { exportReciboCorridaPDF } from "../utils/reciboCorridaPdf";
 
 function EnderecoAutocomplete({
   label,
@@ -102,6 +103,7 @@ interface Props {
   lancamentos: Lancamento[];
   historicoCorridas?: HistoricoCorrida[];
   onSaveCorrida?: (corrida: HistoricoCorrida) => Promise<void>;
+  perfil?: PerfilUsuario | null;
 }
 
 export const CalculadoraCorridaView: React.FC<Props> = ({
@@ -109,6 +111,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
   lancamentos,
   historicoCorridas = [],
   onSaveCorrida,
+  perfil,
 }) => {
   const [veiculoSelecionado, setVeiculoSelecionado] = useState<string>(veiculos[0]?.Modelo || "");
   const [pontos, setPontos] = useState<{ coords: [number, number] | null; texto: string }[]>([
@@ -255,6 +258,27 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
     setSalvo(true);
     setObservacoesCorrida("");
     setTimeout(() => setSalvo(false), 3000);
+  };
+
+  const handleGerarRecibo = () => {
+    if (!resultado) return;
+    const now = new Date();
+    const veiculoAtual = veiculos.find((v) => v.Modelo === veiculoSelecionado) || veiculos[0];
+    exportReciboCorridaPDF({
+      motorista: perfil?.Nome || "Motorista",
+      veiculo: veiculoAtual?.Modelo || "Veículo",
+      placa: veiculoAtual?.Placa,
+      origem: pontos[0]?.texto || "",
+      paradas: pontos.slice(1, -1).map((p) => p.texto).filter(Boolean),
+      destino: pontos[pontos.length - 1]?.texto || "",
+      data: now.toLocaleDateString("pt-BR"),
+      hora: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+      distanciaKm: resultado.distanciaKm,
+      duracaoMinutos: resultado.duracaoMinutos,
+      tempoEsperaMinutos: Math.round(segundosEsperaAcumulados / 60),
+      valorTotal: totalSugerido,
+      observacoes: observacoesCorrida,
+    });
   };
 
   const iniciarEspera = () => {
@@ -529,14 +553,23 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
             />
           </div>
 
-          <button
-            type="button"
-            onClick={handleSalvarCorrida}
-            disabled={salvo}
-            className="w-full mt-2 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-60 text-white font-semibold rounded-xl p-2.5 text-xs transition-colors"
-          >
-            {salvo ? "✓ Corrida Salva!" : "💾 Salvar Corrida no Histórico"}
-          </button>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <button
+              type="button"
+              onClick={handleSalvarCorrida}
+              disabled={salvo}
+              className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-60 text-white font-semibold rounded-xl p-2.5 text-xs transition-colors"
+            >
+              {salvo ? "✓ Salva!" : "💾 Salvar no Histórico"}
+            </button>
+            <button
+              type="button"
+              onClick={handleGerarRecibo}
+              className="flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 text-white font-semibold rounded-xl p-2.5 text-xs transition-colors"
+            >
+              🧾 Gerar Recibo PDF
+            </button>
+          </div>
         </div>
       )}
 

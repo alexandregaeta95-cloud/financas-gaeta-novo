@@ -1193,6 +1193,7 @@ export default function App() {
             lancamentos={lancamentos}
             historicoCorridas={historicoCorridas}
             onSaveCorrida={(c) => handleSaveGeneric(SHEET_NAMES.HISTORICO_CORRIDAS, c, setHistoricoCorridas)}
+            perfil={perfil}
           />
         )}
 
