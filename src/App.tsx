@@ -926,18 +926,42 @@ export default function App() {
   ) => {
     const targetId = String(id).trim();
     let previousStateSnapshot: any[] = [];
+    let previousContasSnapshot: ContaBancaria[] = [];
+    let nextLancamentosAfterDelete: Lancamento[] = [];
+
     setStateFn((prev) => {
       previousStateSnapshot = [...prev];
-      return prev.filter((i) => String(i.Id || i.id).trim() !== targetId);
+      const filtered = prev.filter((i) => String(i.Id || i.id).trim() !== targetId);
+      if (sheetName === SHEET_NAMES.LANCAMENTOS) {
+        nextLancamentosAfterDelete = filtered;
+      }
+      return filtered;
     });
+
+    // Se for um lançamento, recalcular e persistir o saldo das contas afetadas
+    let updatedContasToSave: ContaBancaria[] = [];
+    if (sheetName === SHEET_NAMES.LANCAMENTOS) {
+      previousContasSnapshot = [...contas];
+      updatedContasToSave = contas.map((c) => ({
+        ...c,
+        Saldo_Atual: calculateAccountCurrentBalance(c, nextLancamentosAfterDelete),
+      }));
+      setContas(updatedContasToSave);
+    }
 
     try {
       await saveSheetRecords(sheetName, [{ Id: targetId, id: targetId }], "SOFT_DELETE");
+      if (sheetName === SHEET_NAMES.LANCAMENTOS && updatedContasToSave.length > 0) {
+        await saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT");
+      }
     } catch (err: any) {
       console.error(`Erro ao excluir na aba ${sheetName} (Executando Rollback):`, err);
       // Rollback UI
       if (previousStateSnapshot.length > 0) {
         setStateFn(previousStateSnapshot);
+      }
+      if (sheetName === SHEET_NAMES.LANCAMENTOS && previousContasSnapshot.length > 0) {
+        setContas(previousContasSnapshot);
       }
       const targetView: AppNotification["targetView"] =
         sheetName === SHEET_NAMES.LISTA_MERCADO
