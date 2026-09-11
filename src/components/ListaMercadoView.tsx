@@ -180,7 +180,12 @@ export const ListaMercadoView: React.FC<Props> = ({
       Comprado: false,
       Hora: horaAtual,
     };
-    await onSaveItem(item);
+    try {
+      await onSaveItem(item);
+    } catch (errItem: any) {
+      console.error("Erro ao salvar item da lista:", errItem);
+      alert(`Erro ao salvar o item: ${errItem?.message || "Erro desconhecido"}`);
+    }
     setQuickInput("");
   };
 
@@ -353,7 +358,14 @@ export const ListaMercadoView: React.FC<Props> = ({
         Observacoes: checkoutObservacoes.trim() || undefined,
       };
 
-      onSaveLancamento(novoLancamento);
+      try {
+        await onSaveLancamento(novoLancamento);
+      } catch (errLanc: any) {
+        console.error("Erro ao salvar lançamento da compra:", errLanc);
+        alert(`Erro ao salvar o lançamento: ${errLanc?.message || "Erro desconhecido"}`);
+        setIsFinalizando(false);
+        return;
+      }
 
       setFinalizadoSuccess(true);
       setTimeout(() => setFinalizadoSuccess(false), 5000);
