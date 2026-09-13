@@ -284,6 +284,7 @@ export interface ItemMercado {
   Hora?: string; // HH:mm
   Lembrete_Ativo?: "SIM" | "NÃO" | boolean;
   Comprado: boolean | "SIM" | "NÃO";
+  Status?: string;
   Observação?: string;
 }
 

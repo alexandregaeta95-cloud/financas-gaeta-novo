@@ -22,6 +22,7 @@ import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
 import { LerListaFotoModal } from "./LerListaFotoModal";
+import { HistoricoMercadoModal } from "./HistoricoMercadoModal";
 
 interface Props {
   itens: ItemMercado[];
@@ -41,6 +42,7 @@ export const ListaMercadoView: React.FC<Props> = ({
   onClearLista,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showHistoricoModal, setShowHistoricoModal] = useState(false);
   const [editingItem, setEditingItem] = useState<ItemMercado | null>(null);
   const [quickInput, setQuickInput] = useState("");
   const [valorEstDisplay, setValorEstDisplay] = useState("");
@@ -178,21 +180,17 @@ export const ListaMercadoView: React.FC<Props> = ({
       Preco_Estimado: 0,
       Valor_Estimado: 0,
       Comprado: false,
+      Status: "Ativo",
       Hora: horaAtual,
     };
-    try {
-      await onSaveItem(item);
-    } catch (errItem: any) {
-      console.error("Erro ao salvar item da lista:", errItem);
-      alert(`Erro ao salvar o item: ${errItem?.message || "Erro desconhecido"}`);
-    }
+    onSaveItem(item);
     setQuickInput("");
   };
 
-  const handleConfirmBatchItens = async (novosItens: ItemMercado[]) => {
-    for (const item of novosItens) {
-      await onSaveItem(item);
-    }
+  const handleConfirmBatchItens = (novosItens: ItemMercado[]) => {
+    novosItens.forEach((item) => {
+      onSaveItem(item);
+    });
   };
 
   const handleOpenModal = (item?: ItemMercado) => {
@@ -388,6 +386,7 @@ export const ListaMercadoView: React.FC<Props> = ({
             ...item,
             Comprado: true,
             Data_Compra: dataCompraHoje,
+            Status: "Comprado",
           });
         });
       }
@@ -419,6 +418,13 @@ export const ListaMercadoView: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <button
+            onClick={() => setShowHistoricoModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-lime-700 hover:bg-lime-600 text-white text-xs font-semibold rounded-xl transition-colors"
+          >
+            📊 Histórico de Gastos
+          </button>
+
           <button
             onClick={() => setIsReadPhotoModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
@@ -1043,6 +1049,10 @@ export const ListaMercadoView: React.FC<Props> = ({
         onConfirmItens={handleConfirmBatchItens}
         generateNewId={generateNewId}
       />
+
+      {showHistoricoModal && (
+        <HistoricoMercadoModal itens={itens} onClose={() => setShowHistoricoModal(false)} />
+      )}
     </div>
   );
 };

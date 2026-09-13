@@ -102,7 +102,7 @@ export const HistoricoMercadoModal: React.FC<Props> = ({ itens, onClose }) => {
           {Object.keys(agrupadosPorData).length === 0 && (
             <div className="text-center py-8 text-slate-500">Nenhuma compra registrada nesse período.</div>
           )}
-          {Object.entries(agrupadosPorData).map(([data, itensGrupo]) => (
+          {(Object.entries(agrupadosPorData) as [string, ItemMercado[]][]).map(([data, itensGrupo]) => (
             <div key={data}>
               <div className="flex items-center gap-1.5 text-slate-400 mb-1.5">
                 <Calendar className="w-3 h-3" />
