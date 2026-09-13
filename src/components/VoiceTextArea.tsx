@@ -28,8 +28,11 @@ export const VoiceTextArea: React.FC<VoiceTextAreaProps> = ({
 
   useEffect(() => {
     if (textareaRef.current) {
+      const MAX_HEIGHT = 180; // limite em pixels, depois disso rola por dentro
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      const novaAltura = Math.min(textareaRef.current.scrollHeight, MAX_HEIGHT);
+      textareaRef.current.style.height = `${novaAltura}px`;
+      textareaRef.current.style.overflowY = textareaRef.current.scrollHeight > MAX_HEIGHT ? "auto" : "hidden";
     }
   }, [value]);
 
