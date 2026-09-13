@@ -1,17 +1,26 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { X, TrendingUp, Calendar } from "lucide-react";
-import { ItemMercado } from "../types";
+import { ItemMercado, SHEET_NAMES } from "../types";
 import { formatCurrency } from "../utils/formatters";
+import { fetchSheetData } from "../services/api";
 
 interface Props {
-  itens: ItemMercado[];
   onClose: () => void;
 }
 
 type Periodo = "hoje" | "semana" | "mes" | "ano" | "tudo";
 
-export const HistoricoMercadoModal: React.FC<Props> = ({ itens, onClose }) => {
+export const HistoricoMercadoModal: React.FC<Props> = ({ onClose }) => {
   const [periodo, setPeriodo] = useState<Periodo>("mes");
+  const [itens, setItens] = useState<ItemMercado[]>([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    fetchSheetData<ItemMercado>(SHEET_NAMES.LISTA_MERCADO)
+      .then((data) => setItens(data || []))
+      .catch((err) => console.error("Erro ao buscar histórico do mercado:", err))
+      .finally(() => setCarregando(false));
+  }, []);
 
   const comprados = useMemo(
     () =>
@@ -99,31 +108,38 @@ export const HistoricoMercadoModal: React.FC<Props> = ({ itens, onClose }) => {
         </div>
 
         <div className="overflow-y-auto px-5 pb-5 space-y-4 flex-1">
-          {Object.keys(agrupadosPorData).length === 0 && (
-            <div className="text-center py-8 text-slate-500">Nenhuma compra registrada nesse período.</div>
+          {carregando && (
+            <div className="text-center py-8 text-slate-500">Buscando histórico na planilha...</div>
           )}
-          {(Object.entries(agrupadosPorData) as [string, ItemMercado[]][]).map(([data, itensGrupo]) => (
-            <div key={data}>
-              <div className="flex items-center gap-1.5 text-slate-400 mb-1.5">
-                <Calendar className="w-3 h-3" />
-                <span className="font-semibold">{data}</span>
-                <span className="text-slate-600">
-                  · R$ {formatCurrency(itensGrupo.reduce((acc, i) => acc + getValor(i), 0))}
-                </span>
-              </div>
-              <div className="space-y-1">
-                {itensGrupo.map((item) => (
-                  <div
-                    key={item.Id}
-                    className="flex justify-between bg-slate-800/50 rounded-lg px-3 py-1.5"
-                  >
-                    <span className="text-slate-200">{item.Item}</span>
-                    <span className="text-slate-400">R$ {formatCurrency(getValor(item))}</span>
+          {!carregando && (
+            <>
+              {Object.keys(agrupadosPorData).length === 0 && (
+                <div className="text-center py-8 text-slate-500">Nenhuma compra registrada nesse período.</div>
+              )}
+              {(Object.entries(agrupadosPorData) as [string, ItemMercado[]][]).map(([data, itensGrupo]) => (
+                <div key={data}>
+                  <div className="flex items-center gap-1.5 text-slate-400 mb-1.5">
+                    <Calendar className="w-3 h-3" />
+                    <span className="font-semibold">{data}</span>
+                    <span className="text-slate-600">
+                      · R$ {formatCurrency(itensGrupo.reduce((acc, i) => acc + getValor(i), 0))}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
-          ))}
+                  <div className="space-y-1">
+                    {itensGrupo.map((item) => (
+                      <div
+                        key={item.Id}
+                        className="flex justify-between bg-slate-800/50 rounded-lg px-3 py-1.5"
+                      >
+                        <span className="text-slate-200">{item.Item}</span>
+                        <span className="text-slate-400">R$ {formatCurrency(getValor(item))}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -1051,7 +1051,7 @@ export const ListaMercadoView: React.FC<Props> = ({
       />
 
       {showHistoricoModal && (
-        <HistoricoMercadoModal itens={itens} onClose={() => setShowHistoricoModal(false)} />
+        <HistoricoMercadoModal onClose={() => setShowHistoricoModal(false)} />
       )}
     </div>
   );
