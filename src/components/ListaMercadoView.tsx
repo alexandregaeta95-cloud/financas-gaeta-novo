@@ -496,12 +496,14 @@ export const ListaMercadoView: React.FC<Props> = ({
 
       {/* Items List */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800">
-        {itens.length === 0 ? (
+        {itens.filter((i) => !(i.Comprado === true || i.Comprado === "SIM")).length === 0 ? (
           <div className="p-8 text-center text-slate-500 text-xs">
             Sua lista de mercado está vazia.
           </div>
         ) : (
-          itens.map((item, idx) => {
+          itens
+            .filter((item) => !(item.Comprado === true || item.Comprado === "SIM"))
+            .map((item, idx) => {
             const isBought = item.Comprado === true || item.Comprado === "SIM";
             const itemPrice = getItemTotal(item);
 
