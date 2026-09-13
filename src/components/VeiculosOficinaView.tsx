@@ -23,7 +23,7 @@ import {
   AlertOctagon,
   User,
 } from "lucide-react";
-import { Veiculo, ServicoOficina, ManutencaoAgendada, Infracao, Motorista } from "../types";
+import { Veiculo, ServicoOficina, ManutencaoAgendada, Infracao, Motorista, ContaBancaria } from "../types";
 import { generateNewId } from "../services/api";
 import { parseCurrency, formatCurrency, formatCurrencyInput } from "../utils/formatters";
 import { markCycleAsCompleted } from "../services/snoozeService";
@@ -90,6 +90,7 @@ interface Props {
   manutencoes: ManutencaoAgendada[];
   infracoes?: Infracao[];
   motoristas?: Motorista[];
+  contas?: ContaBancaria[];
   onSaveVeiculo: (veiculo: Veiculo) => Promise<void>;
   onSaveServico: (servico: ServicoOficina) => Promise<void>;
   onSaveManutencao: (manutencao: ManutencaoAgendada) => Promise<void>;
@@ -155,6 +156,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   manutencoes,
   infracoes = [],
   motoristas = [],
+  contas = [],
   onSaveVeiculo,
   onSaveServico,
   onSaveManutencao,
@@ -228,6 +230,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     Data_Notificacao_Autuacao: "",
     Data_Limite_Identificacao_Condutor: "",
     Status_Pagamento: "PENDENTE",
+    Conta: "",
   });
 
   // Veículo Modal State
@@ -265,6 +268,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     Comprovante_Url: "",
     Observações: "",
     Veiculo: veiculos[0]?.Modelo || "CARRO",
+    Conta: "",
   });
 
   // Manutenção Agendada Modal State
@@ -540,7 +544,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   const handleOpenServico = (s?: ServicoOficina) => {
     if (s) {
       setEditingServico(s);
-      setServicoForm({ ...s });
+      setServicoForm({ ...s, Conta: s.Conta || "" });
       setServicoKmDisplay(s.KM && s.KM > 0 ? String(s.KM) : "");
       const val = s.Valor !== undefined && s.Valor !== null ? s.Valor : (s.Valor_A_PG || s.Valor_Pago || 0);
       setServicoValorDisplay(val > 0 ? formatCurrency(val) : "");
@@ -561,6 +565,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         Comprovante_Url: "",
         Observações: "",
         Veiculo: defaultVeic?.Modelo || "CARRO",
+        Conta: "",
       });
       setServicoKmDisplay(defaultKm > 0 ? String(defaultKm) : "");
       setServicoValorDisplay("");
@@ -587,6 +592,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Comprovante_Url: servicoForm.Comprovante_Url || "",
       Observações: servicoForm.Observações || "",
       Veiculo: servicoForm.Veiculo || veiculos[0]?.Modelo || "CARRO",
+      Conta: servicoForm.Conta?.trim() || undefined,
     };
     setIsServicoModalOpen(false);
     onSaveServico(item);
@@ -681,7 +687,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   const handleOpenInfracao = (inf?: Infracao) => {
     if (inf) {
       setEditingInfracao(inf);
-      setInfracaoForm({ ...inf });
+      setInfracaoForm({ ...inf, Conta: inf.Conta || "" });
     } else {
       const now = new Date();
       const horaAtual = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -715,6 +721,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         Data_Notificacao_Autuacao: "",
         Data_Limite_Identificacao_Condutor: "",
         Status_Pagamento: "PENDENTE",
+        Conta: "",
       });
     }
     setIsInfracaoModalOpen(true);
@@ -760,6 +767,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Data_Notificacao_Autuacao: infracaoForm.Data_Notificacao_Autuacao || "",
       Data_Limite_Identificacao_Condutor: infracaoForm.Data_Limite_Identificacao_Condutor || "",
       Status_Pagamento: infracaoForm.Status_Pagamento || "PENDENTE",
+      Conta: infracaoForm.Conta?.trim() || undefined,
     };
     setIsInfracaoModalOpen(false);
     onSaveInfracao(item);
@@ -1242,6 +1250,12 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                               </span>
                             </div>
                           </div>
+                          {s.Conta && (
+                            <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
+                              <span className="text-[10px] text-slate-500 block">Conta Bancária</span>
+                              <span className="font-semibold text-emerald-400 truncate block">{s.Conta}</span>
+                            </div>
+                          )}
                         </div>
 
                         {s.Observações && (
@@ -1634,7 +1648,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
                     <div>
                       <span className="text-slate-500 text-[10px] block">Valor da Multa</span>
                       <span className="font-bold text-rose-400">R$ {formatCurrency(inf.Valor)}</span>
@@ -1646,6 +1660,13 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     <div>
                       <span className="text-slate-500 text-[10px] block">Status</span>
                       <span className="font-bold text-emerald-400">{inf.Status}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-[10px] block">Pagamento</span>
+                      <span className={`font-semibold ${inf.Status_Pagamento === "PAGO" ? "text-emerald-400" : "text-amber-400"}`}>
+                        {inf.Status_Pagamento === "PAGO" ? "Pago" : "Pendente"}
+                        {inf.Conta ? ` (${inf.Conta})` : ""}
+                      </span>
                     </div>
                   </div>
 
@@ -2144,6 +2165,25 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Conta Bancária */}
+              <div>
+                <label className="text-slate-300 text-xs font-medium block mb-1">
+                  Conta Bancária (para desconto automático ao pagar)
+                </label>
+                <ComboBox
+                  value={servicoForm.Conta || ""}
+                  onChange={(val) => setServicoForm((prev) => ({ ...prev, Conta: val }))}
+                  options={(contas || []).map((c) => ({
+                    value: c.Nome.toUpperCase(),
+                    label: c.Nome.toUpperCase(),
+                    hint: c.Tipo ? `(${c.Tipo})` : undefined,
+                  }))}
+                  placeholder="Selecione a conta bancária..."
+                  showVoice={true}
+                  allowClear={true}
+                />
               </div>
 
               {/* Observações */}
@@ -2982,6 +3022,25 @@ export const VeiculosOficinaView: React.FC<Props> = ({
                     <option value="Pago">Pago</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Conta Bancária */}
+              <div>
+                <label className="text-slate-400 block mb-1 font-medium">
+                  Conta Bancária (para desconto automático ao pagar)
+                </label>
+                <ComboBox
+                  value={infracaoForm.Conta || ""}
+                  onChange={(val) => setInfracaoForm((prev) => ({ ...prev, Conta: val }))}
+                  options={(contas || []).map((c) => ({
+                    value: c.Nome.toUpperCase(),
+                    label: c.Nome.toUpperCase(),
+                    hint: c.Tipo ? `(${c.Tipo})` : undefined,
+                  }))}
+                  placeholder="Selecione a conta bancária..."
+                  showVoice={true}
+                  allowClear={true}
+                />
               </div>
 
               {/* 16. Observação */}

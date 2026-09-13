@@ -170,6 +170,7 @@ export interface Infracao {
   Data_Notificacao_Autuacao?: string;
   Data_Limite_Identificacao_Condutor?: string;
   Status_Pagamento?: "PAGO" | "PENDENTE";
+  Conta?: string;
 }
 
 // 9. Veículos
@@ -242,6 +243,7 @@ export interface ServicoOficina {
   Observações?: string;
   VeiculoID?: string;
   Veiculo?: string;
+  Conta?: string;
 }
 
 // 15. Manutenções Agendadas & Lembretes Recorrentes

@@ -888,6 +888,61 @@ export default function App() {
     }
   };
 
+  // Handlers para Oficina e Infrações com Espelhamento Automático em Finanças
+  const handleSaveOficina = async (item: ServicoOficina) => {
+    await handleSaveGeneric(SHEET_NAMES.OFICINA, item, setServicos);
+    const estaPago = Number(item.Valor_Pago) > 0;
+    const mirrorId = `MIRROR_OFICINA_${item.Id}`;
+    if (estaPago && item.Conta) {
+      handleSaveLancamento({
+        Id: mirrorId,
+        Data: item.Data,
+        Tipo: "Despesa",
+        Categoria: "OFICINA",
+        Descricao: item.Descrição || "Serviço de Oficina",
+        Valor: Number(item.Valor_A_PG) || Number(item.Valor_Pago) || 0,
+        Valor_Pago: Number(item.Valor_Pago) || 0,
+        Conta: item.Conta,
+        Status: "PAGO",
+        Observacoes: `Espelho automático de Oficina [${item.Id}]`,
+      } as Lancamento);
+    } else {
+      handleDeleteLancamento(mirrorId, true);
+    }
+  };
+
+  const handleDeleteOficina = async (id: string) => {
+    await handleDeleteGeneric(SHEET_NAMES.OFICINA, id, setServicos);
+    handleDeleteLancamento(`MIRROR_OFICINA_${id}`, true);
+  };
+
+  const handleSaveInfracao = async (item: Infracao) => {
+    await handleSaveGeneric(SHEET_NAMES.INFRACOES, item, setInfracoes);
+    const estaPago = item.Status === "Pago" || item.Status_Pagamento === "PAGO";
+    const mirrorId = `MIRROR_INFRACAO_${item.Id}`;
+    if (estaPago && item.Conta) {
+      handleSaveLancamento({
+        Id: mirrorId,
+        Data: item.Data,
+        Tipo: "Despesa",
+        Categoria: "INFRAÇÃO",
+        Descricao: item.Título || item.Descrição || "Infração de Trânsito",
+        Valor: Number(item.Valor) || 0,
+        Valor_Pago: Number(item.Valor) || 0,
+        Conta: item.Conta,
+        Status: "PAGO",
+        Observacoes: `Espelho automático de Infração [${item.Id}]`,
+      } as Lancamento);
+    } else {
+      handleDeleteLancamento(mirrorId, true);
+    }
+  };
+
+  const handleDeleteInfracao = async (id: string) => {
+    await handleDeleteGeneric(SHEET_NAMES.INFRACOES, id, setInfracoes);
+    handleDeleteLancamento(`MIRROR_INFRACAO_${id}`, true);
+  };
+
   // Generic Save (with snapshot rollback support for target screens)
   const handleSaveGeneric = async (
     sheetName: string,
@@ -1255,15 +1310,16 @@ export default function App() {
             manutencoes={manutencoes}
             infracoes={infracoes}
             motoristas={motoristas}
+            contas={contas}
             onSaveVeiculo={(v) => handleSaveGeneric(SHEET_NAMES.VEICULOS, v, setVeiculos)}
-            onSaveServico={(s) => handleSaveGeneric(SHEET_NAMES.OFICINA, s, setServicos)}
+            onSaveServico={handleSaveOficina}
             onSaveManutencao={(m) => handleSaveGeneric(SHEET_NAMES.MANUTENCOES_AGENDADAS, m, setManutencoes)}
-            onSaveInfracao={(inf) => handleSaveGeneric(SHEET_NAMES.INFRACOES, inf, setInfracoes)}
+            onSaveInfracao={handleSaveInfracao}
             onSaveMotorista={(mot) => handleSaveGeneric(SHEET_NAMES.MOTORISTAS, mot, setMotoristas)}
             onDeleteVeiculo={(id) => handleDeleteGeneric(SHEET_NAMES.VEICULOS, id, setVeiculos)}
-            onDeleteServico={(id) => handleDeleteGeneric(SHEET_NAMES.OFICINA, id, setServicos)}
+            onDeleteServico={handleDeleteOficina}
             onDeleteManutencao={(id) => handleDeleteGeneric(SHEET_NAMES.MANUTENCOES_AGENDADAS, id, setManutencoes)}
-            onDeleteInfracao={(id) => handleDeleteGeneric(SHEET_NAMES.INFRACOES, id, setInfracoes)}
+            onDeleteInfracao={handleDeleteInfracao}
             onDeleteMotorista={(id) => handleDeleteGeneric(SHEET_NAMES.MOTORISTAS, id, setMotoristas)}
           />
         )}
