@@ -6,11 +6,12 @@ import { fetchSheetData } from "../services/api";
 
 interface Props {
   onClose: () => void;
+  onRepetirCompra: (itens: ItemMercado[]) => void;
 }
 
 type Periodo = "hoje" | "semana" | "mes" | "ano" | "tudo";
 
-export const HistoricoMercadoModal: React.FC<Props> = ({ onClose }) => {
+export const HistoricoMercadoModal: React.FC<Props> = ({ onClose, onRepetirCompra }) => {
   const [periodo, setPeriodo] = useState<Periodo>("mes");
   const [itens, setItens] = useState<ItemMercado[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -118,12 +119,20 @@ export const HistoricoMercadoModal: React.FC<Props> = ({ onClose }) => {
               )}
               {(Object.entries(agrupadosPorData) as [string, ItemMercado[]][]).map(([data, itensGrupo]) => (
                 <div key={data}>
-                  <div className="flex items-center gap-1.5 text-slate-400 mb-1.5">
-                    <Calendar className="w-3 h-3" />
-                    <span className="font-semibold">{data}</span>
-                    <span className="text-slate-600">
-                      · R$ {formatCurrency(itensGrupo.reduce((acc, i) => acc + getValor(i), 0))}
-                    </span>
+                  <div className="flex items-center justify-between gap-1.5 text-slate-400 mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3 h-3" />
+                      <span className="font-semibold">{data}</span>
+                      <span className="text-slate-600">
+                        · R$ {formatCurrency(itensGrupo.reduce((acc, i) => acc + getValor(i), 0))}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => onRepetirCompra(itensGrupo)}
+                      className="text-[10px] bg-slate-800 hover:bg-lime-700 text-lime-400 hover:text-white px-2 py-1 rounded-lg font-semibold transition-colors"
+                    >
+                      🔁 Repetir esta compra
+                    </button>
                   </div>
                   <div className="space-y-1">
                     {itensGrupo.map((item) => (

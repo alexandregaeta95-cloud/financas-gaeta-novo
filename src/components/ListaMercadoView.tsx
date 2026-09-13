@@ -187,6 +187,25 @@ export const ListaMercadoView: React.FC<Props> = ({
     setQuickInput("");
   };
 
+  const handleRepetirCompra = (itensAntigos: ItemMercado[]) => {
+    itensAntigos.forEach((itemAntigo) => {
+      const novoItem: ItemMercado = {
+        Id: generateNewId("MERC"),
+        Item: itemAntigo.Item,
+        Categoria: itemAntigo.Categoria || "MERCADO",
+        Quantidade: itemAntigo.Quantidade || 1,
+        Unidade: itemAntigo.Unidade || "UN",
+        Valor_Unitário: itemAntigo.Valor_Unitário || 0,
+        Preco_Estimado: itemAntigo.Preco_Estimado || 0,
+        Valor_Estimado: itemAntigo.Valor_Estimado || 0,
+        Comprado: false,
+        Status: "Ativo",
+      };
+      onSaveItem(novoItem);
+    });
+    setShowHistoricoModal(false);
+  };
+
   const handleConfirmBatchItens = (novosItens: ItemMercado[]) => {
     novosItens.forEach((item) => {
       onSaveItem(item);
@@ -1053,7 +1072,10 @@ export const ListaMercadoView: React.FC<Props> = ({
       />
 
       {showHistoricoModal && (
-        <HistoricoMercadoModal onClose={() => setShowHistoricoModal(false)} />
+        <HistoricoMercadoModal
+          onClose={() => setShowHistoricoModal(false)}
+          onRepetirCompra={handleRepetirCompra}
+        />
       )}
     </div>
   );
