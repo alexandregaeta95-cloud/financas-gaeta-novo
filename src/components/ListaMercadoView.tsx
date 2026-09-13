@@ -122,8 +122,8 @@ export const ListaMercadoView: React.FC<Props> = ({
     Valor_Unitário: 0,
     Valor_Estimado: 0,
     Preco_Estimado: 0,
-    Data_Lembrete: "",
-    Hora_Lembrete: "10:00",
+    Data_Lembrete: new Date().toISOString().split("T")[0],
+    Hora_Lembrete: `${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`,
     Lembrete_Ativo: false,
     Comprado: false,
     Observação: "",
@@ -225,6 +225,7 @@ export const ListaMercadoView: React.FC<Props> = ({
       setEditingItem(null);
       const now = new Date();
       const horaAtual = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const dataAtual = now.toISOString().split("T")[0];
       setForm({
         Item: "",
         Categoria: "MERCADO",
@@ -233,8 +234,8 @@ export const ListaMercadoView: React.FC<Props> = ({
         Valor_Unitário: 0,
         Valor_Estimado: 0,
         Preco_Estimado: 0,
-        Data_Lembrete: "",
-        Hora_Lembrete: "10:00",
+        Data_Lembrete: dataAtual,
+        Hora_Lembrete: horaAtual,
         Lembrete_Ativo: false,
         Comprado: false,
         Observação: "",
@@ -377,14 +378,18 @@ export const ListaMercadoView: React.FC<Props> = ({
       setCheckoutValorPagoDisplay("");
       setCheckoutObservacoes("");
 
-      // Perguntar se deseja limpar a lista de compras
-      if (itens.length > 0 && onClearLista) {
-        const querLimpar = window.confirm(
-          "Compra finalizada com sucesso e registrada na aba 1_Lancamentos!\n\nDeseja limpar a lista de compras atual?"
-        );
-        if (querLimpar) {
-          onClearLista();
-        }
+      // Marcar cada item ativo da lista como Comprado, preenchendo a Data_Compra
+      // (em vez de excluir - assim mantém o histórico de compras de verdade)
+      const itensAtivos = itens.filter((i) => !(i.Comprado === true || i.Comprado === "SIM"));
+      if (itensAtivos.length > 0) {
+        const dataCompraHoje = new Date().toISOString().split("T")[0];
+        itensAtivos.forEach((item) => {
+          onSaveItem({
+            ...item,
+            Comprado: true,
+            Data_Compra: dataCompraHoje,
+          });
+        });
       }
     } catch (err: any) {
       console.error("Erro ao finalizar compra:", err);
