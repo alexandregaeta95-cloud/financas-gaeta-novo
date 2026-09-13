@@ -288,18 +288,29 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
       Motorista: veiculoAtual?.Motorista || "",
       Passageiro: passageiro || "",
       CpfPassageiro: cpfPassageiro || "",
+      OrigemCoords: pontos[0]?.coords ? pontos[0].coords.join(",") : "",
+      DestinoCoords: pontos[pontos.length - 1]?.coords ? pontos[pontos.length - 1]!.coords!.join(",") : "",
+      ParadasCoords: pontos.slice(1, -1).map((p) => (p.coords ? p.coords.join(",") : "")).join(" | "),
     });
     setSalvo(true);
     setObservacoesCorrida("");
     setTimeout(() => setSalvo(false), 3000);
   };
 
+  const parseCoords = (str?: string): [number, number] | null => {
+    if (!str) return null;
+    const partes = str.split(",").map(Number);
+    if (partes.length !== 2 || partes.some(isNaN)) return null;
+    return [partes[0], partes[1]];
+  };
+
   const handleRefazerCorrida = (corrida: HistoricoCorrida) => {
-    const paradasArray = corrida.Paradas ? corrida.Paradas.split(" → ").filter(Boolean) : [];
+    const paradasTexto = corrida.Paradas ? corrida.Paradas.split(" → ").filter(Boolean) : [];
+    const paradasCoords = corrida.ParadasCoords ? corrida.ParadasCoords.split(" | ") : [];
     const novosPontos = [
-      { coords: null, texto: corrida.Origem || "" },
-      ...paradasArray.map((texto) => ({ coords: null, texto })),
-      { coords: null, texto: corrida.Destino || "" },
+      { coords: parseCoords(corrida.OrigemCoords), texto: corrida.Origem || "" },
+      ...paradasTexto.map((texto, idx) => ({ coords: parseCoords(paradasCoords[idx]), texto })),
+      { coords: parseCoords(corrida.DestinoCoords), texto: corrida.Destino || "" },
     ];
     setPontos(novosPontos);
     setPassageiro(corrida.Passageiro || "");

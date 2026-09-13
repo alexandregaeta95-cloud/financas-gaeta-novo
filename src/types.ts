@@ -416,6 +416,9 @@ export interface HistoricoCorrida {
   Motorista?: string;
   Passageiro?: string;
   CpfPassageiro?: string;
+  OrigemCoords?: string; // formato "lng,lat"
+  DestinoCoords?: string;
+  ParadasCoords?: string; // várias coordenadas separadas por " | "
 }
 
 export interface RegistroSaude {
