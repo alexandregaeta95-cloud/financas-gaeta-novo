@@ -376,14 +376,7 @@ export const ListaMercadoView: React.FC<Props> = ({
         Observacoes: checkoutObservacoes.trim() || undefined,
       };
 
-      try {
-        await onSaveLancamento(novoLancamento);
-      } catch (errLanc: any) {
-        console.error("Erro ao salvar lançamento da compra:", errLanc);
-        alert(`Erro ao salvar o lançamento: ${errLanc?.message || "Erro desconhecido"}`);
-        setIsFinalizando(false);
-        return;
-      }
+      onSaveLancamento(novoLancamento);
 
       setFinalizadoSuccess(true);
       setTimeout(() => setFinalizadoSuccess(false), 5000);
@@ -1073,6 +1066,7 @@ export const ListaMercadoView: React.FC<Props> = ({
 
       {showHistoricoModal && (
         <HistoricoMercadoModal
+          itens={itens}
           onClose={() => setShowHistoricoModal(false)}
           onRepetirCompra={handleRepetirCompra}
         />
