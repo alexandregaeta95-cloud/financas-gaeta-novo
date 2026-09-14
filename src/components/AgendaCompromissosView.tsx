@@ -3,6 +3,7 @@ import { CalendarDays, List, Plus, Edit2, Trash2, X, CheckCircle2, Clock, AlertC
 import { CompromissoAgenda } from "../types";
 import { generateNewId } from "../services/api";
 import { formatarHora } from "../utils/formatters";
+import { getLocalTodayDateStr } from "../services/notificationEngine";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
 import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
@@ -55,7 +56,7 @@ export const AgendaCompromissosView: React.FC<Props> = ({
 
   const [form, setForm] = useState<Partial<CompromissoAgenda>>({
     Titulo: "Reunião de Alinhamento",
-    Data: new Date().toISOString().split("T")[0],
+    Data: getLocalTodayDateStr(),
     Hora: "10:00",
     Descrição: "Alinhamento mensal de metas e despesas",
     Cor_De_Identificação: "#10b981",
@@ -77,7 +78,7 @@ export const AgendaCompromissosView: React.FC<Props> = ({
       setEditingItem(null);
       setForm({
         Titulo: "",
-        Data: new Date().toISOString().split("T")[0],
+        Data: getLocalTodayDateStr(),
         Hora: "09:00",
         Descrição: "",
         Cor_De_Identificação: "#10b981",
@@ -96,7 +97,7 @@ export const AgendaCompromissosView: React.FC<Props> = ({
     const item: CompromissoAgenda = {
       Id: editingItem?.Id || generateNewId("AGENDA"),
       Titulo: form.Titulo || "Compromisso",
-      Data: form.Data || new Date().toISOString().split("T")[0],
+      Data: form.Data || getLocalTodayDateStr(),
       Hora: form.Hora || "",
       Descrição: form.Descrição || "",
       Cor_De_Identificação: form.Cor_De_Identificação || "#10b981",

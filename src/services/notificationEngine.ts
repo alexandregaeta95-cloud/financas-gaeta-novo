@@ -67,19 +67,54 @@ export function parseRegistroDataHora(
   return null;
 }
 
-// Helper: Calculate diff in days between today and target date YYYY-MM-DD
-export function getDiffInDaysFromToday(dateStr: string): number | null {
+// Helper: Parse date to local components without timezone shifts
+export function parseDateToLocalParts(
+  dateStr?: string
+): { year: number; month: number; day: number; dateStrYMD: string } | null {
   if (!dateStr || typeof dateStr !== "string") return null;
-  const parts = dateStr.trim().split("-");
-  if (parts.length !== 3) return null;
+  const s = dateStr.trim();
+  // Pattern 1: YYYY-MM-DD
+  const isoMatch = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10) - 1;
+    const day = parseInt(isoMatch[3], 10);
+    const dateStrYMD = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return { year, month, day, dateStrYMD };
+  }
+  // Pattern 2: DD/MM/YYYY
+  const brMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (brMatch) {
+    const day = parseInt(brMatch[1], 10);
+    const month = parseInt(brMatch[2], 10) - 1;
+    const year = parseInt(brMatch[3], 10);
+    const dateStrYMD = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return { year, month, day, dateStrYMD };
+  }
+  return null;
+}
 
-  const year = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10) - 1;
-  const day = parseInt(parts[2], 10);
+// Helper: Parse time string (HH:mm or HH:mm:ss) into total minutes from midnight (device local time)
+export function parseTimeToMinutes(timeStr?: string): number | null {
+  if (!timeStr || typeof timeStr !== "string") return null;
+  const clean = timeStr.trim();
+  const match = clean.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (match) {
+    const h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    if (!isNaN(h) && !isNaN(m) && h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+      return h * 60 + m;
+    }
+  }
+  return null;
+}
 
-  if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+// Helper: Calculate diff in calendar days between device today and target date
+export function getDiffInDaysFromToday(dateStr: string): number | null {
+  const parsed = parseDateToLocalParts(dateStr);
+  if (!parsed) return null;
 
-  const target = new Date(year, month, day);
+  const target = new Date(parsed.year, parsed.month, parsed.day);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   target.setHours(0, 0, 0, 0);
@@ -199,11 +234,25 @@ export function evaluateAllNotifications({
 }): AppNotification[] {
   const list: AppNotification[] = [];
   const now = Date.now();
+  const nowDate = new Date();
+  const currentHour = nowDate.getHours();
+  const currentMin = nowDate.getMinutes();
+  const currentTotalMins = currentHour * 60 + currentMin;
+  const todayLocalStr = getLocalTodayDateStr(nowDate);
+  const currentDayOfWeek = nowDate.getDay(); // 0 = Domingo, 1 = Segunda, ...
 
   // 1. AGENDA & COMPROMISSOS
   agenda.forEach((item) => {
     const isDone = item.Concluído === true || String(item.Concluído).toUpperCase() === "SIM";
     if (isDone || !item.Data) return;
+
+    const lembreteAtivo =
+      item.Lembrete_Ativo === undefined ||
+      item.Lembrete_Ativo === null ||
+      String(item.Lembrete_Ativo).toUpperCase() === "SIM" ||
+      (item.Lembrete_Ativo as any) === true;
+
+    if (!lembreteAtivo) return;
 
     const diff = getDiffInDaysFromToday(item.Data);
     if (diff === null) return;
@@ -212,26 +261,84 @@ export function evaluateAllNotifications({
     const hora = item.Hora ? ` às ${item.Hora}` : "";
 
     if (diff === 0) {
-      list.push({
-        id: `agenda_${item.Id}_hoje`,
-        type: "agenda",
-        title: "📅 Compromisso Hoje!",
-        message: `${item.Titulo}${hora}${item.Descrição ? ` - ${item.Descrição}` : ""}`,
-        targetView: "agenda",
-        severity: "urgent",
-        timestamp: now,
-      });
+      // Data do compromisso é HOJE no fuso horário do dispositivo
+      const targetMins = parseTimeToMinutes(item.Hora);
+
+      if (targetMins !== null) {
+        const diffMins = currentTotalMins - targetMins;
+
+        if (diffMins < 0) {
+          // HORÁRIO FUTURO HOJE: o horário programado ainda não chegou!
+          // NÃO deve disparar alarme sonoro nem toast urgente prematuro.
+          list.push({
+            id: `agenda_${item.Id}_hoje_futuro`,
+            type: "agenda",
+            title: "📅 Compromisso Hoje (Mais tarde)",
+            message: `${item.Titulo}${hora}${item.Descrição ? ` - ${item.Descrição}` : ""}`,
+            targetView: "agenda",
+            severity: "info",
+            timestamp: now,
+            isAlarm: false,
+            soundEnabled: false,
+          });
+        } else if (diffMins >= 0 && diffMins <= 60) {
+          // HORÁRIO ATUAL BATEU COM O HORÁRIO PROGRAMADO (janela ativa: 0 a 60 min após o horário)
+          // DISPARA O ALARME SONORO!
+          const slotClean = (item.Hora || "0000").replace(/\D/g, "");
+          list.push({
+            id: `agenda_${item.Id}_${todayLocalStr}_${slotClean}`,
+            type: "agenda",
+            title: "📅 Hora do Compromisso!",
+            message: `${item.Titulo}${hora}${item.Descrição ? ` - ${item.Descrição}` : ""}`,
+            targetView: "agenda",
+            severity: "urgent",
+            timestamp: now,
+            isAlarm: true,
+            soundEnabled: true,
+          });
+        } else {
+          // Passaram mais de 60 min do horário programado: aviso pendente silencioso
+          list.push({
+            id: `agenda_${item.Id}_hoje_pendente`,
+            type: "agenda",
+            title: "📅 Compromisso de Hoje Pendente",
+            message: `${item.Titulo} estava agendado${hora}${item.Descrição ? ` - ${item.Descrição}` : ""}`,
+            targetView: "agenda",
+            severity: "warning",
+            timestamp: now,
+            isAlarm: false,
+            soundEnabled: false,
+          });
+        }
+      } else {
+        // Compromisso sem horário específico (dia inteiro)
+        list.push({
+          id: `agenda_${item.Id}_hoje`,
+          type: "agenda",
+          title: "📅 Compromisso Hoje!",
+          message: `${item.Titulo}${item.Descrição ? ` - ${item.Descrição}` : ""}`,
+          targetView: "agenda",
+          severity: "info",
+          timestamp: now,
+          isAlarm: false,
+          soundEnabled: false,
+        });
+      }
     } else if (diff > 0 && diff <= antecedence) {
+      // Lembrete prévio para dias futuros: puramente informativo, SEM som/alarme
       list.push({
         id: `agenda_${item.Id}_ant_${diff}`,
         type: "agenda",
         title: `📅 Lembrete de Compromisso (${diff === 1 ? "Amanhã" : `em ${diff} dias`})`,
         message: `${item.Titulo}${hora} no dia ${item.Data}`,
         targetView: "agenda",
-        severity: "warning",
+        severity: "info",
         timestamp: now,
+        isAlarm: false,
+        soundEnabled: false,
       });
     } else if (diff < 0) {
+      // Dias anteriores: aviso de atraso silencioso
       list.push({
         id: `agenda_${item.Id}_atrasado`,
         type: "agenda",
@@ -240,6 +347,8 @@ export function evaluateAllNotifications({
         targetView: "agenda",
         severity: "warning",
         timestamp: now,
+        isAlarm: false,
+        soundEnabled: false,
       });
     }
   });
@@ -254,15 +363,64 @@ export function evaluateAllNotifications({
     if (diff === null) return;
 
     if (diff === 0) {
-      list.push({
-        id: `nota_${item.Id}_hoje`,
-        type: "bloco_notas",
-        title: "📝 Lembrete de Anotação!",
-        message: `${item.Titulo}${item.Hora_Alarme ? ` às ${item.Hora_Alarme}` : ""}`,
-        targetView: "bloco_notas",
-        severity: "urgent",
-        timestamp: now,
-      });
+      const targetMins = parseTimeToMinutes(item.Hora_Alarme);
+
+      if (targetMins !== null) {
+        const diffMins = currentTotalMins - targetMins;
+
+        if (diffMins < 0) {
+          // Horário futuro hoje: não dispara alarme
+          list.push({
+            id: `nota_${item.Id}_hoje_futuro`,
+            type: "bloco_notas",
+            title: "📝 Lembrete de Anotação Programado",
+            message: `${item.Titulo}${item.Hora_Alarme ? ` às ${item.Hora_Alarme}` : ""}`,
+            targetView: "bloco_notas",
+            severity: "info",
+            timestamp: now,
+            isAlarm: false,
+            soundEnabled: false,
+          });
+        } else if (diffMins >= 0 && diffMins <= 60) {
+          // Horário bateu com o atual: dispara alarme sonoro
+          const slotClean = (item.Hora_Alarme || "0000").replace(/\D/g, "");
+          list.push({
+            id: `nota_${item.Id}_${todayLocalStr}_${slotClean}`,
+            type: "bloco_notas",
+            title: "📝 Hora do Lembrete!",
+            message: `${item.Titulo}${item.Hora_Alarme ? ` às ${item.Hora_Alarme}` : ""}`,
+            targetView: "bloco_notas",
+            severity: "urgent",
+            timestamp: now,
+            isAlarm: true,
+            soundEnabled: true,
+          });
+        } else {
+          list.push({
+            id: `nota_${item.Id}_hoje_pendente`,
+            type: "bloco_notas",
+            title: "📝 Lembrete de Anotação Pendente",
+            message: `${item.Titulo}${item.Hora_Alarme ? ` às ${item.Hora_Alarme}` : ""}`,
+            targetView: "bloco_notas",
+            severity: "warning",
+            timestamp: now,
+            isAlarm: false,
+            soundEnabled: false,
+          });
+        }
+      } else {
+        list.push({
+          id: `nota_${item.Id}_hoje`,
+          type: "bloco_notas",
+          title: "📝 Lembrete de Anotação!",
+          message: item.Titulo,
+          targetView: "bloco_notas",
+          severity: "info",
+          timestamp: now,
+          isAlarm: false,
+          soundEnabled: false,
+        });
+      }
     }
   });
 
@@ -277,15 +435,63 @@ export function evaluateAllNotifications({
     const horaStr = c.Horas ? ` às ${c.Horas}` : "";
 
     if (diff === 0) {
-      list.push({
-        id: `consulta_${c.Id}_hoje`,
-        type: "saude",
-        title: "🩺 Consulta Médica Hoje!",
-        message: `${c.Especialidade}${medicoStr}${horaStr}${c.Local ? ` em ${c.Local}` : ""}`,
-        targetView: "saude",
-        severity: "urgent",
-        timestamp: now,
-      });
+      const targetMins = parseTimeToMinutes(c.Horas);
+
+      if (targetMins !== null) {
+        const diffMins = currentTotalMins - targetMins;
+
+        if (diffMins < -30) {
+          // Consulta hoje mais tarde: informativo silencioso
+          list.push({
+            id: `consulta_${c.Id}_hoje_info`,
+            type: "saude",
+            title: "🩺 Consulta Médica Hoje",
+            message: `${c.Especialidade}${medicoStr}${horaStr}${c.Local ? ` em ${c.Local}` : ""}`,
+            targetView: "saude",
+            severity: "info",
+            timestamp: now,
+            isAlarm: false,
+            soundEnabled: false,
+          });
+        } else if (diffMins >= -30 && diffMins <= 60) {
+          // Horário próximo (30 min antes até 60 min depois): dispara alarme
+          list.push({
+            id: `consulta_${c.Id}_hoje`,
+            type: "saude",
+            title: "🩺 Hora da Consulta Médica!",
+            message: `${c.Especialidade}${medicoStr}${horaStr}${c.Local ? ` em ${c.Local}` : ""}`,
+            targetView: "saude",
+            severity: "urgent",
+            timestamp: now,
+            isAlarm: true,
+            soundEnabled: true,
+          });
+        } else {
+          list.push({
+            id: `consulta_${c.Id}_hoje_passada`,
+            type: "saude",
+            title: "🩺 Consulta Médica de Hoje",
+            message: `${c.Especialidade}${medicoStr}${horaStr}`,
+            targetView: "saude",
+            severity: "warning",
+            timestamp: now,
+            isAlarm: false,
+            soundEnabled: false,
+          });
+        }
+      } else {
+        list.push({
+          id: `consulta_${c.Id}_hoje`,
+          type: "saude",
+          title: "🩺 Consulta Médica Hoje!",
+          message: `${c.Especialidade}${medicoStr}${c.Local ? ` em ${c.Local}` : ""}`,
+          targetView: "saude",
+          severity: "info",
+          timestamp: now,
+          isAlarm: false,
+          soundEnabled: false,
+        });
+      }
     } else if (diff > 0 && diff <= 3) {
       list.push({
         id: `consulta_${c.Id}_prox`,
@@ -293,8 +499,10 @@ export function evaluateAllNotifications({
         title: `🩺 Consulta Médica (${diff === 1 ? "Amanhã" : `em ${diff} dias`})`,
         message: `${c.Especialidade}${medicoStr}${horaStr} no dia ${c.Data}`,
         targetView: "saude",
-        severity: "warning",
+        severity: "info",
         timestamp: now,
+        isAlarm: false,
+        soundEnabled: false,
       });
     }
   });
@@ -465,13 +673,6 @@ export function evaluateAllNotifications({
   });
 
   // D. Lembretes Diários de Saúde (Pressão Arterial e Glicemia - Aba 22)
-  const nowDate = new Date();
-  const currentHour = nowDate.getHours();
-  const currentMin = nowDate.getMinutes();
-  const currentTotalMins = currentHour * 60 + currentMin;
-  const todayLocalStr = getLocalTodayDateStr(nowDate);
-  const currentDayOfWeek = nowDate.getDay(); // 0 = Domingo, 1 = Segunda, ...
-
   // DEBUG LOG TEMPORÁRIO
   console.groupCollapsed(
     `[Lembretes Saúde] Checagem às ${String(currentHour).padStart(2, "0")}:${String(currentMin).padStart(2, "0")} (${todayLocalStr})`
@@ -1290,7 +1491,7 @@ export function evaluateAllNotifications({
     })
     .map((item) => ({
       ...item,
-      isAlarm: item.isAlarm !== undefined ? item.isAlarm : true,
-      soundEnabled: item.soundEnabled !== undefined ? item.soundEnabled : true,
+      isAlarm: item.isAlarm === true,
+      soundEnabled: item.soundEnabled === true,
     }));
 }

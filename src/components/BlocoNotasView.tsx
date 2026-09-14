@@ -4,6 +4,7 @@ import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
 import { AnotacaoBloco } from "../types";
 import { generateNewId } from "../services/api";
+import { getLocalTodayDateStr } from "../services/notificationEngine";
 import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 interface Props {
@@ -31,7 +32,7 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
       setForm({
         Titulo: "",
         Texto: "",
-        Data_Alarme: now.toISOString().split("T")[0],
+        Data_Alarme: getLocalTodayDateStr(now),
         Hora_Alarme: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
       });
       setComAlarme(false);
@@ -46,7 +47,7 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
       Id: editingItem?.Id || generateNewId("NOTA"),
       Titulo: form.Titulo || "Sem título",
       Texto: form.Texto || "",
-      Data_Criacao: editingItem?.Data_Criacao || now.toISOString().split("T")[0],
+      Data_Criacao: editingItem?.Data_Criacao || getLocalTodayDateStr(now),
       Hora_Criacao: editingItem?.Hora_Criacao || `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
       Data_Alarme: comAlarme ? form.Data_Alarme || "" : "",
       Hora_Alarme: comAlarme ? form.Hora_Alarme || "" : "",
