@@ -15,6 +15,7 @@ import {
 import { AlimentoAnaliseResult, AlimentoItem } from "../types";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
+import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 interface Props {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export const EditarAlimentoModal: React.FC<Props> = ({
   const [carboidratos, setCarboidratos] = useState<number>(0);
   const [gorduras, setGorduras] = useState<number>(0);
   const [descricao, setDescricao] = useState("");
+  const descricaoRef = React.useRef<HTMLTextAreaElement>(null);
   const [observacoes, setObservacoes] = useState("");
   const [itens, setItens] = useState<AlimentoItem[]>([]);
 
@@ -218,7 +220,15 @@ export const EditarAlimentoModal: React.FC<Props> = ({
             <label className="text-xs font-semibold text-slate-300">
               Descrição / Ingredientes Gerais
             </label>
+            <ColorTextToolbar
+              onAplicarCor={(cor) =>
+                aplicarCorNoTexto(descricaoRef, descricao, cor, (novoTexto) =>
+                  setDescricao(novoTexto)
+                )
+              }
+            />
             <VoiceTextArea
+              ref={descricaoRef}
               rows={2}
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}

@@ -51,6 +51,7 @@ import { exportReceitaPDF, agruparReceitasPorPrescricao, GrupoReceitaMedica } fr
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
+import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 interface Props {
   consultas: ConsultaMedica[];
@@ -286,6 +287,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
     Observação: "",
     Ativa: true,
   });
+  const receitaInstrucoesRef = React.useRef<HTMLTextAreaElement>(null);
 
 
   // Alerts logic for medical appointments (2 days before)
@@ -725,7 +727,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                   </div>
 
                   {c.Observação && (
-                    <p className="text-xs text-slate-400 italic">"{c.Observação}"</p>
+                    <p className="text-xs text-slate-400 italic">"{renderTextoComCores(c.Observação)}"</p>
                   )}
                 </div>
               ))}
@@ -872,7 +874,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                               </div>
                               {(med.Instruções || med.Instrucoes || med.Observação || med.Observacao) && (
                                 <div className="text-[11px] text-slate-400 mt-1 pl-7 italic">
-                                  "{med.Instruções || med.Instrucoes || med.Observação || med.Observacao}"
+                                  "{renderTextoComCores(med.Instruções || med.Instrucoes || med.Observação || med.Observacao)}"
                                 </div>
                               )}
                             </div>
@@ -1289,7 +1291,15 @@ export const SaudeInfracoesView: React.FC<Props> = ({
 
               <div>
                 <label className="text-slate-400 block mb-1">Instruções de Uso / Observações</label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(receitaInstrucoesRef, receitaForm.Instruções || "", cor, (novoTexto) =>
+                      setReceitaForm({ ...receitaForm, Instruções: novoTexto })
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={receitaInstrucoesRef}
                   rows={2}
                   placeholder="Ex: Tomar após as principais refeições, não interromper o tratamento."
                   value={receitaForm.Instruções || ""}

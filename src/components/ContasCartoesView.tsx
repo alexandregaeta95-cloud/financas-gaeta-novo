@@ -19,6 +19,7 @@ import { getFaturasPorCartao } from "../utils/faturaCartao";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
+import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 const BANCOS_SUGESTOES = [
   "ITAÚ",
@@ -71,6 +72,7 @@ export const ContasCartoesView: React.FC<Props> = ({
   onSaveLancamento,
 }) => {
   const [activeTab, setActiveTab] = useState<"contas" | "cartoes">("contas");
+  const transferObservacaoRef = React.useRef<HTMLTextAreaElement>(null);
 
   // Delete Confirmation State
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -1254,7 +1256,15 @@ export const ContasCartoesView: React.FC<Props> = ({
 
               <div>
                 <label className="text-slate-400 block mb-1 font-medium">Observação (Opcional)</label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(transferObservacaoRef, transferForm.Observacao || "", cor, (novoTexto) =>
+                      setTransferForm((prev) => ({ ...prev, Observacao: novoTexto }))
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={transferObservacaoRef}
                   value={transferForm.Observacao}
                   onChange={(e) => setTransferForm((prev) => ({ ...prev, Observacao: e.target.value }))}
                   placeholder="Observações sobre a transferência..."

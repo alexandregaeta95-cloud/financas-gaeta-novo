@@ -21,6 +21,7 @@ import { parseCurrency, formatCurrency } from "../utils/formatters";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
+import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 import { LerListaFotoModal } from "./LerListaFotoModal";
 import { HistoricoMercadoModal } from "./HistoricoMercadoModal";
 
@@ -44,6 +45,7 @@ export const ListaMercadoView: React.FC<Props> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showHistoricoModal, setShowHistoricoModal] = useState(false);
   const [editingItem, setEditingItem] = useState<ItemMercado | null>(null);
+  const observacaoRef = React.useRef<HTMLTextAreaElement>(null);
   const [quickInput, setQuickInput] = useState("");
   const [valorEstDisplay, setValorEstDisplay] = useState("");
 
@@ -881,7 +883,15 @@ export const ListaMercadoView: React.FC<Props> = ({
               {/* Observações */}
               <div>
                 <label className="text-slate-400 block mb-1">Observações</label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(observacaoRef, form.Observação || "", cor, (novoTexto) =>
+                      setForm({ ...form, Observação: novoTexto })
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={observacaoRef}
                   rows={2}
                   placeholder="Ex: Marca de preferência, detalhes..."
                   value={form.Observação || ""}

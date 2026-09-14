@@ -4,6 +4,7 @@ import { RegistroSaude } from "../types";
 import { generateNewId } from "../services/api";
 import { calcularImc } from "../utils/imc";
 import { VoiceTextArea } from "./VoiceTextArea";
+import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 interface Props {
   isOpen: boolean;
@@ -72,6 +73,7 @@ export const RegistroSaudeModal: React.FC<Props> = ({
   // Sub-aba 1: Peso
   const [pesoValor, setPesoValor] = useState<string>("");
   const [pesoObs, setPesoObs] = useState("");
+  const pesoObsRef = React.useRef<HTMLTextAreaElement>(null);
 
   // Live IMC calculation preview for Peso
   const imcLivePreview = useMemo(() => {
@@ -86,11 +88,13 @@ export const RegistroSaudeModal: React.FC<Props> = ({
   const [pressaoDiastolica, setPressaoDiastolica] = useState<string>("");
   const [pressaoBpm, setPressaoBpm] = useState<string>("");
   const [pressaoObs, setPressaoObs] = useState("");
+  const pressaoObsRef = React.useRef<HTMLTextAreaElement>(null);
 
   // Sub-aba 3: Glicemia
   const [glicemiaValor, setGlicemiaValor] = useState<string>("");
   const [glicemiaContexto, setGlicemiaContexto] = useState<string>("JEJUM");
   const [glicemiaObs, setGlicemiaObs] = useState("");
+  const glicemiaObsRef = React.useRef<HTMLTextAreaElement>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -436,7 +440,15 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Observações / Contexto (Peso)
                 </label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(pesoObsRef, pesoObs, cor, (novoTexto) =>
+                      setPesoObs(novoTexto)
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={pesoObsRef}
                   rows={2}
                   placeholder="Ex: Pela manhã em jejum; após treino de pernas..."
                   value={pesoObs}
@@ -528,7 +540,15 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Observações / Sintomas (Pressão)
                 </label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(pressaoObsRef, pressaoObs, cor, (novoTexto) =>
+                      setPressaoObs(novoTexto)
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={pressaoObsRef}
                   rows={2}
                   placeholder="Ex: Aferido em repouso de 5 min; após tomar café..."
                   value={pressaoObs}
@@ -588,7 +608,15 @@ export const RegistroSaudeModal: React.FC<Props> = ({
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Observações / Alimentos (Glicemia)
                 </label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(glicemiaObsRef, glicemiaObs, cor, (novoTexto) =>
+                      setGlicemiaObs(novoTexto)
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={glicemiaObsRef}
                   rows={2}
                   placeholder="Ex: 2 horas após almoço com massas; jejum de 10 horas..."
                   value={glicemiaObs}

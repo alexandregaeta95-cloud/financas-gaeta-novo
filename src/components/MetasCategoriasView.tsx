@@ -14,6 +14,7 @@ import { MetasRelatorioModal } from "./MetasRelatorioModal";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
+import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 interface Props {
   metas: MetaCategoria[];
@@ -107,6 +108,7 @@ export const MetasCategoriasView: React.FC<Props> = ({
     Mes_Ano: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`,
     Alerta_Porcentagem: 80,
   });
+  const metaObservacaoRef = React.useRef<HTMLTextAreaElement>(null);
 
   // Categoria Modal
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
@@ -638,7 +640,15 @@ export const MetasCategoriasView: React.FC<Props> = ({
 
               <div>
                 <label className="text-slate-400 block mb-1">Observações da Meta</label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(metaObservacaoRef, metaForm.Observação || "", cor, (novoTexto) =>
+                      setMetaForm({ ...metaForm, Observação: novoTexto })
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={metaObservacaoRef}
                   rows={2}
                   placeholder="Ex: Teto máximo para economia este mês..."
                   value={metaForm.Observação || ""}

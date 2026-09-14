@@ -21,6 +21,7 @@ import { formatarHora } from "../utils/formatters";
 import { testAlarmSound } from "../services/alarmSoundService";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
+import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 interface LembretesRemediosModalProps {
   isOpen: boolean;
@@ -47,6 +48,7 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
   const [formH3, setFormH3] = useState("");
   const [formIntervaloDias, setFormIntervaloDias] = useState<number | string>(1);
   const [formInstrucoes, setFormInstrucoes] = useState("");
+  const instrucoesRef = React.useRef<HTMLTextAreaElement>(null);
 
   const [showH2, setShowH2] = useState(false);
   const [showH3, setShowH3] = useState(false);
@@ -560,7 +562,15 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
                   <Info className="w-3.5 h-3.5 text-slate-400" />
                   <span>Instruções / Como tomar (Opcional)</span>
                 </label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(instrucoesRef, formInstrucoes, cor, (novoTexto) =>
+                      setFormInstrucoes(novoTexto)
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={instrucoesRef}
                   value={formInstrucoes}
                   onChange={(e) => setFormInstrucoes(e.target.value.toUpperCase())}
                   placeholder="Ex: Tomar em jejum com água; tomar 1 comprimido após o almoço..."
@@ -740,7 +750,7 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
                             {/* Instruções */}
                             {instrucoes && (
                               <p className="text-xs text-slate-400 italic bg-slate-900/60 p-2 rounded-xl border border-slate-800/60 mt-1">
-                                💬 {instrucoes}
+                                💬 {renderTextoComCores(instrucoes)}
                               </p>
                             )}
                           </div>

@@ -30,6 +30,7 @@ import { markCycleAsCompleted } from "../services/snoozeService";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
+import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 const TEMPLATES_MANUTENCAO = [
   {
@@ -270,6 +271,10 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     Veiculo: veiculos[0]?.Modelo || "CARRO",
     Conta: "",
   });
+  const servicoObsRef = React.useRef<HTMLTextAreaElement>(null);
+  const manutencaoObsRef = React.useRef<HTMLTextAreaElement>(null);
+  const infracaoDescRef = React.useRef<HTMLTextAreaElement>(null);
+  const infracaoObsRef = React.useRef<HTMLTextAreaElement>(null);
 
   // Manutenção Agendada Modal State
   const [isManutencaoModalOpen, setIsManutencaoModalOpen] = useState(false);
@@ -1269,7 +1274,7 @@ const sanitizarDataISO = (data?: string): string => {
                         {s.Observações && (
                           <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
                             <span className="text-[10px] text-slate-500 block font-medium">Observações</span>
-                            <p className="text-slate-300 text-[11px] italic">"{s.Observações}"</p>
+                            <p className="text-slate-300 text-[11px] italic">"{renderTextoComCores(s.Observações)}"</p>
                           </div>
                         )}
 
@@ -1578,7 +1583,7 @@ const sanitizarDataISO = (data?: string): string => {
                         {m.Observações && (
                           <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
                             <span className="text-[10px] text-slate-500 block font-medium">Observações</span>
-                            <p className="text-slate-300 text-[11px] italic">"{m.Observações}"</p>
+                            <p className="text-slate-300 text-[11px] italic">"{renderTextoComCores(m.Observações)}"</p>
                           </div>
                         )}
 
@@ -2228,7 +2233,15 @@ const sanitizarDataISO = (data?: string): string => {
                 <label className="text-slate-300 text-xs font-medium block mb-1">
                   Observações / Peças Trocadas
                 </label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(servicoObsRef, servicoForm.Observações || "", cor, (novoTexto) =>
+                      setServicoForm({ ...servicoForm, Observações: novoTexto })
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={servicoObsRef}
                   placeholder="Ex: Trocadas pastilhas dianteiras e fluido de freio DOT4..."
                   value={servicoForm.Observações || ""}
                   onChange={(e) => setServicoForm({ ...servicoForm, Observações: e.target.value })}
@@ -2694,7 +2707,15 @@ const sanitizarDataISO = (data?: string): string => {
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-slate-400 font-medium">Observações / Instruções</label>
                 </div>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(manutencaoObsRef, manutencaoForm.Observações || "", cor, (novoTexto) =>
+                      setManutencaoForm({ ...manutencaoForm, Observações: novoTexto })
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={manutencaoObsRef}
                   placeholder="Ex: Calibrar dianteiros 32 psi e traseiros 30 psi. Óleo sintético 5W30..."
                   value={manutencaoForm.Observações || ""}
                   onChange={(e) => setManutencaoForm({ ...manutencaoForm, Observações: e.target.value })}
@@ -2998,7 +3019,15 @@ const sanitizarDataISO = (data?: string): string => {
               {/* 13. Descrição */}
               <div>
                 <label className="text-slate-400 block mb-1">Descrição</label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(infracaoDescRef, infracaoForm.Descrição || "", cor, (novoTexto) =>
+                      setInfracaoForm({ ...infracaoForm, Descrição: novoTexto })
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={infracaoDescRef}
                   rows={2}
                   placeholder="Descrição da infração..."
                   value={infracaoForm.Descrição || ""}
@@ -3084,7 +3113,15 @@ const sanitizarDataISO = (data?: string): string => {
               {/* 16. Observação */}
               <div>
                 <label className="text-slate-400 block mb-1">Observação</label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(infracaoObsRef, infracaoForm.Observação || "", cor, (novoTexto) =>
+                      setInfracaoForm({ ...infracaoForm, Observação: novoTexto })
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={infracaoObsRef}
                   rows={2}
                   placeholder="Observações adicionais..."
                   value={infracaoForm.Observação || ""}

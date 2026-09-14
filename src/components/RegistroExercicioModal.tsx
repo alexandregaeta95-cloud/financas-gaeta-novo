@@ -15,6 +15,7 @@ import {
 import { ExercicioRegistro } from "../types";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
+import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 interface Props {
   isOpen: boolean;
@@ -51,6 +52,7 @@ export const RegistroExercicioModal: React.FC<Props> = ({
   const [intensidade, setIntensidade] = useState<"LEVE" | "MODERADO" | "INTENSO">("MODERADO");
   const [calorias, setCalorias] = useState<string>("");
   const [observacoes, setObservacoes] = useState<string>("");
+  const observacoesRef = React.useRef<HTMLTextAreaElement>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -351,7 +353,15 @@ export const RegistroExercicioModal: React.FC<Props> = ({
             <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
               <FileText className="w-3 h-3 text-slate-500" /> Observações do Treino (Opcional)
             </label>
+            <ColorTextToolbar
+              onAplicarCor={(cor) =>
+                aplicarCorNoTexto(observacoesRef, observacoes, cor, (novoTexto) =>
+                  setObservacoes(novoTexto)
+                )
+              }
+            />
             <VoiceTextArea
+              ref={observacoesRef}
               rows={2}
               placeholder="EX: TREINO A: PEITO E TRÍCEPS, 4 SÉRIES DE SUPINO..."
               value={observacoes}
