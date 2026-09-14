@@ -658,6 +658,12 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     }));
   };
 
+const sanitizarDataISO = (data?: string): string => {
+  if (!data) return "";
+  const match = data.match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : data;
+};
+
   const handleSaveManutencaoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const item: ManutencaoAgendada = {
@@ -665,7 +671,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       Veículo: manutencaoForm.Veículo || veiculos[0]?.Modelo || "CARRO",
       Descrição: manutencaoForm.Descrição || "Manutenção Agendada",
       Tipo_Agendamento: manutencaoForm.Tipo_Agendamento || "Dias",
-      Data_Alvo: manutencaoForm.Data_Alvo || "",
+      Data_Alvo: sanitizarDataISO(manutencaoForm.Data_Alvo),
       KM_Alvo: parseCurrency(manutencaoForm.KM_Alvo),
       Recorrente: manutencaoForm.Recorrente || "SIM",
       Frequência_Meses: parseCurrency(manutencaoForm.Frequência_Meses) || 12,
@@ -2221,7 +2227,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
 
       {/* Modal: Manutenção Agendada & Lembretes Configuráveis */}
       {isManutencaoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-5 sm:p-6 space-y-4 text-xs my-8 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
