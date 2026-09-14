@@ -17,6 +17,52 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
   const [form, setForm] = useState<Partial<AnotacaoBloco>>({});
   const [comAlarme, setComAlarme] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const textoRef = React.useRef<HTMLTextAreaElement>(null);
+
+  const aplicarCor = (cor: string) => {
+    const el = textoRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    if (start === end) {
+      alert("Selecione um trecho do texto primeiro.");
+      return;
+    }
+    const textoAtual = form.Texto || "";
+    const selecionado = textoAtual.slice(start, end);
+    const novoTexto =
+      textoAtual.slice(0, start) + `[[${cor}]]${selecionado}[[/${cor}]]` + textoAtual.slice(end);
+    setForm({ ...form, Texto: novoTexto });
+  };
+
+  const renderTextoComCores = (texto: string) => {
+    const regex = /\[\[(vermelho|azul|verde|amarelo)\]\](.*?)\[\[\/\1\]\]/g;
+    const cores: Record<string, string> = {
+      vermelho: "#f87171",
+      azul: "#60a5fa",
+      verde: "#4ade80",
+      amarelo: "#facc15",
+    };
+    const partes: React.ReactNode[] = [];
+    let ultimoIndex = 0;
+    let match;
+    let key = 0;
+    while ((match = regex.exec(texto)) !== null) {
+      if (match.index > ultimoIndex) {
+        partes.push(texto.slice(ultimoIndex, match.index));
+      }
+      partes.push(
+        <span key={key++} style={{ color: cores[match[1]] }}>
+          {match[2]}
+        </span>
+      );
+      ultimoIndex = match.index + match[0].length;
+    }
+    if (ultimoIndex < texto.length) {
+      partes.push(texto.slice(ultimoIndex));
+    }
+    return partes;
+  };
 
   const handleOpen = (item?: AnotacaoBloco) => {
     if (item) {
@@ -100,7 +146,7 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
                 </button>
               </div>
             </div>
-            <p className="text-slate-300 text-xs whitespace-pre-wrap">{item.Texto}</p>
+            <p className="text-slate-300 text-xs whitespace-pre-wrap">{renderTextoComCores(item.Texto)}</p>
             <div className="flex items-center gap-3 text-[10px] text-slate-500 pt-1 border-t border-slate-800">
               <span>{item.Data_Criacao} às {item.Hora_Criacao}</span>
               {item.Alarme_Ativo === "SIM" ? (
@@ -140,7 +186,24 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
               </div>
               <div>
                 <label className="text-slate-400 block mb-1">Anotação</label>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-slate-500 text-[10px]">Selecione o texto e clique numa cor:</span>
+                  {["vermelho", "azul", "verde", "amarelo"].map((cor) => (
+                    <button
+                      key={cor}
+                      type="button"
+                      onClick={() => aplicarCor(cor)}
+                      className="w-5 h-5 rounded-full border border-slate-600"
+                      style={{
+                        backgroundColor:
+                          cor === "vermelho" ? "#f87171" : cor === "azul" ? "#60a5fa" : cor === "verde" ? "#4ade80" : "#facc15",
+                      }}
+                      title={cor}
+                    />
+                  ))}
+                </div>
                 <VoiceTextArea
+                  ref={textoRef}
                   rows={3}
                   value={form.Texto || ""}
                   onChange={(e) => setForm({ ...form, Texto: e.target.value })}

@@ -11,7 +11,7 @@ export interface VoiceTextAreaProps
   appendMode?: boolean;
 }
 
-export const VoiceTextArea: React.FC<VoiceTextAreaProps> = ({
+export const VoiceTextArea = React.forwardRef<HTMLTextAreaElement, VoiceTextAreaProps>(({
   value,
   onChange,
   uppercase = false,
@@ -23,7 +23,7 @@ export const VoiceTextArea: React.FC<VoiceTextAreaProps> = ({
   rows = 3,
   onVoiceInput,
   ...props
-}) => {
+}, ref) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -69,7 +69,11 @@ export const VoiceTextArea: React.FC<VoiceTextAreaProps> = ({
   return (
     <div className={`relative w-full ${containerClassName}`}>
       <textarea
-        ref={textareaRef}
+        ref={(el) => {
+          (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
+          if (typeof ref === "function") ref(el);
+          else if (ref) (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
+        }}
         rows={rows}
         value={value}
         onChange={handleInputChange}
@@ -89,4 +93,4 @@ export const VoiceTextArea: React.FC<VoiceTextAreaProps> = ({
       </div>
     </div>
   );
-};
+});
