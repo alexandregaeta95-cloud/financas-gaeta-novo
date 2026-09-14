@@ -36,7 +36,7 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
   };
 
   const renderTextoComCores = (texto: string) => {
-    const regex = /\[\[(vermelho|azul|verde|amarelo)\]\](.*?)\[\[\/\1\]\]/g;
+    const regex = /\[\[(vermelho|azul|verde|amarelo)\]\](.*?)\[\[\/\1\]\]/gi;
     const cores: Record<string, string> = {
       vermelho: "#f87171",
       azul: "#60a5fa",
@@ -51,8 +51,9 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
       if (match.index > ultimoIndex) {
         partes.push(texto.slice(ultimoIndex, match.index));
       }
+      const corKey = match[1].toLowerCase();
       partes.push(
-        <span key={key++} style={{ color: cores[match[1]] }}>
+        <span key={key++} style={{ color: cores[corKey] }}>
           {match[2]}
         </span>
       );
