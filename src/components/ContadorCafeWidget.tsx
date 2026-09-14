@@ -16,6 +16,7 @@ import {
 import { ConsumoCafe } from "../types";
 import { RegistroCafeModal } from "./RegistroCafeModal";
 import { formatDateBR } from "../utils/formatters";
+import { generateNewId } from "../services/api";
 
 interface Props {
   consumosCafe: ConsumoCafe[];
@@ -114,9 +115,10 @@ export const ContadorCafeWidget: React.FC<Props> = ({
     const currentMinutes = String(now.getMinutes()).padStart(2, "0");
     const hora = `${currentHours}:${currentMinutes}`;
 
+    const novoId = generateNewId("CAFE");
     const newCafe: ConsumoCafe = {
-      id: `CAFE_${Date.now()}`,
-      Id: `CAFE_${Date.now()}`,
+      id: novoId,
+      Id: novoId,
       data: todayStr,
       Data: todayStr,
       hora,

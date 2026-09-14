@@ -19,6 +19,7 @@ import { ConsumoAgua, ConfigAgua } from "../types";
 import { RegistroAguaModal } from "./RegistroAguaModal";
 import { ConfigAguaModal } from "./ConfigAguaModal";
 import { formatDateBR } from "../utils/formatters";
+import { generateNewId } from "../services/api";
 
 interface Props {
   consumosAgua: ConsumoAgua[];
@@ -130,9 +131,10 @@ export const ContadorAguaWidget: React.FC<Props> = ({
     const currentMinutes = String(now.getMinutes()).padStart(2, "0");
     const hora = `${currentHours}:${currentMinutes}`;
 
+    const novoId = generateNewId("AGUA");
     const newAgua: ConsumoAgua = {
-      id: `AGUA_${Date.now()}`,
-      Id: `AGUA_${Date.now()}`,
+      id: novoId,
+      Id: novoId,
       data: todayStr,
       Data: todayStr,
       hora,
