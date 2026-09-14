@@ -2368,6 +2368,7 @@ const sanitizarDataISO = (data?: string): string => {
                           setManutencaoForm((prev) => ({
                             ...prev,
                             Tipo_Agendamento: tab.id as any,
+                            Recorrente: tab.id === "Data" ? "NÃO" : "SIM",
                           }))
                         }
                         className={`p-2 rounded-xl text-left border transition-all cursor-pointer ${
