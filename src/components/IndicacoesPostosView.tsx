@@ -97,6 +97,45 @@ function isValidPostoName(val: any): boolean {
   return true;
 }
 
+// Extrai e valida a leitura de hodômetro (Km_Atual). Retorna 0 se vazio, nulo ou "0" (dado ausente)
+function extractKmAtual(item: any): number {
+  if (!item) return 0;
+  const raw =
+    item.Km_Atual ??
+    (item as any)["Km_Atual"] ??
+    (item as any)["Km Atual"] ??
+    (item as any).kmAtual ??
+    (item as any).KM ??
+    (item as any).km;
+
+  if (raw === undefined || raw === null) return 0;
+  const str = String(raw).trim();
+  if (str === "" || str === "0" || str === "0.0" || str === "0,0") return 0;
+
+  const num = parseCurrency(str);
+  if (isNaN(num) || num <= 0) return 0;
+  return num;
+}
+
+// Extrai e normaliza o Tipo de Combustível para comparação exata (remove acentos e padroniza)
+function extractFuelType(item: any): string {
+  if (!item) return "";
+  const raw =
+    item.Tipo_Combustivel ??
+    (item as any)["Tipo_Combustivel"] ??
+    (item as any)["Tipo Combustivel"] ??
+    (item as any)["Tipo Combustível"] ??
+    (item as any).tipo_combustivel ??
+    (item as any).tipoCombustivel ??
+    "";
+  const s = String(raw).trim().toUpperCase().replace(/\s+/g, " ");
+  if (!s) return "";
+  const normalized = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (normalized === "ETANOL") return "ALCOOL";
+  if (normalized === "ETANOL ADITIVADO") return "ALCOOL ADITIVADO";
+  return normalized;
+}
+
 function getPostoName(entry: any): string {
   if (!entry) return "Posto Convencional";
 
@@ -268,8 +307,43 @@ export const IndicacoesPostosView: React.FC<Props> = ({ lancamentos }) => {
         // Recalcula Km/L dinamicamente comparando o odômetro consecutivo atual com o anterior existente
         if (i > 0) {
           const prevEntry = sorted[i - 1];
-          const currentKm = parseCurrency(entry.Km_Atual ?? (entry as any).kmAtual ?? (entry as any).KM ?? (entry as any).km);
-          const prevKm = parseCurrency(prevEntry.Km_Atual ?? (prevEntry as any).kmAtual ?? (prevEntry as any).KM ?? (prevEntry as any).km);
+          const currentKm = extractKmAtual(entry);
+          const prevKm = extractKmAtual(prevEntry);
+
+          // 2. Verificação explícita: Km_Atual ausente ou igual a 0 é dado ausente e NÃO pode ser usado
+          if (!currentKm || currentKm === 0) {
+            // Pular esse registro do cálculo de rendimento (evita distâncias absurdas de 0 a 130.000km)
+            continue;
+          }
+          if (!prevKm || prevKm === 0) {
+            // Pular se o abastecimento anterior não teve leitura válida de hodômetro
+            continue;
+          }
+
+          // A leitura atual do hodômetro deve ser estritamente maior que a anterior
+          if (currentKm <= prevKm) {
+            continue;
+          }
+
+          // Quantidade de litros deve ser maior que zero
+          if (litros <= 0) {
+            continue;
+          }
+
+          // 1. Verificação de Tipo de Combustível: só calcula comparando o mesmo Tipo_Combustivel
+          const currentFuelType = extractFuelType(entry);
+          const prevFuelType = extractFuelType(prevEntry);
+          if (!currentFuelType || !prevFuelType || currentFuelType !== prevFuelType) {
+            // Tipos de combustível diferentes (ex: Álcool com Gasolina) ou tipo ausente: pula
+            continue;
+          }
+
+          // Verificação de Posto: só calcula se forem abastecimentos consecutivos no mesmo posto
+          const prevPostoName = getPostoName(prevEntry);
+          if (postoName.toLowerCase() !== prevPostoName.toLowerCase()) {
+            // Abastecimentos em postos distintos não medem o rendimento deste posto
+            continue;
+          }
 
           // O cálculo "km percorrido ÷ litros" só é válido no método cheio-a-cheio:
           // exige que TANTO o abastecimento atual quanto o anterior tenham sido tanque cheio.
@@ -281,20 +355,15 @@ export const IndicacoesPostosView: React.FC<Props> = ({ lancamentos }) => {
           const isTanqueCheioAtual = !isParcial(entry.Completou_O_Tanque);
           const isTanqueCheioAnterior = !isParcial(prevEntry.Completou_O_Tanque);
 
-          if (
-            currentKm > 0 &&
-            prevKm > 0 &&
-            currentKm > prevKm &&
-            litros > 0 &&
-            isTanqueCheioAtual &&
-            isTanqueCheioAnterior
-          ) {
-            const kmPercorrido = currentKm - prevKm;
-            const dynamicMediaKmL = kmPercorrido / litros;
-            // Validação de sanidade (evita discrepâncias extremas de digitação)
-            if (dynamicMediaKmL > 0 && dynamicMediaKmL <= 100) {
-              st.mediaKmLList.push(dynamicMediaKmL);
-            }
+          if (!isTanqueCheioAtual || !isTanqueCheioAnterior) {
+            continue;
+          }
+
+          const kmPercorrido = currentKm - prevKm;
+          const dynamicMediaKmL = kmPercorrido / litros;
+          // Validação de sanidade (evita discrepâncias extremas de digitação)
+          if (dynamicMediaKmL > 0 && dynamicMediaKmL <= 100) {
+            st.mediaKmLList.push(dynamicMediaKmL);
           }
         }
       }
@@ -326,6 +395,9 @@ export const IndicacoesPostosView: React.FC<Props> = ({ lancamentos }) => {
       if (b.avgKmL > 0 && a.avgKmL > 0 && b.avgKmL !== a.avgKmL) {
         return b.avgKmL - a.avgKmL;
       }
+      if (b.avgKmL > 0 && (!a.avgKmL || a.avgKmL <= 0)) return 1;
+      if (a.avgKmL > 0 && (!b.avgKmL || b.avgKmL <= 0)) return -1;
+
       if (a.avgPrice > 0 && b.avgPrice > 0 && a.avgPrice !== b.avgPrice) {
         return a.avgPrice - b.avgPrice;
       }
