@@ -273,6 +273,8 @@ export const VeiculosOficinaView: React.FC<Props> = ({
 
   // Manutenção Agendada Modal State
   const [isManutencaoModalOpen, setIsManutencaoModalOpen] = useState(false);
+  const [manutencaoConfirmandoId, setManutencaoConfirmandoId] = useState<string | null>(null);
+  const [dataRealizacaoCustom, setDataRealizacaoCustom] = useState<string>("");
   const [editingManutencao, setEditingManutencao] = useState<ManutencaoAgendada | null>(null);
   const [manutencaoForm, setManutencaoForm] = useState<Partial<ManutencaoAgendada>>({
     Veículo: veiculos[0]?.Modelo || "CARRO",
@@ -780,8 +782,8 @@ const sanitizarDataISO = (data?: string): string => {
   };
 
   // Realizar / Concluir Manutenção Hoje e Avançar Ciclo
-  const handleCompleteManutencaoToday = (m: ManutencaoAgendada) => {
-    const todayStr = new Date().toISOString().split("T")[0];
+  const handleCompleteManutencaoToday = (m: ManutencaoAgendada, dataEscolhida?: string) => {
+    const todayStr = dataEscolhida || new Date().toISOString().split("T")[0];
     const relatedVeic = veiculos.find(
       (v) => v.Modelo === m.Veículo || v.Placa === m.Veículo || v.Id === m.Veículo
     );
@@ -1479,18 +1481,47 @@ const sanitizarDataISO = (data?: string): string => {
 
                       {/* Lado Direito: Botão Concluir Hoje / Ciclo + Chevron */}
                       <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCompleteManutencaoToday(m);
-                          }}
-                          className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-colors cursor-pointer bg-slate-800 text-emerald-400 border-slate-700 hover:bg-slate-750 flex items-center gap-1"
-                          title="Registrar que esta manutenção foi feita hoje e avançar para o próximo ciclo"
-                        >
-                          <Check className="w-3 h-3" />
-                          <span>REALIZADO HOJE</span>
-                        </button>
+                        {manutencaoConfirmandoId === m.Id ? (
+                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="date"
+                              value={dataRealizacaoCustom}
+                              onChange={(e) => setDataRealizacaoCustom(e.target.value)}
+                              className="bg-slate-950 border border-slate-700 rounded-lg px-1.5 py-1 text-[10px] text-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleCompleteManutencaoToday(m, dataRealizacaoCustom);
+                                setManutencaoConfirmandoId(null);
+                              }}
+                              className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
+                            >
+                              ✓ OK
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setManutencaoConfirmandoId(null)}
+                              className="px-1.5 py-1 rounded-lg text-[10px] text-slate-400 hover:text-white"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setManutencaoConfirmandoId(m.Id);
+                              setDataRealizacaoCustom(new Date().toISOString().split("T")[0]);
+                            }}
+                            className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-colors cursor-pointer bg-slate-800 text-emerald-400 border-slate-700 hover:bg-slate-750 flex items-center gap-1"
+                            title="Registrar realização desta manutenção e avançar para o próximo ciclo"
+                          >
+                            <Check className="w-3 h-3" />
+                            <span>REALIZADO</span>
+                          </button>
+                        )}
 
                         {/* Botão de expansão da gaveta */}
                         <div className="text-slate-400 hover:text-white p-1">
