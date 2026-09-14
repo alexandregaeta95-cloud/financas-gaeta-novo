@@ -31,6 +31,7 @@ import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
 import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
+import { HistoricoGenericoModal } from "./HistoricoGenericoModal";
 
 const TEMPLATES_MANUTENCAO = [
   {
@@ -172,6 +173,10 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<"veiculos" | "oficina" | "agendadas" | "infracoes" | "motoristas">("veiculos");
   const [expandedServicoId, setExpandedServicoId] = useState<string | null>(null);
   const [expandedManutencaoId, setExpandedManutencaoId] = useState<string | null>(null);
+
+  // Histórico Modais State
+  const [showHistoricoOficina, setShowHistoricoOficina] = useState(false);
+  const [showHistoricoInfracoes, setShowHistoricoInfracoes] = useState(false);
 
   // Filter and Search States
   const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("CURRENT_MONTH");
@@ -1138,13 +1143,23 @@ const sanitizarDataISO = (data?: string): string => {
             <span className="text-xs text-slate-400">
               Histórico de manutenções e reparos ({filteredServicos.length})
             </span>
-            <button
-              onClick={() => handleOpenServico()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Registrar Serviço</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowHistoricoOficina(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
+              >
+                <span>📊 Histórico</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenServico()}
+                className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Registrar Serviço</span>
+              </button>
+            </div>
           </div>
 
           {filteredServicos.length === 0 ? (
@@ -1629,13 +1644,23 @@ const sanitizarDataISO = (data?: string): string => {
             <span className="text-xs text-slate-400">
               Histórico de multas e recursos de trânsito (Aba 8_Infracoes)
             </span>
-            <button
-              onClick={() => handleOpenInfracao()}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Registrar Infração</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowHistoricoInfracoes(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
+              >
+                <span>📊 Histórico</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenInfracao()}
+                className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-xl transition-colors shadow-xs cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Registrar Infração</span>
+              </button>
+            </div>
           </div>
 
           {infracoes.length === 0 ? (
@@ -3277,6 +3302,42 @@ const sanitizarDataISO = (data?: string): string => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL HISTÓRICO DE OFICINA */}
+      {showHistoricoOficina && (
+        <HistoricoGenericoModal<ServicoOficina>
+          titulo="Histórico de Oficina"
+          corTema="orange"
+          itens={servicos}
+          getData={(s) => s.Data}
+          getValor={(s) => Number(s.Valor_Pago) || Number(s.Valor_A_PG) || Number(s.Valor) || 0}
+          renderLinha={(s) => (
+            <div key={s.Id} className="flex justify-between bg-slate-800/50 rounded-lg px-3 py-1.5">
+              <span className="text-slate-200">{s.Descrição}</span>
+              <span className="text-slate-400">R$ {formatCurrency(Number(s.Valor_Pago) || Number(s.Valor_A_PG) || Number(s.Valor) || 0)}</span>
+            </div>
+          )}
+          onClose={() => setShowHistoricoOficina(false)}
+        />
+      )}
+
+      {/* MODAL HISTÓRICO DE INFRAÇÕES */}
+      {showHistoricoInfracoes && (
+        <HistoricoGenericoModal<Infracao>
+          titulo="Histórico de Infrações"
+          corTema="rose"
+          itens={infracoes}
+          getData={(i) => i.Data}
+          getValor={(i) => Number(i.Valor) || 0}
+          renderLinha={(i) => (
+            <div key={i.Id} className="flex justify-between bg-slate-800/50 rounded-lg px-3 py-1.5">
+              <span className="text-slate-200">{i.Título || i.Descrição}</span>
+              <span className="text-slate-400">R$ {formatCurrency(Number(i.Valor) || 0)}</span>
+            </div>
+          )}
+          onClose={() => setShowHistoricoInfracoes(false)}
+        />
       )}
     </div>
   );
