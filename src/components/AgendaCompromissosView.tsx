@@ -5,6 +5,7 @@ import { generateNewId } from "../services/api";
 import { formatarHora } from "../utils/formatters";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
+import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 interface Props {
   agenda: CompromissoAgenda[];
@@ -20,6 +21,7 @@ export const AgendaCompromissosView: React.FC<Props> = ({
   const [viewMode, setViewMode] = useState<"lista" | "calendario">("lista");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CompromissoAgenda | null>(null);
+  const descricaoRef = React.useRef<HTMLTextAreaElement>(null);
 
   // Delete Confirmation State
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -208,7 +210,7 @@ export const AgendaCompromissosView: React.FC<Props> = ({
                       <p className="text-slate-400">
                         {item.Data} {formatarHora(item.Hora) && `às ${formatarHora(item.Hora)}`} • Categoria: {item.Categoria || "Geral"}
                       </p>
-                      {item.Descrição && <p className="text-slate-500 italic">{item.Descrição}</p>}
+                      {item.Descrição && <p className="text-slate-500 italic">{renderTextoComCores(item.Descrição)}</p>}
                     </div>
                   </div>
 
@@ -441,7 +443,15 @@ export const AgendaCompromissosView: React.FC<Props> = ({
 
               <div>
                 <label className="text-slate-400 block mb-1">Descrição</label>
+                <ColorTextToolbar
+                  onAplicarCor={(cor) =>
+                    aplicarCorNoTexto(descricaoRef, form.Descrição || "", cor, (novoTexto) =>
+                      setForm({ ...form, Descrição: novoTexto })
+                    )
+                  }
+                />
                 <VoiceTextArea
+                  ref={descricaoRef}
                   rows={2}
                   value={form.Descrição}
                   onChange={(e) => setForm({ ...form, Descrição: e.target.value.toUpperCase() })}

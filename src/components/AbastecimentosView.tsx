@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Lancamento } from "../types";
 import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { HistoricoAbastecimentoModal } from "./HistoricoAbastecimentoModal";
 
 interface Props {
   lancamentos: Lancamento[];
@@ -142,6 +143,7 @@ function isFuelLancamento(l: any): boolean {
 
 export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFueling }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showHistorico, setShowHistorico] = useState(false);
 
   // Filter all fueling entries directly from 1_Lancamentos
   const fuelEntries = useMemo(() => {
@@ -218,13 +220,21 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
           </p>
         </div>
 
-        <button
-          onClick={onOpenNewFueling}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-colors shadow-xs shrink-0 cursor-pointer"
-        >
-          <Fuel className="w-4 h-4" />
-          <span>+ Novo Abastecimento</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setShowHistorico(true)}
+            className="flex items-center justify-center gap-2 px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl text-xs transition-colors shadow-xs cursor-pointer"
+          >
+            <span>📊 Histórico de Gastos</span>
+          </button>
+          <button
+            onClick={onOpenNewFueling}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-colors shadow-xs cursor-pointer"
+          >
+            <Fuel className="w-4 h-4" />
+            <span>+ Novo Abastecimento</span>
+          </button>
+        </div>
       </div>
 
       {/* Info Callout */}
@@ -482,6 +492,10 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
           </div>
         )}
       </div>
+
+      {showHistorico && (
+        <HistoricoAbastecimentoModal lancamentos={lancamentos} onClose={() => setShowHistorico(false)} />
+      )}
     </div>
   );
 };

@@ -36,6 +36,7 @@ import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
 import { getFaturaKey, getFaturaVencimento } from "../utils/faturaCartao";
+import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 interface Props {
   lancamentos: Lancamento[];
@@ -195,6 +196,7 @@ export const LancamentosView: React.FC<Props> = ({
   onOpenLembretesFinancas,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const observacoesRef = React.useRef<HTMLTextAreaElement>(null);
   const [filterType, setFilterType] = useState<string>("ALL");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("CURRENT_MONTH");
   const [startDate, setStartDate] = useState<string>("");
@@ -1793,7 +1795,7 @@ export const LancamentosView: React.FC<Props> = ({
                       {item.Observacoes && (
                         <div className="col-span-2 sm:col-span-4 p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl">
                           <span className="text-[10px] text-slate-400 block mb-0.5">Observações</span>
-                          <p className="text-slate-300 text-xs break-words">{item.Observacoes}</p>
+                          <p className="text-slate-300 text-xs break-words">{renderTextoComCores(item.Observacoes)}</p>
                         </div>
                       )}
 
@@ -2581,7 +2583,15 @@ export const LancamentosView: React.FC<Props> = ({
 
                   <div>
                     <label className="block text-slate-400 text-xs mb-1">Observações</label>
+                    <ColorTextToolbar
+                      onAplicarCor={(cor) =>
+                        aplicarCorNoTexto(observacoesRef, formData.Observacoes || "", cor, (novoTexto) =>
+                          setFormData({ ...formData, Observacoes: novoTexto })
+                        )
+                      }
+                    />
                     <VoiceTextArea
+                      ref={observacoesRef}
                       rows={2}
                       placeholder="Observações adicionais..."
                       value={formData.Observacoes || ""}
