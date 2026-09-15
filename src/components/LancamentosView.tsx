@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { Lancamento, Veiculo, ContaBancaria, CartaoCredito, CategoriaCustomizada } from "../types";
 import { generateNewId } from "../services/api";
-import { parseCurrency, formatCurrency, formatCurrencyInput, isLancamentoExcluded } from "../utils/formatters";
+import { parseCurrency, formatCurrency, formatCurrencyInput, isLancamentoExcluded, formatDateDisplay } from "../utils/formatters";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
@@ -578,6 +578,7 @@ export const LancamentosView: React.FC<Props> = ({
 
   let prevKmFound = 0;
   if (currentKm > 0) {
+    const currentFuel = String(formData.Tipo_Combustivel || "").trim().toUpperCase();
     const priorFuelRecords = lancamentos
       .filter(
         (l) =>
@@ -585,13 +586,14 @@ export const LancamentosView: React.FC<Props> = ({
           l.Id !== (editingItem?.Id || "") &&
           (l.Veiculo === currentVeiculoName || !currentVeiculoName || l.Descricao_Do_Veiculo === currentVeiculoName) &&
           parseCurrency(l.Km_Atual) > 0 &&
-          parseCurrency(l.Km_Atual) < currentKm
+          parseCurrency(l.Km_Atual) < currentKm &&
+          (!currentFuel || !l.Tipo_Combustivel || String(l.Tipo_Combustivel).trim().toUpperCase() === currentFuel)
       )
       .sort((a, b) => parseCurrency(b.Km_Atual) - parseCurrency(a.Km_Atual));
 
     if (priorFuelRecords.length > 0) {
       prevKmFound = parseCurrency(priorFuelRecords[0].Km_Atual);
-    } else if (matchedVeic?.Km_Atual && matchedVeic.Km_Atual < currentKm) {
+    } else if (matchedVeic?.Km_Atual && matchedVeic.Km_Atual < currentKm && !currentFuel) {
       prevKmFound = matchedVeic.Km_Atual;
     }
   }
@@ -1592,19 +1594,21 @@ export const LancamentosView: React.FC<Props> = ({
                       </div>
 
                       {/* Linha 2: Data • Hora (se houver) • Conta / Cartão • Forma de Pagamento */}
-                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
-                        <span>{item.Data}</span>
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 min-w-0">
+                        <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">
+                          {formatDateDisplay(item.Data)}
+                        </span>
                         {item.Hora && (
-                          <span className="font-mono text-emerald-400 font-medium px-1 py-0.2 bg-emerald-500/10 rounded border border-emerald-500/20">
+                          <span className="shrink-0 font-mono text-emerald-400 font-medium px-1 py-0.2 bg-emerald-500/10 rounded border border-emerald-500/20">
                             🕒 {item.Hora}
                           </span>
                         )}
-                        <span>•</span>
-                        <span className="text-slate-300 truncate max-w-[120px] sm:max-w-[180px]">{item.Conta || item.Cartao || "Principal"}</span>
+                        <span className="shrink-0 text-slate-600">•</span>
+                        <span className="text-slate-300 truncate max-w-[100px] sm:max-w-[180px]">{item.Conta || item.Cartao || "Principal"}</span>
                         {item.Forma_Pagamento && (
                           <>
-                            <span>•</span>
-                            <span className="text-slate-400">{item.Forma_Pagamento}</span>
+                            <span className="shrink-0 text-slate-600 hidden xs:inline">•</span>
+                            <span className="text-slate-400 truncate hidden xs:inline">{item.Forma_Pagamento}</span>
                           </>
                         )}
                       </div>
@@ -2652,7 +2656,7 @@ export const LancamentosView: React.FC<Props> = ({
             <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1.5 text-xs">
               <p className="font-semibold text-white truncate">{batchDeleteData.item.Descricao}</p>
               <div className="flex items-center justify-between text-slate-400">
-                <span>Vencimento: <strong className="text-slate-200">{batchDeleteData.item.Data}</strong></span>
+                <span>Vencimento: <strong className="text-slate-200">{formatDateDisplay(batchDeleteData.item.Data)}</strong></span>
                 <span>Valor: <strong className="text-rose-400">R$ {formatCurrency(batchDeleteData.item.Valor)}</strong></span>
               </div>
               <p className="text-amber-400 text-[11px] pt-1 border-t border-slate-800/80">

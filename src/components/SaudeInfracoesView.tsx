@@ -37,7 +37,7 @@ import {
   ConfigAgua,
 } from "../types";
 import { generateNewId } from "../services/api";
-import { formatarHora, formatDateBR, parseCurrency, formatCurrency } from "../utils/formatters";
+import { formatarHora, formatDateBR, formatDateDisplay, parseCurrency, formatCurrency } from "../utils/formatters";
 import { AnalisarAlimentoModal } from "./AnalisarAlimentoModal";
 import { HistoricoAlimentosView } from "./HistoricoAlimentosView";
 import { EditarAlimentoModal } from "./EditarAlimentoModal";
@@ -605,7 +605,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                 const horaFormatada = formatarHora(c.Horas);
                 return (
                   <li key={`${c.Id || 'cons-alert'}-${idx}`}>
-                    <strong>{c.Especialidade}</strong> ({c.Médico || "Médico"}) — {c.Data} {horaFormatada ? `às ${horaFormatada}` : "horário a confirmar"} ({c.Local || "Local"})
+                    <strong>{c.Especialidade}</strong> ({c.Médico || "Médico"}) — {formatDateDisplay(c.Data)} {horaFormatada ? `às ${horaFormatada}` : "horário a confirmar"} ({c.Local || "Local"})
                   </li>
                 );
               })}
@@ -624,7 +624,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
             <ul className="list-disc list-inside text-rose-200/80 space-y-0.5">
               {alertReceitas.map((r, idx) => (
                 <li key={`${r.Id || 'rec-alert'}-${idx}`}>
-                  <strong>{r.Medicamento}</strong> — Vence em: {r.Data_Vencimento || r.Data_Validade}
+                  <strong>{r.Medicamento}</strong> — Vence em: {formatDateDisplay(r.Data_Vencimento || r.Data_Validade)}
                 </li>
               ))}
             </ul>
@@ -698,7 +698,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                             type: "consulta",
                             id: c.Id,
                             title: `${c.Especialidade} - ${c.Médico || "Médico não informado"}`,
-                            subtitle: `Data: ${c.Data}${c.Horas ? ` às ${formatarHora(c.Horas)}` : ""} • Local: ${c.Local || "—"}`,
+                            subtitle: `Data: ${formatDateDisplay(c.Data)}${c.Horas ? ` às ${formatarHora(c.Horas)}` : ""} • Local: ${c.Local || "—"}`,
                           })
                         }
                         className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
@@ -713,7 +713,7 @@ export const SaudeInfracoesView: React.FC<Props> = ({
                     <div>
                       <span className="text-slate-500 text-[10px] block">Data & Horário</span>
                       <span className="font-semibold text-slate-200">
-                        {c.Data} {formatarHora(c.Horas) && `às ${formatarHora(c.Horas)}`}
+                        {formatDateDisplay(c.Data)} {formatarHora(c.Horas) && `às ${formatarHora(c.Horas)}`}
                       </span>
                     </div>
                     <div>

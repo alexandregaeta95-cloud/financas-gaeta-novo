@@ -17,7 +17,7 @@ import {
   PerfilUsuario
 } from "../types";
 import { generateNewId } from "../services/api";
-import { formatCurrency, parseCurrency } from "../utils/formatters";
+import { formatCurrency, parseCurrency, formatDateDisplay } from "../utils/formatters";
 import { VoiceInput } from "./VoiceInput";
 
 interface Props {
@@ -171,7 +171,7 @@ export const OutrosView: React.FC<Props> = ({
                 >
                   <div>
                     <span className="font-medium text-white">{ag.Titulo}</span>
-                    <p className="text-[10px] text-slate-500">{ag.Data}</p>
+                    <p className="text-[10px] text-slate-500">{formatDateDisplay(ag.Data)}</p>
                   </div>
                   <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">
                     {ag.Prioridade}

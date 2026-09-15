@@ -127,12 +127,26 @@ function extractFuelType(item: any): string {
     (item as any)["Tipo Combustível"] ??
     (item as any).tipo_combustivel ??
     (item as any).tipoCombustivel ??
+    item.Combustivel ??
+    (item as any)["Combustivel"] ??
+    (item as any)["Combustível"] ??
+    (item as any).combustivel ??
+    (item as any).Subcategoria ??
+    (item as any)["Subcategoria"] ??
     "";
   const s = String(raw).trim().toUpperCase().replace(/\s+/g, " ");
   if (!s) return "";
   const normalized = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  if (normalized === "ETANOL") return "ALCOOL";
-  if (normalized === "ETANOL ADITIVADO") return "ALCOOL ADITIVADO";
+
+  if (normalized.includes("ETANOL ADITIVADO") || normalized.includes("ALCOOL ADITIVADO")) return "ALCOOL ADITIVADO";
+  if (normalized.includes("ETANOL") || normalized.includes("ALCOOL")) return "ALCOOL";
+  if (normalized.includes("PODIUM") || normalized.includes("PREMIUM") || normalized.includes("OCTAPRO")) return "GASOLINA PREMIUM";
+  if (normalized.includes("ADITIVADA")) return "GASOLINA ADITIVADA";
+  if (normalized.includes("GASOLINA")) return "GASOLINA COMUM";
+  if (normalized.includes("DIESEL S10") || normalized.includes("S-10")) return "DIESEL S10";
+  if (normalized.includes("DIESEL")) return "DIESEL";
+  if (normalized.includes("GNV")) return "GNV";
+
   return normalized;
 }
 

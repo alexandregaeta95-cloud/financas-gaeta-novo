@@ -529,11 +529,11 @@ export default function App() {
         read: readIds.has(n.id) || n.read,
       }));
 
-      // Notificações ativas elegíveis para alerta/toast (não lidas, urgentes/avisos/alarmes, e que NÃO estão em soneca)
+      // Notificações ativas elegíveis para alerta/toast (não lidas, que sejam ALARMES ATIVOS ou alertas urgentes do momento, e que NÃO estão em soneca)
       const eligibleForAlarm = updated.filter(
         (n) =>
           !n.read &&
-          (n.severity === "urgent" || n.severity === "warning" || n.isAlarm || n.soundEnabled) &&
+          (n.isAlarm === true || n.soundEnabled === true || (n.severity === "urgent" && n.isAlarm !== false)) &&
           !isNotificationSnoozed(n.id)
       );
 

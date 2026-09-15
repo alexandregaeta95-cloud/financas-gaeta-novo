@@ -5,6 +5,7 @@ import { VoiceTextArea } from "./VoiceTextArea";
 import { AnotacaoBloco } from "../types";
 import { generateNewId } from "../services/api";
 import { getLocalTodayDateStr } from "../services/notificationEngine";
+import { formatDateDisplay } from "../utils/formatters";
 import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
 
 interface Props {
@@ -105,10 +106,10 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
             </div>
             <p className="text-slate-300 text-xs whitespace-pre-wrap">{renderTextoComCores(item.Texto)}</p>
             <div className="flex items-center gap-3 text-[10px] text-slate-500 pt-1 border-t border-slate-800">
-              <span>{item.Data_Criacao} às {item.Hora_Criacao}</span>
+              <span>{formatDateDisplay(item.Data_Criacao)} às {item.Hora_Criacao}</span>
               {item.Alarme_Ativo === "SIM" ? (
                 <span className="flex items-center gap-1 text-amber-400">
-                  <Bell className="w-3 h-3" /> Alarme: {item.Data_Alarme} às {item.Hora_Alarme}
+                  <Bell className="w-3 h-3" /> Alarme: {formatDateDisplay(item.Data_Alarme)} às {item.Hora_Alarme}
                 </span>
               ) : (
                 <span className="flex items-center gap-1 text-slate-600">

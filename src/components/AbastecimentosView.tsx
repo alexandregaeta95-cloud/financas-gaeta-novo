@@ -13,7 +13,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { Lancamento } from "../types";
-import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { parseCurrency, formatCurrency, formatDateDisplay } from "../utils/formatters";
 import { HistoricoAbastecimentoModal } from "./HistoricoAbastecimentoModal";
 
 interface Props {
@@ -359,8 +359,8 @@ export const AbastecimentosView: React.FC<Props> = ({ lancamentos, onOpenNewFuel
                         </div>
 
                         {/* Linha 2: Data • Litros • Preço/L • KM */}
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate flex-wrap">
-                          <span>{item.Data}</span>
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 min-w-0 flex-wrap">
+                          <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">{formatDateDisplay(item.Data)}</span>
                           {litros > 0 && (
                             <>
                               <span>•</span>

@@ -378,11 +378,11 @@ export const Dashboard: React.FC<Props> = ({
                       </div>
 
                       {/* Linha 2: Data • Conta */}
-                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
-                        <span>{data}</span>
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 min-w-0">
+                        <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">{data}</span>
                         {conta && (
                           <>
-                            <span>•</span>
+                            <span className="shrink-0 text-slate-600">•</span>
                             <span className="text-slate-300 truncate max-w-[140px]">{conta}</span>
                           </>
                         )}

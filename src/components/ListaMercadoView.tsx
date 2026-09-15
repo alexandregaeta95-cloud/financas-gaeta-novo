@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { ItemMercado, ContaBancaria, Lancamento } from "../types";
 import { generateNewId } from "../services/api";
-import { parseCurrency, formatCurrency } from "../utils/formatters";
+import { parseCurrency, formatCurrency, formatDateDisplay } from "../utils/formatters";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
@@ -553,7 +553,7 @@ export const ListaMercadoView: React.FC<Props> = ({
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-semibold">
                           <Clock className="w-2.5 h-2.5" />
                           <span>
-                            {item.Data_Lembrete}
+                            {formatDateDisplay(item.Data_Lembrete)}
                             {item.Hora_Lembrete ? ` às ${item.Hora_Lembrete}` : ""}
                           </span>
                         </span>

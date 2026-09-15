@@ -201,8 +201,7 @@ export function formatarHora(val: any): string {
   if (str.includes("T")) {
     const timeMatch = str.match(/T(\d{1,2}):(\d{2})/i);
     if (timeMatch) {
-      const parts = timeMatch[1].split(":");
-      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
+      return `${timeMatch[1].padStart(2, "0")}:${timeMatch[2].padStart(2, "0")}`;
     }
   }
 
@@ -231,9 +230,10 @@ export function formatarHora(val: any): string {
 export const formatTime = formatarHora;
 
 /**
- * Format Date string safely to "dd/mm/aaaa" or "yyyy-MM-dd"
+ * Normaliza qualquer formato de data para o padrão de armazenamento interno ISO: YYYY-MM-DD
+ * Preserva compatibilidade integral com o banco, planilhas do Google Sheets e cálculos internos.
  */
-export function formatDateBR(val: any): string {
+export function normalizeDateYMD(val: any): string {
   if (val === null || val === undefined || val === "") return "";
   if (val instanceof Date) {
     if (isNaN(val.getTime())) return "";
@@ -243,7 +243,7 @@ export function formatDateBR(val: any): string {
     return `${y}-${m}-${d}`;
   }
   if (typeof val === "number") {
-    // Excel/Google Sheets serial date (e.g. 45521)
+    // Data serial do Excel/Google Sheets (ex: 45521)
     if (val > 1000 && val < 60000) {
       const utcDays = Math.floor(val - 25569);
       const utcValue = utcDays * 86400;
@@ -256,11 +256,90 @@ export function formatDateBR(val: any): string {
     return String(val);
   }
   const str = String(val).trim();
-  if (str.includes("T")) {
-    return str.split("T")[0];
+  if (!str) return "";
+
+  const datePart = str.includes("T") ? str.split("T")[0] : str.includes(" ") ? str.split(" ")[0] : str;
+
+  // Se já for YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    return datePart;
   }
-  return str;
+  // Se vier no formato DD/MM/AAAA
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(datePart)) {
+    const [d, m, y] = datePart.split("/");
+    return `${y}-${m}-${d}`;
+  }
+  // Se vier no formato DD-MM-YYYY
+  if (/^\d{2}-\d{2}-\d{4}$/.test(datePart)) {
+    const [d, m, y] = datePart.split("-");
+    return `${y}-${m}-${d}`;
+  }
+
+  return datePart;
 }
+
+/**
+ * Formata qualquer valor de data para exibição no padrão brasileiro: DD/MM/AAAA
+ * Apenas para EXIBIÇÃO visual na interface do usuário (não altera os dados brutos salvos).
+ */
+export function formatDateDisplay(val: any): string {
+  if (val === null || val === undefined || val === "") return "";
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return "";
+    const d = String(val.getDate()).padStart(2, "0");
+    const m = String(val.getMonth() + 1).padStart(2, "0");
+    const y = val.getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+  if (typeof val === "number") {
+    // Data serial do Excel/Google Sheets (ex: 45521)
+    if (val > 1000 && val < 60000) {
+      const utcDays = Math.floor(val - 25569);
+      const utcValue = utcDays * 86400;
+      const dateInfo = new Date(utcValue * 1000);
+      const d = String(dateInfo.getUTCDate()).padStart(2, "0");
+      const m = String(dateInfo.getUTCMonth() + 1).padStart(2, "0");
+      const y = dateInfo.getUTCFullYear();
+      return `${d}/${m}/${y}`;
+    }
+    return String(val);
+  }
+  const str = String(val).trim();
+  if (!str) return "";
+
+  const datePart = str.includes("T") ? str.split("T")[0] : str.includes(" ") ? str.split(" ")[0] : str;
+
+  // Se já estiver no padrão brasileiro DD/MM/AAAA
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(datePart)) {
+    return datePart;
+  }
+
+  // Padrão ISO YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    const [y, m, d] = datePart.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  // Padrão DD-MM-YYYY
+  if (/^\d{2}-\d{2}-\d{4}$/.test(datePart)) {
+    const [d, m, y] = datePart.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  // Fallback seguro: se começar com YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(datePart)) {
+    const [y, m, d] = datePart.slice(0, 10).split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  return datePart;
+}
+
+/**
+ * Format Date string to Brazilian display format "DD/MM/AAAA"
+ * Exported alias to maintain backwards compatibility across all views.
+ */
+export const formatDateBR = formatDateDisplay;
 
 /**
  * 1. Normalize Lancamento (1_Lancamentos)
@@ -367,7 +446,7 @@ export function normalizeLancamento(raw: any): Lancamento {
     }
   }
 
-  const data = formatDateBR(raw.Data ?? raw.data ?? new Date().toISOString().split("T")[0]);
+  const data = normalizeDateYMD(raw.Data ?? raw.data ?? new Date().toISOString().split("T")[0]);
 
   const conta =
     raw.Conta ??
@@ -582,7 +661,7 @@ export function normalizeAbastecimento(raw: any): Abastecimento {
   return {
     ...raw,
     Id: String(raw.Id || ""),
-    Data: formatDateBR(raw.Data ?? raw.data ?? ""),
+    Data: normalizeDateYMD(raw.Data ?? raw.data ?? ""),
     Veiculo: String(veiculo).trim(),
     Descricao_Do_Veiculo: String(
       raw.Descricao_Do_Veiculo ??
@@ -754,7 +833,7 @@ export function normalizeCartaoCredito(raw: any): CartaoCredito {
 export function normalizeConsultaMedica(raw: any): ConsultaMedica {
   if (!raw || typeof raw !== "object") return raw;
   const hora = formatarHora(raw.Horas ?? raw.Hora ?? raw.horas ?? raw.hora ?? "");
-  const data = formatDateBR(raw.Data ?? raw.data ?? "");
+  const data = normalizeDateYMD(raw.Data ?? raw.data ?? "");
   const medico = raw.Médico ?? raw.Medico ?? raw.medico ?? raw.médico ?? "";
   const status = raw.Status ?? raw.status ?? "Agendada";
   const especialidade = raw.Especialidade ?? raw.especialidade ?? "Clínica Geral";
@@ -785,8 +864,8 @@ export function normalizeReceitaMedica(raw: any): ReceitaMedica {
   const instrucoes = raw.Instruções ?? raw.Instrucoes ?? raw.instrucoes ?? "";
   const dosagem = raw.Dosagem ?? raw.dosagem ?? "";
   const frequencia = raw.Frequência ?? raw.Frequencia ?? raw.frequencia ?? "";
-  const formattedData = formatDateBR(rawData);
-  const formattedValidade = formatDateBR(rawValidade);
+  const formattedData = normalizeDateYMD(rawData);
+  const formattedValidade = normalizeDateYMD(rawValidade);
 
   return {
     ...raw,
@@ -837,7 +916,7 @@ export function normalizeInfracao(raw: any): Infracao {
     Título: raw.Título ?? raw.Titulo ?? raw.titulo ?? String(desc).trim(),
     Veículo: String(veiculo).trim(),
     Placa: raw.Placa ?? raw.placa ?? "",
-    Data: formatDateBR(raw.Data ?? raw.data ?? ""),
+    Data: normalizeDateYMD(raw.Data ?? raw.data ?? ""),
     Descrição: String(desc).trim(),
     Valor: valor,
     Pontos: pontos,
@@ -933,7 +1012,7 @@ export function normalizeServicoOficina(raw: any): ServicoOficina {
   return {
     ...raw,
     Id: String(raw.Id || ""),
-    Data: formatDateBR(raw.Data ?? raw.data ?? ""),
+    Data: normalizeDateYMD(raw.Data ?? raw.data ?? ""),
     Descrição: String(desc).trim(),
     KM: km,
     Valor: valor || valorPago,
@@ -965,7 +1044,7 @@ export function normalizeManutencaoAgendada(raw: any): ManutencaoAgendada {
     Veículo: raw.Veículo ?? raw.Veiculo ?? raw.veiculo ?? "Veículo",
     Descrição: raw.Descrição ?? raw.Descricao ?? raw.descricao ?? "Manutenção",
     Tipo_Agendamento: raw.Tipo_Agendamento ?? "Ambos",
-    Data_Alvo: formatDateBR(raw.Data_Alvo ?? raw.data_alvo ?? ""),
+    Data_Alvo: normalizeDateYMD(raw.Data_Alvo ?? raw.data_alvo ?? ""),
     KM_Alvo: kmAlvo,
     Recorrente: raw.Recorrente ?? "SIM",
     Frequência_Meses: freqMeses,
@@ -1032,8 +1111,8 @@ export function normalizeItemMercado(raw: any): ItemMercado {
     Valor_Total: total,
     Valor_Estimado: estimado,
     Preco_Estimado: estimado,
-    Data_Pedido: formatDateBR(raw.Data_Pedido ?? raw.data_pedido ?? ""),
-    Data_Compra: formatDateBR(raw.Data_Compra ?? raw.data_compra ?? ""),
+    Data_Pedido: normalizeDateYMD(raw.Data_Pedido ?? raw.data_pedido ?? ""),
+    Data_Compra: normalizeDateYMD(raw.Data_Compra ?? raw.data_compra ?? ""),
     Comprado: comprado,
     Observação: raw.Observação ?? raw.Observacao ?? raw.observacao ?? "",
   };
@@ -1100,7 +1179,7 @@ export function normalizeZonaDeRisco(raw: any): ZonaDeRisco {
     "Raio_(M)": raio || 300,
     Ativo: raw.Ativo !== false && raw.Ativo !== "NÃO" && raw.Ativo !== "NAO",
     Mensagem_De_Alerta: raw.Mensagem_De_Alerta ?? raw.mensagem ?? "CUIDADO: Zona de Risco Registrada!",
-    Data_Registro: formatDateBR(raw.Data_Registro ?? raw.data ?? ""),
+    Data_Registro: normalizeDateYMD(raw.Data_Registro ?? raw.data ?? ""),
     Observação: obs,
     Observacoes: obs,
   };
@@ -1112,7 +1191,7 @@ export function normalizeZonaDeRisco(raw: any): ZonaDeRisco {
 export function normalizeCompromissoAgenda(raw: any): CompromissoAgenda {
   if (!raw || typeof raw !== "object") return raw;
   const hora = formatarHora(raw.Hora ?? raw.Horas ?? raw.hora ?? raw.horas ?? "");
-  const data = formatDateBR(raw.Data ?? raw.data ?? "");
+  const data = normalizeDateYMD(raw.Data ?? raw.data ?? "");
   const titulo = raw.Titulo ?? raw["Título"] ?? raw.titulo ?? "Compromisso";
   const concluido =
     raw.Concluído === true ||

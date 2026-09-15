@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { Veiculo, ServicoOficina, ManutencaoAgendada, Infracao, Motorista, ContaBancaria } from "../types";
 import { generateNewId } from "../services/api";
-import { parseCurrency, formatCurrency, formatCurrencyInput } from "../utils/formatters";
+import { parseCurrency, formatCurrency, formatCurrencyInput, formatDateDisplay } from "../utils/formatters";
 import { markCycleAsCompleted } from "../services/snoozeService";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
@@ -956,7 +956,7 @@ const sanitizarDataISO = (data?: string): string => {
               {alertManutencoes.map((m, idx) => (
                 <li key={`${m.Id || 'manut-alert'}-${idx}`}>
                   <strong className="text-white">{m.Veículo}</strong>: {m.Descrição} —{" "}
-                  {m.Data_Alvo && `Data Alvo: ${m.Data_Alvo}`}
+                  {m.Data_Alvo && `Data Alvo: ${formatDateDisplay(m.Data_Alvo)}`}
                   {m.KM_Alvo && ` | KM Alvo: ${m.KM_Alvo.toLocaleString()} KM`}
                 </li>
               ))}
@@ -1205,7 +1205,7 @@ const sanitizarDataISO = (data?: string): string => {
 
                           {/* Linha 2: Data • KM • Oficina */}
                           <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate flex-wrap">
-                            <span>{s.Data}</span>
+                            <span>{formatDateDisplay(s.Data)}</span>
                             {s.KM > 0 && (
                               <>
                                 <span>•</span>
@@ -1324,7 +1324,7 @@ const sanitizarDataISO = (data?: string): string => {
                                   type: "servico",
                                   id: s.Id,
                                   title: s.Descrição,
-                                  subtitle: `Veículo: ${s.Veiculo} • Data: ${s.Data} • Valor: R$ ${formatCurrency(valor)}`,
+                                  subtitle: `Veículo: ${s.Veiculo} • Data: ${formatDateDisplay(s.Data)} • Valor: R$ ${formatCurrency(valor)}`,
                                 })
                               }
                               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-medium transition-colors cursor-pointer"
@@ -1475,7 +1475,7 @@ const sanitizarDataISO = (data?: string): string => {
                           <div className="flex items-center gap-2 text-[11px] text-slate-400 truncate flex-wrap">
                             {m.Data_Alvo && (
                               <span>
-                                Próxima: <strong className="text-slate-200">{m.Data_Alvo}</strong>
+                                Próxima: <strong className="text-slate-200">{formatDateDisplay(m.Data_Alvo)}</strong>
                               </span>
                             )}
                             {m.KM_Alvo && m.KM_Alvo > 0 && (
@@ -1490,7 +1490,7 @@ const sanitizarDataISO = (data?: string): string => {
                               <>
                                 <span className="text-slate-600">•</span>
                                 <span className="text-slate-400">
-                                  Última: {m.Data_Ultima_Realizacao}
+                                  Última: {formatDateDisplay(m.Data_Ultima_Realizacao)}
                                   {m.KM_Ultima_Realizacao ? ` (${Number(m.KM_Ultima_Realizacao).toLocaleString()} KM)` : ""}
                                 </span>
                               </>
@@ -1574,7 +1574,7 @@ const sanitizarDataISO = (data?: string): string => {
                           <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
                             <span className="text-[10px] text-slate-500 block">Última Realização</span>
                             <span className="font-semibold text-slate-200">
-                              {m.Data_Ultima_Realizacao || "—"}{" "}
+                              {m.Data_Ultima_Realizacao ? formatDateDisplay(m.Data_Ultima_Realizacao) : "—"}{" "}
                               {m.KM_Ultima_Realizacao ? `(${Number(m.KM_Ultima_Realizacao).toLocaleString()} KM)` : ""}
                             </span>
                           </div>
@@ -1582,7 +1582,7 @@ const sanitizarDataISO = (data?: string): string => {
                           <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
                             <span className="text-[10px] text-slate-500 block">Próxima Data / KM</span>
                             <span className="font-semibold text-slate-200">
-                              {m.Data_Alvo || "—"} {m.KM_Alvo ? `/ ${Number(m.KM_Alvo).toLocaleString()} KM` : ""}
+                              {m.Data_Alvo ? formatDateDisplay(m.Data_Alvo) : "—"} {m.KM_Alvo ? `/ ${Number(m.KM_Alvo).toLocaleString()} KM` : ""}
                             </span>
                           </div>
 

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { CalendarDays, List, Plus, Edit2, Trash2, X, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { CompromissoAgenda } from "../types";
 import { generateNewId } from "../services/api";
-import { formatarHora } from "../utils/formatters";
+import { formatarHora, formatDateDisplay } from "../utils/formatters";
 import { getLocalTodayDateStr } from "../services/notificationEngine";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
@@ -209,7 +209,7 @@ export const AgendaCompromissosView: React.FC<Props> = ({
                         )}
                       </div>
                       <p className="text-slate-400">
-                        {item.Data} {formatarHora(item.Hora) && `às ${formatarHora(item.Hora)}`} • Categoria: {item.Categoria || "Geral"}
+                        {formatDateDisplay(item.Data)} {formatarHora(item.Hora) && `às ${formatarHora(item.Hora)}`} • Categoria: {item.Categoria || "Geral"}
                       </p>
                       {item.Descrição && <p className="text-slate-500 italic">{renderTextoComCores(item.Descrição)}</p>}
                     </div>
@@ -229,7 +229,7 @@ export const AgendaCompromissosView: React.FC<Props> = ({
                           isOpen: true,
                           id: item.Id,
                           title: item.Titulo,
-                          subtitle: `Data: ${item.Data}${item.Hora ? ` às ${formatarHora(item.Hora)}` : ""} • Categoria: ${item.Categoria || "Geral"}`,
+                          subtitle: `Data: ${formatDateDisplay(item.Data)}${item.Hora ? ` às ${formatarHora(item.Hora)}` : ""} • Categoria: ${item.Categoria || "Geral"}`,
                         })
                       }
                       className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"

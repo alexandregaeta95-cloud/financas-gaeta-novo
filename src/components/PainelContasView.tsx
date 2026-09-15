@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Lancamento } from "../types";
 import { ModuleView } from "./Navigation";
-import { parseCurrency, formatCurrency, isLancamentoExcluded, getLancamentoValorReal } from "../utils/formatters";
+import { parseCurrency, formatCurrency, isLancamentoExcluded, getLancamentoValorReal, formatDateDisplay } from "../utils/formatters";
 
 type PeriodFilterType = "ALL" | "CURRENT_MONTH" | "LAST_MONTH" | "CUSTOM";
 
@@ -468,7 +468,7 @@ export const PainelContasView: React.FC<Props> = ({
                   <div>
                     <h4 className="font-bold text-white text-sm">{l.Descricao}</h4>
                     <p className="text-rose-400 font-mono">
-                      Venceu em: {l.Data} • Categoria: {l.Categoria}
+                      Venceu em: {formatDateDisplay(l.Data)} • Categoria: {l.Categoria}
                     </p>
                   </div>
 
@@ -507,7 +507,7 @@ export const PainelContasView: React.FC<Props> = ({
                   <div>
                     <h4 className="font-bold text-white text-sm">{l.Descricao}</h4>
                     <p className="text-slate-400 font-mono">
-                      Vence em: {l.Data} • Categoria: {l.Categoria}
+                      Vence em: {formatDateDisplay(l.Data)} • Categoria: {l.Categoria}
                     </p>
                   </div>
 
@@ -546,7 +546,7 @@ export const PainelContasView: React.FC<Props> = ({
                   <div>
                     <h4 className="font-semibold text-slate-200">{l.Descricao}</h4>
                     <p className="text-slate-500 font-mono">
-                      Data: {l.Data} • {l.Categoria}
+                      Data: {formatDateDisplay(l.Data)} • {l.Categoria}
                     </p>
                   </div>
                   <span className="font-bold text-emerald-400 font-mono">

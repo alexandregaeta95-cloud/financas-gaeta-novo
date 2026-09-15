@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { MapPin, Loader2, Fuel, Clock, Route as RouteIcon, DollarSign } from "lucide-react";
 import { Veiculo, Lancamento, HistoricoCorrida, PerfilUsuario, Motorista } from "../types";
-import { formatCurrency } from "../utils/formatters";
+import { formatCurrency, formatDateDisplay } from "../utils/formatters";
 import { exportReciboCorridaPDF } from "../utils/reciboCorridaPdf";
 
 function EnderecoAutocomplete({
@@ -716,7 +716,7 @@ export const CalculadoraCorridaView: React.FC<Props> = ({
               <div className="flex justify-between items-center">
                 <div className="min-w-0">
                   <p className="text-white font-semibold truncate">{c.Origem} → {c.Destino}</p>
-                  <p className="text-slate-400">{c.Data} · {c.DistanciaKm}km · {c.DuracaoMinutos}min</p>
+                  <p className="text-slate-400">{formatDateDisplay(c.Data)} · {c.DistanciaKm}km · {c.DuracaoMinutos}min</p>
                 </div>
                 <span className="text-emerald-400 font-bold shrink-0 ml-2">R$ {formatCurrency(c.ValorTotal)}</span>
               </div>

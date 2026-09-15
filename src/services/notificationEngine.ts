@@ -73,6 +73,20 @@ export function parseDateToLocalParts(
 ): { year: number; month: number; day: number; dateStrYMD: string } | null {
   if (!dateStr || typeof dateStr !== "string") return null;
   const s = dateStr.trim();
+  if (!s) return null;
+
+  // Se for timestamp ISO completo com indicação de fuso (Z ou offset +/-), converter para Date local do dispositivo
+  if (s.includes("T") && (s.endsWith("Z") || /[+-]\d{2}(?::?\d{2})?$/.test(s))) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const day = d.getDate();
+      const dateStrYMD = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      return { year, month, day, dateStrYMD };
+    }
+  }
+
   // Pattern 1: YYYY-MM-DD
   const isoMatch = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (isoMatch) {
@@ -94,11 +108,11 @@ export function parseDateToLocalParts(
   return null;
 }
 
-// Helper: Parse time string (HH:mm or HH:mm:ss) into total minutes from midnight (device local time)
+// Helper: Parse time string (HH:mm, HH:mm:ss, ISO 1899 etc.) into total minutes from midnight (device local time)
 export function parseTimeToMinutes(timeStr?: string): number | null {
   if (!timeStr || typeof timeStr !== "string") return null;
-  const clean = timeStr.trim();
-  const match = clean.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  const clean = formatarHora(timeStr) || timeStr.trim();
+  const match = clean.match(/^(\d{1,2}):(\d{2})/);
   if (match) {
     const h = parseInt(match[1], 10);
     const m = parseInt(match[2], 10);
@@ -192,7 +206,7 @@ export function getDaysSinceLastTireCalibration(): number {
 
 export function registerTireCalibrationNow(): void {
   if (typeof localStorage === "undefined") return;
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getLocalTodayDateStr();
   localStorage.setItem("gaeta_last_tire_calibration_date", todayStr);
 }
 
@@ -281,8 +295,8 @@ export function evaluateAllNotifications({
             isAlarm: false,
             soundEnabled: false,
           });
-        } else if (diffMins >= 0 && diffMins <= 60) {
-          // HORÁRIO ATUAL BATEU COM O HORÁRIO PROGRAMADO (janela ativa: 0 a 60 min após o horário)
+        } else if (diffMins >= 0 && diffMins <= 15) {
+          // HORÁRIO ATUAL BATEU COM O HORÁRIO PROGRAMADO (janela ativa: 0 a 15 min após o horário)
           // DISPARA O ALARME SONORO!
           const slotClean = (item.Hora || "0000").replace(/\D/g, "");
           list.push({
@@ -297,7 +311,7 @@ export function evaluateAllNotifications({
             soundEnabled: true,
           });
         } else {
-          // Passaram mais de 60 min do horário programado: aviso pendente silencioso
+          // Passaram mais de 15 min do horário programado: aviso pendente silencioso (SEM alarme sonoro)
           list.push({
             id: `agenda_${item.Id}_hoje_pendente`,
             type: "agenda",
@@ -311,7 +325,7 @@ export function evaluateAllNotifications({
           });
         }
       } else {
-        // Compromisso sem horário específico (dia inteiro)
+        // Compromisso sem horário específico (dia inteiro): puramente informativo, SEM som/alarme
         list.push({
           id: `agenda_${item.Id}_hoje`,
           type: "agenda",
@@ -381,7 +395,7 @@ export function evaluateAllNotifications({
             isAlarm: false,
             soundEnabled: false,
           });
-        } else if (diffMins >= 0 && diffMins <= 60) {
+        } else if (diffMins >= 0 && diffMins <= 15) {
           // Horário bateu com o atual: dispara alarme sonoro
           const slotClean = (item.Hora_Alarme || "0000").replace(/\D/g, "");
           list.push({
@@ -440,8 +454,8 @@ export function evaluateAllNotifications({
       if (targetMins !== null) {
         const diffMins = currentTotalMins - targetMins;
 
-        if (diffMins < -30) {
-          // Consulta hoje mais tarde: informativo silencioso
+        if (diffMins < 0) {
+          // Consulta hoje mais tarde: informativo silencioso, SEM som/alarme
           list.push({
             id: `consulta_${c.Id}_hoje_info`,
             type: "saude",
@@ -453,8 +467,8 @@ export function evaluateAllNotifications({
             isAlarm: false,
             soundEnabled: false,
           });
-        } else if (diffMins >= -30 && diffMins <= 60) {
-          // Horário próximo (30 min antes até 60 min depois): dispara alarme
+        } else if (diffMins >= 0 && diffMins <= 15) {
+          // Horário bateu com o da consulta: dispara alarme
           list.push({
             id: `consulta_${c.Id}_hoje`,
             type: "saude",
@@ -1044,8 +1058,8 @@ export function evaluateAllNotifications({
             targetView: "veiculos",
             severity: diasAtraso > 2 ? "urgent" : "warning",
             timestamp: now,
-            soundEnabled: somHabilitado,
-            isAlarm: somHabilitado,
+            soundEnabled: false,
+            isAlarm: false,
           });
         }
       }
@@ -1056,18 +1070,44 @@ export function evaluateAllNotifications({
       const diff = getDiffInDaysFromToday(m.Data_Alvo);
       if (diff !== null) {
         if (diff === 0) {
+          // Data de manutenção é HOJE: verifica se tem horário de alerta configurado
+          const targetMins = parseTimeToMinutes(m.Horario_Alerta);
+          let deveDispararAlarme = false;
+          let severity: "urgent" | "info" | "warning" = "info";
+
+          if (targetMins !== null) {
+            const diffMins = currentTotalMins - targetMins;
+            if (diffMins < 0) {
+              // Horário futuro hoje: o horário ainda não chegou!
+              severity = "info";
+              deveDispararAlarme = false;
+            } else if (diffMins >= 0 && diffMins <= 15) {
+              // Horário bateu com o atual: dispara alarme sonoro
+              severity = "urgent";
+              deveDispararAlarme = somHabilitado;
+            } else {
+              severity = "warning";
+              deveDispararAlarme = false;
+            }
+          } else {
+            // Sem horário específico
+            severity = "info";
+            deveDispararAlarme = false;
+          }
+
           list.push({
             id: `manutencao_${m.Id}_hoje_${todayLocalStr}`,
             type: "veiculos",
             title: "🔧 Manutenção Veicular Hoje!",
-            message: `${m.Descrição} (${veiculoNome}) agendada para hoje.`,
+            message: `${m.Descrição} (${veiculoNome}) agendada para hoje${m.Horario_Alerta ? ` às ${m.Horario_Alerta}` : ""}.`,
             targetView: "veiculos",
-            severity: "urgent",
+            severity,
             timestamp: now,
-            soundEnabled: somHabilitado,
-            isAlarm: somHabilitado,
+            soundEnabled: deveDispararAlarme,
+            isAlarm: deveDispararAlarme,
           });
         } else if (diff > 0 && diff <= 3) {
+          // Dias futuros: puramente informativo/preventivo, SEM alarme sonoro
           list.push({
             id: `manutencao_${m.Id}_prox_${todayLocalStr}`,
             type: "veiculos",
@@ -1076,8 +1116,8 @@ export function evaluateAllNotifications({
             targetView: "veiculos",
             severity: "warning",
             timestamp: now,
-            soundEnabled: somHabilitado,
-            isAlarm: somHabilitado,
+            soundEnabled: false,
+            isAlarm: false,
           });
         } else if (diff < 0) {
           list.push({
@@ -1086,10 +1126,10 @@ export function evaluateAllNotifications({
             title: "⚠️ Manutenção Veicular Atrasada",
             message: `${m.Descrição} (${veiculoNome}) estava prevista para ${m.Data_Alvo}.`,
             targetView: "veiculos",
-            severity: "urgent",
+            severity: "warning",
             timestamp: now,
-            soundEnabled: somHabilitado,
-            isAlarm: somHabilitado,
+            soundEnabled: false,
+            isAlarm: false,
           });
         }
       }
@@ -1105,10 +1145,10 @@ export function evaluateAllNotifications({
           title: "🚗 Manutenção por KM Atingida!",
           message: `${m.Descrição} (${veiculoNome}): Rodou ${kmDesdeUltima.toLocaleString()} km desde a última realização (Frequência: a cada ${m.Frequência_KM.toLocaleString()} km | KM Atual: ${kmAtual.toLocaleString()} km).`,
           targetView: "veiculos",
-          severity: "urgent",
+          severity: "warning",
           timestamp: now,
-          soundEnabled: somHabilitado,
-          isAlarm: somHabilitado,
+          soundEnabled: false,
+          isAlarm: false,
         });
       }
     }
@@ -1122,10 +1162,10 @@ export function evaluateAllNotifications({
           title: "🚗 Quilometragem de Manutenção Atingida!",
           message: `${m.Descrição} (${veiculoNome}): KM Alvo ${m.KM_Alvo.toLocaleString()} km atingido (KM Atual: ${kmAtual.toLocaleString()} km).`,
           targetView: "veiculos",
-          severity: "urgent",
+          severity: "warning",
           timestamp: now,
-          soundEnabled: somHabilitado,
-          isAlarm: somHabilitado,
+          soundEnabled: false,
+          isAlarm: false,
         });
       }
     }
@@ -1422,14 +1462,38 @@ export function evaluateAllNotifications({
     const horaStr = item.Hora_Lembrete ? ` às ${item.Hora_Lembrete}` : "";
 
     if (diff === 0) {
+      const targetMins = parseTimeToMinutes(item.Hora_Lembrete);
+      let deveDispararAlarme = false;
+      let severity: "urgent" | "info" | "warning" = "info";
+
+      if (targetMins !== null) {
+        const diffMins = currentTotalMins - targetMins;
+        if (diffMins < 0) {
+          // Horário futuro hoje: ainda não chegou!
+          severity = "info";
+          deveDispararAlarme = false;
+        } else if (diffMins >= 0 && diffMins <= 15) {
+          severity = "urgent";
+          deveDispararAlarme = true;
+        } else {
+          severity = "warning";
+          deveDispararAlarme = false;
+        }
+      } else {
+        severity = "info";
+        deveDispararAlarme = false;
+      }
+
       list.push({
         id: `mercado_item_${item.Id}_hoje`,
         type: "mercado",
         title: "🛒 Lembrete de Mercado Hoje!",
         message: `Ir comprar: ${item.Item}${horaStr} (${item.Quantidade} ${item.Unidade || "UN"})`,
         targetView: "lista_mercado",
-        severity: "urgent",
+        severity,
         timestamp: now,
+        isAlarm: deveDispararAlarme,
+        soundEnabled: deveDispararAlarme,
       });
     } else if (diff === 1) {
       list.push({
@@ -1438,8 +1502,10 @@ export function evaluateAllNotifications({
         title: "🛒 Lembrete de Mercado Amanhã",
         message: `Comprar ${item.Item}${horaStr} no dia ${item.Data_Lembrete}`,
         targetView: "lista_mercado",
-        severity: "warning",
+        severity: "info",
         timestamp: now,
+        isAlarm: false,
+        soundEnabled: false,
       });
     } else if (diff < 0) {
       list.push({
@@ -1450,6 +1516,8 @@ export function evaluateAllNotifications({
         targetView: "lista_mercado",
         severity: "warning",
         timestamp: now,
+        isAlarm: false,
+        soundEnabled: false,
       });
     }
   });
@@ -1462,17 +1530,33 @@ export function evaluateAllNotifications({
       (i) => !(i.Comprado === true || String(i.Comprado).toUpperCase() === "SIM")
     ).length;
 
-    if (diff !== null && diff <= 0 && unboughtCount > 0) {
+    if (diff !== null && diff === 0 && unboughtCount > 0) {
       const horaGen = localStorage.getItem("gaeta_mercado_general_time") || "10:00";
-      list.push({
-        id: "mercado_general_reminder_active",
-        type: "mercado",
-        title: "🛒 Hora de ir ao Mercado!",
-        message: `Lembrete agendado (${horaGen}). Você possui ${unboughtCount} item(ns) pendente(s) na lista.`,
-        targetView: "lista_mercado",
-        severity: "urgent",
-        timestamp: now,
-      });
+      const targetMins = parseTimeToMinutes(horaGen);
+      let deveDisparar = false;
+      let severity: "urgent" | "info" = "info";
+
+      if (targetMins !== null) {
+        const diffMins = currentTotalMins - targetMins;
+        if (diffMins >= 0 && diffMins <= 15) {
+          deveDisparar = true;
+          severity = "urgent";
+        }
+      }
+
+      if (deveDisparar) {
+        list.push({
+          id: `mercado_general_reminder_${todayLocalStr}`,
+          type: "mercado",
+          title: "🛒 Hora de ir ao Mercado!",
+          message: `Lembrete agendado (${horaGen}). Você possui ${unboughtCount} item(ns) pendente(s) na lista.`,
+          targetView: "lista_mercado",
+          severity,
+          timestamp: now,
+          isAlarm: true,
+          soundEnabled: true,
+        });
+      }
     }
   }
 
