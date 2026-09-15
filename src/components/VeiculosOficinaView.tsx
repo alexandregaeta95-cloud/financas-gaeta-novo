@@ -870,18 +870,26 @@ const sanitizarDataISO = (data?: string): string => {
     const freqKm = m.Frequência_KM ? Number(m.Frequência_KM) : 0;
     const freqMeses = m.Frequência_Meses ? Number(m.Frequência_Meses) : 0;
 
+    // A próxima previsão deve ser calculada a partir da data de realização (ou hoje se não houver)
+    const baseDateStr = m.Data_Ultima_Realizacao || todayStr;
+    const baseDate = parseDateSafely(baseDateStr) || new Date();
+
     let nextDate = m.Data_Alvo;
     if (intervaloDias > 0) {
-      nextDate = new Date(Date.now() + intervaloDias * 24 * 3600 * 1000).toISOString().split("T")[0];
+      nextDate = new Date(baseDate.getTime() + intervaloDias * 24 * 3600 * 1000).toISOString().split("T")[0];
     } else if (freqMeses > 0) {
-      const d = new Date();
+      const d = new Date(baseDate);
       d.setMonth(d.getMonth() + freqMeses);
       nextDate = d.toISOString().split("T")[0];
     }
 
-    // Se freqKm > 0, avança a partir do KM atual do veículo ou a partir do KM_Alvo anterior
-    const baseKm = currentKm > 0 ? currentKm : (Number(m.KM_Alvo) || 0);
-    const nextKm = freqKm > 0 ? baseKm + freqKm : m.KM_Alvo;
+    // Se freqKm > 0, avança a partir do KM da última realização (se disponível) ou do KM atual do veículo
+    const baseKm = m.KM_Ultima_Realizacao && Number(m.KM_Ultima_Realizacao) > 0
+      ? Number(m.KM_Ultima_Realizacao)
+      : currentKm > 0
+      ? currentKm
+      : (Number(m.KM_Alvo) || 0);
+    const nextKm = freqKm > 0 ? baseKm + freqKm : (Number(m.KM_Alvo) || 0);
 
     await onSaveManutencao({
       ...m,
@@ -1606,11 +1614,11 @@ const sanitizarDataISO = (data?: string): string => {
                                 Próxima: <strong className="text-slate-200">{formatDateDisplay(m.Data_Alvo)}</strong>
                               </span>
                             )}
-                            {m.KM_Alvo && m.KM_Alvo > 0 && (
+                            {m.KM_Alvo !== undefined && m.KM_Alvo !== null && Number(m.KM_Alvo) > 0 && (
                               <>
                                 <span>•</span>
                                 <span>
-                                  KM Alvo: <strong className="font-mono text-slate-200">{m.KM_Alvo.toLocaleString()} KM</strong>
+                                  KM Alvo: <strong className="font-mono text-slate-200">{Number(m.KM_Alvo).toLocaleString()} KM</strong>
                                 </span>
                               </>
                             )}
@@ -1619,7 +1627,7 @@ const sanitizarDataISO = (data?: string): string => {
                                 <span className="text-slate-600">•</span>
                                 <span className="text-slate-400">
                                   Última: {formatDateDisplay(m.Data_Ultima_Realizacao)}
-                                  {m.KM_Ultima_Realizacao ? ` (${Number(m.KM_Ultima_Realizacao).toLocaleString()} KM)` : ""}
+                                  {m.KM_Ultima_Realizacao && Number(m.KM_Ultima_Realizacao) > 0 ? ` (${Number(m.KM_Ultima_Realizacao).toLocaleString()} KM)` : ""}
                                 </span>
                               </>
                             )}
@@ -1732,7 +1740,7 @@ const sanitizarDataISO = (data?: string): string => {
                           <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
                             <span className="text-[10px] text-slate-500 block">Próxima Data / KM</span>
                             <span className="font-semibold text-slate-200">
-                              {m.Data_Alvo ? formatDateDisplay(m.Data_Alvo) : "—"} {m.KM_Alvo ? `/ ${Number(m.KM_Alvo).toLocaleString()} KM` : ""}
+                              {m.Data_Alvo ? formatDateDisplay(m.Data_Alvo) : "—"} {m.KM_Alvo && Number(m.KM_Alvo) > 0 ? `/ ${Number(m.KM_Alvo).toLocaleString()} KM` : ""}
                             </span>
                           </div>
 
