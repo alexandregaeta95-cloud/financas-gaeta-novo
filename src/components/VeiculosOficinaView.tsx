@@ -20,12 +20,13 @@ import {
   Check,
   Sparkles,
   RefreshCw,
+  RotateCcw,
   AlertOctagon,
   User,
 } from "lucide-react";
 import { Veiculo, ServicoOficina, ManutencaoAgendada, Infracao, Motorista, ContaBancaria } from "../types";
 import { generateNewId } from "../services/api";
-import { parseCurrency, formatCurrency, formatCurrencyInput, formatDateDisplay } from "../utils/formatters";
+import { parseCurrency, formatCurrency, formatCurrencyInput, formatDateDisplay, isManutencaoConcluida } from "../utils/formatters";
 import { markCycleAsCompleted } from "../services/snoozeService";
 import { ComboBox } from "./ComboBox";
 import { VoiceInput } from "./VoiceInput";
@@ -294,10 +295,10 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     Data_Ultima_Realizacao: new Date().toISOString().split("T")[0],
     KM_Ultima_Realizacao: veiculos[0]?.Km_Atual || 0,
     Data_Alvo: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split("T")[0],
-    KM_Alvo: (veiculos[0]?.Km_Atual || 25000) + 10000,
+    KM_Alvo: 0,
     Recorrente: "SIM",
-    Frequência_Meses: 12,
-    Frequência_KM: 10000,
+    Frequência_Meses: 0,
+    Frequência_KM: 0,
     Horario_Alerta: "08:00",
     Som_Alarme: true,
     Status: "PENDENTE",
@@ -617,7 +618,10 @@ export const VeiculosOficinaView: React.FC<Props> = ({
       setManutencaoForm({
         ...m,
         Tipo_Agendamento: m.Tipo_Agendamento || (m.Intervalo_Dias ? "Dias" : "Ambos"),
-        Intervalo_Dias: m.Intervalo_Dias || 7,
+        Intervalo_Dias: m.Intervalo_Dias || 0,
+        KM_Alvo: m.KM_Alvo !== undefined && m.KM_Alvo !== null ? Number(m.KM_Alvo) : 0,
+        Frequência_KM: m.Frequência_KM || 0,
+        Frequência_Meses: m.Frequência_Meses || 0,
         Som_Alarme: m.Som_Alarme !== "NAO" && m.Som_Alarme !== false,
       });
     } else {
@@ -632,10 +636,10 @@ export const VeiculosOficinaView: React.FC<Props> = ({
         Data_Ultima_Realizacao: todayStr,
         KM_Ultima_Realizacao: defaultVeic?.Km_Atual || 0,
         Data_Alvo: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split("T")[0],
-        KM_Alvo: (parseCurrency(defaultVeic?.Km_Atual) || 25000) + 10000,
+        KM_Alvo: 0,
         Recorrente: "SIM",
-        Frequência_Meses: 12,
-        Frequência_KM: 10000,
+        Frequência_Meses: 0,
+        Frequência_KM: 0,
         Horario_Alerta: "08:00",
         Som_Alarme: true,
         Status: "PENDENTE",
@@ -653,15 +657,17 @@ export const VeiculosOficinaView: React.FC<Props> = ({
     const today = new Date();
     const nextDate = tmpl.intervalo > 0
       ? new Date(today.getTime() + tmpl.intervalo * 24 * 3600 * 1000).toISOString().split("T")[0]
-      : manutencaoForm.Data_Alvo;
+      : "";
 
     setManutencaoForm((prev) => ({
       ...prev,
       Descrição: tmpl.desc,
       Tipo_Agendamento: tmpl.tipo,
-      Intervalo_Dias: tmpl.intervalo > 0 ? tmpl.intervalo : undefined,
-      Frequência_KM: tmpl.freqKm > 0 ? tmpl.freqKm : undefined,
-      KM_Alvo: tmpl.freqKm > 0 ? currentKm + tmpl.freqKm : prev.KM_Alvo,
+      Recorrente: "SIM",
+      Intervalo_Dias: tmpl.intervalo > 0 ? tmpl.intervalo : 0,
+      Frequência_KM: tmpl.freqKm > 0 ? tmpl.freqKm : 0,
+      Frequência_Meses: 0,
+      KM_Alvo: tmpl.freqKm > 0 ? currentKm + tmpl.freqKm : 0,
       Data_Alvo: nextDate,
       Data_Ultima_Realizacao: today.toISOString().split("T")[0],
       KM_Ultima_Realizacao: currentKm,
@@ -678,6 +684,13 @@ const sanitizarDataISO = (data?: string): string => {
 
   const handleSaveManutencaoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const isDataFixa =
+      manutencaoForm.Tipo_Agendamento === "Data" ||
+      manutencaoForm.Recorrente === "NÃO" ||
+      manutencaoForm.Recorrente === "NAO";
+    const isDiasOnly = manutencaoForm.Tipo_Agendamento === "Dias";
+    const isKmOnly = manutencaoForm.Tipo_Agendamento === "KM";
+
     const item: ManutencaoAgendada = {
       Id: editingManutencao?.Id || generateNewId("MANUT"),
       Veículo: manutencaoForm.Veículo || veiculos[0]?.Modelo || "CARRO",
@@ -685,10 +698,10 @@ const sanitizarDataISO = (data?: string): string => {
       Tipo_Agendamento: manutencaoForm.Tipo_Agendamento || "Dias",
       Data_Alvo: sanitizarDataISO(manutencaoForm.Data_Alvo),
       KM_Alvo: parseCurrency(manutencaoForm.KM_Alvo),
-      Recorrente: manutencaoForm.Recorrente || "SIM",
-      Frequência_Meses: parseCurrency(manutencaoForm.Frequência_Meses) || 12,
-      Frequência_KM: parseCurrency(manutencaoForm.Frequência_KM),
-      Intervalo_Dias: parseCurrency(manutencaoForm.Intervalo_Dias),
+      Recorrente: isDataFixa ? "NÃO" : (manutencaoForm.Recorrente || "SIM"),
+      Frequência_Meses: isDataFixa || isKmOnly ? 0 : (parseCurrency(manutencaoForm.Frequência_Meses) || 0),
+      Frequência_KM: isDataFixa || isDiasOnly ? 0 : parseCurrency(manutencaoForm.Frequência_KM),
+      Intervalo_Dias: isDataFixa || isKmOnly ? 0 : parseCurrency(manutencaoForm.Intervalo_Dias),
       Data_Ultima_Realizacao: manutencaoForm.Data_Ultima_Realizacao || new Date().toISOString().split("T")[0],
       KM_Ultima_Realizacao: parseCurrency(manutencaoForm.KM_Ultima_Realizacao),
       Horario_Alerta: manutencaoForm.Horario_Alerta || "08:00",
@@ -791,78 +804,165 @@ const sanitizarDataISO = (data?: string): string => {
     onSaveInfracao(item);
   };
 
-  // Realizar / Concluir Manutenção Hoje e Avançar Ciclo
-  const handleCompleteManutencaoToday = (m: ManutencaoAgendada, dataEscolhida?: string) => {
+  // Grava Status como REALIZADO e persiste de volta na planilha via onSaveManutencao
+  const handleConfirmRealizado = async (m: ManutencaoAgendada, dataEscolhida?: string) => {
     const todayStr = dataEscolhida || new Date().toISOString().split("T")[0];
     const relatedVeic = veiculos.find(
-      (v) => v.Modelo === m.Veículo || v.Placa === m.Veículo || v.Id === m.Veículo
+      (v) =>
+        v.Modelo?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+        v.Placa?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+        v.Id === m.Veículo
     );
     const currentKm = relatedVeic?.Km_Atual || 0;
 
-    // Registra no histórico de ciclos concluídos
+    // Registra no histórico de ciclos concluídos localmente
     markCycleAsCompleted(`manutencao_intervalo_${m.Id}_${todayStr}`);
     markCycleAsCompleted(`manutencao_${m.Id}_hoje_${todayStr}`);
     markCycleAsCompleted(`manutencao_km_${m.Id}`);
     markCycleAsCompleted(`manutencao_freq_km_${m.Id}`);
 
-    const intervaloDias = m.Intervalo_Dias ? Number(m.Intervalo_Dias) : 0;
-    const freqKm = m.Frequência_KM ? Number(m.Frequência_KM) : 0;
+    // Preserva KM_Alvo e Data_Alvo originais intactos e grava Status = "REALIZADO"
+    const itemAtualizado: ManutencaoAgendada = {
+      ...m,
+      Data_Ultima_Realizacao: todayStr,
+      KM_Ultima_Realizacao: currentKm,
+      Status: "REALIZADO",
+      KM_Alvo: m.KM_Alvo !== undefined && m.KM_Alvo !== null ? Number(m.KM_Alvo) : 0,
+      Data_Alvo: m.Data_Alvo || "",
+    };
 
-    if (intervaloDias > 0 || freqKm > 0 || m.Tipo_Agendamento === "Ambos" || m.Recorrente === "SIM") {
-      const nextDate = intervaloDias > 0
-        ? new Date(Date.now() + intervaloDias * 24 * 3600 * 1000).toISOString().split("T")[0]
-        : m.Data_Alvo;
-      const nextKm = freqKm > 0 ? currentKm + freqKm : m.KM_Alvo;
+    setManutencaoConfirmandoId(null);
+    setDataRealizacaoCustom("");
 
+    await onSaveManutencao(itemAtualizado);
+  };
+
+  // Reabrir (voltar para PENDENTE) ou marcar como REALIZADO
+  const handleToggleManutencaoStatus = (m: ManutencaoAgendada) => {
+    const isDone = isManutencaoConcluida(m.Status);
+    if (isDone) {
       onSaveManutencao({
         ...m,
-        Data_Ultima_Realizacao: todayStr,
-        KM_Ultima_Realizacao: currentKm,
-        Data_Alvo: nextDate,
-        KM_Alvo: nextKm,
         Status: "PENDENTE",
       });
     } else {
-      // Pontual
-      onSaveManutencao({
-        ...m,
-        Data_Ultima_Realizacao: todayStr,
-        KM_Ultima_Realizacao: currentKm,
-        Status: m.Status === "CONCLUÍDO" || m.Status === "Concluída" ? "PENDENTE" : "CONCLUÍDO",
-      });
+      handleConfirmRealizado(m);
     }
   };
 
-  // Check upcoming maintenance alerts (Date <= 7 days or past, OR KM >= target - 500)
-  const nowTime = new Date().getTime();
-  const alertManutencoes = manutencoes.filter((m) => {
-    if (m.Status === "CONCLUÍDO" || m.Status === "Concluída") return false;
-    let isAlert = false;
+  // Avançar para o Próximo Ciclo (apenas para manutenções recorrentes)
+  const handleAvancarCiclo = async (m: ManutencaoAgendada) => {
+    // Se for agendamento único / Data Fixa ou Recorrente = NÃO, nunca avança ciclo
+    if (m.Recorrente === "NÃO" || m.Recorrente === "NAO" || m.Tipo_Agendamento === "Data") {
+      return;
+    }
 
-    // Intervalo de dias
-    if (m.Intervalo_Dias && m.Intervalo_Dias > 0 && m.Data_Ultima_Realizacao) {
-      const diff = getDiffInDaysFromToday(m.Data_Ultima_Realizacao);
-      if (diff !== null && Math.abs(diff) >= m.Intervalo_Dias) {
-        return true;
+    const todayStr = new Date().toISOString().split("T")[0];
+    const relatedVeic = veiculos.find(
+      (v) =>
+        v.Modelo?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+        v.Placa?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+        v.Id === m.Veículo
+    );
+    const currentKm = relatedVeic?.Km_Atual || 0;
+
+    const intervaloDias = m.Intervalo_Dias ? Number(m.Intervalo_Dias) : 0;
+    const freqKm = m.Frequência_KM ? Number(m.Frequência_KM) : 0;
+    const freqMeses = m.Frequência_Meses ? Number(m.Frequência_Meses) : 0;
+
+    let nextDate = m.Data_Alvo;
+    if (intervaloDias > 0) {
+      nextDate = new Date(Date.now() + intervaloDias * 24 * 3600 * 1000).toISOString().split("T")[0];
+    } else if (freqMeses > 0) {
+      const d = new Date();
+      d.setMonth(d.getMonth() + freqMeses);
+      nextDate = d.toISOString().split("T")[0];
+    }
+
+    // Se freqKm > 0, avança a partir do KM atual do veículo ou a partir do KM_Alvo anterior
+    const baseKm = currentKm > 0 ? currentKm : (Number(m.KM_Alvo) || 0);
+    const nextKm = freqKm > 0 ? baseKm + freqKm : m.KM_Alvo;
+
+    await onSaveManutencao({
+      ...m,
+      Data_Ultima_Realizacao: m.Data_Ultima_Realizacao || todayStr,
+      KM_Ultima_Realizacao: m.KM_Ultima_Realizacao || currentKm,
+      Data_Alvo: nextDate,
+      KM_Alvo: nextKm,
+      Status: "PENDENTE",
+    });
+  };
+
+  // Check upcoming maintenance alerts (Data vencida ou até 30 dias no futuro, OU KM próximo/ultrapassado)
+  const alertManutencoes = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return manutencoes.filter((m) => {
+      // 1. Ignora manutenções já concluídas ou realizadas
+      if (isManutencaoConcluida(m.Status)) return false;
+
+      let isAlert = false;
+
+      // 2. Checagem por Data Alvo
+      if (m.Data_Alvo) {
+        const targetDate = parseDateSafely(m.Data_Alvo);
+        if (targetDate) {
+          targetDate.setHours(0, 0, 0, 0);
+          // Diferença em dias corridos: positivo = faltam X dias; negativo = já venceu há X dias
+          const daysUntilTarget = Math.round((targetDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+          // Alerta se está vencida (<= 0) ou se vence nos próximos 30 dias (<= 30)
+          if (daysUntilTarget <= 30) {
+            isAlert = true;
+          }
+        }
       }
-    }
 
-    if (m.Data_Alvo) {
-      const targetTime = new Date(m.Data_Alvo).getTime();
-      const diffDays = (targetTime - nowTime) / (1000 * 3600 * 24);
-      if (diffDays <= 3) isAlert = true;
-    }
+      // 3. Checagem por KM Alvo
+      const kmAlvoNum = m.KM_Alvo !== undefined && m.KM_Alvo !== null ? Number(m.KM_Alvo) : 0;
+      if (kmAlvoNum > 0) {
+        const relatedVeic = veiculos.find(
+          (v) =>
+            v.Modelo?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+            v.Descrição?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+            v.Placa?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+            v.Id === m.Veículo
+        );
+        const currentKm = relatedVeic?.Km_Atual || 0;
+        if (currentKm >= kmAlvoNum - 1000) {
+          isAlert = true;
+        }
+      }
 
-    if (m.KM_Alvo && m.KM_Alvo > 0) {
-      const relatedVeic = veiculos.find(
-        (v) => v.Modelo === m.Veículo || v.Descrição === m.Veículo || v.Placa === m.Veículo
-      );
-      const currentKm = relatedVeic?.Km_Atual || 0;
-      if (currentKm >= m.KM_Alvo - 500) isAlert = true;
-    }
+      // 4. Checagem por Intervalo de Dias desde a Última Realização
+      const intervaloDias = m.Intervalo_Dias ? Number(m.Intervalo_Dias) : 0;
+      if (intervaloDias > 0 && m.Data_Ultima_Realizacao) {
+        const diffDays = getDiffInDaysFromToday(m.Data_Ultima_Realizacao); // returns (today - lastDate)
+        if (diffDays !== null && Math.abs(diffDays) >= intervaloDias - 7) {
+          isAlert = true;
+        }
+      }
 
-    return isAlert;
-  });
+      // 5. Checagem por Frequência KM desde a Última Realização
+      const freqKm = m.Frequência_KM ? Number(m.Frequência_KM) : 0;
+      if (freqKm > 0 && m.KM_Ultima_Realizacao !== undefined && m.KM_Ultima_Realizacao !== null) {
+        const relatedVeic = veiculos.find(
+          (v) =>
+            v.Modelo?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+            v.Descrição?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+            v.Placa?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+            v.Id === m.Veículo
+        );
+        const currentKm = relatedVeic?.Km_Atual || 0;
+        const kmRodados = currentKm - Number(m.KM_Ultima_Realizacao);
+        if (kmRodados >= freqKm - 1000) {
+          isAlert = true;
+        }
+      }
+
+      return isAlert;
+    });
+  }, [manutencoes, veiculos]);
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
@@ -953,13 +1053,29 @@ const sanitizarDataISO = (data?: string): string => {
               {alertManutencoes.length} Manutenção(ões) Próxima(s) do Vencimento ou KM Alvo
             </h4>
             <ul className="list-disc list-inside text-slate-300 space-y-0.5">
-              {alertManutencoes.map((m, idx) => (
-                <li key={`${m.Id || 'manut-alert'}-${idx}`}>
-                  <strong className="text-white">{m.Veículo}</strong>: {m.Descrição} —{" "}
-                  {m.Data_Alvo && `Data Alvo: ${formatDateDisplay(m.Data_Alvo)}`}
-                  {m.KM_Alvo && ` | KM Alvo: ${m.KM_Alvo.toLocaleString()} KM`}
-                </li>
-              ))}
+              {alertManutencoes.map((m, idx) => {
+                const hasData = Boolean(m.Data_Alvo);
+                const kmNum = m.KM_Alvo !== undefined && m.KM_Alvo !== null ? Number(m.KM_Alvo) : 0;
+                const hasKm = kmNum > 0;
+
+                return (
+                  <li key={`${m.Id || "manut-alert"}-${idx}`}>
+                    <strong className="text-white">{m.Veículo}</strong>: {m.Descrição}
+                    {(hasData || hasKm) && " — "}
+                    {hasData && (
+                      <span>
+                        Data Alvo: <strong className="text-white">{formatDateDisplay(m.Data_Alvo)}</strong>
+                      </span>
+                    )}
+                    {hasData && hasKm && <span> • </span>}
+                    {hasKm && (
+                      <span>
+                        Km Alvo: <strong className="text-white">{kmNum.toLocaleString("pt-BR")} km</strong>
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>
@@ -1387,7 +1503,7 @@ const sanitizarDataISO = (data?: string): string => {
               {filteredManutencoes.map((m, idx) => {
                 const mId = String(m.Id || `manut-${idx}`);
                 const isExpanded = expandedManutencaoId === mId;
-                const isDone = m.Status === "CONCLUÍDO" || m.Status === "Concluída";
+                const isDone = isManutencaoConcluida(m.Status);
                 const intervalo = m.Intervalo_Dias ? Number(m.Intervalo_Dias) : 0;
                 const freqKm = m.Frequência_KM ? Number(m.Frequência_KM) : 0;
                 const isHybrid = m.Tipo_Agendamento === "Ambos" || (intervalo > 0 && freqKm > 0);
@@ -1447,6 +1563,18 @@ const sanitizarDataISO = (data?: string): string => {
                               </span>
                             )}
 
+                            {/* Badge de Status */}
+                            {isDone ? (
+                              <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
+                                <Check className="w-3 h-3" />
+                                REALIZADO
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[10px] font-medium">
+                                PENDENTE
+                              </span>
+                            )}
+
                             {/* Badge de Recorrência */}
                             {isDaysOnly && intervalo > 0 && (
                               <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[10px] font-medium">
@@ -1499,9 +1627,32 @@ const sanitizarDataISO = (data?: string): string => {
                         </div>
                       </div>
 
-                      {/* Lado Direito: Botão Concluir Hoje / Ciclo + Chevron */}
+                      {/* Lado Direito: Botões de Ação + Chevron */}
                       <div className="flex items-center gap-2 shrink-0">
-                        {manutencaoConfirmandoId === m.Id ? (
+                        {isDone ? (
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleManutencaoStatus(m)}
+                              className="px-2 py-1 rounded-lg text-[10px] font-medium border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-750 transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Reabrir manutenção (marcar como PENDENTE)"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              <span>Reabrir</span>
+                            </button>
+                            {(m.Recorrente !== "NÃO" && m.Recorrente !== "NAO" && m.Tipo_Agendamento !== "Data" && (m.Recorrente === "SIM" || intervalo > 0 || freqKm > 0)) && (
+                              <button
+                                type="button"
+                                onClick={() => handleAvancarCiclo(m)}
+                                className="px-2 py-1 rounded-lg text-[10px] font-medium border border-sky-500/30 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+                                title="Avançar para a próxima data/km prevista"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                                <span className="hidden sm:inline">Próximo Ciclo</span>
+                              </button>
+                            )}
+                          </div>
+                        ) : manutencaoConfirmandoId === m.Id ? (
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <input
                               type="date"
@@ -1512,17 +1663,16 @@ const sanitizarDataISO = (data?: string): string => {
                             <button
                               type="button"
                               onClick={() => {
-                                handleCompleteManutencaoToday(m, dataRealizacaoCustom);
-                                setManutencaoConfirmandoId(null);
+                                handleConfirmRealizado(m, dataRealizacaoCustom);
                               }}
-                              className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
+                              className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer"
                             >
                               ✓ OK
                             </button>
                             <button
                               type="button"
                               onClick={() => setManutencaoConfirmandoId(null)}
-                              className="px-1.5 py-1 rounded-lg text-[10px] text-slate-400 hover:text-white"
+                              className="px-1.5 py-1 rounded-lg text-[10px] text-slate-400 hover:text-white cursor-pointer"
                             >
                               ✕
                             </button>
@@ -1535,11 +1685,11 @@ const sanitizarDataISO = (data?: string): string => {
                               setManutencaoConfirmandoId(m.Id);
                               setDataRealizacaoCustom(new Date().toISOString().split("T")[0]);
                             }}
-                            className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-colors cursor-pointer bg-slate-800 text-emerald-400 border-slate-700 hover:bg-slate-750 flex items-center gap-1"
-                            title="Registrar realização desta manutenção e avançar para o próximo ciclo"
+                            className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-colors cursor-pointer bg-emerald-600/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-600/30 flex items-center gap-1"
+                            title="Marcar manutenção como Realizado (grava Status=REALIZADO na planilha)"
                           >
                             <Check className="w-3 h-3" />
-                            <span>REALIZADO</span>
+                            <span>Realizado</span>
                           </button>
                         )}
 
@@ -2407,6 +2557,13 @@ const sanitizarDataISO = (data?: string): string => {
                             ...prev,
                             Tipo_Agendamento: tab.id as any,
                             Recorrente: tab.id === "Data" ? "NÃO" : "SIM",
+                            ...(tab.id === "Data"
+                              ? { Intervalo_Dias: 0, Frequência_KM: 0, Frequência_Meses: 0 }
+                              : tab.id === "Dias"
+                              ? { Frequência_KM: 0 }
+                              : tab.id === "KM"
+                              ? { Intervalo_Dias: 0, Frequência_Meses: 0 }
+                              : {}),
                           }))
                         }
                         className={`p-2 rounded-xl text-left border transition-all cursor-pointer ${
@@ -2665,8 +2822,8 @@ const sanitizarDataISO = (data?: string): string => {
                 </div>
               )}
 
-              {/* Alarme, Horário, Prioridade e Oficina */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              {/* Alarme, Horário, Prioridade, Oficina e Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
                 <div>
                   <label className="text-slate-400 block mb-1 font-medium">Horário do Alerta</label>
                   <input
@@ -2688,6 +2845,18 @@ const sanitizarDataISO = (data?: string): string => {
                     <option value="Média">Média</option>
                     <option value="Alta">Alta</option>
                     <option value="Urgente">Urgente</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 block mb-1 font-medium">Status</label>
+                  <select
+                    value={manutencaoForm.Status || "PENDENTE"}
+                    onChange={(e) => setManutencaoForm({ ...manutencaoForm, Status: e.target.value as any })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"
+                  >
+                    <option value="PENDENTE">Pendente</option>
+                    <option value="REALIZADO">Realizado</option>
                   </select>
                 </div>
 

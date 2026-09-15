@@ -254,7 +254,7 @@ export interface ManutencaoAgendada {
   Tipo_Agendamento?: "Data" | "KM" | "Ambos" | "Dias" | "Intervalo";
   Data_Alvo?: string; // YYYY-MM-DD
   KM_Alvo?: number;
-  Recorrente?: "SIM" | "NÃO";
+  Recorrente?: "SIM" | "NÃO" | "NAO" | string;
   Frequência_Meses?: number;
   Frequência_KM?: number;
   Intervalo_Dias?: number; // Ex: 7 dias (calibragem), 30, 90, 180 dias
@@ -262,7 +262,7 @@ export interface ManutencaoAgendada {
   KM_Ultima_Realizacao?: number;
   Horario_Alerta?: string; // HH:mm ex: "08:00"
   Som_Alarme?: "SIM" | "NAO" | boolean;
-  Status: "PENDENTE" | "CONCLUÍDO" | "Pendente" | "Concluída";
+  Status: "PENDENTE" | "CONCLUÍDO" | "REALIZADO" | "Pendente" | "Concluída" | "Realizado" | string;
   Prioridade?: "Baixa" | "Média" | "Alta";
   Oficina_Nome?: string;
   Observações?: string;

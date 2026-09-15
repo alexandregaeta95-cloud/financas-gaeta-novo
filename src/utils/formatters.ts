@@ -1037,6 +1037,12 @@ export function normalizeManutencaoAgendada(raw: any): ManutencaoAgendada {
   const freqKm = parseCurrency(
     raw.Frequência_KM ?? raw["Frequência_KM"] ?? raw.Frequencia_KM ?? 0
   );
+  const intervaloDias = parseCurrency(
+    raw.Intervalo_Dias ?? raw["Intervalo_Dias"] ?? raw.intervalo_dias ?? 0
+  );
+  const kmUltima = parseCurrency(
+    raw.KM_Ultima_Realizacao ?? raw["KM_Ultima_Realizacao"] ?? raw.km_ultima_realizacao ?? 0
+  );
 
   return {
     ...raw,
@@ -1049,11 +1055,34 @@ export function normalizeManutencaoAgendada(raw: any): ManutencaoAgendada {
     Recorrente: raw.Recorrente ?? "SIM",
     Frequência_Meses: freqMeses,
     Frequência_KM: freqKm,
-    Status: raw.Status ?? "PENDENTE",
+    Intervalo_Dias: intervaloDias,
+    Data_Ultima_Realizacao: normalizeDateYMD(raw.Data_Ultima_Realizacao ?? raw["Data_Ultima_Realizacao"] ?? ""),
+    KM_Ultima_Realizacao: kmUltima,
+    Horario_Alerta: raw.Horario_Alerta ?? raw["Horario_Alerta"] ?? "08:00",
+    Som_Alarme: raw.Som_Alarme ?? raw["Som_Alarme"] ?? "SIM",
+    Status: raw.Status ?? raw.status ?? "PENDENTE",
     Prioridade: raw.Prioridade ?? "Média",
     Oficina_Nome: raw.Oficina_Nome ?? "",
     Observações: raw.Observações ?? "",
   };
+}
+
+/**
+ * Checa se uma manutenção agendada está com status concluído/realizado
+ */
+export function isManutencaoConcluida(status?: string | null): boolean {
+  if (!status) return false;
+  const s = String(status).trim().toUpperCase();
+  return (
+    s === "CONCLUÍDO" ||
+    s === "CONCLUIDO" ||
+    s === "CONCLUÍDA" ||
+    s === "CONCLUIDA" ||
+    s === "REALIZADO" ||
+    s === "REALIZADA" ||
+    s === "FEITO" ||
+    s === "FINALIZADO"
+  );
 }
 
 /**
