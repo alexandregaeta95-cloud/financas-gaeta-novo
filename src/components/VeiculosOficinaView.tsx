@@ -286,6 +286,7 @@ export const VeiculosOficinaView: React.FC<Props> = ({
   const [isManutencaoModalOpen, setIsManutencaoModalOpen] = useState(false);
   const [manutencaoConfirmandoId, setManutencaoConfirmandoId] = useState<string | null>(null);
   const [dataRealizacaoCustom, setDataRealizacaoCustom] = useState<string>("");
+  const [kmRealizacaoCustom, setKmRealizacaoCustom] = useState<string>("");
   const [editingManutencao, setEditingManutencao] = useState<ManutencaoAgendada | null>(null);
   const [manutencaoForm, setManutencaoForm] = useState<Partial<ManutencaoAgendada>>({
     Veículo: veiculos[0]?.Modelo || "CARRO",
@@ -805,7 +806,7 @@ const sanitizarDataISO = (data?: string): string => {
   };
 
   // Grava Status como REALIZADO e persiste de volta na planilha via onSaveManutencao
-  const handleConfirmRealizado = async (m: ManutencaoAgendada, dataEscolhida?: string) => {
+  const handleConfirmRealizado = async (m: ManutencaoAgendada, dataEscolhida?: string, kmEscolhido?: string | number) => {
     const todayStr = dataEscolhida || new Date().toISOString().split("T")[0];
     const relatedVeic = veiculos.find(
       (v) =>
@@ -813,7 +814,10 @@ const sanitizarDataISO = (data?: string): string => {
         v.Placa?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
         v.Id === m.Veículo
     );
-    const currentKm = relatedVeic?.Km_Atual || 0;
+    const fallbackKm = relatedVeic?.Km_Atual || 0;
+    const finalKm = kmEscolhido !== undefined && kmEscolhido !== null && String(kmEscolhido).trim() !== ""
+      ? (typeof kmEscolhido === "number" ? kmEscolhido : parseInt(String(kmEscolhido).replace(/\D/g, ""), 10) || 0)
+      : fallbackKm;
 
     // Registra no histórico de ciclos concluídos localmente
     markCycleAsCompleted(`manutencao_intervalo_${m.Id}_${todayStr}`);
@@ -825,7 +829,7 @@ const sanitizarDataISO = (data?: string): string => {
     const itemAtualizado: ManutencaoAgendada = {
       ...m,
       Data_Ultima_Realizacao: todayStr,
-      KM_Ultima_Realizacao: currentKm,
+      KM_Ultima_Realizacao: finalKm,
       Status: "REALIZADO",
       KM_Alvo: m.KM_Alvo !== undefined && m.KM_Alvo !== null ? Number(m.KM_Alvo) : 0,
       Data_Alvo: m.Data_Alvo || "",
@@ -833,6 +837,7 @@ const sanitizarDataISO = (data?: string): string => {
 
     setManutencaoConfirmandoId(null);
     setDataRealizacaoCustom("");
+    setKmRealizacaoCustom("");
 
     await onSaveManutencao(itemAtualizado);
   };
@@ -1661,26 +1666,52 @@ const sanitizarDataISO = (data?: string): string => {
                             )}
                           </div>
                         ) : manutencaoConfirmandoId === m.Id ? (
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap" onClick={(e) => e.stopPropagation()}>
                             <input
                               type="date"
                               value={dataRealizacaoCustom}
                               onChange={(e) => setDataRealizacaoCustom(e.target.value)}
-                              className="bg-slate-950 border border-slate-700 rounded-lg px-1.5 py-1 text-[10px] text-white"
+                              className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-white outline-hidden focus:border-emerald-500"
+                              title="Data da Realização"
                             />
+                            <div className="relative flex items-center">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="Km Atual"
+                                value={kmRealizacaoCustom}
+                                onFocus={(e) => e.target.select()}
+                                onClick={(e) => (e.target as HTMLInputElement).select()}
+                                onChange={(e) => {
+                                  const raw = e.target.value.replace(/\D/g, "");
+                                  setKmRealizacaoCustom(raw);
+                                }}
+                                className="w-24 bg-slate-950 border border-slate-700 rounded-lg pl-2 pr-7 py-1 text-[11px] text-white font-mono outline-hidden focus:border-emerald-500"
+                                title="Km Atual no momento da realização"
+                              />
+                              <span className="absolute right-2 text-[9px] text-slate-500 font-mono pointer-events-none">
+                                KM
+                              </span>
+                            </div>
                             <button
                               type="button"
                               onClick={() => {
-                                handleConfirmRealizado(m, dataRealizacaoCustom);
+                                handleConfirmRealizado(m, dataRealizacaoCustom, kmRealizacaoCustom);
                               }}
-                              className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer"
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer transition-colors shadow-xs"
+                              title="Confirmar Realizado"
                             >
                               ✓ OK
                             </button>
                             <button
                               type="button"
-                              onClick={() => setManutencaoConfirmandoId(null)}
-                              className="px-1.5 py-1 rounded-lg text-[10px] text-slate-400 hover:text-white cursor-pointer"
+                              onClick={() => {
+                                setManutencaoConfirmandoId(null);
+                                setKmRealizacaoCustom("");
+                                setDataRealizacaoCustom("");
+                              }}
+                              className="px-1.5 py-1 rounded-lg text-[11px] text-slate-400 hover:text-white cursor-pointer transition-colors"
+                              title="Cancelar"
                             >
                               ✕
                             </button>
@@ -1690,8 +1721,20 @@ const sanitizarDataISO = (data?: string): string => {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
+                              const relatedVeic = veiculos.find(
+                                (v) =>
+                                  v.Modelo?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+                                  v.Placa?.trim().toUpperCase() === m.Veículo?.trim().toUpperCase() ||
+                                  v.Id === m.Veículo
+                              );
+                              const initialKm = relatedVeic?.Km_Atual && Number(relatedVeic.Km_Atual) > 0
+                                ? String(relatedVeic.Km_Atual)
+                                : m.KM_Ultima_Realizacao && Number(m.KM_Ultima_Realizacao) > 0
+                                ? String(m.KM_Ultima_Realizacao)
+                                : "";
                               setManutencaoConfirmandoId(m.Id);
                               setDataRealizacaoCustom(new Date().toISOString().split("T")[0]);
+                              setKmRealizacaoCustom(initialKm);
                             }}
                             className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-colors cursor-pointer bg-emerald-600/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-600/30 flex items-center gap-1"
                             title="Marcar manutenção como Realizado (grava Status=REALIZADO na planilha)"
