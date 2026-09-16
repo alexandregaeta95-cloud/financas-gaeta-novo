@@ -1459,37 +1459,72 @@ export async function testAppsScriptConnection(testUrl?: string): Promise<{
   success: boolean;
   message: string;
 }> {
-  try {
-    const query = new URLSearchParams({ sheet: "13_Perfil" });
-    if (testUrl) {
-      query.set("targetUrl", testUrl);
-    }
+  const maxAttempts = 2;
+  let lastMessage = "Erro de conexão de rede.";
 
-    const res = await fetch(`${API_BASE_URL}/api/proxy?${query.toString()}`);
-    if (!res.ok) {
-      const errJson = await res.json().catch(() => ({}));
-      return {
-        success: false,
-        message: errJson.message || `Falha HTTP ${res.status}`,
-      };
-    }
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const query = new URLSearchParams({ sheet: "13_Perfil" });
+      if (testUrl) {
+        query.set("targetUrl", testUrl);
+      }
 
-    const data: ApiResponse = await res.json();
-    if (data.status === "success") {
-      return {
-        success: true,
-        message: "Conexão estabelecida com sucesso com a planilha Google Sheets!",
-      };
-    } else {
-      return {
-        success: false,
-        message: data.message || "O Apps Script retornou uma mensagem de erro.",
-      };
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 9000);
+
+      const res = await fetch(`${API_BASE_URL}/api/proxy?${query.toString()}`, {
+        signal: controller.signal,
+        headers: {
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache",
+        },
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        lastMessage = errJson.message || `Falha HTTP ${res.status}`;
+        if (attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, 600));
+          continue;
+        }
+        return {
+          success: false,
+          message: lastMessage,
+        };
+      }
+
+      const data: ApiResponse = await res.json();
+      if (data.status === "success") {
+        return {
+          success: true,
+          message: "Conexão estabelecida com sucesso com a planilha Google Sheets!",
+        };
+      } else {
+        lastMessage = data.message || "O Apps Script retornou uma mensagem de erro.";
+        if (attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, 600));
+          continue;
+        }
+        return {
+          success: false,
+          message: lastMessage,
+        };
+      }
+    } catch (err: any) {
+      lastMessage =
+        err.name === "AbortError"
+          ? "Tempo limite esgotado ao conectar com a planilha."
+          : err.message || "Erro de conexão de rede.";
+      if (attempt < maxAttempts) {
+        await new Promise((r) => setTimeout(r, 600));
+        continue;
+      }
     }
-  } catch (err: any) {
-    return {
-      success: false,
-      message: err.message || "Erro de conexão de rede.",
-    };
   }
+
+  return {
+    success: false,
+    message: lastMessage,
+  };
 }

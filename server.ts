@@ -387,23 +387,23 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
       let googleResponse: Response | null = null;
       let lastError: any = null;
 
-      // Retry up to 2 times for transient network or 5xx errors from Google
-      for (let attempt = 0; attempt < 2; attempt++) {
+      // Retry up to 3 times for transient network or 5xx/429 errors from Google Apps Script
+      for (let attempt = 0; attempt < 3; attempt++) {
         try {
           googleResponse = await fetch(targetUrl, fetchOptions);
           if (googleResponse.ok) {
             break;
           }
-          // If 5xx error, wait 400ms and retry once
-          if (googleResponse.status >= 500 && attempt === 0) {
-            await new Promise((resolve) => setTimeout(resolve, 400));
+          // If 5xx error or rate limit 429, wait and retry
+          if ((googleResponse.status >= 500 || googleResponse.status === 429) && attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 500 : 1200));
             continue;
           }
           break;
         } catch (err: any) {
           lastError = err;
-          if (attempt === 0) {
-            await new Promise((resolve) => setTimeout(resolve, 400));
+          if (attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 500 : 1200));
             continue;
           }
         }

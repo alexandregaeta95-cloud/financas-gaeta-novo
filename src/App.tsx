@@ -3,7 +3,7 @@
  * Adheres strictly to the Foundation Document & Prompt 3 specifications.
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Navigation, ModuleView } from "./components/Navigation";
 import { SyncStatusBanner } from "./components/SyncStatusBanner";
 import { AppsScriptSetupModal } from "./components/AppsScriptSetupModal";
@@ -483,6 +483,7 @@ export default function App() {
     hasCustomUrl: Boolean(getSavedAppsScriptUrl()),
     pendingCount: 0,
   });
+  const isSyncingRef = useRef(false);
 
   // Modal States
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
@@ -628,6 +629,9 @@ export default function App() {
 
   // Load All Sheet Data safely from Google Apps Script via Express Proxy
   const handleSyncAll = useCallback(async () => {
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
+
     setSyncState((prev) => ({ ...prev, isSyncing: true, errorMessage: null }));
 
     try {
@@ -663,61 +667,76 @@ export default function App() {
         fetchSheetData<Motorista>(SHEET_NAMES.MOTORISTAS).catch(() => null),
       ]);
 
-      if (fetchedLancamentos) setLancamentos(fetchedLancamentos);
-      if (fetchedAbastecimentos) setAbastecimentos(fetchedAbastecimentos);
-      if (fetchedVeiculos && fetchedVeiculos.length > 0) setVeiculos(fetchedVeiculos);
-      if (fetchedMotoristas && fetchedMotoristas.length > 0) setMotoristas(fetchedMotoristas);
+      if (fetchedLancamentos) {
+        // Nova referência de array para forçar re-renderização imediata da lista na tela
+        setLancamentos([...fetchedLancamentos]);
+      }
+      if (fetchedAbastecimentos) {
+        setAbastecimentos([...fetchedAbastecimentos]);
+      }
+      if (fetchedVeiculos && fetchedVeiculos.length > 0) {
+        setVeiculos([...fetchedVeiculos]);
+      }
+      if (fetchedMotoristas && fetchedMotoristas.length > 0) {
+        setMotoristas([...fetchedMotoristas]);
+      }
       if (fetchedContas && fetchedContas.length > 0) {
         const activeLancs = fetchedLancamentos || lancamentos;
         const contasWithDynamicBalance = fetchedContas.map((c) => ({
           ...c,
           Saldo_Atual: calculateAccountCurrentBalance(c, activeLancs),
         }));
-        setContas(contasWithDynamicBalance);
+        setContas([...contasWithDynamicBalance]);
       }
-      if (fetchedCartoes) setCartoes(fetchedCartoes);
-      if (fetchedServicos) setServicos(fetchedServicos);
-      if (fetchedManutencoes) setManutencoes(fetchedManutencoes);
+      if (fetchedCartoes) {
+        setCartoes([...fetchedCartoes]);
+      }
+      if (fetchedServicos) {
+        setServicos([...fetchedServicos]);
+      }
+      if (fetchedManutencoes) {
+        setManutencoes([...fetchedManutencoes]);
+      }
 
       // Fetch secondary sheets in background
       fetchSheetData<ConsultaMedica>(SHEET_NAMES.CONSULTAS_MEDICAS)
-        .then((data) => data && setConsultas(data))
+        .then((data) => data && setConsultas([...data]))
         .catch(() => {});
       fetchSheetData<ReceitaMedica>(SHEET_NAMES.RECEITAS_MEDICAS)
-        .then((data) => data && setReceitas(data))
+        .then((data) => data && setReceitas([...data]))
         .catch(() => {});
       fetchSheetData<Infracao>(SHEET_NAMES.INFRACOES)
-        .then((data) => data && setInfracoes(data))
+        .then((data) => data && setInfracoes([...data]))
         .catch(() => {});
       fetchSheetData<ZonaDeRisco>(SHEET_NAMES.ZONAS_RISCO)
-        .then((data) => data && setZonasRisco(data))
+        .then((data) => data && setZonasRisco([...data]))
         .catch(() => {});
       fetchSheetData<ItemMercado>(SHEET_NAMES.LISTA_MERCADO)
-        .then((data) => data && setItensMercado(data))
+        .then((data) => data && setItensMercado([...data]))
         .catch(() => {});
       fetchSheetData<CompromissoAgenda>(SHEET_NAMES.AGENDA)
-        .then((data) => data && setAgenda(data))
+        .then((data) => data && setAgenda([...data]))
         .catch(() => {});
       fetchSheetData<RegistroSaude>(SHEET_NAMES.CONTROLE_SAUDE)
-        .then((data) => data && setRegistrosSaude(data))
+        .then((data) => data && setRegistrosSaude([...data]))
         .catch(() => {});
       fetchSheetData<LembreteSaudeConfig>(SHEET_NAMES.CONFIG_LEMBRETES_SAUDE)
-        .then((data) => data && data.length > 0 && setLembretesSaude(data))
+        .then((data) => data && data.length > 0 && setLembretesSaude([...data]))
         .catch(() => {});
       fetchSheetData<LembreteFinancasConfig>(SHEET_NAMES.CONFIG_LEMBRETES_FINANCAS)
-        .then((data) => data && data.length > 0 && setLembretesFinancas(data))
+        .then((data) => data && data.length > 0 && setLembretesFinancas([...data]))
         .catch(() => {});
       fetchSheetData<LembreteRemedio>(SHEET_NAMES.LEMBRETES_REMEDIOS)
-        .then((data) => data && setLembretesRemedios(data))
+        .then((data) => data && setLembretesRemedios([...data]))
         .catch(() => {});
       fetchSheetData<AlimentoAnaliseResult>(SHEET_NAMES.ANALISE_ALIMENTOS)
-        .then((data) => data && setAlimentos(data))
+        .then((data) => data && setAlimentos([...data]))
         .catch(() => {});
       fetchSheetData<ExercicioRegistro>(SHEET_NAMES.EXERCICIOS)
-        .then((data) => data && setExercicios(data))
+        .then((data) => data && setExercicios([...data]))
         .catch(() => {});
       fetchSheetData<ConsumoCafe>(SHEET_NAMES.CONSUMO_CAFE)
-        .then((data) => data && setConsumosCafe(data))
+        .then((data) => data && setConsumosCafe([...data]))
         .catch(() => {});
       fetchSheetData<any>(SHEET_NAMES.CONSUMO_AGUA)
         .then((data) => {
@@ -737,16 +756,16 @@ export default function App() {
         })
         .catch(() => {});
       fetchSheetData<MetaCategoria>(SHEET_NAMES.METAS_CATEGORIA)
-        .then((data) => data && setMetas(data))
+        .then((data) => data && setMetas([...data]))
         .catch(() => {});
       fetchSheetData<CategoriaCustomizada>(SHEET_NAMES.CATEGORIAS_CUSTOMIZADAS)
-        .then((data) => data && setCategoriasCustom(data))
+        .then((data) => data && setCategoriasCustom([...data]))
         .catch(() => {});
       fetchSheetData<HistoricoCorrida>(SHEET_NAMES.HISTORICO_CORRIDAS)
-        .then((data) => data && setHistoricoCorridas(data))
+        .then((data) => data && setHistoricoCorridas([...data]))
         .catch(() => {});
       fetchSheetData<AnotacaoBloco>(SHEET_NAMES.BLOCO_NOTAS)
-        .then((data) => data && setAnotacoes(data))
+        .then((data) => data && setAnotacoes([...data]))
         .catch(() => {});
 
       setSyncState({
@@ -764,12 +783,66 @@ export default function App() {
         isSyncing: false,
         errorMessage: err.message || "Erro durante a sincronização.",
       }));
+    } finally {
+      isSyncingRef.current = false;
     }
   }, []);
 
+  // Carga inicial ao abrir o app
   useEffect(() => {
     handleSyncAll();
   }, [handleSyncAll]);
+
+  // Sincronização automática resiliente (restabelecimento de rede, retorno do app em 1º plano, foco)
+  useEffect(() => {
+    let reconnectTimeout: any = null;
+
+    const triggerAutoSync = () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      // Pequeno debounce de 400ms para aguardar a pilha de rede e DNS do rádio móvel se estabilizarem
+      reconnectTimeout = setTimeout(() => {
+        if (!isSyncingRef.current) {
+          console.log("[Auto-Sync] Restabelecimento de conexão detectado. Executando sincronização com a planilha...");
+          handleSyncAll();
+        }
+      }, 400);
+    };
+
+    const handleOnline = () => {
+      triggerAutoSync();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Ao reabrir o app ou voltar da tela de bloqueio, sincroniza se estiver desconectado
+        triggerAutoSync();
+      }
+    };
+
+    const handleFocus = () => {
+      triggerAutoSync();
+    };
+
+    window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    // Polling de recuperação inteligente: enquanto estiver em cache local / offline, tenta reconectar a cada 30 segundos
+    const retryInterval = setInterval(() => {
+      if (!syncState.isConnected && !syncState.isSyncing && !isSyncingRef.current) {
+        console.log("[Auto-Sync] Modo Offline ativo. Tentando reconexão periódica com a planilha...");
+        handleSyncAll();
+      }
+    }, 30000);
+
+    return () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(retryInterval);
+    };
+  }, [handleSyncAll, syncState.isConnected, syncState.isSyncing]);
 
   // Show Toast Error with Rollback Notification
   const showRollbackToast = (title: string, message: string, targetView: AppNotification["targetView"] = "lancamentos") => {
