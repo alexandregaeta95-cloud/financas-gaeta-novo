@@ -367,14 +367,18 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
         return;
       }
 
-      // Forward request to Google Apps Script
+      // Forward request to Google Apps Script with 55s timeout
       const method = req.method;
+      const proxyAbortController = new AbortController();
+      const proxyTimeout = setTimeout(() => proxyAbortController.abort(), 55000);
+
       const fetchOptions: RequestInit = {
         method: method === "GET" ? "GET" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
         redirect: "follow",
+        signal: proxyAbortController.signal,
       };
 
       if (method !== "GET") {
@@ -402,12 +406,18 @@ Responda ESTRITAMENTE em formato JSON com o seguinte formato:
           break;
         } catch (err: any) {
           lastError = err;
+          if (err.name === "AbortError") {
+            lastError = new Error("Tempo limite de 55s esgotado ao aguardar resposta do Google Apps Script.");
+            break; // Se o timeout do proxy estourou, não adianta fazer retry imediato
+          }
           if (attempt < 2) {
             await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 500 : 1200));
             continue;
           }
         }
       }
+
+      clearTimeout(proxyTimeout);
 
       if (!googleResponse) {
         throw lastError || new Error("Falha na comunicação com o Google Apps Script.");

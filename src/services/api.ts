@@ -1470,7 +1470,7 @@ export async function testAppsScriptConnection(testUrl?: string): Promise<{
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 9000);
+      const timeoutId = setTimeout(() => controller.abort(), 35000);
 
       const res = await fetch(`${API_BASE_URL}/api/proxy?${query.toString()}`, {
         signal: controller.signal,

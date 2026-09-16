@@ -199,55 +199,59 @@ function cleanDuplicateColumnsInSheet(sheet) {
 }
 
 /**
- * Inicializar a planilha criando as abas faltantes, preenchendo cabeçalhos e removendo colunas duplicadas.
+ * Inicializa apenas uma aba específica sob demanda (lazy initialization),
+ * evitando iterar e varrer todas as 30 abas em cada requisição.
+ */
+function ensureSheetSetup(ss, sheetName) {
+  var sheet = findSheetFlexible(ss, sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  }
+  var headers = HEADERS_BY_SHEET[sheetName];
+  if (!headers) return sheet;
+
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+  }
+  return sheet;
+}
+
+/**
+ * Inicialização completa de todas as abas da planilha (utilizada sob demanda manual ou primeira instalação).
  */
 function setupSpreadsheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   SHEET_NAMES.forEach(function(sheetName) {
-    var sheet = findSheetFlexible(ss, sheetName);
-    if (!sheet) {
-      sheet = ss.insertSheet(sheetName);
-    }
-    if (sheet) {
-      cleanDuplicateColumnsInSheet(sheet);
-    }
-    var headers = HEADERS_BY_SHEET[sheetName];
-    if (!headers) return;
-
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(headers);
-      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
-    } else {
-      // Garantir que colunas oficiais faltantes sejam adicionadas ao final da planilha existente
-      var lastCol = sheet.getLastColumn();
-      if (lastCol >= 1) {
-        var existingRow1 = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-        var clean = function(s) {
-          return String(s || "").toLowerCase().replace(/[áàãâä]/g, "a").replace(/[éèêë]/g, "e").replace(/[íìîï]/g, "i").replace(/[óòõôö]/g, "o").replace(/[úùûü]/g, "u").replace(/[ç]/g, "c").replace(/[^a-z0-9]/g, "");
-        };
-        var existingClean = existingRow1.map(clean);
-        headers.forEach(function(h) {
-          var hClean = clean(h);
-          if (hClean && existingClean.indexOf(hClean) === -1) {
-            var nextCol = sheet.getLastColumn() + 1;
-            sheet.getRange(1, nextCol).setValue(h);
-            sheet.getRange(1, nextCol).setFontWeight("bold");
-            existingClean.push(hClean);
-          }
-        });
-      }
-    }
+    ensureSheetSetup(ss, sheetName);
   });
 }
 
 /**
- * Trata requisições GET (Leitura)
+ * Trata requisições GET (Leitura Ultra Rápida)
+ * Otimizações críticas:
+ * 1. CacheService do Apps Script para respostas em milissegundos.
+ * 2. Processa APENAS a aba solicitada (não varre nem migra as outras 29 abas).
+ * 3. Evita chamadas repetidas a getRange/deleteColumn no fluxo de leitura.
  */
 function doGet(e) {
   try {
-    setupSpreadsheet();
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
     var paramSheet = e && e.parameter && e.parameter.sheet ? e.parameter.sheet : "1_Lancamentos";
+    var bypassCache = e && e.parameter && (e.parameter.nocache === "1" || e.parameter.nocache === "true");
+
+    var cache = CacheService.getScriptCache();
+    var cacheKey = "CACHE_SHEET_" + paramSheet;
+
+    // Se houver cache válido e não foi solicitado bypass, responde instantaneamente (~200ms)
+    if (!bypassCache && paramSheet !== "ALL") {
+      var cached = cache.get(cacheKey);
+      if (cached) {
+        return ContentService.createTextOutput(cached)
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
     
     if (paramSheet === "ALL") {
       var allData = {};
@@ -257,8 +261,24 @@ function doGet(e) {
       return createJsonResponse({ status: "success", data: allData });
     }
 
+    // Garante apenas a aba solicitada sem sobrecarregar o Apps Script
+    ensureSheetSetup(ss, paramSheet);
+
     var result = readSheetRecords(ss, paramSheet);
-    return createJsonResponse({ status: "success", sheet: paramSheet, data: result });
+    var responseObj = { status: "success", sheet: paramSheet, data: result };
+    var jsonOutput = JSON.stringify(responseObj);
+
+    // Salva no CacheService por 60 segundos se o payload couber no limite de 100KB do cache
+    if (jsonOutput.length < 100000) {
+      try {
+        cache.put(cacheKey, jsonOutput, 60);
+      } catch (cacheErr) {
+        // Ignora erro de cache e segue
+      }
+    }
+
+    return ContentService.createTextOutput(jsonOutput)
+      .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return createJsonResponse({ status: "error", message: "Erro de leitura: " + err.toString() });
   }
@@ -354,9 +374,6 @@ function doPost(e) {
       });
     }
 
-    setupSpreadsheet();
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-
     var requestData = {};
     if (e && e.postData && e.postData.contents) {
       requestData = JSON.parse(e.postData.contents);
@@ -370,7 +387,19 @@ function doPost(e) {
       return createJsonResponse({ status: "error", message: "Nenhum item enviado para gravação." });
     }
 
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    ensureSheetSetup(ss, sheetName);
+
     var resultCount = writeSheetRecords(ss, sheetName, items, action);
+
+    // Invalida o cache da aba que acabou de ser alterada
+    try {
+      var cache = CacheService.getScriptCache();
+      cache.remove("CACHE_SHEET_" + sheetName);
+      if (sheetName === "1_Lancamentos") {
+        cache.remove("CACHE_SHEET_4_Abastecimentos");
+      }
+    } catch (cErr) {}
 
     // Regra especial: Espelhar lançamento de categoria ABASTECIMENTO para 4_Abastecimentos
     if (sheetName === "1_Lancamentos") {
