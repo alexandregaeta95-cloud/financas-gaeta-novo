@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
 import {
   Fingerprint,
   Lock,
@@ -41,6 +42,19 @@ export const SegurancaModal: React.FC<Props> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
+  // Debug Info State for on-screen inspection
+  const [debugInfo, setDebugInfo] = useState<{
+    isNative: boolean;
+    platform: string;
+    hasPublicKeyCred: boolean;
+    platformBioAvail: string;
+  }>({
+    isNative: false,
+    platform: "unknown",
+    hasPublicKeyCred: false,
+    platformBioAvail: "verificando...",
+  });
+
   // Setup Step State
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [setupPin, setSetupPin] = useState("");
@@ -57,6 +71,17 @@ export const SegurancaModal: React.FC<Props> = ({
 
   useEffect(() => {
     if (isOpen) {
+      const isNat = Capacitor.isNativePlatform();
+      const plat = Capacitor.getPlatform();
+      const hasPk = typeof window !== "undefined" && Boolean((window as any).PublicKeyCredential);
+
+      setDebugInfo({
+        isNative: isNat,
+        platform: plat,
+        hasPublicKeyCred: hasPk,
+        platformBioAvail: "verificando...",
+      });
+
       setEnabled(isBiometricEnabled());
       setFeedback(null);
       setIsSettingUp(false);
@@ -69,6 +94,10 @@ export const SegurancaModal: React.FC<Props> = ({
       setDisablePin("");
 
       isPlatformBiometricsAvailable().then((avail) => {
+        setDebugInfo((prev) => ({
+          ...prev,
+          platformBioAvail: String(avail),
+        }));
         setPlatformSupported(avail);
       });
     }
@@ -206,6 +235,36 @@ export const SegurancaModal: React.FC<Props> = ({
         {/* Modal Body */}
         <div className="p-5 sm:p-6 space-y-6 overflow-y-auto text-sm text-slate-300">
           
+          {/* Debug Info Box (Visible on-screen diagnostics) */}
+          <div className="p-3.5 rounded-xl bg-slate-950/90 border border-amber-500/30 text-[11px] font-mono space-y-1.5 shadow-inner">
+            <div className="flex items-center justify-between pb-1 mb-1 border-b border-slate-800 text-amber-400 font-bold text-[10px] uppercase tracking-wider">
+              <span>Painel de Diagnóstico do Dispositivo</span>
+              <span className="px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20 text-[9px]">DEBUG INFO</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">Capacitor.isNativePlatform():</span>
+              <span className={`font-bold ${debugInfo.isNative ? "text-emerald-400" : "text-rose-400"}`}>
+                {String(debugInfo.isNative)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">Capacitor.getPlatform():</span>
+              <span className="text-blue-400 font-bold">"{debugInfo.platform}"</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">window.PublicKeyCredential disponível:</span>
+              <span className={`font-bold ${debugInfo.hasPublicKeyCred ? "text-emerald-400" : "text-rose-400"}`}>
+                {String(debugInfo.hasPublicKeyCred)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">isPlatformBiometricsAvailable() retornou:</span>
+              <span className={`font-bold ${debugInfo.platformBioAvail === "true" ? "text-emerald-400" : debugInfo.platformBioAvail === "false" ? "text-rose-400" : "text-amber-400"}`}>
+                {debugInfo.platformBioAvail}
+              </span>
+            </div>
+          </div>
+
           {/* Feedback Alert */}
           {feedback && (
             <div

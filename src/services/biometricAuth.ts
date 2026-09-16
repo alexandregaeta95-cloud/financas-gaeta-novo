@@ -74,18 +74,9 @@ export async function isPlatformBiometricsAvailable(): Promise<boolean> {
   if (Capacitor.isNativePlatform()) {
     try {
       const result = await NativeBiometric.isAvailable({ useFallback: true });
-      console.log("[DEBUG BIOMETRIA] NativeBiometric.isAvailable:", result);
-      // Se não estiver disponível, alertar exatamente o que o plugin retornou
-      if (!result?.isAvailable) {
-        const msg = `[DEBUG BIOMETRIA - isAvailable=false]\nRetorno: ${JSON.stringify(result)}\nErrorCode: ${result?.errorCode}`;
-        console.warn(msg);
-        alert(msg);
-      }
       return Boolean(result?.isAvailable);
     } catch (err: any) {
-      const errMsg = `[DEBUG BIOMETRIA - isAvailable CATCH]: ${err?.message || err}\nDetalhes: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`;
-      console.error(errMsg);
-      alert(errMsg);
+      console.warn("Erro ao verificar biometria nativa:", err);
       return false;
     }
   }
@@ -169,9 +160,6 @@ export async function registerBiometrics(
     try {
       const avail = await NativeBiometric.isAvailable({ useFallback: true });
       if (!avail?.isAvailable) {
-        const notAvailMsg = `[DEBUG BIOMETRIA - REGISTRO] isAvailable retornou falso:\n${JSON.stringify(avail)}`;
-        console.error(notAvailMsg);
-        alert(notAvailMsg);
         return {
           success: false,
           error: "O sensor biométrico não está disponível ou não há biometria cadastrada no dispositivo.",
@@ -195,8 +183,6 @@ export async function registerBiometrics(
       return { success: true };
     } catch (err: any) {
       console.error("Erro no cadastro de biometria nativa:", err);
-      const regErrMsg = `[DEBUG BIOMETRIA - ERRO REGISTRO]: ${err?.message || err}\nCódigo: ${err?.errorCode}\nDetalhes: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`;
-      alert(regErrMsg);
       if (err?.errorCode === BiometricAuthError.USER_CANCEL || err?.message?.includes("cancel")) {
         return {
           success: false,
@@ -316,9 +302,6 @@ export async function authenticateWithBiometrics(): Promise<{
       return { success: true };
     } catch (err: any) {
       console.error("Erro na autenticação biométrica nativa:", err);
-      const authErrMsg = `[DEBUG BIOMETRIA - ERRO AUTENTICAR]: ${err?.message || err}\nCódigo: ${err?.errorCode}\nDetalhes: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`;
-      console.warn(authErrMsg);
-      alert(authErrMsg);
 
       if (err?.errorCode === BiometricAuthError.USER_CANCEL || err?.errorCode === BiometricAuthError.USER_FALLBACK || err?.message?.includes("cancel")) {
         return {

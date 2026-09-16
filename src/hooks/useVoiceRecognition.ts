@@ -78,9 +78,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
       if (perm.speechRecognition !== "granted") {
         const requested = await NativeSpeechRecognition.requestPermissions();
         if (requested.speechRecognition !== "granted") {
-          const permMsg = `[DEBUG VOZ] Permissão de microfone negada ou não concedida pelo Android. Status atual: ${JSON.stringify(requested)}`;
-          console.error(permMsg);
-          alert(permMsg);
+          console.warn("Permissão de microfone nativo não concedida:", requested);
           setError("Permissão de microfone negada. Autorize nas configurações do app.");
           return;
         }
@@ -128,9 +126,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
         "error",
         (err: { message?: string; error?: any }) => {
           console.warn("Native speech error listener:", err);
-          const errDetail = `[DEBUG VOZ - Listener Error]: ${JSON.stringify(err)} | message: ${err?.message || "sem mensagem"}`;
-          alert(errDetail);
-          setError(err.message || "Erro no reconhecimento de voz.");
+          setError(err?.message || "Erro no reconhecimento de voz.");
           if (onError) onError(err);
         }
       );
@@ -153,16 +149,12 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
         if (onResult) {
           onResult(text.trim(), true);
         }
-      } else {
-        console.log("[DEBUG VOZ] Reconhecimento encerrou sem matches retornados:", result);
       }
 
       isListeningRef.current = false;
       setIsListening(false);
     } catch (e: any) {
       console.error("Erro ao iniciar reconhecimento de voz nativo:", e);
-      const rawError = `[DEBUG VOZ - Catch]: ${e?.message || e?.toString() || "Erro desconhecido"}\nDetalhes: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`;
-      alert(rawError);
       setError(`Erro no microfone nativo: ${e?.message || e}`);
       isListeningRef.current = false;
       setIsListening(false);
