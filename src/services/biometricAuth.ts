@@ -1,14 +1,19 @@
 /**
- * Finanças Gaeta — Biometric Authentication Service (WebAuthn / Passkeys)
+ * Finanças Gaeta — Biometric Authentication Service (Native Biometric / WebAuthn / Passkeys)
  * 
- * Implements platform-level biometric verification (Fingerprint, Touch ID, Face ID, Windows Hello)
+ * Implements platform-level biometric verification (Fingerprint, Touch ID, Face ID, Android Biometrics)
  * with emergency recovery PIN support.
  * 
  * Rules:
  * 1. Locks only on initial session opening or when browser/tab is reopened (using sessionStorage).
  * 2. Does NOT re-lock during background activity, tab switching, or window minimization.
  * 3. Does NOT pause or interfere with background timers, reminder evaluations, or notifications.
+ * 4. In native apps (Capacitor), uses @capgo/capacitor-native-biometric for direct sensor access.
+ * 5. In standard web browsers, falls back gracefully to WebAuthn / PublicKeyCredential.
  */
+
+import { Capacitor } from "@capacitor/core";
+import { NativeBiometric, BiometricAuthError } from "@capgo/capacitor-native-biometric";
 
 const STORAGE_KEY_ENABLED = "fg_biometric_enabled";
 const STORAGE_KEY_CRED_ID = "fg_biometric_cred_id";
@@ -56,6 +61,9 @@ function base64ToBuffer(base64: string): ArrayBuffer {
  * Check if WebAuthn is supported by the browser
  */
 export function isWebAuthnSupported(): boolean {
+  if (Capacitor.isNativePlatform()) {
+    return true; // Native environment has its own biometric engine
+  }
   return typeof window !== "undefined" && Boolean(window.PublicKeyCredential);
 }
 
@@ -63,6 +71,25 @@ export function isWebAuthnSupported(): boolean {
  * Check if platform authenticator (TouchID, FaceID, Windows Hello, Android Biometrics) is available
  */
 export async function isPlatformBiometricsAvailable(): Promise<boolean> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const result = await NativeBiometric.isAvailable({ useFallback: true });
+      console.log("[DEBUG BIOMETRIA] NativeBiometric.isAvailable:", result);
+      // Se não estiver disponível, alertar exatamente o que o plugin retornou
+      if (!result?.isAvailable) {
+        const msg = `[DEBUG BIOMETRIA - isAvailable=false]\nRetorno: ${JSON.stringify(result)}\nErrorCode: ${result?.errorCode}`;
+        console.warn(msg);
+        alert(msg);
+      }
+      return Boolean(result?.isAvailable);
+    } catch (err: any) {
+      const errMsg = `[DEBUG BIOMETRIA - isAvailable CATCH]: ${err?.message || err}\nDetalhes: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`;
+      console.error(errMsg);
+      alert(errMsg);
+      return false;
+    }
+  }
+
   if (!isWebAuthnSupported()) return false;
   try {
     if (typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function") {
@@ -130,17 +157,64 @@ export function hasFallbackPin(): boolean {
 export async function registerBiometrics(
   fallbackPin: string
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isWebAuthnSupported()) {
-    return {
-      success: false,
-      error: "Seu navegador não possui suporte ao padrão WebAuthn de biometria.",
-    };
-  }
-
   if (!fallbackPin || fallbackPin.trim().length < 4) {
     return {
       success: false,
       error: "O PIN de emergência deve ter no mínimo 4 dígitos/caracteres.",
+    };
+  }
+
+  // 1. Native Capacitor Environment
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const avail = await NativeBiometric.isAvailable({ useFallback: true });
+      if (!avail?.isAvailable) {
+        const notAvailMsg = `[DEBUG BIOMETRIA - REGISTRO] isAvailable retornou falso:\n${JSON.stringify(avail)}`;
+        console.error(notAvailMsg);
+        alert(notAvailMsg);
+        return {
+          success: false,
+          error: "O sensor biométrico não está disponível ou não há biometria cadastrada no dispositivo.",
+        };
+      }
+
+      // Verify biometric prompt to register and activate
+      await NativeBiometric.verifyIdentity({
+        title: "Diz Aí — Ativar Biometria",
+        subtitle: "Confirme sua digital ou biometria facial",
+        description: "Toque no sensor para proteger o acesso ao aplicativo.",
+        negativeButtonText: "Cancelar",
+      });
+
+      const pinHash = await hashPin(fallbackPin);
+      localStorage.setItem(STORAGE_KEY_ENABLED, "true");
+      localStorage.setItem(STORAGE_KEY_CRED_ID, "native_biometric_device");
+      localStorage.setItem(STORAGE_KEY_PIN_HASH, pinHash);
+      setSessionAuthenticated(true);
+
+      return { success: true };
+    } catch (err: any) {
+      console.error("Erro no cadastro de biometria nativa:", err);
+      const regErrMsg = `[DEBUG BIOMETRIA - ERRO REGISTRO]: ${err?.message || err}\nCódigo: ${err?.errorCode}\nDetalhes: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`;
+      alert(regErrMsg);
+      if (err?.errorCode === BiometricAuthError.USER_CANCEL || err?.message?.includes("cancel")) {
+        return {
+          success: false,
+          error: "Cadastro biométrico cancelado pelo usuário.",
+        };
+      }
+      return {
+        success: false,
+        error: err?.message || "Erro ao registrar biometria no dispositivo.",
+      };
+    }
+  }
+
+  // 2. Web / Browser Environment (WebAuthn)
+  if (!isWebAuthnSupported()) {
+    return {
+      success: false,
+      error: "Seu navegador não possui suporte ao padrão WebAuthn de biometria.",
     };
   }
 
@@ -217,7 +291,7 @@ export async function registerBiometrics(
 }
 
 /**
- * Authenticate using WebAuthn Biometrics
+ * Authenticate using Biometrics (Native or WebAuthn)
  */
 export async function authenticateWithBiometrics(): Promise<{
   success: boolean;
@@ -228,6 +302,38 @@ export async function authenticateWithBiometrics(): Promise<{
     return { success: true };
   }
 
+  // 1. Native Capacitor Environment
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await NativeBiometric.verifyIdentity({
+        title: "Diz Aí — Desbloqueio",
+        subtitle: "Confirme sua digital ou reconhecimento facial",
+        description: "Autentique-se para abrir o sistema.",
+        negativeButtonText: "Usar PIN",
+      });
+
+      setSessionAuthenticated(true);
+      return { success: true };
+    } catch (err: any) {
+      console.error("Erro na autenticação biométrica nativa:", err);
+      const authErrMsg = `[DEBUG BIOMETRIA - ERRO AUTENTICAR]: ${err?.message || err}\nCódigo: ${err?.errorCode}\nDetalhes: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`;
+      console.warn(authErrMsg);
+      alert(authErrMsg);
+
+      if (err?.errorCode === BiometricAuthError.USER_CANCEL || err?.errorCode === BiometricAuthError.USER_FALLBACK || err?.message?.includes("cancel")) {
+        return {
+          success: false,
+          error: "Autenticação biométrica cancelada. Utilize o PIN de emergência.",
+        };
+      }
+      return {
+        success: false,
+        error: err?.message || "Falha na leitura biométrica nativa. Tente novamente ou use o PIN.",
+      };
+    }
+  }
+
+  // 2. Web / Browser Environment (WebAuthn)
   if (!isWebAuthnSupported()) {
     return {
       success: false,
@@ -248,7 +354,7 @@ export async function authenticateWithBiometrics(): Promise<{
       rpId: window.location.hostname === "localhost" ? undefined : window.location.hostname,
     };
 
-    if (credIdBase64) {
+    if (credIdBase64 && credIdBase64 !== "native_biometric_device") {
       try {
         const rawCredId = base64ToBuffer(credIdBase64);
         getOptions.allowCredentials = [
@@ -277,7 +383,7 @@ export async function authenticateWithBiometrics(): Promise<{
       };
     }
   } catch (err: any) {
-    console.error("Erro na autenticação biométrica:", err);
+    console.error("Erro na autenticação biométrica WebAuthn:", err);
     if (err.name === "NotAllowedError") {
       return {
         success: false,

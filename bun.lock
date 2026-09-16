@@ -7,6 +7,8 @@
       "dependencies": {
         "@capacitor/core": "^8.5.1",
         "@capgo/background-geolocation": "^8.4.5",
+        "@capgo/capacitor-native-biometric": "^8.6.10",
+        "@capgo/capacitor-speech-recognition": "^8.3.2",
         "@google/genai": "^2.4.0",
         "@tailwindcss/vite": "^4.1.14",
         "@vitejs/plugin-react": "^5.0.4",
@@ -77,6 +79,10 @@
     "@capacitor/core": ["@capacitor/core@8.5.1", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-IOQ7ynG1qgrJ/RLuCO3WgyRGmkmmG/cdStRR4ftU2dWEN1FdtLrnI/XpZmZuUsOEHEnzBRJY/PmRH8eTLiXfhA=="],
 
     "@capgo/background-geolocation": ["@capgo/background-geolocation@8.4.5", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-p123RlfqSk3vxoD94/mgtbRx5Oz7qH6azOaYU1FyU3XZKD5LBnA3NNu73doTk1dlyMcnRztvq9OpJVjXn30oiA=="],
+
+    "@capgo/capacitor-native-biometric": ["@capgo/capacitor-native-biometric@8.6.10", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-0eP8a0n8eO2Q0jLgz8G3Ssm6f1X6fPMO22L2iNJOYIjwoVcNJOG03dYZ6xpvhB/BvNq2QIJyGJ0zhSUSWnWqRg=="],
+
+    "@capgo/capacitor-speech-recognition": ["@capgo/capacitor-speech-recognition@8.3.2", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-o91dTZy3gmqPO+nyujoCUezGTvv2Tozm1HDAfvaUZcHsQgs6KjhnO0qV9FIvuazyhdk6dOlqRyEQza0n5fUZxQ=="],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.25.12", "", { "os": "aix", "cpu": "ppc64" }, "sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA=="],
 

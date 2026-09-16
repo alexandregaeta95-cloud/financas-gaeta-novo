@@ -229,7 +229,7 @@ export const BiometricLockScreen: React.FC<Props> = ({ onUnlock }) => {
         {/* Security Reassurance Footer Note */}
         <div className="pt-2 border-t border-slate-800/80 w-full flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500/80" />
-          <span>Acesso local protegido por WebAuthn</span>
+          <span>Acesso local protegido por biometria do dispositivo</span>
         </div>
       </div>
     </div>

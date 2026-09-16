@@ -93,7 +93,7 @@ export const SegurancaModal: React.FC<Props> = ({
     }
 
     setIsProcessing(true);
-    setFeedback({ type: "info", message: "Toque no sensor biométrico quando solicitado pelo navegador..." });
+    setFeedback({ type: "info", message: "Toque no sensor biométrico quando solicitado..." });
 
     const res = await registerBiometrics(setupPin);
     setIsProcessing(false);
@@ -122,7 +122,7 @@ export const SegurancaModal: React.FC<Props> = ({
     if (res.success) {
       setFeedback({
         type: "success",
-        message: "Biometria validada com sucesso! Seu sensor e chave WebAuthn estão funcionando perfeitamente.",
+        message: "Biometria validada com sucesso! Seu sensor e credencial biométrica estão funcionando perfeitamente.",
       });
     } else {
       setFeedback({ type: "error", message: res.error || "Falha na validação biométrica." });
@@ -188,7 +188,7 @@ export const SegurancaModal: React.FC<Props> = ({
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                Segurança & Biometria (WebAuthn)
+                Segurança & Biometria
               </h2>
               <p className="text-xs text-slate-400">
                 Trava de acesso inicial com sensor de digital ou reconhecimento facial
@@ -279,7 +279,7 @@ export const SegurancaModal: React.FC<Props> = ({
               <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>
-                  O navegador atual pode não ter sensor biométrico configurado no SO. O desbloqueio com PIN de emergência continuará disponível.
+                  O dispositivo atual pode não ter sensor biométrico configurado ou disponível no SO. O desbloqueio com PIN de emergência continuará disponível.
                 </span>
               </div>
             )}

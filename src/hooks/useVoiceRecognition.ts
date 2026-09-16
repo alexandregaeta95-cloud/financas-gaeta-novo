@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Capacitor } from "@capacitor/core";
+import { SpeechRecognition as NativeSpeechRecognition } from "@capgo/capacitor-speech-recognition";
 
 interface UseVoiceRecognitionOptions {
   lang?: string;
@@ -24,18 +26,151 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
 
   const recognitionRef = useRef<any>(null);
   const isListeningRef = useRef(false);
+  const nativeListenersRef = useRef<any[]>([]);
 
   useEffect(() => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+    if (Capacitor.isNativePlatform()) {
+      // Native Capacitor check
+      NativeSpeechRecognition.available()
+        .then((res) => {
+          setIsSupported(Boolean(res?.available));
+        })
+        .catch(() => {
+          setIsSupported(false);
+        });
+    } else {
+      // Web browser check
+      const SpeechRecognition =
+        (window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
-      setIsSupported(false);
+      if (!SpeechRecognition) {
+        setIsSupported(false);
+      }
     }
   }, []);
 
-  const stopListening = useCallback(() => {
+  const stopNativeListening = useCallback(async () => {
+    try {
+      await NativeSpeechRecognition.stop();
+    } catch {
+      // ignore
+    }
+    // Remove listeners
+    for (const handle of nativeListenersRef.current) {
+      try {
+        await handle.remove();
+      } catch {
+        // ignore
+      }
+    }
+    nativeListenersRef.current = [];
+    isListeningRef.current = false;
+    setIsListening(false);
+  }, []);
+
+  const startNativeListening = useCallback(async () => {
+    try {
+      setError(null);
+
+      // Check / request permissions
+      const perm = await NativeSpeechRecognition.checkPermissions();
+      if (perm.speechRecognition !== "granted") {
+        const requested = await NativeSpeechRecognition.requestPermissions();
+        if (requested.speechRecognition !== "granted") {
+          const permMsg = `[DEBUG VOZ] Permissão de microfone negada ou não concedida pelo Android. Status atual: ${JSON.stringify(requested)}`;
+          console.error(permMsg);
+          alert(permMsg);
+          setError("Permissão de microfone negada. Autorize nas configurações do app.");
+          return;
+        }
+      }
+
+      // Cleanup old listeners
+      for (const handle of nativeListenersRef.current) {
+        try {
+          await handle.remove();
+        } catch {
+          // ignore
+        }
+      }
+      nativeListenersRef.current = [];
+
+      // Add partial results listener for real-time transcription
+      const partialHandle = await NativeSpeechRecognition.addListener(
+        "partialResults",
+        (data: { matches?: string[]; accumulatedText?: string; accumulated?: string }) => {
+          const matchText = (data.matches && data.matches.length > 0 ? data.matches[0] : "") || data.accumulatedText || data.accumulated || "";
+          if (matchText) {
+            setTranscript(matchText);
+            if (onResult) {
+              onResult(matchText.trim(), false);
+            }
+          }
+        }
+      );
+      nativeListenersRef.current.push(partialHandle);
+
+      // Add listening state listener
+      const stateHandle = await NativeSpeechRecognition.addListener(
+        "listeningState",
+        (data: { status?: "started" | "stopped"; state?: string }) => {
+          if (data.status === "stopped" || data.state === "stopped") {
+            isListeningRef.current = false;
+            setIsListening(false);
+          }
+        }
+      );
+      nativeListenersRef.current.push(stateHandle);
+
+      // Add error listener
+      const errorHandle = await NativeSpeechRecognition.addListener(
+        "error",
+        (err: { message?: string; error?: any }) => {
+          console.warn("Native speech error listener:", err);
+          const errDetail = `[DEBUG VOZ - Listener Error]: ${JSON.stringify(err)} | message: ${err?.message || "sem mensagem"}`;
+          alert(errDetail);
+          setError(err.message || "Erro no reconhecimento de voz.");
+          if (onError) onError(err);
+        }
+      );
+      nativeListenersRef.current.push(errorHandle);
+
+      isListeningRef.current = true;
+      setIsListening(true);
+
+      const result = await NativeSpeechRecognition.start({
+        language: lang,
+        maxResults: 1,
+        partialResults: interimResults,
+        popup: false,
+      });
+
+      // Handle final returned matches
+      if (result?.matches && result.matches.length > 0) {
+        const text = result.matches[0];
+        setTranscript(text);
+        if (onResult) {
+          onResult(text.trim(), true);
+        }
+      } else {
+        console.log("[DEBUG VOZ] Reconhecimento encerrou sem matches retornados:", result);
+      }
+
+      isListeningRef.current = false;
+      setIsListening(false);
+    } catch (e: any) {
+      console.error("Erro ao iniciar reconhecimento de voz nativo:", e);
+      const rawError = `[DEBUG VOZ - Catch]: ${e?.message || e?.toString() || "Erro desconhecido"}\nDetalhes: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`;
+      alert(rawError);
+      setError(`Erro no microfone nativo: ${e?.message || e}`);
+      isListeningRef.current = false;
+      setIsListening(false);
+      if (onError) onError(e);
+    }
+  }, [lang, interimResults, onResult, onError]);
+
+  const stopWebListening = useCallback(() => {
     if (recognitionRef.current && isListeningRef.current) {
       try {
         recognitionRef.current.stop();
@@ -47,7 +182,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
     setIsListening(false);
   }, []);
 
-  const startListening = useCallback(() => {
+  const startWebListening = useCallback(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
@@ -129,6 +264,22 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
     }
   }, [lang, continuous, interimResults, onResult, onError]);
 
+  const stopListening = useCallback(() => {
+    if (Capacitor.isNativePlatform()) {
+      stopNativeListening();
+    } else {
+      stopWebListening();
+    }
+  }, [stopNativeListening, stopWebListening]);
+
+  const startListening = useCallback(() => {
+    if (Capacitor.isNativePlatform()) {
+      startNativeListening();
+    } else {
+      startWebListening();
+    }
+  }, [startNativeListening, startWebListening]);
+
   const toggleListening = useCallback(() => {
     if (isListeningRef.current) {
       stopListening();
@@ -140,11 +291,27 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (recognitionRef.current) {
+      if (Capacitor.isNativePlatform()) {
         try {
-          recognitionRef.current.abort();
-        } catch (e) {
+          NativeSpeechRecognition.stop().catch(() => {});
+        } catch {
           // ignore
+        }
+        for (const handle of nativeListenersRef.current) {
+          try {
+            handle.remove().catch(() => {});
+          } catch {
+            // ignore
+          }
+        }
+        nativeListenersRef.current = [];
+      } else {
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.abort();
+          } catch (e) {
+            // ignore
+          }
         }
       }
     };

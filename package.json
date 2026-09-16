@@ -13,6 +13,8 @@
   "dependencies": {
     "@capacitor/core": "^8.5.1",
     "@capgo/background-geolocation": "^8.4.5",
+    "@capgo/capacitor-native-biometric": "^8.6.10",
+    "@capgo/capacitor-speech-recognition": "^8.3.2",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",

@@ -4,3 +4,9 @@ project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/
 
 include ':capgo-background-geolocation'
 project(':capgo-background-geolocation').projectDir = new File('../node_modules/@capgo/background-geolocation/android')
+
+include ':capgo-capacitor-native-biometric'
+project(':capgo-capacitor-native-biometric').projectDir = new File('../node_modules/@capgo/capacitor-native-biometric/android')
+
+include ':capgo-capacitor-speech-recognition'
+project(':capgo-capacitor-speech-recognition').projectDir = new File('../node_modules/@capgo/capacitor-speech-recognition/android')
