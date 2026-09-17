@@ -1,10 +1,11 @@
 import React from "react";
-import { Settings, Fingerprint, Bell, ChevronRight } from "lucide-react";
+import { Settings, Fingerprint, Bell, ChevronRight, Building2 } from "lucide-react";
 
 interface Props {
   onOpenSetup: () => void;
   onOpenSecurity: () => void;
   onOpenNotifications: () => void;
+  onOpenPixConfig?: () => void;
   isBiometricsActive?: boolean;
   notificationCount?: number;
 }
@@ -13,6 +14,7 @@ export const ConfiguracoesGeraisView: React.FC<Props> = ({
   onOpenSetup,
   onOpenSecurity,
   onOpenNotifications,
+  onOpenPixConfig,
   isBiometricsActive = false,
   notificationCount = 0,
 }) => {
@@ -41,6 +43,17 @@ export const ConfiguracoesGeraisView: React.FC<Props> = ({
       color: "text-slate-300 bg-slate-800 border-slate-700",
       badge: notificationCount,
     },
+    ...(onOpenPixConfig
+      ? [
+          {
+            icon: Building2,
+            title: "Leitor de Notificações PIX",
+            subtitle: "Captura automática de PIX (Nubank, PicPay e Itaú)",
+            onClick: onOpenPixConfig,
+            color: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+          },
+        ]
+      : []),
   ];
 
   return (

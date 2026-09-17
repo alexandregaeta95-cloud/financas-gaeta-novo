@@ -31,6 +31,10 @@ import { BiometricLockScreen } from "./components/BiometricLockScreen";
 import { SegurancaModal } from "./components/SegurancaModal";
 import { ConfigLembretesFinancasModal } from "./components/ConfigLembretesFinancasModal";
 import { LembretesRemediosModal } from "./components/LembretesRemediosModal";
+import { PixSuggestionModal } from "./components/PixSuggestionModal";
+import { PixConfigModal } from "./components/PixConfigModal";
+import { BankNotificationService } from "./services/bankNotificationService";
+import { ParsedPixTransaction, deduplicatePixTransactions } from "./utils/bankNotificationParser";
 import { isBiometricEnabled, isSessionAuthenticated } from "./services/biometricAuth";
 
 import {
@@ -492,6 +496,10 @@ export default function App() {
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
   const [isLembretesFinancasModalOpen, setIsLembretesFinancasModalOpen] = useState(false);
   const [isLembretesRemediosModalOpen, setIsLembretesRemediosModalOpen] = useState(false);
+  const [isPixConfigModalOpen, setIsPixConfigModalOpen] = useState(false);
+
+  // PIX Notification Queue State
+  const [pendingPixTransactions, setPendingPixTransactions] = useState<ParsedPixTransaction[]>([]);
 
   // Biometric Session Lock State
   const [isBiometricsActive, setIsBiometricsActive] = useState<boolean>(() => isBiometricEnabled());
@@ -593,6 +601,43 @@ export default function App() {
       unsubSnooze();
     };
   }, [checkNotifications]);
+
+  // PIX Notification Engine Listener & Queue Processor
+  const checkPendingPix = useCallback(async () => {
+    try {
+      const list = await BankNotificationService.fetchPendingPix();
+      if (list && list.length > 0) {
+        setPendingPixTransactions((prev) => deduplicatePixTransactions([...list, ...prev]));
+      }
+    } catch (err) {
+      console.warn("Erro ao verificar PIX pendentes:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkPendingPix();
+
+    let cleanup: (() => void) | null = null;
+    BankNotificationService.subscribe((pix) => {
+      setPendingPixTransactions((prev) => deduplicatePixTransactions([pix, ...prev]));
+    }).then((remover) => {
+      cleanup = remover;
+    });
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkPendingPix();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleVisibilityChange);
+
+    return () => {
+      if (cleanup) cleanup();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleVisibilityChange);
+    };
+  }, [checkPendingPix]);
 
   const handleDismissNotification = (id: string) => {
     stopAlarmLoop();
@@ -1509,6 +1554,7 @@ export default function App() {
             onOpenSetup={() => setIsSetupModalOpen(true)}
             onOpenSecurity={() => setIsSecurityModalOpen(true)}
             onOpenNotifications={() => setIsNotificationCenterOpen(true)}
+            onOpenPixConfig={() => setIsPixConfigModalOpen(true)}
             isBiometricsActive={isBiometricsActive}
             notificationCount={notifications.filter((n) => !n.read).length}
           />
@@ -1521,6 +1567,36 @@ export default function App() {
         onClose={() => setIsSetupModalOpen(false)}
         onConnectedSuccess={() => {
           handleSyncAll();
+        }}
+      />
+
+      {/* PIX Suggestion Modal (Auto-detection) */}
+      {pendingPixTransactions.length > 0 && (
+        <PixSuggestionModal
+          transactions={pendingPixTransactions}
+          contasBancarias={contas}
+          onConfirm={async (novoLancamento, rawId) => {
+            await handleSaveGeneric(SHEET_NAMES.LANCAMENTOS, setLancamentos, novoLancamento);
+            await BankNotificationService.markAsProcessed(rawId);
+            setPendingPixTransactions((prev) => prev.filter((p) => p.rawId !== rawId));
+          }}
+          onDismiss={async (rawId) => {
+            await BankNotificationService.markAsProcessed(rawId);
+            setPendingPixTransactions((prev) => prev.filter((p) => p.rawId !== rawId));
+          }}
+          onDismissAll={async () => {
+            await BankNotificationService.clearAll();
+            setPendingPixTransactions([]);
+          }}
+        />
+      )}
+
+      {/* PIX Config Modal */}
+      <PixConfigModal
+        isOpen={isPixConfigModalOpen}
+        onClose={() => setIsPixConfigModalOpen(false)}
+        onSimulatePix={(sample) => {
+          setPendingPixTransactions((prev) => deduplicatePixTransactions([sample, ...prev]));
         }}
       />
 
