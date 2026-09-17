@@ -1104,7 +1104,8 @@ export default function App() {
     }
 
     try {
-      await saveSheetRecords(sheetName, [{ Id: targetId, id: targetId }], "SOFT_DELETE");
+      const deleteAction = sheetName === SHEET_NAMES.BLOCO_NOTAS ? "DELETE" : "SOFT_DELETE";
+      await saveSheetRecords(sheetName, [{ Id: targetId, id: targetId }], deleteAction);
       if (sheetName === SHEET_NAMES.LANCAMENTOS && updatedContasToSave.length > 0) {
         await saveSheetRecords(SHEET_NAMES.CONTAS_BANCARIAS, updatedContasToSave, "UPSERT");
       }

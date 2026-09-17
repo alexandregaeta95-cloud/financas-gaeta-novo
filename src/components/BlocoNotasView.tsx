@@ -60,10 +60,15 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
   };
 
   const handleConcluir = (item: AnotacaoBloco) => {
-    onSaveAnotacao({ ...item, Concluido: "SIM", Alarme_Ativo: "NÃO" });
+    const isConcluida = item.Concluido === "SIM";
+    onSaveAnotacao({
+      ...item,
+      Concluido: isConcluida ? "NÃO" : "SIM",
+      Alarme_Ativo: "NÃO",
+    });
   };
 
-  const ativas = anotacoes.filter((a) => a.Concluido !== "SIM").sort((a, b) => (b.Data_Criacao || "").localeCompare(a.Data_Criacao || ""));
+  const notasOrdenadas = [...anotacoes].sort((a, b) => (b.Data_Criacao || "").localeCompare(a.Data_Criacao || ""));
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
@@ -85,15 +90,30 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
       </div>
 
       <div className="space-y-3">
-        {ativas.length === 0 && (
+        {notasOrdenadas.length === 0 && (
           <div className="text-center py-10 text-slate-500 text-sm">Nenhuma anotação ainda.</div>
         )}
-        {ativas.map((item) => (
-          <div key={item.Id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+        {notasOrdenadas.map((item) => (
+          <div key={item.Id} className={`bg-slate-900 border ${item.Concluido === "SIM" ? "border-slate-800/80 opacity-85" : "border-slate-800"} rounded-2xl p-4 space-y-2`}>
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-bold text-white text-sm">{item.Titulo}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className={`font-bold text-sm ${item.Concluido === "SIM" ? "text-slate-300" : "text-white"}`}>{item.Titulo}</h3>
+                {item.Concluido === "SIM" && (
+                  <span className="flex items-center gap-0.5 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded font-medium">
+                    <Check className="w-3 h-3" /> Concluída
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => handleConcluir(item)} className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg" title="Concluir">
+                <button
+                  onClick={() => handleConcluir(item)}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    item.Concluido === "SIM"
+                      ? "text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25"
+                      : "text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10"
+                  }`}
+                  title={item.Concluido === "SIM" ? "Concluída (clique para reabrir)" : "Concluir (desativa alarme)"}
+                >
                   <Check className="w-4 h-4" />
                 </button>
                 <button onClick={() => handleOpen(item)} className="p-1.5 text-slate-400 hover:bg-slate-800 rounded-lg">

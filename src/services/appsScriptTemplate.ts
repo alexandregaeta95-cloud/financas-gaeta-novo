@@ -392,6 +392,9 @@ function doPost(e) {
 
     var resultCount = writeSheetRecords(ss, sheetName, items, action);
 
+    // Garante a gravação física imediata no Google Sheets antes de limpar o cache
+    SpreadsheetApp.flush();
+
     // Invalida o cache da aba que acabou de ser alterada
     try {
       var cache = CacheService.getScriptCache();

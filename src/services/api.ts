@@ -417,7 +417,7 @@ export function sanitizeRecordToUppercase<T = any>(item: T): T {
 export async function saveSheetRecords<T = any>(
   sheetName: string,
   items: T[],
-  action: "UPSERT" | "SOFT_DELETE" = "UPSERT",
+  action: "UPSERT" | "SOFT_DELETE" | "DELETE" = "UPSERT",
   customTargetUrl?: string
 ): Promise<ApiResponse> {
   const targetUrl = customTargetUrl || getSavedAppsScriptUrl();
@@ -1430,7 +1430,7 @@ export async function saveSheetRecords<T = any>(
       const existingIdx = updatedCached.findIndex(
         (c) => String(c.Id || c.id).trim() === String(itemToSave.Id || itemToSave.id).trim()
       );
-      if (action === "SOFT_DELETE") {
+      if (action === "SOFT_DELETE" || action === "DELETE") {
         if (existingIdx !== -1) {
           updatedCached.splice(existingIdx, 1);
         }
