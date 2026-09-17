@@ -1576,7 +1576,7 @@ export default function App() {
           transactions={pendingPixTransactions}
           contasBancarias={contas}
           onConfirm={async (novoLancamento, rawId) => {
-            await handleSaveGeneric(SHEET_NAMES.LANCAMENTOS, setLancamentos, novoLancamento);
+            await handleSaveGeneric(SHEET_NAMES.LANCAMENTOS, novoLancamento, setLancamentos);
             await BankNotificationService.markAsProcessed(rawId);
             setPendingPixTransactions((prev) => prev.filter((p) => p.rawId !== rawId));
           }}
