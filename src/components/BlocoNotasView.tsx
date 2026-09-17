@@ -41,6 +41,31 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
     setIsModalOpen(true);
   };
 
+  const transformarCaixaSelecao = (modo: "upper" | "lower") => {
+    const el = textoRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const textoAtual = form.Texto || "";
+
+    if (start === null || end === null || start === end) {
+      return;
+    }
+
+    const selecionado = textoAtual.slice(start, end);
+    const transformado = modo === "upper" ? selecionado.toUpperCase() : selecionado.toLowerCase();
+    const novoTexto = textoAtual.slice(0, start) + transformado + textoAtual.slice(end);
+
+    setForm((prev) => ({ ...prev, Texto: novoTexto }));
+
+    requestAnimationFrame(() => {
+      if (el) {
+        el.focus();
+        el.setSelectionRange(start, end);
+      }
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const now = new Date();
@@ -163,7 +188,30 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
                 />
               </div>
               <div>
-                <label className="text-slate-400 block mb-1">Anotação</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-400 block font-medium">Anotação</label>
+                  <div className="flex items-center gap-1">
+                    <span className="text-slate-500 text-[10px] mr-1">Seleção:</span>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => transformarCaixaSelecao("upper")}
+                      className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 font-bold text-xs rounded-md border border-slate-700 transition-colors shadow-xs"
+                      title="Transformar trecho selecionado em MAIÚSCULO"
+                    >
+                      AA
+                    </button>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => transformarCaixaSelecao("lower")}
+                      className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-sky-300 hover:text-sky-200 font-semibold text-xs rounded-md border border-slate-700 transition-colors shadow-xs"
+                      title="Transformar trecho selecionado em minúsculo"
+                    >
+                      aa
+                    </button>
+                  </div>
+                </div>
                 <ColorTextToolbar
                   onAplicarCor={(cor) =>
                     aplicarCorNoTexto(textoRef, form.Texto || "", cor, (novoTexto) =>
@@ -173,7 +221,7 @@ export const BlocoNotasView: React.FC<Props> = ({ anotacoes, onSaveAnotacao, onD
                 />
                 <VoiceTextArea
                   ref={textoRef}
-                  rows={3}
+                  rows={4}
                   value={form.Texto || ""}
                   onChange={(e) => setForm({ ...form, Texto: e.target.value })}
                   className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"

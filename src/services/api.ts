@@ -334,6 +334,7 @@ export function sanitizeValueToUppercase(key: string, value: any): any {
 
   // 1. Keys that must NEVER be converted to uppercase
   if (
+    lowerKey === "texto" ||
     lowerKey.includes("url") ||
     lowerKey.includes("link") ||
     lowerKey.includes("comprovante") ||
