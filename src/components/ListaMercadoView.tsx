@@ -208,10 +208,10 @@ export const ListaMercadoView: React.FC<Props> = ({
     setShowHistoricoModal(false);
   };
 
-  const handleConfirmBatchItens = (novosItens: ItemMercado[]) => {
-    novosItens.forEach((item) => {
-      onSaveItem(item);
-    });
+  const handleConfirmBatchItens = async (novosItens: ItemMercado[]) => {
+    for (const item of novosItens) {
+      await onSaveItem(item);
+    }
   };
 
   const handleOpenModal = (item?: ItemMercado) => {
@@ -268,7 +268,7 @@ export const ListaMercadoView: React.FC<Props> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const qty =
-      form.Quantidade !== "" && form.Quantidade !== undefined && !isNaN(Number(form.Quantidade))
+      (form.Quantidade as any) !== "" && form.Quantidade !== undefined && !isNaN(Number(form.Quantidade))
         ? Number(form.Quantidade)
         : 1;
     const unitPrice = parseCurrency(form.Valor_Unitário ?? form.Preco_Estimado ?? form.Valor_Estimado);
@@ -841,7 +841,7 @@ export const ListaMercadoView: React.FC<Props> = ({
                       readOnly
                       tabIndex={-1}
                       value={formatCurrency(
-                        (form.Quantidade !== "" && form.Quantidade !== undefined && !isNaN(Number(form.Quantidade))
+                        ((form.Quantidade as any) !== "" && form.Quantidade !== undefined && !isNaN(Number(form.Quantidade))
                           ? Number(form.Quantidade)
                           : 0) *
                           (parseCurrency(form.Valor_Unitário ?? form.Preco_Estimado ?? form.Valor_Estimado) || 0)

@@ -37,6 +37,7 @@ import { VoiceInput } from "./VoiceInput";
 import { VoiceTextArea } from "./VoiceTextArea";
 import { getFaturaKey, getFaturaVencimento } from "../utils/faturaCartao";
 import { renderTextoComCores, aplicarCorNoTexto, ColorTextToolbar } from "../utils/coloredText";
+import { ParsedPixTransaction } from "../utils/bankNotificationParser";
 
 interface Props {
   lancamentos: Lancamento[];
@@ -44,6 +45,8 @@ interface Props {
   contas: ContaBancaria[];
   cartoes?: CartaoCredito[];
   categoriasCustom?: CategoriaCustomizada[];
+  pendingPixTransactions?: ParsedPixTransaction[];
+  onDismissPix?: (rawId: string) => Promise<void> | void;
   onSaveLancamento: (lancamento: Lancamento | Lancamento[]) => Promise<void>;
   onSaveCategoria?: (categoria: CategoriaCustomizada) => Promise<void>;
   onDeleteLancamento: (id: string | string[], skipConfirm?: boolean) => Promise<void>;
@@ -186,6 +189,8 @@ export const LancamentosView: React.FC<Props> = ({
   contas,
   cartoes = [],
   categoriasCustom = [],
+  pendingPixTransactions = [],
+  onDismissPix,
   onSaveLancamento,
   onSaveCategoria,
   onDeleteLancamento,
@@ -213,6 +218,10 @@ export const LancamentosView: React.FC<Props> = ({
   const [numParcelas, setNumParcelas] = useState<number>(2);
   const [saving, setSaving] = useState(false);
   const [capturingGps, setCapturingGps] = useState(false);
+  const [duplicatePixConflict, setDuplicatePixConflict] = useState<{
+    matchingPix: ParsedPixTransaction;
+    saveAction: () => Promise<void>;
+  } | null>(null);
   const [batchDeleteData, setBatchDeleteData] = useState<{
     item: Lancamento;
     futureItems: Lancamento[];
@@ -578,22 +587,44 @@ export const LancamentosView: React.FC<Props> = ({
 
   let prevKmFound = 0;
   if (currentKm > 0) {
-    const currentFuel = String(formData.Tipo_Combustivel || "").trim().toUpperCase();
+    // Normalizador flexível para identificar se o lançamento pertence ao mesmo veículo:
+    // Se houver apenas 1 veículo cadastrado (ou se o veículo não estiver selecionado), considera o próprio veículo único.
+    const isSameVehicle = (l: any) => {
+      if (veiculos.length <= 1) return true;
+      if (!currentVeiculoName) return true;
+      const v1 = String(l.Veiculo || "").trim().toUpperCase();
+      const v2 = String(l.Descricao_Do_Veiculo || "").trim().toUpperCase();
+      const curr = currentVeiculoName.trim().toUpperCase();
+      const matchPlaca = matchedVeic?.Placa?.trim().toUpperCase();
+      const matchModelo = matchedVeic?.Modelo?.trim().toUpperCase();
+      const matchDesc = matchedVeic?.Descricao?.trim().toUpperCase();
+
+      return (
+        !v1 ||
+        v1 === curr ||
+        v2 === curr ||
+        (matchPlaca && (v1.includes(matchPlaca) || v2.includes(matchPlaca))) ||
+        (matchModelo && (v1.includes(matchModelo) || v2.includes(matchModelo))) ||
+        (matchDesc && (v1.includes(matchDesc) || v2.includes(matchDesc)))
+      );
+    };
+
+    // Seleciona o abastecimento anterior válido mais recente (maior Km_Atual menor que o atual).
+    // Km_Percorrido é do veículo, portanto NÃO filtra por posto e NÃO filtra por Tipo_Combustivel.
     const priorFuelRecords = lancamentos
       .filter(
         (l) =>
           isFuelItem(l) &&
           l.Id !== (editingItem?.Id || "") &&
-          (l.Veiculo === currentVeiculoName || !currentVeiculoName || l.Descricao_Do_Veiculo === currentVeiculoName) &&
+          isSameVehicle(l) &&
           parseCurrency(l.Km_Atual) > 0 &&
-          parseCurrency(l.Km_Atual) < currentKm &&
-          (!currentFuel || !l.Tipo_Combustivel || String(l.Tipo_Combustivel).trim().toUpperCase() === currentFuel)
+          parseCurrency(l.Km_Atual) < currentKm
       )
       .sort((a, b) => parseCurrency(b.Km_Atual) - parseCurrency(a.Km_Atual));
 
     if (priorFuelRecords.length > 0) {
       prevKmFound = parseCurrency(priorFuelRecords[0].Km_Atual);
-    } else if (matchedVeic?.Km_Atual && matchedVeic.Km_Atual < currentKm && !currentFuel) {
+    } else if (matchedVeic?.Km_Atual && matchedVeic.Km_Atual < currentKm) {
       prevKmFound = matchedVeic.Km_Atual;
     }
   }
@@ -608,22 +639,24 @@ export const LancamentosView: React.FC<Props> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    try {
-      const isFuel = formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento";
-      let precoLitro = parseCurrency(formData.Preco_Litro);
-      let finalValor = parseCurrency(formData.Valor);
-      let litros = parseCurrency(formData.Litros);
-      const kmAtual = isFuel ? parseCurrency(formData.Km_Atual) : undefined;
 
-      // Regra de cálculo automático de abastecimento:
-      // Se Valor e Preco_Litro foram informados, calcula Litros = Valor / Preço_Litro
-      if (isFuel) {
-        if (finalValor > 0 && precoLitro > 0 && (litros === 0 || !litros)) {
-          litros = Number((finalValor / precoLitro).toFixed(2));
-        } else if (litros > 0 && precoLitro > 0 && finalValor === 0 && !valorDisplay) {
-          finalValor = Number((litros * precoLitro).toFixed(2));
+    const executeSave = async () => {
+      try {
+        const isFuel = formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento";
+        let precoLitro = parseCurrency(formData.Preco_Litro);
+        let finalValor = parseCurrency(formData.Valor);
+        let litros = parseCurrency(formData.Litros);
+        const kmAtual = isFuel ? parseCurrency(formData.Km_Atual) : undefined;
+
+        // Regra de cálculo automático de abastecimento:
+        // Se Valor e Preco_Litro foram informados, calcula Litros = Valor / Preço_Litro
+        if (isFuel) {
+          if (finalValor > 0 && precoLitro > 0 && (litros === 0 || !litros)) {
+            litros = Number((finalValor / precoLitro).toFixed(2));
+          } else if (litros > 0 && precoLitro > 0 && finalValor === 0 && !valorDisplay) {
+            finalValor = Number((litros * precoLitro).toFixed(2));
+          }
         }
-      }
 
       const finalValorPago =
         formData.Valor_Pago !== undefined &&
@@ -933,6 +966,28 @@ export const LancamentosView: React.FC<Props> = ({
       setSaving(false);
     }
   };
+
+  const isFuel = formData.Categoria === "ABASTECIMENTO" || formData.Tipo === "Abastecimento";
+  const fuelValue = parseCurrency(formData.Valor);
+
+  // Proteção contra lançamento duplicado entre PIX e Abastecimento:
+  // Se for abastecimento com valor > 0 e houver PIX pendente com valor igual/próximo (tolerância de R$ 0.10)
+  if (isFuel && fuelValue > 0 && pendingPixTransactions && pendingPixTransactions.length > 0) {
+    const matchingPix = pendingPixTransactions.find(
+      (tx) => Math.abs(tx.valor - fuelValue) <= 0.10
+    );
+    if (matchingPix) {
+      setSaving(false);
+      setDuplicatePixConflict({
+        matchingPix,
+        saveAction: executeSave,
+      });
+      return;
+    }
+  }
+
+  await executeSave();
+};
 
   // Date Period Filter Logic
   const isDateInPeriod = (dateStr: string): boolean => {
@@ -2376,7 +2431,7 @@ export const LancamentosView: React.FC<Props> = ({
                     <div className="min-w-0">
                       <label className="block text-slate-300 text-[11px] font-medium mb-1">Completou o Tanque?</label>
                       <select
-                        value={formData.Completou_O_Tanque || "SIM"}
+                        value={formData.Completou_O_Tanque === true ? "SIM" : formData.Completou_O_Tanque || "SIM"}
                         onChange={(e) => setFormData({ ...formData, Completou_O_Tanque: e.target.value })}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-amber-500"
                       >
@@ -2783,6 +2838,87 @@ export const LancamentosView: React.FC<Props> = ({
                 className="w-full py-2 px-4 text-slate-400 hover:text-slate-200 text-xs transition-colors"
               >
                 Voltar à edição
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Proteção contra Duplicidade: PIX Pendente vs Abastecimento */}
+      {duplicatePixConflict && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-amber-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30 flex-shrink-0">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-white leading-tight">
+                  PIX Pendente Detectado
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Identificamos uma notificação PIX pendente na fila com valor compatível ao deste abastecimento:
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800 space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Valor do PIX:</span>
+                <span className="font-bold text-emerald-400 text-sm">
+                  {formatCurrency(duplicatePixConflict.matchingPix.valor)}
+                </span>
+              </div>
+              {duplicatePixConflict.matchingPix.banco && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Banco:</span>
+                  <span className="font-medium text-slate-200">
+                    {duplicatePixConflict.matchingPix.banco}
+                  </span>
+                </div>
+              )}
+              {duplicatePixConflict.matchingPix.descricaoSugerida && (
+                <div className="flex flex-col gap-0.5 pt-1 border-t border-slate-850">
+                  <span className="text-slate-400">Descrição do PIX:</span>
+                  <span className="text-slate-300 italic truncate">
+                    {duplicatePixConflict.matchingPix.descricaoSugerida}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-300 font-medium text-center">
+              Esse PIX pendente é o mesmo pagamento deste abastecimento que você está lançando?
+            </p>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  const action = duplicatePixConflict.saveAction;
+                  const rawId = duplicatePixConflict.matchingPix.rawId;
+                  setDuplicatePixConflict(null);
+                  if (onDismissPix && rawId) {
+                    await onDismissPix(rawId);
+                  }
+                  await action();
+                }}
+                className="w-full py-3 px-4 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-amber-950/40"
+              >
+                <Check className="w-4 h-4" />
+                <span>Sim, descartar o PIX pendente</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  const action = duplicatePixConflict.saveAction;
+                  setDuplicatePixConflict(null);
+                  await action();
+                }}
+                className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition-colors"
+              >
+                Não, são pagamentos diferentes, manter os dois
               </button>
             </div>
           </div>

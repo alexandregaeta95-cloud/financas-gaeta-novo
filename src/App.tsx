@@ -138,6 +138,9 @@ export default function App() {
       {
         Id: "CARD_1",
         Nome: "Mastercard Black",
+        Limite_Total: 15000,
+        Dia_Fechamento: 10,
+        Dia_Vencimento: 20,
         Limite: 15000,
         Fechamento: 10,
         Vencimento: 20,
@@ -1361,6 +1364,11 @@ export default function App() {
             contas={contas}
             cartoes={cartoes}
             categoriasCustom={categoriasCustom}
+            pendingPixTransactions={pendingPixTransactions}
+            onDismissPix={async (rawId) => {
+              await BankNotificationService.markAsProcessed(rawId);
+              setPendingPixTransactions((prev) => prev.filter((p) => p.rawId !== rawId));
+            }}
             onSaveLancamento={handleSaveLancamento}
             onSaveCategoria={(cat) =>
               handleSaveGeneric(SHEET_NAMES.CATEGORIAS_CUSTOMIZADAS, cat, setCategoriasCustom)

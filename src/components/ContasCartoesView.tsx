@@ -286,7 +286,7 @@ export const ContasCartoesView: React.FC<Props> = ({
   const handleSaveContaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const saldoIni = parseCurrency(contaForm.Saldo_Inicial);
-    const saldoAtu = contaForm.Saldo_Atual !== undefined && contaForm.Saldo_Atual !== ""
+    const saldoAtu = contaForm.Saldo_Atual !== undefined && (contaForm.Saldo_Atual as any) !== ""
       ? parseCurrency(contaForm.Saldo_Atual)
       : saldoIni;
     const item: ContaBancaria = {
@@ -986,7 +986,7 @@ export const ContasCartoesView: React.FC<Props> = ({
                 <div>
                   <label className="text-slate-400 block mb-1">Status</label>
                   <select
-                    value={cartaoForm.Ativo === false || cartaoForm.Ativo === "NÃO" || cartaoForm.Ativo === "NAO" ? "NÃO" : "SIM"}
+                    value={cartaoForm.Ativo === false || cartaoForm.Ativo === "NÃO" || (cartaoForm.Ativo as any) === "NAO" ? "NÃO" : "SIM"}
                     onChange={(e) => setCartaoForm({ ...cartaoForm, Ativo: e.target.value === "SIM" ? "SIM" : "NÃO" })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-semibold"
                   >

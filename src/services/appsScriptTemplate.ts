@@ -642,10 +642,16 @@ function syncFuelMirror(ss, fuelItems) {
     // Cálculo retroativo do KM Percorrido e Média se não fornecido
     if (kmPercorrido <= 0 && kmAtual > 0 && existingData.length > 1 && kmAtualIdx !== -1) {
       var maxPrevKm = 0;
+      var cleanVeic = cleanStr(veicName);
       for (var r = 1; r < existingData.length; r++) {
         var rowVeic = veiculoIdx !== -1 ? String(existingData[r][veiculoIdx] || "") : "";
+        var rowVeicClean = cleanStr(rowVeic);
         var rowKm = parseFloat(existingData[r][kmAtualIdx] || 0);
-        if (rowKm > 0 && rowKm < kmAtual && (!rowVeic || rowVeic === veicName || veiculoIdx === -1)) {
+
+        // Se rowVeic ou cleanVeic forem iguais, ou contiverem um ao outro, ou se veiculoIdx não existir
+        var isMatchVeic = !rowVeicClean || !cleanVeic || rowVeicClean === cleanVeic || rowVeicClean.indexOf(cleanVeic) !== -1 || cleanVeic.indexOf(rowVeicClean) !== -1 || veiculoIdx === -1;
+
+        if (rowKm > 0 && rowKm < kmAtual && isMatchVeic) {
           if (rowKm > maxPrevKm) maxPrevKm = rowKm;
         }
       }

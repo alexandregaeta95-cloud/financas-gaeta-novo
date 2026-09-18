@@ -177,6 +177,7 @@ export interface Infracao {
 export interface Veiculo {
   Id: string;
   Descrição?: string;
+  Descricao?: string; // Alias sem acento
   Motorista?: string;
   Placa: string;
   Renavam?: string;
@@ -186,6 +187,7 @@ export interface Veiculo {
   Ano: number;
   Ano_Fabricação?: number;
   Combustível: string;
+  Combustivel?: string; // Alias sem acento
   Km_Atual: number;
   Ativo: boolean;
 }

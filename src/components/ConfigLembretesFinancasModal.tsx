@@ -136,7 +136,7 @@ export const ConfigLembretesFinancasModal: React.FC<ConfigLembretesFinancasModal
           rawAtivo === true ||
           rawAtivo === "TRUE" ||
           rawAtivo === "true" ||
-          rawAtivo === 1 ||
+          (rawAtivo as any) === 1 ||
           rawAtivo === "1";
         setDespesasAtivo(ativo);
 
@@ -166,7 +166,7 @@ export const ConfigLembretesFinancasModal: React.FC<ConfigLembretesFinancasModal
           rawAtivo === true ||
           rawAtivo === "TRUE" ||
           rawAtivo === "true" ||
-          rawAtivo === 1 ||
+          (rawAtivo as any) === 1 ||
           rawAtivo === "1";
         setReceitasAtivo(ativo);
 

@@ -664,7 +664,7 @@ export const LembretesRemediosModal: React.FC<LembretesRemediosModalProps> = ({
                       rawAtivo === "sim" ||
                       rawAtivo === "TRUE" ||
                       rawAtivo === "true" ||
-                      rawAtivo === 1 ||
+                      (rawAtivo as any) === 1 ||
                       rawAtivo === undefined ||
                       rawAtivo === null ||
                       rawAtivo === "";

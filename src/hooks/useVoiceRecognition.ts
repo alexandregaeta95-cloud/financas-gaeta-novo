@@ -122,7 +122,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
       nativeListenersRef.current.push(stateHandle);
 
       // Add error listener
-      const errorHandle = await NativeSpeechRecognition.addListener(
+      const errorHandle = await (NativeSpeechRecognition as any).addListener(
         "error",
         (err: { message?: string; error?: any }) => {
           console.warn("Native speech error listener:", err);
