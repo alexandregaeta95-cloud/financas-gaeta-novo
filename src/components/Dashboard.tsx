@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   BarChart3,
   FileText,
+  Building2,
 } from "lucide-react";
 import { Lancamento, Abastecimento, Veiculo, SyncState, MetaCategoria } from "../types";
 import { ModuleView } from "./Navigation";
@@ -32,6 +33,7 @@ interface Props {
   onOpenNewAbastecimentoModal: () => void;
   onOpenSetup: () => void;
   onOpenSecurity?: () => void;
+  onOpenPixConfig?: () => void;
   isBiometricsActive?: boolean;
 }
 
@@ -119,6 +121,7 @@ export const Dashboard: React.FC<Props> = ({
   onOpenNewAbastecimentoModal,
   onOpenSetup,
   onOpenSecurity,
+  onOpenPixConfig,
   isBiometricsActive = false,
 }) => {
   // Alertas Financeiros de Despesas vs Receitas (Diário, Semanal e Mensal)
@@ -258,6 +261,43 @@ export const Dashboard: React.FC<Props> = ({
             {abastecimentos.length} abastecimentos registrados
           </p>
         </div>
+      </div>
+
+      {/* Quick Action Buttons */}
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={onOpenNewLancamentoModal}
+          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 p-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition-all shadow-md active:scale-95 cursor-pointer"
+        >
+          <PlusCircle className="w-4 h-4" />
+          <span>Novo Lançamento</span>
+        </button>
+
+        <button
+          onClick={onOpenNewAbastecimentoModal}
+          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 p-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold rounded-xl text-xs border border-amber-500/20 transition-all active:scale-95 cursor-pointer"
+        >
+          <Fuel className="w-4 h-4" />
+          <span>Abastecer</span>
+        </button>
+
+        {onOpenPixConfig && (
+          <button
+            onClick={onOpenPixConfig}
+            className="flex-1 min-w-[140px] flex items-center justify-center gap-2 p-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 transition-all active:scale-95 cursor-pointer"
+          >
+            <Building2 className="w-4 h-4 text-amber-400" />
+            <span>Leitor de Notificações PIX</span>
+          </button>
+        )}
+
+        <button
+          onClick={() => onNavigate("veiculos")}
+          className="flex-1 min-w-[140px] flex items-center justify-center gap-2 p-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 transition-all active:scale-95 cursor-pointer"
+        >
+          <Car className="w-4 h-4" />
+          <span>Gerenciar Veículo</span>
+        </button>
       </div>
 
       {/* Vehicle Overview Section */}

@@ -1327,6 +1327,7 @@ export default function App() {
             }}
             onOpenSetup={() => setIsSetupModalOpen(true)}
             onOpenSecurity={() => setIsSecurityModalOpen(true)}
+            onOpenPixConfig={() => setIsPixConfigModalOpen(true)}
             isBiometricsActive={isBiometricsActive}
           />
         )}
@@ -1575,6 +1576,8 @@ export default function App() {
         <PixSuggestionModal
           transactions={pendingPixTransactions}
           contasBancarias={contas}
+          categoriasCustom={categoriasCustom}
+          lancamentos={lancamentos}
           onConfirm={async (novoLancamento, rawId) => {
             await handleSaveGeneric(SHEET_NAMES.LANCAMENTOS, novoLancamento, setLancamentos);
             await BankNotificationService.markAsProcessed(rawId);

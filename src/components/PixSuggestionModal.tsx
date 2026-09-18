@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -12,12 +12,18 @@ import {
   FileText,
 } from "lucide-react";
 import { ParsedPixTransaction } from "../utils/bankNotificationParser";
-import { ContaBancaria, Lancamento } from "../types";
+import { ContaBancaria, Lancamento, CategoriaCustomizada } from "../types";
 import { getLocalTodayDateStr } from "../services/notificationEngine";
+import { formatCurrencyInput } from "../utils/formatters";
+import { VoiceInput } from "./VoiceInput";
+import { VoiceTextArea } from "./VoiceTextArea";
+import { ComboBox } from "./ComboBox";
 
 interface Props {
   transactions: ParsedPixTransaction[];
   contasBancarias?: ContaBancaria[];
+  categoriasCustom?: CategoriaCustomizada[];
+  lancamentos?: Lancamento[];
   onConfirm: (lancamento: Partial<Lancamento>, rawId: string) => Promise<void>;
   onDismiss: (rawId: string) => void;
   onDismissAll: () => void;
@@ -26,6 +32,8 @@ interface Props {
 export const PixSuggestionModal: React.FC<Props> = ({
   transactions,
   contasBancarias = [],
+  categoriasCustom = [],
+  lancamentos = [],
   onConfirm,
   onDismiss,
   onDismissAll,
@@ -39,20 +47,85 @@ export const PixSuggestionModal: React.FC<Props> = ({
 
   const [formDescricao, setFormDescricao] = useState("");
   const [formValor, setFormValor] = useState(0);
+  const [valorDisplay, setValorDisplay] = useState("");
   const [formTipo, setFormTipo] = useState<"RECEITA" | "DESPESA">("RECEITA");
   const [formData, setFormData] = useState("");
   const [formConta, setFormConta] = useState("");
   const [formCategoria, setFormCategoria] = useState("");
+  const [formObservacoes, setFormObservacoes] = useState("");
+
+  // Categorias disponíveis no sistema
+  const categoriasDisponiveis = useMemo(() => {
+    const isReceita = formTipo === "RECEITA";
+    const defaults = isReceita
+      ? [
+          "UBER",
+          "99",
+          "SALÁRIO",
+          "INVESTIMENTOS",
+          "RENDIMENTOS",
+          "FREELANCE",
+          "REEMBOLSO",
+          "VENDAS",
+          "OUTRAS RECEITAS",
+          "RECEITA",
+          "OUTROS",
+        ]
+      : [
+          "ALIMENTAÇÃO",
+          "SUPERMERCADO",
+          "TRANSPORTE",
+          "MORADIA",
+          "CONTAS",
+          "SAÚDE",
+          "LAZER",
+          "EDUCAÇÃO",
+          "VESTUÁRIO",
+          "SERVIÇOS",
+          "IMPOSTOS",
+          "VEÍCULO",
+          "PET",
+          "OUTRAS DESPESAS",
+          "OUTROS",
+        ];
+
+    const fromCustom = (categoriasCustom || [])
+      .filter((c) => {
+        const t = String(c.Tipo || "").toUpperCase();
+        if (isReceita) return t === "RECEITA" || t === "RECEITAS";
+        return t !== "RECEITA" && t !== "RECEITAS";
+      })
+      .map((c) => String(c.Nome || "").trim().toUpperCase())
+      .filter((n) => n.length > 0);
+
+    const fromLancamentos = (lancamentos || [])
+      .filter((l) => {
+        const t = String(l.Tipo || "").toUpperCase();
+        if (isReceita) return t === "RECEITA" || t === "RECEITAS";
+        return t !== "RECEITA" && t !== "RECEITAS";
+      })
+      .map((l) => String(l.Categoria || "").trim().toUpperCase())
+      .filter((c) => c.length > 0);
+
+    return Array.from(new Set([...defaults, ...fromCustom, ...fromLancamentos]));
+  }, [formTipo, categoriasCustom, lancamentos]);
 
   // Atualiza os campos do formulário sempre que a transação atual mudar
   useEffect(() => {
     if (!currentTx || isSavingRef.current) return;
 
     setFormDescricao(currentTx.descricaoSugerida || `PIX - ${currentTx.banco.toUpperCase()}`);
-    setFormValor(currentTx.valor);
+    const initialVal = currentTx.valor || 0;
+    setFormValor(initialVal);
+    setValorDisplay(
+      initialVal > 0
+        ? initialVal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : ""
+    );
     setFormTipo(currentTx.tipo);
     setFormData(getLocalTodayDateStr(new Date(currentTx.timestamp || Date.now())));
     setFormCategoria(currentTx.categoriaSugerida || (currentTx.tipo === "RECEITA" ? "OUTRAS RECEITAS" : "OUTRAS DESPESAS"));
+    setFormObservacoes("");
 
     // Tenta encontrar uma conta bancária com o nome do banco
     const bancoNome = currentTx.banco.toLowerCase();
@@ -81,10 +154,13 @@ export const PixSuggestionModal: React.FC<Props> = ({
     isSavingRef.current = true;
     setLoading(true);
 
-    alert("BOTAO CLICADO");
     try {
       const now = new Date();
       const horaFormatada = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      const userObs = formObservacoes.toUpperCase().trim();
+      const tagBanco = `IMPORTADO AUTOMATICAMENTE DE NOTIFICAÇÃO ${currentTx.banco.toUpperCase()}`;
+      const observacoesFinal = userObs ? `${userObs} — ${tagBanco}` : tagBanco;
 
       const lancamento: Partial<Lancamento> = {
         Data: formData || getLocalTodayDateStr(now),
@@ -96,11 +172,10 @@ export const PixSuggestionModal: React.FC<Props> = ({
         Categoria: formCategoria.toUpperCase().trim(),
         Forma_Pagamento: "PIX",
         Status: "PAGO",
-        Observacoes: `Importado automaticamente de notificação ${currentTx.banco}`,
+        Observacoes: observacoesFinal,
       };
 
       await onConfirm(lancamento, currentTx.rawId);
-      alert("SUCESSO: onConfirm finalizou com êxito!");
 
       // Avança ou fecha
       if (currentIndex >= transactions.length - 1) {
@@ -108,7 +183,6 @@ export const PixSuggestionModal: React.FC<Props> = ({
       }
     } catch (err: any) {
       console.error("Erro ao confirmar PIX:", err);
-      alert("ERRO no onConfirm: " + (err?.message || JSON.stringify(err)));
     } finally {
       isSavingRef.current = false;
       setLoading(false);
@@ -241,11 +315,13 @@ export const PixSuggestionModal: React.FC<Props> = ({
                 <FileText className="w-3.5 h-3.5 text-slate-500" />
                 Descrição do Lançamento
               </label>
-              <input
+              <VoiceInput
                 type="text"
+                placeholder="Descrição do lançamento..."
                 value={formDescricao}
                 onChange={(e) => setFormDescricao(e.target.value.toUpperCase())}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:border-amber-500 outline-none"
+                className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:border-amber-500 outline-none"
+                uppercase
               />
             </div>
 
@@ -253,15 +329,25 @@ export const PixSuggestionModal: React.FC<Props> = ({
               <div>
                 <label className="text-slate-400 block mb-1 text-[11px] font-medium flex items-center gap-1.5">
                   <DollarSign className="w-3.5 h-3.5 text-slate-500" />
-                  Valor (R$)
+                  Valor Total (R$)
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formValor}
-                  onChange={(e) => setFormValor(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs focus:border-amber-500 outline-none"
-                />
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-slate-400 font-semibold text-xs select-none">
+                    R$
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0,00"
+                    value={valorDisplay}
+                    onChange={(e) => {
+                      const { numeric, formatted } = formatCurrencyInput(e.target.value);
+                      setValorDisplay(formatted);
+                      setFormValor(numeric);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pl-10 text-white font-bold text-xs focus:border-amber-500 outline-none"
+                  />
+                </div>
               </div>
 
               <div>
@@ -314,18 +400,37 @@ export const PixSuggestionModal: React.FC<Props> = ({
                   <Tag className="w-3.5 h-3.5 text-slate-500" />
                   Categoria
                 </label>
-                <input
-                  type="text"
+                <ComboBox
                   value={formCategoria}
-                  onChange={(e) => setFormCategoria(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase text-xs focus:border-amber-500 outline-none"
+                  onChange={(val) => setFormCategoria(val.toUpperCase())}
+                  options={categoriasDisponiveis}
+                  placeholder="Selecione ou digite..."
+                  uppercase={true}
+                  showVoice={true}
+                  inputClassName="focus:border-amber-500"
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-2 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-[11px] text-slate-400">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Nenhum lançamento é salvo sem sua revisão. Revise os dados acima e confirme.</span>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-slate-400 text-[11px] font-medium flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-slate-500" />
+                  Observações
+                </label>
+                <span className="text-[10px] text-amber-400/90 font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 text-amber-400" />
+                  Revise antes de confirmar
+                </span>
+              </div>
+              <VoiceTextArea
+                rows={2}
+                value={formObservacoes}
+                onChange={(e) => setFormObservacoes(e.target.value.toUpperCase())}
+                placeholder="Observações do lançamento (opcional)..."
+                className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-xs uppercase focus:border-amber-500 outline-none"
+                uppercase
+              />
             </div>
           </div>
 
