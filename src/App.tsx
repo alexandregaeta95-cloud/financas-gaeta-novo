@@ -1327,7 +1327,6 @@ export default function App() {
             }}
             onOpenSetup={() => setIsSetupModalOpen(true)}
             onOpenSecurity={() => setIsSecurityModalOpen(true)}
-            onOpenPixConfig={() => setIsPixConfigModalOpen(true)}
             isBiometricsActive={isBiometricsActive}
           />
         )}
