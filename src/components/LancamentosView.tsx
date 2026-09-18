@@ -1592,6 +1592,9 @@ export const LancamentosView: React.FC<Props> = ({
             }
 
             const isPago = String(item.Status || "").toUpperCase() === "PAGO";
+            const valorExibicao = isPago
+              ? (valorPago > 0 ? valorPago : valorOriginal)
+              : valorOriginal;
 
             return (
               <div
@@ -1687,7 +1690,7 @@ export const LancamentosView: React.FC<Props> = ({
                           isReceita ? "text-teal-400" : "text-white"
                         }`}
                       >
-                        {isReceita ? "+" : "-"} R$ {formatCurrency(parseCurrency(item.Valor_Pago) > 0 ? item.Valor_Pago : item.Valor)}
+                        {isReceita ? "+" : "-"} R$ {formatCurrency(valorExibicao)}
                       </span>
                     </div>
 
@@ -1730,11 +1733,13 @@ export const LancamentosView: React.FC<Props> = ({
                 {isExpanded && (
                   <div className="px-4 pb-4 pt-1 sm:px-5 sm:pb-4.5 bg-slate-950/40 border-t border-slate-800/80 animate-in fade-in duration-150">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2">
-                      {/* Valor Pago vs Valor Original */}
+                      {/* Valor Pago vs Valor Previsto */}
                       <div className="p-2.5 bg-slate-900/90 border border-slate-800/80 rounded-xl">
-                        <span className="text-[10px] text-slate-400 block mb-0.5">Valor Pago</span>
+                        <span className="text-[10px] text-slate-400 block mb-0.5">
+                          {isPago ? "Valor Pago" : "Valor Previsto"}
+                        </span>
                         <span className="font-semibold text-white">
-                          R$ {formatCurrency(item.Valor_Pago ?? item.Valor)}
+                          R$ {formatCurrency(valorExibicao)}
                         </span>
                       </div>
 
