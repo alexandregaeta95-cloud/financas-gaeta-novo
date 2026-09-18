@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -32,6 +32,7 @@ export const PixSuggestionModal: React.FC<Props> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const isSavingRef = useRef(false);
 
   // Transação atual na fila
   const currentTx = transactions[currentIndex] || transactions[0];
@@ -45,7 +46,7 @@ export const PixSuggestionModal: React.FC<Props> = ({
 
   // Atualiza os campos do formulário sempre que a transação atual mudar
   useEffect(() => {
-    if (!currentTx) return;
+    if (!currentTx || isSavingRef.current) return;
 
     setFormDescricao(currentTx.descricaoSugerida || `PIX - ${currentTx.banco.toUpperCase()}`);
     setFormValor(currentTx.valor);
@@ -75,8 +76,12 @@ export const PixSuggestionModal: React.FC<Props> = ({
   if (!currentTx) return null;
 
   const handleSaveCurrent = async () => {
-    alert("BOTAO CLICADO");
+    // Proteção contra múltiplos cliques ou disparos simultâneos (race condition)
+    if (isSavingRef.current || loading) return;
+    isSavingRef.current = true;
     setLoading(true);
+
+    alert("BOTAO CLICADO");
     try {
       const now = new Date();
       const horaFormatada = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -95,14 +100,17 @@ export const PixSuggestionModal: React.FC<Props> = ({
       };
 
       await onConfirm(lancamento, currentTx.rawId);
+      alert("SUCESSO: onConfirm finalizou com êxito!");
 
       // Avança ou fecha
       if (currentIndex >= transactions.length - 1) {
         setCurrentIndex(0);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro ao confirmar PIX:", err);
+      alert("ERRO no onConfirm: " + (err?.message || JSON.stringify(err)));
     } finally {
+      isSavingRef.current = false;
       setLoading(false);
     }
   };
