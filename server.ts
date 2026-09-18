@@ -1,493 +1,437 @@
-import express from "express";
-import path from "path";
 import dotenv from "dotenv";
-import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
-
 dotenv.config();
 
-let aiClient: GoogleGenAI | null = null;
-function getGenAI(): GoogleGenAI {
-  if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY não configurada no ambiente do servidor.");
-    }
-    aiClient = new GoogleGenAI({ apiKey });
-  }
-  return aiClient;
-}
+import express, { Request, Response } from "express";
+import path from "path";
+import { GoogleGenAI } from "@google/genai";
 
-const ALLOWED_GOOGLE_DOMAINS = [
+const app = express();
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+// Lista de domínios explicitamente autorizados para o proxy de planilhas/Google APIs
+const ALLOWED_DOMAINS = [
   "script.google.com",
   "script.googleusercontent.com",
   "sheets.googleapis.com",
-  "docs.google.com",
+  "www.googleapis.com",
 ];
 
-function isAllowedUrl(targetUrl: string): boolean {
+function isDomainAllowed(rawUrl: string): boolean {
   try {
-    const parsed = new URL(targetUrl);
-    const hostname = parsed.hostname.toLowerCase();
-    return ALLOWED_GOOGLE_DOMAINS.some(
-      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
+    const parsed = new URL(rawUrl);
+    const host = parsed.hostname.toLowerCase();
+    return ALLOWED_DOMAINS.some(
+      (domain) => host === domain || host.endsWith("." + domain)
     );
   } catch {
     return false;
   }
 }
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+// Utilitário de fetch com Timeout e Retentativas (Retry Logic)
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 2,
+  timeoutMs = 35000
+): Promise<globalThis.Response> {
+  let lastError: any = null;
 
-  app.use(express.json({ limit: "10mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+  for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  // Health check endpoint
-  app.get("/api/health", (_req, res) => {
-    res.json({
-      status: "ok",
-      timestamp: new Date().toISOString(),
-      hasAppsScriptEnv: Boolean(process.env.APPS_SCRIPT_URL),
-    });
-  });
-
-  // Config check endpoint
-  app.get("/api/config", (_req, res) => {
-    res.json({
-      hasAppsScriptUrl: Boolean(process.env.APPS_SCRIPT_URL),
-      appsScriptUrlConfigured: process.env.APPS_SCRIPT_URL ? true : false,
-      hasGeminiApiKey: Boolean(process.env.GEMINI_API_KEY),
-    });
-  });
-
-  // Food / Meal analysis with Gemini AI
-  app.post("/api/analyze-food", async (req, res) => {
     try {
-      const { imageBase64, mimeType = "image/jpeg" } = req.body;
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        redirect: "follow",
+      });
+      clearTimeout(timeoutId);
 
-      if (!imageBase64 || typeof imageBase64 !== "string") {
-        res.status(400).json({
-          status: "error",
-          message: "Nenhuma imagem foi enviada para análise.",
-        });
-        return;
+      // Se respondeu 5xx e ainda tem retentativas, aguarda e tenta de novo
+      if (response.status >= 500 && attempt <= maxRetries) {
+        await new Promise((r) => setTimeout(r, attempt * 800));
+        continue;
       }
 
-      // Clean base64 string if data URL prefix was included
-      const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z0-9+]+;base64,/, "");
-
-      const genAI = getGenAI();
-
-      const prompt = `Você é um nutricionista especialista em estimativa visual de calorias e macronutrientes.
-Analise a imagem da refeição, prato ou alimento com atenção e determine:
-1. Nome claro e representativo do prato ou alimento (ex: "Prato Feito: Arroz, Feijão, Frango Grelhado e Salada").
-2. Descrição concisa dos itens visíveis.
-3. Estimativa aproximada de calorias totais (kcal).
-4. Estimativa de proteínas (g), carboidratos (g) e gorduras (g).
-5. Lista de cada item identificado com porção estimada, calorias e proteínas do item.
-6. Uma dica ou observação nutricional construtiva.
-
-Retorne estritamente um JSON com a seguinte estrutura:
-{
-  "nomePrato": "string",
-  "descricao": "string",
-  "caloriasEstimadas": number,
-  "proteinasEstimadas": number,
-  "carboidratosEstimados": number,
-  "gordurasEstimadas": number,
-  "itensIdentificados": [
-    {
-      "item": "string",
-      "porcaoAproximada": "string",
-      "calorias": number,
-      "proteinas": number
+      return response;
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      lastError = err;
+      if (attempt <= maxRetries) {
+        await new Promise((r) => setTimeout(r, attempt * 800));
+        continue;
+      }
     }
+  }
+
+  throw lastError || new Error("Falha de conexão após múltiplas tentativas.");
+}
+
+// 1. Health check
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// 2. Rota Proxy (GET e POST) para Google Apps Script e Google Sheets
+app.get("/api/proxy", async (req: Request, res: Response) => {
+  try {
+    const targetUrlParam = (req.query.targetUrl as string) || process.env.APPS_SCRIPT_URL;
+    if (!targetUrlParam) {
+      return res.status(400).json({
+        status: "error",
+        message: "Nenhuma URL de destino (targetUrl ou APPS_SCRIPT_URL) configurada.",
+      });
+    }
+
+    if (!isDomainAllowed(targetUrlParam)) {
+      return res.status(403).json({
+        status: "error",
+        message: "Domínio de destino não permitido pelo proxy de segurança.",
+      });
+    }
+
+    const targetUrlObj = new URL(targetUrlParam);
+    // Repassa todos os parâmetros de busca recebidos na requisição (exceto targetUrl)
+    for (const [key, val] of Object.entries(req.query)) {
+      if (key !== "targetUrl" && typeof val === "string") {
+        targetUrlObj.searchParams.set(key, val);
+      }
+    }
+
+    const response = await fetchWithRetry(
+      targetUrlObj.toString(),
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json, text/plain, */*",
+          "Cache-Control": "no-cache",
+        },
+      },
+      2,
+      35000
+    );
+
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    } else {
+      const text = await response.text();
+      try {
+        const parsed = JSON.parse(text);
+        return res.status(response.status).json(parsed);
+      } catch {
+        return res.status(response.status).send(text);
+      }
+    }
+  } catch (error: any) {
+    console.error("Erro no proxy GET:", error);
+    const isTimeout = error?.name === "AbortError";
+    return res.status(504).json({
+      status: "error",
+      message: isTimeout
+        ? "Tempo limite esgotado ao contatar o Google Apps Script (Timeout 35s)."
+        : (error?.message || "Erro de conexão ao acessar a planilha."),
+    });
+  }
+});
+
+app.post("/api/proxy", async (req: Request, res: Response) => {
+  try {
+    const targetUrlParam =
+      (req.body?.targetUrl as string) ||
+      (req.query.targetUrl as string) ||
+      process.env.APPS_SCRIPT_URL;
+
+    if (!targetUrlParam) {
+      return res.status(400).json({
+        status: "error",
+        message: "Nenhuma URL de destino (targetUrl ou APPS_SCRIPT_URL) configurada.",
+      });
+    }
+
+    if (!isDomainAllowed(targetUrlParam)) {
+      return res.status(403).json({
+        status: "error",
+        message: "Domínio de destino não permitido pelo proxy de segurança.",
+      });
+    }
+
+    // O Apps Script espera receber o corpo JSON com { action, sheet, items, ... }
+    const response = await fetchWithRetry(
+      targetUrlParam,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json, text/plain, */*",
+        },
+        body: JSON.stringify(req.body),
+      },
+      2,
+      40000
+    );
+
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    } else {
+      const text = await response.text();
+      try {
+        const parsed = JSON.parse(text);
+        return res.status(response.status).json(parsed);
+      } catch {
+        return res.status(response.status).send(text);
+      }
+    }
+  } catch (error: any) {
+    console.error("Erro no proxy POST:", error);
+    const isTimeout = error?.name === "AbortError";
+    return res.status(504).json({
+      status: "error",
+      message: isTimeout
+        ? "Tempo limite esgotado ao salvar dados no Google Apps Script (Timeout 40s)."
+        : (error?.message || "Erro de conexão ao salvar na planilha."),
+    });
+  }
+});
+
+// Lazy initializer for Gemini API client
+let aiClient: GoogleGenAI | null = null;
+function getGeminiClient(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("A variável de ambiente GEMINI_API_KEY não está configurada no servidor.");
+  }
+  if (!aiClient) {
+    aiClient = new GoogleGenAI({ apiKey });
+  }
+  return aiClient;
+}
+
+// 3. Análise de Alimentos / Pratos via Gemini Vision
+app.post("/api/analyze-food", async (req: Request, res: Response) => {
+  try {
+    const { imageBase64, mimeType = "image/jpeg" } = req.body;
+    if (!imageBase64) {
+      return res.status(400).json({ status: "error", message: "Imagem não fornecida." });
+    }
+
+    const cleanBase64 = imageBase64.replace(/^data:[^;]+;base64,/, "");
+    const ai = getGeminiClient();
+
+    const prompt = `Analise a foto desta refeição/alimento e forneça uma estimativa nutricional precisa e realista.
+Retorne ESTRITAMENTE um objeto JSON válido (sem tags markdown nem explicações fora do JSON) com a seguinte estrutura:
+{
+  "nomePrato": "Nome descritivo e claro do prato ou alimento",
+  "descricao": "Breve descrição dos componentes visíveis",
+  "caloriasEstimadas": 450,
+  "proteinasEstimadas": 25,
+  "carboidratosEstimados": 45,
+  "gordurasEstimadas": 15,
+  "itensIdentificados": [
+    { "nome": "Item 1", "quantidade": "100g", "calorias": 150 },
+    { "nome": "Item 2", "quantidade": "1 fatia", "calorias": 100 }
   ],
-  "dicasNutricionais": "string"
+  "dicasNutricionais": "Dica nutricional ou comentário sobre a refeição",
+  "observacoes": "Observação sobre a estimativa calórica"
 }`;
 
-      const response = await genAI.models.generateContent({
-        model: "gemini-3.6-flash",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                inlineData: {
-                  mimeType: mimeType || "image/jpeg",
-                  data: cleanBase64,
-                },
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                data: cleanBase64,
+                mimeType: mimeType || "image/jpeg",
               },
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        config: {
-          responseMimeType: "application/json",
+            },
+          ],
         },
-      });
+      ],
+      config: {
+        responseMimeType: "application/json",
+      },
+    });
 
-      const responseText = response.text || "{}";
-      let parsedData;
-      try {
-        parsedData = JSON.parse(responseText);
-      } catch (parseErr) {
-        console.error("Erro ao fazer parse do JSON do Gemini:", parseErr, responseText);
-        // Fallback sanitize json code blocks
-        const sanitized = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-        parsedData = JSON.parse(sanitized);
-      }
-
-      res.json({
-        status: "success",
-        data: parsedData,
-      });
-    } catch (err: any) {
-      console.error("[Gemini Food Analysis Error]:", err);
-      res.status(500).json({
-        status: "error",
-        message: err.message || "Falha ao analisar a imagem do alimento com Gemini.",
-      });
-    }
-  });
-
-  // Dedicated Vision AI endpoint for Reading Shopping Lists from Images
-  app.post("/api/read-shopping-list", async (req, res) => {
+    const text = response.text || "{}";
+    let parsed: any;
     try {
-      const { imageBase64, mimeType } = req.body;
+      parsed = JSON.parse(text);
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      parsed = match ? JSON.parse(match[0]) : {};
+    }
 
-      if (!imageBase64) {
-        res.status(400).json({
-          status: "error",
-          message: "A imagem em base64 é obrigatória para ler a lista de mercado.",
-        });
-        return;
-      }
+    const result = {
+      id: `food_${Date.now()}`,
+      data: new Date().toISOString().split("T")[0],
+      dataHora: new Date().toISOString(),
+      nomePrato: parsed.nomePrato || "Refeição Identificada",
+      descricao: parsed.descricao || "",
+      caloriasEstimadas: Number(parsed.caloriasEstimadas) || 0,
+      proteinasEstimadas: Number(parsed.proteinasEstimadas) || 0,
+      carboidratosEstimados: Number(parsed.carboidratosEstimados) || 0,
+      gordurasEstimadas: Number(parsed.gordurasEstimadas) || 0,
+      itensIdentificados: Array.isArray(parsed.itensIdentificados) ? parsed.itensIdentificados : [],
+      dicasNutricionais: parsed.dicasNutricionais || "",
+      observacoes: parsed.observacoes || "",
+    };
 
-      const genAI = getGenAI();
-      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    return res.json({ status: "success", data: result });
+  } catch (error: any) {
+    console.error("Erro em /api/analyze-food:", error);
+    return res.status(500).json({
+      status: "error",
+      message: error?.message || "Falha ao processar análise da imagem com IA.",
+    });
+  }
+});
 
-      const prompt = `Você é um leitor óptico (OCR) e assistente especialista em listas de compras e supermercado.
-Analise a imagem enviada (que pode ser uma lista de compras manuscrita/feita à mão em papel, uma lista impressa, ou anotações).
+// 4. Leitura de Lista de Compras por Foto via Gemini Vision
+app.post("/api/read-shopping-list", async (req: Request, res: Response) => {
+  try {
+    const { imageBase64, mimeType = "image/jpeg" } = req.body;
+    if (!imageBase64) {
+      return res.status(400).json({ status: "error", message: "Imagem da lista não fornecida." });
+    }
 
-Instruções estritas:
-1. Extraia cada item da lista individualmente.
-2. Formate o nome do item SEMPRE EM LETRAS MAIÚSCULAS (ex: "LEITE INTEGRAL", "ARROZ TIO JOÃO 5KG", "DETERGENTE NEUTRO", "BANANA PRATA").
-3. Detecte a quantidade se estiver escrita (ex: "2", "1/2", "3"). Se não tiver quantidade especificada, use 1 como padrão.
-4. Detecte a unidade de medida (ex: "UN", "KG", "G", "L", "ML", "PCT", "CX", "DZ"). Se não for indicada, use "UN".
-5. Classifique o item em uma das seguintes categorias de supermercado:
-   - "HORTIFRUTI" (frutas, legumes, verduras, temperos frescos)
-   - "AÇOUGUE" (carnes bovinas, aves, peixes, suínos, linguiças)
-   - "PADARIA" (pães, bolos, torradas, biscoitos artesanais)
-   - "LATICÍNIOS & FRIOS" (leite, queijos, iogurtes, manteiga, presunto)
-   - "MERCEARIA" (arroz, feijão, massas, óleos, açúcar, café, enlatados, molhos)
-   - "BEBIDAS" (sucos, refrigerantes, água, cervejas, vinhos)
-   - "LIMPEZA" (detergentes, sabão em pó, desinfetantes, papel toalha)
-   - "HIGIENE & BELEZA" (shampoo, sabonete, pasta de dente, desodorante, papel higiênico)
-   - "PET" (ração, sachês, petiscos, areia de gato)
-   - "CONGELADOS" (pizzas, sorvetes, pratos prontos, legumes congelados)
-   - "OUTROS" (qualquer outro item)
+    const cleanBase64 = imageBase64.replace(/^data:[^;]+;base64,/, "");
+    const ai = getGeminiClient();
 
-Responda ESTRITAMENTE em formato JSON com o seguinte formato:
+    const prompt = `Analise a foto desta lista de compras (manuscrita ou impressa) e extraia todos os itens.
+Retorne ESTRITAMENTE um objeto JSON válido (sem tags markdown nem texto fora do JSON) com a seguinte estrutura:
 {
   "itens": [
     {
-      "item": "NOME DO ITEM EM MAIÚSCULO",
-      "quantidade": number,
-      "unidade": "UN" | "KG" | "G" | "L" | "ML" | "PCT" | "CX" | "DZ",
-      "categoria": "HORTIFRUTI" | "AÇOUGUE" | "PADARIA" | "LATICÍNIOS & FRIOS" | "MERCEARIA" | "BEBIDAS" | "LIMPEZA" | "HIGIENE & BELEZA" | "PET" | "CONGELADOS" | "OUTROS",
-      "observacao": "detalhe ou observação se houver, ou string vazia"
+      "item": "NOME DO ITEM EM MAIÚSCULAS",
+      "quantidade": 1,
+      "unidade": "UN",
+      "observacao": "Detalhe, marca ou especificação se houver"
     }
   ],
-  "resumoLeitura": "Breve frase descrevendo o que foi identificado (ex: 'Identificados 8 itens na anotação de papel.')"
+  "resumoLeitura": "Identificados X itens pela leitura com IA."
 }`;
 
-      const response = await genAI.models.generateContent({
-        model: "gemini-3.6-flash",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                inlineData: {
-                  mimeType: mimeType || "image/jpeg",
-                  data: cleanBase64,
-                },
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                data: cleanBase64,
+                mimeType: mimeType || "image/jpeg",
               },
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        config: {
-          responseMimeType: "application/json",
+            },
+          ],
         },
-      });
-
-      const responseText = response.text || "{}";
-      let parsedData;
-      try {
-        parsedData = JSON.parse(responseText);
-      } catch (parseErr) {
-        console.error("Erro ao fazer parse do JSON do Gemini (Lista de Mercado):", parseErr, responseText);
-        const sanitized = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-        parsedData = JSON.parse(sanitized);
-      }
-
-      res.json({
-        status: "success",
-        data: parsedData,
-      });
-    } catch (err: any) {
-      console.error("[Gemini Shopping List OCR Error]:", err);
-      res.status(500).json({
-        status: "error",
-        message: err.message || "Falha ao ler a imagem da lista de compras com Gemini.",
-      });
-    }
-  });
-
-  // Sugestões de endereço (autocomplete) via Nominatim (OpenStreetMap)
-  app.get("/api/endereco-sugestoes", async (req, res) => {
-    try {
-      const texto = String(req.query.texto || "");
-      if (texto.length < 4) return res.json({ sugestoes: [] });
-
-      const lat = req.query.lat;
-      const lng = req.query.lng;
-
-      let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(texto)}&format=json&countrycodes=br&limit=6&addressdetails=0`;
-
-      if (lat && lng) {
-        const latNum = Number(lat);
-        const lngNum = Number(lng);
-        const delta = 0.5; // aproximadamente 55km de raio
-        const viewbox = `${lngNum - delta},${latNum + delta},${lngNum + delta},${latNum - delta}`;
-        url += `&viewbox=${viewbox}&bounded=1`;
-      }
-
-      const resp = await fetch(url, {
-        headers: {
-          "User-Agent": "DizAi-App/1.0 (sistema pessoal de gestao financeira e corridas)",
-        },
-      });
-      const data: any = await resp.json();
-
-      const sugestoes = (Array.isArray(data) ? data : []).map((item: any) => ({
-        label: item.display_name || "",
-        lat: parseFloat(item.lat),
-        lng: parseFloat(item.lon),
-      }));
-
-      res.json({ sugestoes });
-    } catch (err: any) {
-      console.error("Erro nas sugestões de endereço:", err);
-      res.status(500).json({ error: err?.message || "Erro ao buscar sugestões." });
-    }
-  });
-
-  // Calcula rota (distância + tempo) entre múltiplos pontos via OSRM
-  app.post("/api/rota", async (req, res) => {
-    try {
-      const { pontos } = req.body;
-      if (!Array.isArray(pontos) || pontos.length < 2) {
-        return res.status(400).json({ error: "É necessário pelo menos origem e destino." });
-      }
-
-      const coordenadas = pontos
-        .map((p: any) => (Array.isArray(p) ? p : null))
-        .filter(Boolean);
-
-      if (coordenadas.length < 2) {
-        return res.status(400).json({ error: "Coordenadas inválidas." });
-      }
-
-      const coordsStr = coordenadas.map((c: [number, number]) => `${c[0]},${c[1]}`).join(";");
-      const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=false`;
-
-      const resp = await fetch(url);
-      const data: any = await resp.json();
-
-      const rota = data?.routes?.[0];
-      if (!rota) {
-        return res.status(502).json({ error: "Não foi possível calcular a rota.", detalhe: data });
-      }
-
-      res.json({
-        distanciaKm: Number((rota.distance / 1000).toFixed(2)),
-        duracaoMinutos: Math.round(rota.duration / 60),
-      });
-    } catch (err: any) {
-      console.error("Erro ao calcular rota:", err);
-      res.status(500).json({ error: err?.message || "Erro ao calcular rota.", stack: err?.stack });
-    }
-  });
-
-  // Proxy endpoint to communicate with Google Apps Script
-  app.all("/api/proxy", async (req, res) => {
-    try {
-      // Get target URL from body, query, or environment variable
-      let targetUrl =
-        (req.body && req.body.targetUrl) ||
-        (req.query && (req.query.targetUrl as string)) ||
-        process.env.APPS_SCRIPT_URL;
-
-      if (!targetUrl) {
-        res.status(400).json({
-          status: "error",
-          message:
-            "URL do Google Apps Script não configurada no servidor e nenhuma targetUrl foi fornecida.",
-        });
-        return;
-      }
-
-      // Append action/sheet params if provided in query or body
-      if (req.method === "GET" && req.query) {
-        const urlObj = new URL(targetUrl);
-        Object.keys(req.query).forEach((key) => {
-          if (key !== "targetUrl") {
-            urlObj.searchParams.set(key, String(req.query[key]));
-          }
-        });
-        targetUrl = urlObj.toString();
-      }
-
-      // Security Check: Whitelist check for allowed Google domains
-      if (!isAllowedUrl(targetUrl)) {
-        res.status(403).json({
-          status: "error",
-          message:
-            "Acesso negado: O servidor proxy só aceita redirecionar para domínios do Google permitidos (script.google.com, etc).",
-        });
-        return;
-      }
-
-      // Forward request to Google Apps Script with 55s timeout
-      const method = req.method;
-      const proxyAbortController = new AbortController();
-      const proxyTimeout = setTimeout(() => proxyAbortController.abort(), 55000);
-
-      const fetchOptions: RequestInit = {
-        method: method === "GET" ? "GET" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        redirect: "follow",
-        signal: proxyAbortController.signal,
-      };
-
-      if (method !== "GET") {
-        // Exclude targetUrl from payload sent to Apps Script
-        const bodyPayload = { ...req.body };
-        delete bodyPayload.targetUrl;
-        fetchOptions.body = JSON.stringify(bodyPayload);
-      }
-
-      let googleResponse: Response | null = null;
-      let lastError: any = null;
-
-      // Retry up to 3 times for transient network or 5xx/429 errors from Google Apps Script
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          googleResponse = await fetch(targetUrl, fetchOptions);
-          if (googleResponse.ok) {
-            break;
-          }
-          // If 5xx error or rate limit 429, wait and retry
-          if ((googleResponse.status >= 500 || googleResponse.status === 429) && attempt < 2) {
-            await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 500 : 1200));
-            continue;
-          }
-          break;
-        } catch (err: any) {
-          lastError = err;
-          if (err.name === "AbortError") {
-            lastError = new Error("Tempo limite de 55s esgotado ao aguardar resposta do Google Apps Script.");
-            break; // Se o timeout do proxy estourou, não adianta fazer retry imediato
-          }
-          if (attempt < 2) {
-            await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 500 : 1200));
-            continue;
-          }
-        }
-      }
-
-      clearTimeout(proxyTimeout);
-
-      if (!googleResponse) {
-        throw lastError || new Error("Falha na comunicação com o Google Apps Script.");
-      }
-
-      if (!googleResponse.ok) {
-        const errorRaw = await googleResponse.text().catch(() => "");
-        // Clean HTML or long responses from Google error pages
-        const isHtml = errorRaw.includes("<html") || errorRaw.includes("<!DOCTYPE");
-        const cleanMessage = isHtml
-          ? `Google Apps Script indisponível temporariamente (${googleResponse.status}). Verifique a permissão do script ou tente novamente.`
-          : errorRaw.slice(0, 300);
-
-        res.status(googleResponse.status).json({
-          status: "error",
-          message: cleanMessage,
-        });
-        return;
-      }
-
-      const responseText = await googleResponse.text();
-      let responseData;
-      try {
-        responseData = JSON.parse(responseText);
-      } catch {
-        // Raw text response
-        responseData = { status: "success", raw: responseText };
-      }
-
-      // Always return payload directly
-      res.json(responseData);
-    } catch (err: any) {
-      console.error("[Proxy Error]:", err);
-      res.status(500).json({
-        status: "error",
-        message: `Erro de comunicação com o proxy: ${err.message || String(err)}`,
-      });
-    }
-  });
-
-  // Vite middleware for development vs Static serving for production
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
+      ],
+      config: {
+        responseMimeType: "application/json",
+      },
     });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(
-      express.static(distPath, {
-        index: false,
-        setHeaders: (res, filePath) => {
-          if (filePath.endsWith("index.html")) {
-            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-          } else {
-            res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-          }
-        },
-      })
-    );
-    app.get("*", (_req, res) => {
-      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      res.sendFile(path.join(distPath, "index.html"));
+
+    const text = response.text || "{}";
+    let parsed: any;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      parsed = match ? JSON.parse(match[0]) : { itens: [] };
+    }
+
+    const itens = Array.isArray(parsed.itens) ? parsed.itens : [];
+    return res.json({
+      status: "success",
+      data: {
+        itens,
+        resumoLeitura: parsed.resumoLeitura || `Identificados ${itens.length} itens pela Visão Gemini.`,
+      },
+    });
+  } catch (error: any) {
+    console.error("Erro em /api/read-shopping-list:", error);
+    return res.status(500).json({
+      status: "error",
+      message: error?.message || "Falha ao processar lista de compras com IA.",
     });
   }
+});
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Finanças Gaeta] Server running on http://0.0.0.0:${PORT}`);
-  });
+// 5. Rota para cálculo de distância da Calculadora de Corridas
+function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
-startServer();
+app.post("/api/rota", async (req: Request, res: Response) => {
+  try {
+    const { pontos } = req.body;
+    if (!Array.isArray(pontos) || pontos.length < 2) {
+      return res.status(400).json({ error: "É necessário fornecer ao menos 2 pontos [lat, lng]." });
+    }
+
+    // Tentativa com OSRM público
+    try {
+      const coordinatesStr = pontos.map((p: [number, number]) => `${p[1]},${p[0]}`).join(";");
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordinatesStr}?overview=false`;
+      const osrmRes = await fetch(osrmUrl, { signal: AbortSignal.timeout(6000) });
+
+      if (osrmRes.ok) {
+        const osrmData = (await osrmRes.json()) as any;
+        if (osrmData.routes && osrmData.routes.length > 0) {
+          const route = osrmData.routes[0];
+          const distanciaKm = Number((route.distance / 1000).toFixed(2));
+          const duracaoMinutos = Math.max(1, Math.round(route.duration / 60));
+          return res.json({ distanciaKm, duracaoMinutos });
+        }
+      }
+    } catch {
+      // Fallback em caso de indisponibilidade do OSRM
+    }
+
+    let totalKm = 0;
+    for (let i = 0; i < pontos.length - 1; i++) {
+      totalKm += haversineDistanceKm(pontos[i][0], pontos[i][1], pontos[i + 1][0], pontos[i + 1][1]);
+    }
+    const distanciaKm = Number((totalKm * 1.3).toFixed(2));
+    const duracaoMinutos = Math.max(1, Math.round((distanciaKm / 35) * 60));
+
+    return res.json({ distanciaKm, duracaoMinutos });
+  } catch (error: any) {
+    console.error("Erro em /api/rota:", error);
+    return res.status(500).json({ error: "Falha ao calcular rota." });
+  }
+});
+
+// 6. Servir arquivos estáticos do frontend compilado
+const distPath = path.join(process.cwd(), "dist");
+app.use(express.static(distPath));
+
+app.get("*", (_req: Request, res: Response) => {
+  res.sendFile(path.join(distPath, "index.html"));
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(Number(PORT), "0.0.0.0", () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
+});
