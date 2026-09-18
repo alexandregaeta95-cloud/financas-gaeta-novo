@@ -513,6 +513,21 @@ export function normalizeLancamento(raw: any): Lancamento {
       0
   );
 
+  // Se Status for PAGO, Forma_Pagamento for PIX e Valor_Pago não estiver preenchido (ou <= 0), assume Valor_Pago = Valor
+  // Restringe estritamente para PIX para não afetar relatórios de lançamentos antigos de outros métodos
+  const rawFormaPagamento = String(
+    raw.Forma_Pagamento ??
+      raw["Forma_Pagamento"] ??
+      raw["Forma de Pagamento"] ??
+      raw.forma_pagamento ??
+      raw.formaPagamento ??
+      ""
+  ).trim().toUpperCase();
+
+  const isPix = rawFormaPagamento === "PIX";
+  const isStatusPago = String(status).trim().toUpperCase() === "PAGO";
+  const finalValorPago = valorPago <= 0 && isStatusPago && isPix && valor > 0 ? valor : valorPago;
+
   return {
     ...raw,
     Id: String(raw.Id || ""),
@@ -523,7 +538,7 @@ export function normalizeLancamento(raw: any): Lancamento {
     Subcategoria: raw.Subcategoria ?? raw.subcategoria ?? "",
     Descricao: String(desc).trim() || (tipo === "Abastecimento" ? "Abastecimento" : "Lançamento"),
     Valor: valor,
-    Valor_Pago: valorPago,
+    Valor_Pago: finalValorPago,
     Conta: conta,
     Cartao: raw.Cartao ?? raw["Cartão_Id"] ?? raw.Cartão_Id ?? "",
     Forma_Pagamento: raw.Forma_Pagamento ?? raw["Forma_Pagamento"] ?? "PIX",

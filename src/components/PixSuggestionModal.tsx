@@ -162,12 +162,15 @@ export const PixSuggestionModal: React.FC<Props> = ({
       const tagBanco = `IMPORTADO AUTOMATICAMENTE DE NOTIFICAÇÃO ${currentTx.banco.toUpperCase()}`;
       const observacoesFinal = userObs ? `${userObs} — ${tagBanco}` : tagBanco;
 
+      const finalValor = Number(formValor) || currentTx.valor;
+
       const lancamento: Partial<Lancamento> = {
         Data: formData || getLocalTodayDateStr(now),
         Hora: horaFormatada,
         Tipo: formTipo,
         Descricao: formDescricao.toUpperCase().trim(),
-        Valor: Number(formValor) || currentTx.valor,
+        Valor: finalValor,
+        Valor_Pago: finalValor,
         Conta: formConta.toUpperCase().trim(),
         Categoria: formCategoria.toUpperCase().trim(),
         Forma_Pagamento: "PIX",
