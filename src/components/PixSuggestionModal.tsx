@@ -75,6 +75,7 @@ export const PixSuggestionModal: React.FC<Props> = ({
   if (!currentTx) return null;
 
   const handleSaveCurrent = async () => {
+    alert("BOTAO CLICADO");
     setLoading(true);
     try {
       const now = new Date();
