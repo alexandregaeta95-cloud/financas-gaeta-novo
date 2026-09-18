@@ -17,7 +17,7 @@ import {
   MetaCategoria,
   AnotacaoBloco,
 } from "../types";
-import { formatCurrency, formatarHora, getLancamentoValorReal } from "../utils/formatters";
+import { formatCurrency, formatarHora, getLancamentoValorReal, parseCurrency } from "../utils/formatters";
 import { calcularAlertasFinanceiros, getIntervalosPeriodos } from "../utils/financeAlertEngine";
 import { isCycleCompleted, isNotificationSnoozed } from "./snoozeService";
 
@@ -1250,9 +1250,10 @@ export function evaluateAllNotifications({
     const isDespesa =
       l.Tipo?.toUpperCase() === "DESPESA" ||
       l.Tipo?.toUpperCase() === "ABASTECIMENTO";
-    const isPendente =
-      l.Status?.toLowerCase() === "pendente" ||
-      String(l.Status).toUpperCase() === "PENDENTE";
+    const isPago =
+      String(l.Status || "").toUpperCase() === "PAGO" ||
+      parseCurrency((l as any).Valor_Pago) > 0;
+    const isPendente = !isPago;
 
     if (!isDespesa || !isPendente || !l.Data) return;
 

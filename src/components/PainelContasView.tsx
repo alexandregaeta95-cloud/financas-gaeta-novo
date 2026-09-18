@@ -135,22 +135,20 @@ export const PainelContasView: React.FC<Props> = ({
     .filter((l) => isDateInPeriod(l.Data));
 
   // Group 1: Pagas
-  const pagas = activeEntries.filter(
-    (l) =>
-      String(l.Status || "").toUpperCase() === "PAGO" ||
-      parseCurrency((l as any).Valor_Pago) > 0
-  );
+  const isLancamentoPago = (l: Lancamento) =>
+    String(l.Status || "").toUpperCase() === "PAGO" ||
+    parseCurrency((l as any).Valor_Pago) > 0;
 
-  // Group 2: Vencidas (Past date & Status = Pendente)
+  const pagas = activeEntries.filter(isLancamentoPago);
+
+  // Group 2: Vencidas (Past date & Status != PAGO)
   const vencidas = activeEntries.filter((l) => {
-    const s = String(l.Status || "").toUpperCase();
-    return s === "PENDENTE" && (l.Data || "") < todayStr;
+    return !isLancamentoPago(l) && (l.Data || "") < todayStr;
   });
 
-  // Group 3: A Vencer (Future or today date & Status = Pendente)
+  // Group 3: A Vencer (Future or today date & Status != PAGO)
   const aVencer = activeEntries.filter((l) => {
-    const s = String(l.Status || "").toUpperCase();
-    return s === "PENDENTE" && (l.Data || "") >= todayStr;
+    return !isLancamentoPago(l) && (l.Data || "") >= todayStr;
   });
 
   // Sums
