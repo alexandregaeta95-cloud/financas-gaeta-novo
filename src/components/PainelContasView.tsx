@@ -20,6 +20,7 @@ import {
   Route,
   CreditCard,
   StickyNote,
+  Building2,
 } from "lucide-react";
 import { Lancamento } from "../types";
 import { ModuleView } from "./Navigation";
@@ -31,6 +32,7 @@ interface Props {
   lancamentos: Lancamento[];
   onSaveLancamento: (lancamento: Lancamento) => Promise<void>;
   onNavigate?: (view: ModuleView) => void;
+  onOpenPixConfig?: () => void;
 }
 
 function parseDateSafely(dateStr?: string | null): Date | null {
@@ -57,6 +59,7 @@ export const PainelContasView: React.FC<Props> = ({
   lancamentos,
   onSaveLancamento,
   onNavigate,
+  onOpenPixConfig,
 }) => {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilterType>("CURRENT_MONTH");
   const [startDate, setStartDate] = useState<string>("");
@@ -232,6 +235,17 @@ export const PainelContasView: React.FC<Props> = ({
             <FileText className="w-4 h-4 shrink-0" />
             <span className="truncate">Relatórios</span>
           </button>
+
+          {onOpenPixConfig && (
+            <button
+              onClick={onOpenPixConfig}
+              title="Leitor de Notificações PIX"
+              className="w-full flex items-center justify-center gap-1.5 sm:gap-2 p-3 sm:p-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold rounded-xl text-xs border border-amber-500/30 transition-all shadow-xs active:scale-95 text-center cursor-pointer"
+            >
+              <Building2 className="w-4 h-4 shrink-0" />
+              <span className="truncate">Leitor PIX</span>
+            </button>
+          )}
 
           <button
             onClick={() => onNavigate("analise_corridas")}

@@ -1405,6 +1405,7 @@ export default function App() {
             lancamentos={lancamentos}
             onSaveLancamento={handleSaveLancamento}
             onNavigate={setActiveView}
+            onOpenPixConfig={() => setIsPixConfigModalOpen(true)}
           />
         )}
 
