@@ -317,67 +317,41 @@ export const IndicacoesPostosView: React.FC<Props> = ({ lancamentos }) => {
         st.totalLitros += litros;
         st.totalValor += valor;
         if (price > 0) st.precoLitroList.push(price);
+      }
 
-        // Recalcula Km/L dinamicamente comparando o odômetro consecutivo atual com o anterior existente
-        if (i > 0) {
-          const prevEntry = sorted[i - 1];
-          const currentKm = extractKmAtual(entry);
-          const prevKm = extractKmAtual(prevEntry);
+      // Recalcula Km/L dinamicamente no método cheio-a-cheio:
+      // O rendimento de um abastecimento é calculado comparando com o abastecimento imediatamente seguinte por data/km,
+      // desde que AMBOS tenham sido tanque cheio (Completou_O_Tanque = SIM) e leitura válida de hodômetro.
+      // O posto do abastecimento seguinte NÃO precisa ser o mesmo do atual.
+      // O rendimento é atribuído ao posto do primeiro abastecimento (o avaliado), pois foi o combustível dele que gerou a distância.
+      const isParcial = (value: unknown) =>
+        ["NÃO", "NAO", "FALSE", "N"].includes(String(value || "").trim().toUpperCase());
 
-          // 2. Verificação explícita: Km_Atual ausente ou igual a 0 é dado ausente e NÃO pode ser usado
-          if (!currentKm || currentKm === 0) {
-            // Pular esse registro do cálculo de rendimento (evita distâncias absurdas de 0 a 130.000km)
-            continue;
-          }
-          if (!prevKm || prevKm === 0) {
-            // Pular se o abastecimento anterior não teve leitura válida de hodômetro
-            continue;
-          }
+      const fullTankEntries = sorted.filter(
+        (e) => !isParcial(e.Completou_O_Tanque) && extractKmAtual(e) > 0
+      );
 
-          // A leitura atual do hodômetro deve ser estritamente maior que a anterior
-          if (currentKm <= prevKm) {
-            continue;
-          }
+      for (let i = 0; i < fullTankEntries.length - 1; i++) {
+        const currentEntry = fullTankEntries[i];
+        const nextEntry = fullTankEntries[i + 1];
 
-          // Quantidade de litros deve ser maior que zero
-          if (litros <= 0) {
-            continue;
-          }
+        const currentKm = extractKmAtual(currentEntry);
+        const nextKm = extractKmAtual(nextEntry);
+        const currentLitros = parseCurrency(currentEntry.Litros ?? (currentEntry as any).litros ?? 0);
 
-          // 1. Verificação de Tipo de Combustível: só calcula comparando o mesmo Tipo_Combustivel
-          const currentFuelType = extractFuelType(entry);
-          const prevFuelType = extractFuelType(prevEntry);
-          if (!currentFuelType || !prevFuelType || currentFuelType !== prevFuelType) {
-            // Tipos de combustível diferentes (ex: Álcool com Gasolina) ou tipo ausente: pula
-            continue;
-          }
+        // A leitura seguinte deve ser estritamente maior que a atual e litros do abastecimento de origem > 0
+        if (nextKm <= currentKm || currentLitros <= 0) {
+          continue;
+        }
 
-          // Verificação de Posto: só calcula se forem abastecimentos consecutivos no mesmo posto
-          const prevPostoName = getPostoName(prevEntry);
-          if (postoName.toLowerCase() !== prevPostoName.toLowerCase()) {
-            // Abastecimentos em postos distintos não medem o rendimento deste posto
-            continue;
-          }
+        const kmPercorrido = nextKm - currentKm;
+        const dynamicMediaKmL = kmPercorrido / currentLitros;
 
-          // O cálculo "km percorrido ÷ litros" só é válido no método cheio-a-cheio:
-          // exige que TANTO o abastecimento atual quanto o anterior tenham sido tanque cheio.
-          // Registros antigos sem esse campo preenchido são tratados como cheio (padrão histórico
-          // do app - ver LancamentosView.tsx, que usa "SIM" como default); só exclui quando
-          // o campo foi explicitamente marcado como parcial (NÃO/NAO/FALSE/N).
-          const isParcial = (value: unknown) =>
-            ["NÃO", "NAO", "FALSE", "N"].includes(String(value || "").trim().toUpperCase());
-          const isTanqueCheioAtual = !isParcial(entry.Completou_O_Tanque);
-          const isTanqueCheioAnterior = !isParcial(prevEntry.Completou_O_Tanque);
-
-          if (!isTanqueCheioAtual || !isTanqueCheioAnterior) {
-            continue;
-          }
-
-          const kmPercorrido = currentKm - prevKm;
-          const dynamicMediaKmL = kmPercorrido / litros;
-          // Validação de sanidade (evita discrepâncias extremas de digitação)
-          if (dynamicMediaKmL > 0 && dynamicMediaKmL <= 100) {
-            st.mediaKmLList.push(dynamicMediaKmL);
+        // Validação de sanidade (evita discrepâncias extremas de digitação)
+        if (dynamicMediaKmL > 0 && dynamicMediaKmL <= 100) {
+          const currentPostoName = getPostoName(currentEntry);
+          if (statsByPosto[currentPostoName]) {
+            statsByPosto[currentPostoName].mediaKmLList.push(dynamicMediaKmL);
           }
         }
       }
